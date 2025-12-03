@@ -10,4 +10,9 @@ public class TestController {
     public String hello() {
         return "Hello, Inblue!";
     }
+
+    @GetMapping("/test")
+    public String test() {
+        return "This is a test endpoint for CI/CD.";
+    }
 }
