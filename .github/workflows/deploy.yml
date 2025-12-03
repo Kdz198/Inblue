@@ -2,7 +2,7 @@ name: Build & Push to Docker Hub
 
 on:
   push:
-    branches: [ "main" ] # Chạy khi có code mới vào nhánh main
+    branches: [ "master" ]
 
 env:
   # 👇 TÊN IMAGE CHÍNH XÁC CỦA BẠN TRÊN DOCKER HUB
