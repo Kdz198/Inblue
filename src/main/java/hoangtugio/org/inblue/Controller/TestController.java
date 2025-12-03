@@ -27,4 +27,9 @@ public class TestController {
     public String ping() {
         return "pong";
     }
+
+    @GetMapping ("/health")
+    public String health() {
+        return "OK";
+    }
 }
