@@ -17,4 +17,9 @@ public class TestController {
     public String test() {
         return "This is a test endpoint for CI/CD.";
     }
+
+    @GetMapping("/status")
+    public String status() {
+        return "Application is running smoothly.";
+    }
 }
