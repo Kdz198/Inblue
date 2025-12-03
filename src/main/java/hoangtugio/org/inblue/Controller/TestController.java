@@ -22,4 +22,9 @@ public class TestController {
     public String status() {
         return "Application is running smoothly.";
     }
+
+    @GetMapping("/ping")
+    public String ping() {
+        return "pong";
+    }
 }
