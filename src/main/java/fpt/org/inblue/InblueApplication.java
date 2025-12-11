@@ -1,4 +1,4 @@
-package hoangtugio.org.inblue;
+package fpt.org.inblue;
 
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;

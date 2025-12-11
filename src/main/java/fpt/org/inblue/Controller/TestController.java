@@ -1,4 +1,4 @@
-package hoangtugio.org.inblue.Controller;
+package fpt.org.inblue.Controller;
 
 import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.GetMapping;

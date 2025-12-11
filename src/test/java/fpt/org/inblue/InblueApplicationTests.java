@@ -1,4 +1,4 @@
-package hoangtugio.org.inblue;
+package fpt.org.inblue;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
