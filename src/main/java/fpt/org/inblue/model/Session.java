@@ -1,5 +1,6 @@
 package fpt.org.inblue.model;
 
+import fpt.org.inblue.model.enums.SessionStatus;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
@@ -36,4 +37,6 @@ public class Session {
     private String roomUrl;
 
     private String recordUrl;
+
+    private SessionStatus status;
 }
