@@ -1,4 +1,4 @@
-package fpt.org.inblue.Controller;
+package fpt.org.inblue.controller;
 
 import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.GetMapping;
