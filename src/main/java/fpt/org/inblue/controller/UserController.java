@@ -1,11 +1,13 @@
 package fpt.org.inblue.controller;
 
 import fpt.org.inblue.model.User;
+import fpt.org.inblue.model.dto.CreateUserRequest;
 import fpt.org.inblue.service.UserService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.io.IOException;
 import java.util.List;
 
 @RestController
@@ -21,8 +23,9 @@ public class UserController {
     }
 
     @PostMapping()
-    public ResponseEntity<User> createUser(@RequestBody User user) {
+    public ResponseEntity<User> createUser(@ModelAttribute CreateUserRequest user) throws IOException {
         User createdUser = userService.createUser(user);
+
         return ResponseEntity.ok(createdUser);
     }
 
