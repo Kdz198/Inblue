@@ -1,6 +1,7 @@
 package fpt.org.inblue.service.impl;
 
 import fpt.org.inblue.model.User;
+import fpt.org.inblue.model.UserProfile;
 import fpt.org.inblue.repository.UserRepository;
 import fpt.org.inblue.service.UserService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -26,7 +27,13 @@ public class UserServiceImpl implements UserService {
     @Override
     public User createUser(User user) {
         User saved = userRepository.save(user);
-        user.setId(saved.getId());
+        int id = saved.getId();
+        UserProfile userProfile = new UserProfile(id,user.getStudentProfile().getUniversity(),
+                user.getStudentProfile().getMajor(),
+                user.getStudentProfile().getTargetPosition(),
+                user.getStudentProfile().getTargetLevel(),
+                user.getStudentProfile().getCvUrl());
+        user.setStudentProfile(userProfile);
         return saved;
     }
 
