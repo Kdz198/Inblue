@@ -1,10 +1,6 @@
 package fpt.org.inblue.service.impl;
 
-import fpt.org.inblue.model.MentorProfile;
 import fpt.org.inblue.model.User;
-import fpt.org.inblue.model.UserProfile;
-import fpt.org.inblue.model.dto.CreateMentorRequest;
-import fpt.org.inblue.model.dto.CreateUserRequest;
 import fpt.org.inblue.repository.UserRepository;
 import fpt.org.inblue.service.UserService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -28,29 +24,11 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
-    public User createUser(CreateUserRequest user) {
-        User newUser = new User(0,user.getName(), user.getEmail(), user.getPassword(),
-                user.getRole(), user.isActive(), user.getBio(), user.getAvatarUrl(),
-                null, null);
-        User saved = userRepository.save(newUser);
-        UserProfile userProfile = new UserProfile(saved.getId(), user.getUniversity(),
-                user.getMajor(), user.getTargetPosition(), user.getTargetLevel(), user.getCvUrl());
-        saved.setStudentProfile(userProfile);
-        return userRepository.save(saved);
+    public User createUser(User user) {
+        return userRepository.save(user);
     }
 
-    @Override
-    public User createMentor(CreateMentorRequest user) {
-        User newUser = new User(0,user.getName(), user.getEmail(), user.getPassword(),
-                user.getRole(), user.isActive(), user.getBio(), user.getAvatarUrl(),
-                null, null);
-        User saved = userRepository.save(newUser);
-        MentorProfile mentorProfile = new MentorProfile(saved.getId(), user.getExpertise(),
-                user.getYearsOfExperience(), user.getLinkedInUrl(), user.getCurrentCompany(),
-                user.getRate(), user.getCertificateUrl(), user.getTotalSession());
-        saved.setMentorProfile(mentorProfile);
-        return userRepository.save(saved);
-    }
+
 
     @Override
     public User updateUser(User user) {

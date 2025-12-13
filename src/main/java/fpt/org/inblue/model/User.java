@@ -21,10 +21,9 @@ public class User {
     private boolean isActive;
     private String bio;
     private String avatarUrl;
-    @JoinColumn(name = "mentor_profile")
-    @OneToOne
-    private MentorProfile mentorProfile;
-    @JoinColumn(name = "student_profile")
-    @OneToOne
-    private UserProfile studentProfile;
-}
+
+    private String university;
+    private String major;
+    private String targetPosition;
+    private String targetLevel;
+    private String cvUrl;}
