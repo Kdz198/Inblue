@@ -19,7 +19,6 @@ public class MentorProfile {
     private String linkedInUrl;
     private String currentCompany;
     private int rate;
-    private boolean isActive;
     @ElementCollection
     @CollectionTable(name = "mentor_certificates", joinColumns = @JoinColumn(name = "mentor_id"))
     @Column(name = "url")

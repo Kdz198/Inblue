@@ -1,6 +1,8 @@
 package fpt.org.inblue.controller;
 
 import fpt.org.inblue.model.User;
+import fpt.org.inblue.model.dto.CreateMentorRequest;
+import fpt.org.inblue.model.dto.CreateUserRequest;
 import fpt.org.inblue.service.UserService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
@@ -20,11 +22,18 @@ public class UserController {
         return ResponseEntity.ok(userService.getAll());
     }
 
-    @PostMapping
-    public ResponseEntity<User> createUser(User user) {
+    @PostMapping("create-student")
+    public ResponseEntity<User> createUser(CreateUserRequest user) {
         User createdUser = userService.createUser(user);
         return ResponseEntity.ok(createdUser);
     }
+
+    @PostMapping("create-mentor")
+    public ResponseEntity<User> createMentor(CreateMentorRequest user) {
+        User createdUser = userService.createMentor(user);
+        return ResponseEntity.ok(createdUser);
+    }
+
     @GetMapping("/{id}")
     public ResponseEntity<User> getUserById(@PathVariable int id) {
         return ResponseEntity.ok(userService.getById(id));
