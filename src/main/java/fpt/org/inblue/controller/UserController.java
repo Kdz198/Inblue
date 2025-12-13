@@ -4,10 +4,7 @@ import fpt.org.inblue.model.User;
 import fpt.org.inblue.service.UserService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
@@ -26,5 +23,14 @@ public class UserController {
     public ResponseEntity<User> createUser(User user) {
         User createdUser = userService.createUser(user);
         return ResponseEntity.ok(createdUser);
+    }
+    @GetMapping("/{id}")
+    public ResponseEntity<User> getUserById(@PathVariable int id) {
+        return ResponseEntity.ok(userService.getById(id));
+    }
+    @PutMapping
+    public ResponseEntity<User> updateUser(User user) {
+        User updatedUser = userService.updateUser(user);
+        return ResponseEntity.ok(updatedUser);
     }
 }
