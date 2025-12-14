@@ -29,43 +29,106 @@ public class EventListenerHandle {
         this.mentorRepository = mentorRepository;
     }
 
-    @EventListener
-    public void handleCreateUser(UserCvDtoRequest userCvDtoRequest) {
+    @Async
+    @EventListener(condition = "#userCvDtoRequest.message == 'cv'")
+    public void handleCv(UserCvDtoRequest userCvDtoRequest) {
+        System.out.println("Handling CV upload event for user ID: " + userCvDtoRequest.getUser().getId());
         User user = userRepository.findById(userCvDtoRequest.getUser().getId()).orElse(null);
         if (user != null) {
-            if (userCvDtoRequest.getMessage().equals("cv")) {
                 try {
                     uploadPdf(user, userCvDtoRequest.getFile());
                 } catch (IOException e) {
                     throw new RuntimeException(e);
-                }
-            } else if (userCvDtoRequest.getMessage().equals("avatar")) {
-                try {
-                    uploadImg(user, userCvDtoRequest.getFile());
-                } catch (IOException e) {
-                    throw new RuntimeException(e);
-                }
             }
         }
     }
 
-    @EventListener
-    public void handleMentorUpload(MentorCvDto mentorCvDto) {
+    @Async
+    @EventListener(condition = "#userCvDtoRequest.message == 'avatar'")
+    public void handleAvatar(UserCvDtoRequest userCvDtoRequest) {
+        System.out.println("Handling avatar upload event for user ID: " + userCvDtoRequest.getUser().getId());
+        try {
+            Thread.sleep(5000); //chờ 5s trc khi get user lên để tránh việc bị đọc dữ liệu cũ do cv chưa save kịp
+        } catch (InterruptedException ie) {
+            Thread.currentThread().interrupt();
+        }
+        User user = userRepository.findById(userCvDtoRequest.getUser().getId()).orElse(null);
+        if (user != null) {
+            try {
+                uploadImg(user, userCvDtoRequest.getFile());
+            } catch (IOException e) {
+                throw new RuntimeException(e);
+            }
+        }
+    }
+
+    @EventListener(condition = "#mentorCvDto.message == 'avatar'")
+    @Async
+    public void handleMentorUploadAvatar(MentorCvDto mentorCvDto) {
+        System.out.println("Handling avatar upload event for mentor ID: " + mentorCvDto.getMentor().getId());
         Mentor mentor = mentorRepository.findById(mentorCvDto.getMentor().getId()).orElse(null);
         if (mentor != null) {
-            if (mentorCvDto.getMessage().equals("avatar")) {
-                try {
-                    uploadImgMentor(mentor, mentorCvDto.getFile());
-                } catch (IOException e) {
-                    throw new RuntimeException(e);
-                }
-            } else  {
-                try {
-                    System.out.println("Uploading certificate for mentor: " + mentor.getName());
-                    uploadCertificate(mentor, mentorCvDto.getFile(),mentorCvDto.getMessage());
-                } catch (IOException e) {
-                    throw new RuntimeException(e);
-                }
+            try {
+                uploadImgMentor(mentor, mentorCvDto.getFile());
+            } catch (IOException e) {
+                throw new RuntimeException(e);
+            }
+        }
+    }
+
+    @Async
+    @EventListener(condition = "#mentorCvDto.message =='IdentityCard'")
+    public void handleMentorUploadIdentity(MentorCvDto mentorCvDto) {
+        System.out.println("Handling identity card upload event for mentor ID: " + mentorCvDto.getMentor().getId());
+        try {
+            Thread.sleep(5000);
+        } catch (InterruptedException ie) {
+            Thread.currentThread().interrupt();
+        }
+        Mentor mentor = mentorRepository.findById(mentorCvDto.getMentor().getId()).orElse(null);
+        if(mentor!=null){
+            try {
+                uploadCertificate(mentor, mentorCvDto.getFile(),"IdentityCard");
+            } catch (IOException e) {
+                throw new RuntimeException(e);
+            }
+        }
+    }
+
+    @Async
+    @EventListener(condition = "#mentorCvDto.message =='Degree'")
+    public void handleMentorUploadDegree(MentorCvDto mentorCvDto) {
+        System.out.println("Handling degree upload event for mentor ID: " + mentorCvDto.getMentor().getId());
+        try {
+            Thread.sleep(10000);
+        } catch (InterruptedException ie) {
+            Thread.currentThread().interrupt();
+        }
+        Mentor mentor = mentorRepository.findById(mentorCvDto.getMentor().getId()).orElse(null);
+        if(mentor!=null){
+            try {
+                uploadCertificate(mentor, mentorCvDto.getFile(),"Degree");
+            } catch (IOException e) {
+                throw new RuntimeException(e);
+            }
+        }
+    }
+
+    @Async
+    @EventListener(condition = "#mentorCvDto.message =='Other'")
+    public void handleMentorUploadOther(MentorCvDto mentorCvDto) {
+        System.out.println("Handling other file upload event for mentor ID: " + mentorCvDto.getMentor().getId());
+        try {
+            Thread.sleep(15000);
+        } catch (InterruptedException ie) {
+            Thread.currentThread().interrupt();
+        }
+        Mentor mentor = mentorRepository.findById(mentorCvDto.getMentor().getId()).orElse(null);
+        if(mentor!=null){
+            try {
+                uploadCertificate(mentor, mentorCvDto.getFile(),"Other");
+            } catch (IOException e) {
+                throw new RuntimeException(e);
             }
         }
     }

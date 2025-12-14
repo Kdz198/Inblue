@@ -37,34 +37,38 @@ public class UserServiceImpl implements UserService {
 
     @Override
     public User createUser(CreateUserRequest user) throws IOException {
-        User userBuilder = User.builder()
-                .name(user.getName())
-                .email(user.getEmail())
-                .password(user.getPassword())
-                .role(Role.USER)
-                .isActive(true)
-                .bio(user.getBio())
-                .university(user.getUniversity())
-                .major(user.getMajor())
-                .targetPosition(user.getTargetPosition())
-                .targetLevel(user.getTargetLevel())
-                .build();
-        User savedUser = userRepository.save(userBuilder);
-        if (!user.getCvFile().isEmpty()) {
-            String absolutePath = FileUtil.saveFile(user.getCvFile());
-            File file = FileUtil.getFileByPath(absolutePath);
-            MultipartFile multipartFile = FileUtil.convertFileToMultipart(file);
-            file.delete();
-            applicationEventPublisher.publishEvent(new UserCvDtoRequest(savedUser, multipartFile,"cv"));
+        if(user.getId()==null) {
+            User userBuilder = User.builder()
+                    .name(user.getName())
+                    .email(user.getEmail())
+                    .password(user.getPassword())
+                    .role(Role.USER)
+                    .isActive(true)
+                    .bio(user.getBio())
+                    .university(user.getUniversity())
+                    .major(user.getMajor())
+                    .targetPosition(user.getTargetPosition())
+                    .targetLevel(user.getTargetLevel())
+                    .build();
+            User savedUser = userRepository.save(userBuilder);
+            if (!user.getCvFile().isEmpty()) {
+                String absolutePath = FileUtil.saveFile(user.getCvFile());
+                File file = FileUtil.getFileByPath(absolutePath);
+                MultipartFile multipartFile = FileUtil.convertFileToMultipart(file);
+                file.delete();
+                applicationEventPublisher.publishEvent(new UserCvDtoRequest(savedUser, multipartFile, "cv"));
+            }
+            if (!user.getAvatar().isEmpty()) {
+                String absolutePath = FileUtil.saveFile(user.getAvatar());
+                File file = FileUtil.getFileByPath(absolutePath);
+                MultipartFile multipartFile = FileUtil.convertFileToMultipart(file);
+                file.delete();
+                applicationEventPublisher.publishEvent(new UserCvDtoRequest(savedUser, multipartFile, "avatar"));
+            }
+            return savedUser;
         }
-        if(!user.getAvatar().isEmpty()) {
-            String absolutePath = FileUtil.saveFile(user.getAvatar());
-            File file = FileUtil.getFileByPath(absolutePath);
-            MultipartFile multipartFile = FileUtil.convertFileToMultipart(file);
-            file.delete();
-            applicationEventPublisher.publishEvent(new UserCvDtoRequest(savedUser, multipartFile,"avatar"));
-        }
-        return savedUser;
+        else
+            return null;
     }
 
 

@@ -11,6 +11,8 @@ import org.springframework.web.multipart.MultipartFile;
 @AllArgsConstructor
 @NoArgsConstructor
 public class CreateUserRequest {
+    @Nullable
+    private Integer id;
     private String name;
     private String email;
     private String password;
