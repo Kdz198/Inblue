@@ -11,19 +11,9 @@ import org.springframework.web.multipart.MultipartFile;
 @AllArgsConstructor
 @NoArgsConstructor
 public class CreateUserRequest {
-    @Nullable
-    private Integer id;
-    private String name;
-    private String email;
-    private String password;
-    private String bio;
+    UserInfo data;
     @Nullable
     MultipartFile avatar ;
-
-    private String university;
-    private String major;
-    private String targetPosition;
-    private String targetLevel;
     @Nullable
     MultipartFile cvFile;
 }

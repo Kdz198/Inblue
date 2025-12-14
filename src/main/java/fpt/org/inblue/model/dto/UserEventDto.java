@@ -9,7 +9,7 @@ import org.springframework.web.multipart.MultipartFile;
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
-public class UserCvDtoRequest {
+public class UserEventDto {
     User user;
     MultipartFile file;
     String message;

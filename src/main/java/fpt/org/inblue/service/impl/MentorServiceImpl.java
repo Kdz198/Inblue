@@ -3,9 +3,8 @@ package fpt.org.inblue.service.impl;
 import fpt.org.inblue.exception.CustomException;
 import fpt.org.inblue.model.Mentor;
 import fpt.org.inblue.model.dto.CreateMentorRequest;
-import fpt.org.inblue.model.dto.MentorCvDto;
+import fpt.org.inblue.model.dto.MentorEventDto;
 import fpt.org.inblue.model.dto.MentorInfo;
-import fpt.org.inblue.model.dto.UserCvDtoRequest;
 import fpt.org.inblue.model.enums.Role;
 import fpt.org.inblue.repository.MentorRepository;
 import fpt.org.inblue.service.MentorService;
@@ -19,7 +18,6 @@ import org.springframework.web.multipart.MultipartFile;
 import java.io.File;
 import java.io.IOException;
 import java.util.List;
-import java.util.Map;
 
 @Service
 public class MentorServiceImpl implements MentorService {
@@ -59,26 +57,26 @@ public class MentorServiceImpl implements MentorService {
         File file = FileUtil.getFileByPath(absolutePath);
         MultipartFile avata = FileUtil.convertFileToMultipart(file);
         file.delete();
-        applicationEventPublisher.publishEvent(new MentorCvDto(savedMentor, avata,"avatar"));
+        applicationEventPublisher.publishEvent(new MentorEventDto(savedMentor, avata,"avatar"));
        // Save identity file
         String absolutePath_1 = FileUtil.saveFile(mentor.getIdentityFile());
         File file_1 = FileUtil.getFileByPath(absolutePath_1);
         MultipartFile identity = FileUtil.convertFileToMultipart(file_1);
         file_1.delete();
-        applicationEventPublisher.publishEvent(new MentorCvDto(savedMentor, identity,"IdentityCard"));
+        applicationEventPublisher.publishEvent(new MentorEventDto(savedMentor, identity,"IdentityCard"));
 
 //        // Save degree file
         String absolutePath_2 = FileUtil.saveFile(mentor.getDegreeFile());
         File file_2 = FileUtil.getFileByPath(absolutePath_2);
         MultipartFile degree = FileUtil.convertFileToMultipart(file_2);
         file_2.delete();
-        applicationEventPublisher.publishEvent(new MentorCvDto(savedMentor, degree,"Degree"));
+        applicationEventPublisher.publishEvent(new MentorEventDto(savedMentor, degree,"Degree"));
 //        // Save other file
         String absolutePath_3 = FileUtil.saveFile(mentor.getOtherFile());
         File file_3 = FileUtil.getFileByPath(absolutePath_3);
         MultipartFile other = FileUtil.convertFileToMultipart(file_3);
         file_3.delete();
-        applicationEventPublisher.publishEvent(new MentorCvDto(savedMentor, other,"Other"));
+        applicationEventPublisher.publishEvent(new MentorEventDto(savedMentor, other,"Other"));
         return savedMentor;
     }
 

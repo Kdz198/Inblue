@@ -3,8 +3,8 @@ package fpt.org.inblue.event;
 import fpt.org.inblue.cloudinary.CloudinaryService;
 import fpt.org.inblue.model.Mentor;
 import fpt.org.inblue.model.User;
-import fpt.org.inblue.model.dto.MentorCvDto;
-import fpt.org.inblue.model.dto.UserCvDtoRequest;
+import fpt.org.inblue.model.dto.MentorEventDto;
+import fpt.org.inblue.model.dto.UserEventDto;
 import fpt.org.inblue.repository.MentorRepository;
 import fpt.org.inblue.repository.UserRepository;
 import org.springframework.context.event.EventListener;
@@ -30,13 +30,13 @@ public class EventListenerHandle {
     }
 
     @Async
-    @EventListener(condition = "#userCvDtoRequest.message == 'cv'")
-    public void handleCv(UserCvDtoRequest userCvDtoRequest) {
-        System.out.println("Handling CV upload event for user ID: " + userCvDtoRequest.getUser().getId());
-        User user = userRepository.findById(userCvDtoRequest.getUser().getId()).orElse(null);
+    @EventListener(condition = "#userEventDto.message == 'cv'")
+    public void handleCv(UserEventDto userEventDto) {
+        System.out.println("Handling CV upload event for user ID: " + userEventDto.getUser().getId());
+        User user = userRepository.findById(userEventDto.getUser().getId()).orElse(null);
         if (user != null) {
                 try {
-                    uploadPdf(user, userCvDtoRequest.getFile());
+                    uploadPdf(user, userEventDto.getFile());
                 } catch (IOException e) {
                     throw new RuntimeException(e);
             }
@@ -44,32 +44,32 @@ public class EventListenerHandle {
     }
 
     @Async
-    @EventListener(condition = "#userCvDtoRequest.message == 'avatar'")
-    public void handleAvatar(UserCvDtoRequest userCvDtoRequest) {
-        System.out.println("Handling avatar upload event for user ID: " + userCvDtoRequest.getUser().getId());
+    @EventListener(condition = "#userEventDto.message == 'avatar'")
+    public void handleAvatar(UserEventDto userEventDto) {
+        System.out.println("Handling avatar upload event for user ID: " + userEventDto.getUser().getId());
         try {
-            Thread.sleep(5000); //chờ 5s trc khi get user lên để tránh việc bị đọc dữ liệu cũ do cv chưa save kịp
+            Thread.sleep(6000); //chờ 5s trc khi get user lên để tránh việc bị đọc dữ liệu cũ do cv chưa save kịp
         } catch (InterruptedException ie) {
             Thread.currentThread().interrupt();
         }
-        User user = userRepository.findById(userCvDtoRequest.getUser().getId()).orElse(null);
+        User user = userRepository.findById(userEventDto.getUser().getId()).orElse(null);
         if (user != null) {
             try {
-                uploadImg(user, userCvDtoRequest.getFile());
+                uploadImg(user, userEventDto.getFile());
             } catch (IOException e) {
                 throw new RuntimeException(e);
             }
         }
     }
 
-    @EventListener(condition = "#mentorCvDto.message == 'avatar'")
+    @EventListener(condition = "#mentorEventDto.message == 'avatar'")
     @Async
-    public void handleMentorUploadAvatar(MentorCvDto mentorCvDto) {
-        System.out.println("Handling avatar upload event for mentor ID: " + mentorCvDto.getMentor().getId());
-        Mentor mentor = mentorRepository.findById(mentorCvDto.getMentor().getId()).orElse(null);
+    public void handleMentorUploadAvatar(MentorEventDto mentorEventDto) {
+        System.out.println("Handling avatar upload event for mentor ID: " + mentorEventDto.getMentor().getId());
+        Mentor mentor = mentorRepository.findById(mentorEventDto.getMentor().getId()).orElse(null);
         if (mentor != null) {
             try {
-                uploadImgMentor(mentor, mentorCvDto.getFile());
+                uploadImgMentor(mentor, mentorEventDto.getFile());
             } catch (IOException e) {
                 throw new RuntimeException(e);
             }
@@ -77,18 +77,18 @@ public class EventListenerHandle {
     }
 
     @Async
-    @EventListener(condition = "#mentorCvDto.message =='IdentityCard'")
-    public void handleMentorUploadIdentity(MentorCvDto mentorCvDto) {
-        System.out.println("Handling identity card upload event for mentor ID: " + mentorCvDto.getMentor().getId());
+    @EventListener(condition = "#mentorEventDto.message =='IdentityCard'")
+    public void handleMentorUploadIdentity(MentorEventDto mentorEventDto) {
+        System.out.println("Handling identity card upload event for mentor ID: " + mentorEventDto.getMentor().getId());
         try {
             Thread.sleep(5000);
         } catch (InterruptedException ie) {
             Thread.currentThread().interrupt();
         }
-        Mentor mentor = mentorRepository.findById(mentorCvDto.getMentor().getId()).orElse(null);
+        Mentor mentor = mentorRepository.findById(mentorEventDto.getMentor().getId()).orElse(null);
         if(mentor!=null){
             try {
-                uploadCertificate(mentor, mentorCvDto.getFile(),"IdentityCard");
+                uploadCertificate(mentor, mentorEventDto.getFile(),"IdentityCard");
             } catch (IOException e) {
                 throw new RuntimeException(e);
             }
@@ -96,18 +96,18 @@ public class EventListenerHandle {
     }
 
     @Async
-    @EventListener(condition = "#mentorCvDto.message =='Degree'")
-    public void handleMentorUploadDegree(MentorCvDto mentorCvDto) {
-        System.out.println("Handling degree upload event for mentor ID: " + mentorCvDto.getMentor().getId());
+    @EventListener(condition = "#mentorEventDto.message =='Degree'")
+    public void handleMentorUploadDegree(MentorEventDto mentorEventDto) {
+        System.out.println("Handling degree upload event for mentor ID: " + mentorEventDto.getMentor().getId());
         try {
             Thread.sleep(10000);
         } catch (InterruptedException ie) {
             Thread.currentThread().interrupt();
         }
-        Mentor mentor = mentorRepository.findById(mentorCvDto.getMentor().getId()).orElse(null);
+        Mentor mentor = mentorRepository.findById(mentorEventDto.getMentor().getId()).orElse(null);
         if(mentor!=null){
             try {
-                uploadCertificate(mentor, mentorCvDto.getFile(),"Degree");
+                uploadCertificate(mentor, mentorEventDto.getFile(),"Degree");
             } catch (IOException e) {
                 throw new RuntimeException(e);
             }
@@ -115,18 +115,18 @@ public class EventListenerHandle {
     }
 
     @Async
-    @EventListener(condition = "#mentorCvDto.message =='Other'")
-    public void handleMentorUploadOther(MentorCvDto mentorCvDto) {
-        System.out.println("Handling other file upload event for mentor ID: " + mentorCvDto.getMentor().getId());
+    @EventListener(condition = "#mentorEventDto.message =='Other'")
+    public void handleMentorUploadOther(MentorEventDto mentorEventDto) {
+        System.out.println("Handling other file upload event for mentor ID: " + mentorEventDto.getMentor().getId());
         try {
             Thread.sleep(15000);
         } catch (InterruptedException ie) {
             Thread.currentThread().interrupt();
         }
-        Mentor mentor = mentorRepository.findById(mentorCvDto.getMentor().getId()).orElse(null);
+        Mentor mentor = mentorRepository.findById(mentorEventDto.getMentor().getId()).orElse(null);
         if(mentor!=null){
             try {
-                uploadCertificate(mentor, mentorCvDto.getFile(),"Other");
+                uploadCertificate(mentor, mentorEventDto.getFile(),"Other");
             } catch (IOException e) {
                 throw new RuntimeException(e);
             }

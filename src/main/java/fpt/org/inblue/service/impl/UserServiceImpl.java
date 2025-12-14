@@ -1,8 +1,10 @@
 package fpt.org.inblue.service.impl;
 
+import fpt.org.inblue.cloudinary.CloudinaryService;
 import fpt.org.inblue.model.User;
 import fpt.org.inblue.model.dto.CreateUserRequest;
-import fpt.org.inblue.model.dto.UserCvDtoRequest;
+import fpt.org.inblue.model.dto.UserEventDto;
+import fpt.org.inblue.model.dto.UserInfo;
 import fpt.org.inblue.model.enums.Role;
 import fpt.org.inblue.repository.UserRepository;
 import fpt.org.inblue.service.UserService;
@@ -24,6 +26,8 @@ public class UserServiceImpl implements UserService {
 
     @Autowired
     private ApplicationEventPublisher applicationEventPublisher;
+    @Autowired
+    private CloudinaryService cloudinaryService;
 
     @Override
     public List<User> getAll() {
@@ -36,7 +40,7 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
-    public User createUser(CreateUserRequest user) throws IOException {
+    public User createUser(UserInfo user, MultipartFile avatar, MultipartFile cvFile) throws IOException {
         if(user.getId()==null) {
             User userBuilder = User.builder()
                     .name(user.getName())
@@ -51,24 +55,59 @@ public class UserServiceImpl implements UserService {
                     .targetLevel(user.getTargetLevel())
                     .build();
             User savedUser = userRepository.save(userBuilder);
-            if (!user.getCvFile().isEmpty()) {
-                String absolutePath = FileUtil.saveFile(user.getCvFile());
+            if (!cvFile.isEmpty()) {
+                String absolutePath = FileUtil.saveFile(cvFile);
                 File file = FileUtil.getFileByPath(absolutePath);
                 MultipartFile multipartFile = FileUtil.convertFileToMultipart(file);
                 file.delete();
-                applicationEventPublisher.publishEvent(new UserCvDtoRequest(savedUser, multipartFile, "cv"));
+                applicationEventPublisher.publishEvent(new UserEventDto(savedUser, multipartFile, "cv"));
             }
-            if (!user.getAvatar().isEmpty()) {
-                String absolutePath = FileUtil.saveFile(user.getAvatar());
+            if (!avatar.isEmpty()) {
+                String absolutePath = FileUtil.saveFile(avatar);
                 File file = FileUtil.getFileByPath(absolutePath);
                 MultipartFile multipartFile = FileUtil.convertFileToMultipart(file);
                 file.delete();
-                applicationEventPublisher.publishEvent(new UserCvDtoRequest(savedUser, multipartFile, "avatar"));
+                applicationEventPublisher.publishEvent(new UserEventDto(savedUser, multipartFile, "avatar"));
             }
             return savedUser;
         }
-        else
-            return null;
+        else{
+            User updateUser = userRepository.findById(user.getId()).orElseThrow(() -> new RuntimeException("User Not Found"));
+            updateUser.setName(user.getName());
+            updateUser.setEmail(user.getEmail());
+            updateUser.setBio(user.getBio());
+            updateUser.setUniversity(user.getUniversity());
+            updateUser.setMajor(user.getMajor());
+            updateUser.setTargetPosition(user.getTargetPosition());
+            updateUser.setTargetLevel(user.getTargetLevel());
+            updateUser.setPassword(user.getPassword());
+            if(updateUser.getAvatarUrl()!=null) {
+                updateUser.setAvatarUrl(updateUser.getAvatarUrl());
+                updateUser.setPublic_id(updateUser.getPublic_id());
+            }
+            if(updateUser.getCvUrl()!=null) {
+                updateUser.setCvUrl(updateUser.getCvUrl());
+                updateUser.setCv_public_id(updateUser.getCv_public_id());
+            }
+            User savedUser = userRepository.save(updateUser);
+            if (!cvFile.isEmpty()) {
+                cloudinaryService.deletePdf(updateUser.getCv_public_id());
+                String absolutePath = FileUtil.saveFile(cvFile);
+                File file = FileUtil.getFileByPath(absolutePath);
+                MultipartFile multipartFile = FileUtil.convertFileToMultipart(file);
+                file.delete();
+                applicationEventPublisher.publishEvent(new UserEventDto(savedUser, multipartFile, "cv"));
+            }
+            if (!avatar.isEmpty()) {
+                cloudinaryService.deleteImage(updateUser.getPublic_id());
+                String absolutePath = FileUtil.saveFile(avatar);
+                File file = FileUtil.getFileByPath(absolutePath);
+                MultipartFile multipartFile = FileUtil.convertFileToMultipart(file);
+                file.delete();
+                applicationEventPublisher.publishEvent(new UserEventDto(savedUser, multipartFile, "avatar"));
+            }
+            return savedUser;
+        }
     }
 
 

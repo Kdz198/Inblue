@@ -75,6 +75,13 @@ public class CloudinaryService {
         return result;
     }
 
+    public Map deletePdf(String publicId) throws IOException {
+        Map result = cloudinary.uploader().destroy(publicId, ObjectUtils.asMap("resource_type","raw",
+                "invalidate",true));
+        //có thể xóa cache CDN hoặc ko ( thường thì sẽ bị mất sau 1 thời giannn vài phút - vài giờ
+        return result;
+    }
+
     public boolean validate(MultipartFile file){
         String fileName = file.getOriginalFilename();
         String contentType = file.getContentType();
@@ -90,5 +97,7 @@ public class CloudinaryService {
         }
         return true;
     }
+
+
 
 }
