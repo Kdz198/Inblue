@@ -7,9 +7,11 @@ import fpt.org.inblue.repository.UserRepository;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.scheduling.annotation.EnableAsync;
 
 @SpringBootApplication
 @RequiredArgsConstructor
+@EnableAsync
 public class InblueApplication implements CommandLineRunner {
 
     private final UserRepository userRepository;

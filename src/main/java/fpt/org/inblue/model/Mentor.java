@@ -3,6 +3,7 @@ package fpt.org.inblue.model;
 import fpt.org.inblue.model.enums.Role;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
@@ -11,6 +12,7 @@ import java.util.Map;
 @NoArgsConstructor
 @Data
 @AllArgsConstructor
+@Builder
 public class Mentor {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -22,15 +24,18 @@ public class Mentor {
     private boolean isActive;
     private String bio;
     private String avatarUrl;
+    private String public_id;
 
     private String expertise;
-    private String yearsOfExperience;
+    private int yearsOfExperience;
     private String linkedInUrl;
     private String currentCompany;
     private int rate;
-    @ElementCollection
-    @CollectionTable(name = "mentor_certificates", joinColumns = @JoinColumn(name = "mentor_id"))
-    @Column(name = "url")
-    private Map<String, String> certificateUrl;
+    private String identityImg;
+    private String public_id_identity;
+    private String degreeImg;
+    private String public_id_degree;
+    private String otherFile;
+    private String public_id_other;
     private int totalSession;
 }
