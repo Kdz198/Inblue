@@ -23,6 +23,7 @@ public class Mentor {
     private Role role;
     private boolean isActive;
     private String bio;
+
     private String avatarUrl;
     private String public_id;
 
@@ -33,8 +34,10 @@ public class Mentor {
     private int rate;
     private String identityImg;
     private String public_id_identity;
+
     private String degreeImg;
     private String public_id_degree;
+
     private String otherFile;
     private String public_id_other;
     private int totalSession;

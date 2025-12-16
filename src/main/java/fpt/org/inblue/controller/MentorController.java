@@ -33,7 +33,11 @@ public class MentorController {
     }
 
     @PostMapping()
-    public ResponseEntity<Mentor> createMentor(@RequestPart("data") MentorInfo data, @RequestPart(value = "avatar", required = false) MultipartFile avatar, @RequestPart(value = "identityFile", required = false) MultipartFile identityFile, @RequestPart(value = "degreeFile", required = false) MultipartFile degreeFile, @RequestPart(value = "otherFile", required = false) MultipartFile otherFile) throws IOException {
+    public ResponseEntity<Mentor> createMentor(@RequestPart("data") MentorInfo data,
+                                               @RequestPart(value = "avatar", required = false) MultipartFile avatar,
+                                               @RequestPart(value = "identityFile", required = false) MultipartFile identityFile,
+                                               @RequestPart(value = "degreeFile", required = false) MultipartFile degreeFile,
+                                               @RequestPart(value = "otherFile", required = false) MultipartFile otherFile) throws IOException {
 
         Mentor createdMentor = mentorService.createMentor(data, identityFile, degreeFile, otherFile, avatar);
         return ResponseEntity.ok(createdMentor);

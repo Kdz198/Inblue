@@ -81,7 +81,7 @@ public class EventListenerHandle {
     public void handleMentorUploadIdentity(MentorEventDto mentorEventDto) {
         System.out.println("Handling identity card upload event for mentor ID: " + mentorEventDto.getMentor().getId());
         try {
-            Thread.sleep(5000);
+            Thread.sleep(6000);
         } catch (InterruptedException ie) {
             Thread.currentThread().interrupt();
         }
@@ -100,7 +100,7 @@ public class EventListenerHandle {
     public void handleMentorUploadDegree(MentorEventDto mentorEventDto) {
         System.out.println("Handling degree upload event for mentor ID: " + mentorEventDto.getMentor().getId());
         try {
-            Thread.sleep(10000);
+            Thread.sleep(12000);
         } catch (InterruptedException ie) {
             Thread.currentThread().interrupt();
         }
@@ -119,7 +119,7 @@ public class EventListenerHandle {
     public void handleMentorUploadOther(MentorEventDto mentorEventDto) {
         System.out.println("Handling other file upload event for mentor ID: " + mentorEventDto.getMentor().getId());
         try {
-            Thread.sleep(15000);
+            Thread.sleep(18000);
         } catch (InterruptedException ie) {
             Thread.currentThread().interrupt();
         }
