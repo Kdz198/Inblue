@@ -4,6 +4,11 @@ on:
   push:
     branches: [ "master" ]
 
+# Tự cancel các thread workflow trên cùng 1 branch  để tránh race condition
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 env:
   # 👇 TÊN IMAGE CHÍNH XÁC CỦA BẠN TRÊN DOCKER HUB
   IMAGE_NAME: hoangtugio198/inblue-backend
