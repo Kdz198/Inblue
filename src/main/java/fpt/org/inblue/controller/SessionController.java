@@ -42,4 +42,8 @@ public class SessionController {
         return ResponseEntity.ok(sessionService.createSession(sessionCreationRequest));
     }
 
+    @GetMapping("/hello")
+    public String hello() {
+        return "Hello Session Controller";
+    }
 }
