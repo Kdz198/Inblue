@@ -35,10 +35,10 @@ public class EventListenerHandle {
         System.out.println("Handling CV upload event for user ID: " + userEventDto.getUser().getId());
         User user = userRepository.findById(userEventDto.getUser().getId()).orElse(null);
         if (user != null) {
-                try {
-                    uploadPdf(user, userEventDto.getFile());
-                } catch (IOException e) {
-                    throw new RuntimeException(e);
+            try {
+                uploadPdf(user, userEventDto.getFile());
+            } catch (IOException e) {
+                throw new RuntimeException(e);
             }
         }
     }
@@ -65,7 +65,6 @@ public class EventListenerHandle {
     @EventListener(condition = "#mentorEventDto.message == 'avatar'")
     @Async
     public void handleMentorUploadAvatar(MentorEventDto mentorEventDto) {
-        System.out.println("Handling avatar upload event for mentor ID: " + mentorEventDto.getMentor().getId());
         Mentor mentor = mentorRepository.findById(mentorEventDto.getMentor().getId()).orElse(null);
         if (mentor != null) {
             try {
@@ -79,12 +78,6 @@ public class EventListenerHandle {
     @Async
     @EventListener(condition = "#mentorEventDto.message =='IdentityCard'")
     public void handleMentorUploadIdentity(MentorEventDto mentorEventDto) {
-        System.out.println("Handling identity card upload event for mentor ID: " + mentorEventDto.getMentor().getId());
-        try {
-            Thread.sleep(6000);
-        } catch (InterruptedException ie) {
-            Thread.currentThread().interrupt();
-        }
         Mentor mentor = mentorRepository.findById(mentorEventDto.getMentor().getId()).orElse(null);
         if(mentor!=null){
             try {
@@ -98,12 +91,6 @@ public class EventListenerHandle {
     @Async
     @EventListener(condition = "#mentorEventDto.message =='Degree'")
     public void handleMentorUploadDegree(MentorEventDto mentorEventDto) {
-        System.out.println("Handling degree upload event for mentor ID: " + mentorEventDto.getMentor().getId());
-        try {
-            Thread.sleep(12000);
-        } catch (InterruptedException ie) {
-            Thread.currentThread().interrupt();
-        }
         Mentor mentor = mentorRepository.findById(mentorEventDto.getMentor().getId()).orElse(null);
         if(mentor!=null){
             try {
@@ -117,12 +104,6 @@ public class EventListenerHandle {
     @Async
     @EventListener(condition = "#mentorEventDto.message =='Other'")
     public void handleMentorUploadOther(MentorEventDto mentorEventDto) {
-        System.out.println("Handling other file upload event for mentor ID: " + mentorEventDto.getMentor().getId());
-        try {
-            Thread.sleep(18000);
-        } catch (InterruptedException ie) {
-            Thread.currentThread().interrupt();
-        }
         Mentor mentor = mentorRepository.findById(mentorEventDto.getMentor().getId()).orElse(null);
         if(mentor!=null){
             try {
@@ -149,9 +130,7 @@ public class EventListenerHandle {
 
     public void uploadImgMentor(Mentor mentor, MultipartFile file) throws IOException {
         Map<String,String> map = cloudinaryService.uploadImg(file);
-        mentor.setAvatarUrl(map.get("secure_url"));
-        mentor.setPublic_id(map.get("public_id"));
-        mentorRepository.save(mentor);
+        mentorRepository.updateAvatar(mentor.getId(),map.get("secure_url"),map.get("public_id"));
     }
 
     public void uploadCertificate(Mentor mentor, MultipartFile file,String certificateName) throws IOException {
@@ -159,19 +138,13 @@ public class EventListenerHandle {
         String certificateUrl = map.get("secure_url");
         String certificatePublicId = map.get("public_id");
         if(certificateName.equals("IdentityCard")){
-            mentor.setIdentityImg(certificateUrl);
-            mentor.setPublic_id_identity(certificatePublicId);
-            mentorRepository.save(mentor);
+            mentorRepository.updateIdentityCard(mentor.getId(),certificateUrl,certificatePublicId);
         }
         else if(certificateName.equals("Degree")){
-            mentor.setDegreeImg(certificateUrl);
-            mentor.setPublic_id_degree(certificatePublicId);
-            mentorRepository.save(mentor);
+            mentorRepository.updateDegree(mentor.getId(),certificateUrl,certificatePublicId);
         }
         else if(certificateName.equals("Other")){
-            mentor.setOtherFile(certificateUrl);
-            mentor.setPublic_id_other(certificatePublicId);
-            mentorRepository.save(mentor);
+            mentorRepository.updateOtherFile(mentor.getId(),certificateUrl,certificatePublicId);
         }
 
     }

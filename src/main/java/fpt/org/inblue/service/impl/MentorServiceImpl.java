@@ -112,8 +112,6 @@ public class MentorServiceImpl implements MentorService {
             }
            Mentor savedMentor = mentorRepository.save(updateMentor);
            if (!avatar.isEmpty()) {
-               System.out.println("saved mentor " + savedMentor.getPublic_id());
-               System.out.println("update mentor: " + updateMentor.getPublic_id());
                cloudinaryService.deleteImage(updateMentor.getPublic_id());
                String absolutePath = FileUtil.saveFile(avatar);
                File file = FileUtil.getFileByPath(absolutePath);
@@ -122,7 +120,6 @@ public class MentorServiceImpl implements MentorService {
                applicationEventPublisher.publishEvent(new MentorEventDto(savedMentor, avata,"avatar"));
            }
            if (!identityFile.isEmpty()) {
-               System.out.println("Deleting old identity file with public ID: " + savedMentor.getPublic_id_identity());
                cloudinaryService.deletePdf(updateMentor.getPublic_id_identity());
                String absolutePath = FileUtil.saveFile(identityFile);
                File file = FileUtil.getFileByPath(absolutePath);
@@ -131,7 +128,6 @@ public class MentorServiceImpl implements MentorService {
                applicationEventPublisher.publishEvent(new MentorEventDto(savedMentor, identity,"IdentityCard"));
            }
            if (!degreeFile.isEmpty()) {
-               System.out.println("Deleting old degree file with public ID: " + savedMentor.getPublic_id_degree());
                cloudinaryService.deletePdf(updateMentor.getPublic_id_degree());
                String absolutePath = FileUtil.saveFile(degreeFile);
                File file = FileUtil.getFileByPath(absolutePath);
