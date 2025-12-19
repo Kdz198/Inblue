@@ -28,7 +28,7 @@ public class Session {
     private Long durationSeconds1;
 
     // Thông tin người dùng 2
-    private int mentorId;
+    private int userId2;
     private String participantId2;
     private Timestamp startTime2;
     private Timestamp endTime2;

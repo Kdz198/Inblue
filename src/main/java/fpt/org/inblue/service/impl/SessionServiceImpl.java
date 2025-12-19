@@ -2,9 +2,10 @@ package fpt.org.inblue.service.impl;
 
 import fpt.org.inblue.exception.CustomException;
 import fpt.org.inblue.model.Session;
-import fpt.org.inblue.model.dto.SessionCreationRequest;
-import fpt.org.inblue.model.dto.DailyCoCreationRequest;
-import fpt.org.inblue.model.dto.SessionResponse;
+import fpt.org.inblue.model.dto.JoinSessionDtoRequest;
+import fpt.org.inblue.model.dto.dailyco.SessionCreationRequest;
+import fpt.org.inblue.model.dto.dailyco.DailyCoCreationRequest;
+import fpt.org.inblue.model.dto.dailyco.SessionResponse;
 import fpt.org.inblue.model.enums.SessionStatus;
 import fpt.org.inblue.repository.SessionRepository;
 import fpt.org.inblue.service.SessionService;
@@ -13,6 +14,7 @@ import org.springframework.http.*;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 
+import java.sql.Timestamp;
 import java.util.List;
 
 @Service
@@ -50,11 +52,6 @@ public class SessionServiceImpl implements SessionService {
     @Override
     public List<Session> getSessionsByUserId(int userId) {
         return sessionRepository.findAllByUserIdOrMentorId(userId, userId);
-    }
-
-    @Override
-    public Session createSession(Session session) {
-        return sessionRepository.save(session);
     }
 
     @Override
@@ -102,7 +99,7 @@ public class SessionServiceImpl implements SessionService {
             session.setRoomName(response.getBody().getName());
             session.setRoomUrl(response.getBody().getUrl());
             session.setUserId(request.getUserId());
-            session.setMentorId(request.getMentorId());
+            session.setUserId2(request.getMentorId());
             session.setStatus(SessionStatus.SCHEDULED);
             sessionRepository.save(session);
             return response.getBody();
@@ -111,4 +108,39 @@ public class SessionServiceImpl implements SessionService {
             throw new RuntimeException("Lỗi khi tạo Session trên Daily.co: " + response.getStatusCode());
         }
     }
+
+    /**
+     * Endpoint để logging khi có participant join vào phòng
+     * Hàm này sẽ nhận về một JoinSessionDtoRequest từ webhook của Daily.co
+     * trong đó có participantId và sessionName (tên phòng)
+     * khi có người join thì fe sẽ lắng nghe sự kiện join metting ở dailt.co và sau đó đã có participant từ sự kiện đó rồi mới gửi về endpoint này để ghi nhận tracking người dùng tham gia vào db
+     */
+    @Override
+    public void saveJoinRecord(JoinSessionDtoRequest request) {
+        Session session = sessionRepository.findByRoomName(request.getSessionName());
+        if(session == null) {
+            throw new CustomException("Session not found", HttpStatus.NOT_FOUND);}
+        if(session != null && session.getUserId() == request.getUserId()) {
+            session.setParticipantId1(request.getParticipantId());
+            session.setStatus(SessionStatus.ONGOING);
+            session.setStartTime1(helperConvertToVietNamTime());
+        }
+        else if(session != null && session.getUserId2() == request.getUserId()) {
+            session.setParticipantId2(request.getParticipantId());
+            session.setStartTime2(helperConvertToVietNamTime());
+        }
+        else{
+            throw new CustomException("User not in session", HttpStatus.FORBIDDEN);
+        }
+        sessionRepository.save(session);
+    }
+
+    public Timestamp helperConvertToVietNamTime() {
+        long now = System.currentTimeMillis();
+        // Chuyển đổi từ giây sang milliseconds
+        long milliseconds = now + (7 * 60 * 60 * 1000); // Giờ Việt Nam là UTC+7
+        // Tạo đối tượng Timestamp
+        return new Timestamp(milliseconds);
+    }
+
 }
