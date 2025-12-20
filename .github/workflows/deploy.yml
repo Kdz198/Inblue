@@ -1,38 +1,72 @@
-name: Build & Push to Docker Hub
+name: CI/CD Pipeline
 
 on:
   push:
     branches: [ "master" ]
 
-# Tự cancel các thread workflow trên cùng 1 branch  để tránh race condition
+# Tự cancel các thread workflow trên cùng 1 branch để tránh race condition
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
 env:
-  # 👇 TÊN IMAGE CHÍNH XÁC CỦA BẠN TRÊN DOCKER HUB
   IMAGE_NAME: hoangtugio198/inblue-backend
 
 jobs:
-  build-and-push:
+  build-and-test-then-push:
     runs-on: ubuntu-latest
+    
+    # Tạo DB Container để test Connect JPA Repository
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_DB: Inblue
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: password
+        ports:
+          - 5432:5432
+        # Healthcheck DB rồi mới chạy test
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
 
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      # 1. Đăng nhập vào Docker Hub
+      # 1. install jdk 21
+      - name: Set up JDK 21
+        uses: actions/setup-java@v4
+        with:
+          java-version: '21'
+          distribution: 'temurin'
+          cache: maven
+
+      # 2. Chay test khoi dong Spring Context
+      # dung mvnw maven wrapper de bat github phai su dung chinh xac maven cua src code
+      - name: Run Tests with Maven
+        run: ./mvnw clean verify
+        env:
+          # Cấu hình để App trỏ vào DB container của GitHub Service
+          SPRING_DATASOURCE_URL: jdbc:postgresql://localhost:5432/Inblue
+          SPRING_DATASOURCE_USERNAME: postgres
+          SPRING_DATASOURCE_PASSWORD: password
+          SPRING_JPA_HIBERNATE_DDL_AUTO: create
+
+      # 3. Chỉ khi Test PASS mới Login Docker Hub
       - name: Login to Docker Hub
         uses: docker/login-action@v3
         with:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
-      # 2. Build Docker Image và Đẩy lên
+      # 4. Build Docker Image và Đẩy lên
       - name: Build and push
         uses: docker/build-push-action@v5
         with:
           context: .
           push: true
-          # Đẩy lên với tag 'latest'
           tags: ${{ env.IMAGE_NAME }}:latest
