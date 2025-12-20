@@ -4,7 +4,7 @@ on:
   push:
     branches: [ "master" ]
 
-# Tự cancel các thread workflow trên cùng 1 branch để tránh race condition
+# Tự cancel các thread workflow cũ trên cùng 1 branch để tiết kiệm resource
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
@@ -15,8 +15,8 @@ env:
 jobs:
   build-and-test-then-push:
     runs-on: ubuntu-latest
-    
-    # Tạo DB Container để test Connect JPA Repository
+
+    # Service Container: Tạo DB ảo để Spring Boot test kết nối lúc khởi động
     services:
       postgres:
         image: postgres:16
@@ -26,7 +26,7 @@ jobs:
           POSTGRES_PASSWORD: password
         ports:
           - 5432:5432
-        # Healthcheck DB rồi mới chạy test
+        # Healthcheck đảm bảo DB sẵn sàng trước khi chạy Java
         options: >-
           --health-cmd pg_isready
           --health-interval 10s
@@ -37,7 +37,6 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      # 1. install jdk 21
       - name: Set up JDK 21
         uses: actions/setup-java@v4
         with:
@@ -45,27 +44,41 @@ jobs:
           distribution: 'temurin'
           cache: maven
 
-      # 2. Chay test khoi dong Spring Context
-      # dung mvnw maven wrapper de bat github phai su dung chinh xac maven cua src code
+      # Chay Test khoi dong spring context
+      # 1. Dung chmod de cap quyen cho mvnw - mavenwrapper
       - name: Run Tests with Maven
         run: |
           chmod +x mvnw
           ./mvnw clean verify
         env:
-          # Cấu hình để App trỏ vào DB container của GitHub Service
+          # --- Cấu hình DB ảo ---
           SPRING_DATASOURCE_URL: jdbc:postgresql://localhost:5432/Inblue
           SPRING_DATASOURCE_USERNAME: postgres
           SPRING_DATASOURCE_PASSWORD: password
           SPRING_JPA_HIBERNATE_DDL_AUTO: create
 
-      # 3. Chỉ khi Test PASS mới Login Docker Hub
+          # --- Fake env for bypass @Value check ---
+          # Swagger
+          APP_OPENAPI_PROD_URL: "https://api.fake-test.com"
+          APP_OPENAPI_DEV_URL: "http://localhost:8080"
+
+          # Cloudinary
+          CLOUDINARY_CLOUD_NAME: "dummy-cloud"
+          CLOUDINARY_API_KEY: "1234567890"
+          CLOUDINARY_API_SECRET: "this-is-fake"
+
+          # Daily.co
+          DAILY_API_URL: "https://api.dummy.daily.co/v1"
+          DAILY_DOMAIN: "dummy.daily.co"
+          DAILY_API_KEY: "this-is-fake"
+
+      # Chỉ chạy khi bước Test bên trên Success
       - name: Login to Docker Hub
         uses: docker/login-action@v3
         with:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
-      # 4. Build Docker Image và Đẩy lên
       - name: Build and push
         uses: docker/build-push-action@v5
         with:
