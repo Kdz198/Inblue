@@ -6,7 +6,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import java.util.List;
 
 public interface SessionRepository extends JpaRepository<Session, Integer> {
-    List<Session> findAllByUserIdOrMentorId(int userId, int mentorId);
+    List<Session> findAllByUserId(int userId);
 
     Session findByRoomName(String roomName);
 }

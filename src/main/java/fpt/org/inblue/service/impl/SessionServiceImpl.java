@@ -51,7 +51,7 @@ public class SessionServiceImpl implements SessionService {
 
     @Override
     public List<Session> getSessionsByUserId(int userId) {
-        return sessionRepository.findAllByUserIdOrMentorId(userId, userId);
+        return sessionRepository.findAllByUserId(userId);
     }
 
     @Override
