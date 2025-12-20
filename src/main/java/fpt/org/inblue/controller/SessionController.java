@@ -2,6 +2,7 @@ package fpt.org.inblue.controller;
 
 import fpt.org.inblue.model.Session;
 import fpt.org.inblue.model.dto.JoinSessionDtoRequest;
+import fpt.org.inblue.model.dto.dailyco.DailyWebHookPayload;
 import fpt.org.inblue.model.dto.dailyco.SessionCreationRequest;
 import fpt.org.inblue.model.dto.dailyco.SessionResponse;
 import fpt.org.inblue.service.SessionService;
@@ -43,6 +44,14 @@ public class SessionController {
     @PostMapping("join-session")
     public ResponseEntity<Void> saveJoinRecord(@RequestBody JoinSessionDtoRequest request) {
         sessionService.saveJoinRecord(request);
+        return ResponseEntity.ok().build();
+    }
+
+    @PostMapping("webhooks/dailyco")
+    public ResponseEntity<Void> handleDailyCoWebhook(@RequestBody DailyWebHookPayload payload) {
+        if("participant.left".equals(payload.getEvent())) {
+            sessionService.updateLeaveRecord(payload);
+        }
         return ResponseEntity.ok().build();
     }
 }
