@@ -3,6 +3,7 @@ package fpt.org.inblue.service.impl;
 import fpt.org.inblue.exception.CustomException;
 import fpt.org.inblue.model.Session;
 import fpt.org.inblue.model.dto.JoinSessionDtoRequest;
+import fpt.org.inblue.model.dto.dailyco.DailyWebHookPayload;
 import fpt.org.inblue.model.dto.dailyco.SessionCreationRequest;
 import fpt.org.inblue.model.dto.dailyco.DailyCoCreationRequest;
 import fpt.org.inblue.model.dto.dailyco.SessionResponse;
@@ -133,6 +134,36 @@ public class SessionServiceImpl implements SessionService {
             throw new CustomException("User not in session", HttpStatus.FORBIDDEN);
         }
         sessionRepository.save(session);
+    }
+
+    @Override
+    public void updateLeaveRecord(DailyWebHookPayload payload) {
+        String roomName = payload.getPayload().getRoomName();
+        String participantId = payload.getPayload().getParticipantId();
+        Session session = sessionRepository.findByRoomName(roomName);
+        if(session == null) {
+            throw new CustomException("Session not found", HttpStatus.NOT_FOUND);
+        }
+        else{
+            if(participantId.equals(session.getParticipantId1())) {
+                session.setEndTime1(helperConvertToVietNamTime());
+                long duaration = (session.getEndTime1().getTime() - session.getStartTime1().getTime()) / 1000L; // tính bằng giây
+                session.setDurationSeconds1(duaration);
+            }
+            else if(participantId.equals(session.getParticipantId2())) {
+                session.setEndTime2(helperConvertToVietNamTime());
+                long duaration = (session.getEndTime2().getTime() - session.getStartTime2().getTime()) / 1000L;
+                session.setDurationSeconds2(duaration);
+            }
+            else{
+                throw new CustomException("Participant Id is not in this session", HttpStatus.FORBIDDEN);
+            }
+            //nếu cả 2 cùng rời thì mới kết thúc session
+            if(session.getEndTime1() != null && session.getEndTime2() != null) {
+                session.setStatus(SessionStatus.COMPLETED);
+            }
+            sessionRepository.save(session);
+        }
     }
 
     public Timestamp helperConvertToVietNamTime() {

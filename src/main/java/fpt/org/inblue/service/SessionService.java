@@ -2,6 +2,7 @@ package fpt.org.inblue.service;
 
 import fpt.org.inblue.model.Session;
 import fpt.org.inblue.model.dto.JoinSessionDtoRequest;
+import fpt.org.inblue.model.dto.dailyco.DailyWebHookPayload;
 import fpt.org.inblue.model.dto.dailyco.SessionCreationRequest;
 import fpt.org.inblue.model.dto.dailyco.SessionResponse;
 
@@ -16,5 +17,6 @@ public interface SessionService {
     //cho tạo session để chat
     public SessionResponse createSession(SessionCreationRequest request);
     public void saveJoinRecord(JoinSessionDtoRequest request);
+    void updateLeaveRecord(DailyWebHookPayload payload);
 
 }
