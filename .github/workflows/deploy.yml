@@ -48,7 +48,9 @@ jobs:
       # 2. Chay test khoi dong Spring Context
       # dung mvnw maven wrapper de bat github phai su dung chinh xac maven cua src code
       - name: Run Tests with Maven
-        run: ./mvnw clean verify
+        run: |
+          chmod +x mvnw
+          ./mvnw clean verify
         env:
           # Cấu hình để App trỏ vào DB container của GitHub Service
           SPRING_DATASOURCE_URL: jdbc:postgresql://localhost:5432/Inblue
