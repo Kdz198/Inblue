@@ -13,6 +13,7 @@ import fpt.org.inblue.service.SessionService;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.*;
 import org.springframework.stereotype.Service;
+import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.RestTemplate;
 
 import java.sql.Timestamp;
@@ -52,7 +53,7 @@ public class SessionServiceImpl implements SessionService {
 
     @Override
     public List<Session> getSessionsByUserId(int userId) {
-        return sessionRepository.findAllByUserId(userId);
+        return sessionRepository.findAllByUserIdOrUserId2(userId, userId);
     }
 
     @Override
@@ -163,6 +164,36 @@ public class SessionServiceImpl implements SessionService {
                 session.setStatus(SessionStatus.COMPLETED);
             }
             sessionRepository.save(session);
+        }
+    }
+
+    /**
+     * Xóa một phòng họp trên Daily.co dựa trên tên phòng.
+     * @param roomName Tên phòng cần xóa
+     * xóa khi kết thúc hoặc xóa theo định kì cx đc do nếu quá exp thì phòng để cx ko có tác dụng nữa
+     */
+    @Override
+    public void deleteSession(String roomName) {
+        HttpHeaders headers = new HttpHeaders();
+        headers.setBearerAuth(dailyApiKey);
+        HttpEntity<Void> entity = new HttpEntity<>(headers);
+        String apiUrl = dailyApiUrl + "/rooms/" + roomName;
+        try{
+            restTemplate.exchange(
+                    apiUrl,
+                    HttpMethod.DELETE,
+                    entity,
+                    Void.class
+            );
+        }
+        catch (HttpClientErrorException e) {
+            // Daily.co trả về 404 nếu phòng đã bị xóa trước đó
+            if (e.getStatusCode() == HttpStatus.NOT_FOUND) {
+                System.out.println("Phòng '" + roomName + "' không tồn tại (đã xóa).");
+            } else {
+                System.err.println(" Lỗi khi xóa phòng: " + e.getResponseBodyAsString());
+                throw new RuntimeException("Lỗi REST API khi xóa phòng: " + e.getMessage());
+            }
         }
     }
 

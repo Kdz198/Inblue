@@ -19,4 +19,5 @@ public interface SessionService {
     public void saveJoinRecord(JoinSessionDtoRequest request);
     void updateLeaveRecord(DailyWebHookPayload payload);
 
+    void deleteSession(String roomName);
 }
