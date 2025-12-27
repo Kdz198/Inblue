@@ -9,9 +9,9 @@ import org.hibernate.annotations.CreationTimestamp;
 import java.time.LocalDateTime;
 
 @Entity
-@AllArgsConstructor
 @NoArgsConstructor
 @Data
+@AllArgsConstructor
 public class Notification {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -21,7 +21,7 @@ public class Notification {
     private User user;
     private String title;
     private String message;
-    private boolean isRead;
+    private Boolean isRead = false;
     @CreationTimestamp
     private LocalDateTime createAt;
 }

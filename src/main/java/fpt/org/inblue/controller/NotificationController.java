@@ -24,6 +24,8 @@ public class NotificationController {
         Notification createdNotification = notificationService.createNotification(notification);
         return ResponseEntity.ok(createdNotification);
     }
+
+
     @GetMapping("/check-read/{notificationId}")
     public ResponseEntity<Boolean> checkRead(@PathVariable int notificationId) {
         boolean result = notificationService.checkRead(notificationId);

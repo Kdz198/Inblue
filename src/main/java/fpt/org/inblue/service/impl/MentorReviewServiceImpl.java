@@ -2,6 +2,8 @@ package fpt.org.inblue.service.impl;
 
 import fpt.org.inblue.exception.CustomException;
 import fpt.org.inblue.model.MentorReview;
+import fpt.org.inblue.model.Session;
+import fpt.org.inblue.model.enums.SessionStatus;
 import fpt.org.inblue.repository.MentorReviewRepository;
 import fpt.org.inblue.repository.SessionRepository;
 import fpt.org.inblue.service.MentorReviewService;
@@ -21,7 +23,13 @@ public class MentorReviewServiceImpl implements MentorReviewService {
 
     @Override
     public MentorReview mentorReview(MentorReview mentorReview) {
-        return repo.save(mentorReview);
+        Session session = sessionRepo.findById(mentorReview.getSession().getId()).orElse(null);
+        if(session.getStatus().equals(SessionStatus.COMPLETED)) {
+            return repo.save(mentorReview);
+        }
+        else{
+            throw new CustomException("Cannot review mentor for a session that is not completed", HttpStatus.BAD_REQUEST);
+        }
     }
 
     @Override

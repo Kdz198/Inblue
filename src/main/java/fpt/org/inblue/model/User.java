@@ -19,7 +19,7 @@ public class User {
     private String email;
     private String password;
     private Role role;
-    private boolean isActive;
+    private Boolean isActive;
     private String bio;
     private String avatarUrl;
     private String public_id;

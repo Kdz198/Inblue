@@ -36,7 +36,7 @@ public class NotificationServiceImpl implements NotificationService {
     public boolean checkRead(int notificationId) {
         if(notificationRepository.existsById(notificationId)){
             Notification notification = notificationRepository.findById(notificationId).get();
-            notification.setRead(true);
+            notification.setIsRead(true);
             notificationRepository.save(notification);
             return true;
         }
