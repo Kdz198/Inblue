@@ -1,4 +1,4 @@
-package fpt.org.inblue.model.dto;
+package fpt.org.inblue.model.dto.request;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;

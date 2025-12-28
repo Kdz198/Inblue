@@ -1,11 +1,9 @@
 package fpt.org.inblue.controller;
 
 import fpt.org.inblue.model.Mentor;
-import fpt.org.inblue.model.dto.CreateMentorRequest;
 import fpt.org.inblue.model.dto.MentorInfo;
 import fpt.org.inblue.service.MentorService;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;

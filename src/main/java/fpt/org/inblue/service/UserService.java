@@ -1,7 +1,6 @@
 package fpt.org.inblue.service;
 
 import fpt.org.inblue.model.User;
-import fpt.org.inblue.model.dto.CreateUserRequest;
 import fpt.org.inblue.model.dto.UserInfo;
 import org.springframework.web.multipart.MultipartFile;
 

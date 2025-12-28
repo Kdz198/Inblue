@@ -3,7 +3,7 @@ package fpt.org.inblue.service.impl;
 import fpt.org.inblue.cloudinary.CloudinaryService;
 import fpt.org.inblue.exception.CustomException;
 import fpt.org.inblue.model.Mentor;
-import fpt.org.inblue.model.dto.CreateMentorRequest;
+import fpt.org.inblue.model.dto.request.CreateMentorRequest;
 import fpt.org.inblue.model.dto.MentorEventDto;
 import fpt.org.inblue.model.dto.MentorInfo;
 import fpt.org.inblue.model.enums.Role;

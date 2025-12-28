@@ -1,17 +1,10 @@
-package fpt.org.inblue.model.dto;
+package fpt.org.inblue.model.dto.request;
 
-import fpt.org.inblue.model.enums.Role;
-import jakarta.annotation.Nullable;
-import jakarta.persistence.CollectionTable;
-import jakarta.persistence.Column;
-import jakarta.persistence.ElementCollection;
-import jakarta.persistence.JoinColumn;
+import fpt.org.inblue.model.dto.MentorInfo;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import org.springframework.web.multipart.MultipartFile;
-
-import java.util.Map;
 
 @Data
 @AllArgsConstructor

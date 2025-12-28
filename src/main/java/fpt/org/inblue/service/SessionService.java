@@ -1,7 +1,7 @@
 package fpt.org.inblue.service;
 
 import fpt.org.inblue.model.Session;
-import fpt.org.inblue.model.dto.JoinSessionDtoRequest;
+import fpt.org.inblue.model.dto.request.JoinSessionDtoRequest;
 import fpt.org.inblue.model.dto.dailyco.DailyWebHookPayload;
 import fpt.org.inblue.model.dto.dailyco.SessionCreationRequest;
 import fpt.org.inblue.model.dto.dailyco.SessionResponse;

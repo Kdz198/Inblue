@@ -1,6 +1,6 @@
-package fpt.org.inblue.model.dto;
+package fpt.org.inblue.model.dto.request;
 
-import fpt.org.inblue.model.enums.Role;
+import fpt.org.inblue.model.dto.UserInfo;
 import jakarta.annotation.Nullable;
 import lombok.AllArgsConstructor;
 import lombok.Data;

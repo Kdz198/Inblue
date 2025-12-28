@@ -1,7 +1,6 @@
 package fpt.org.inblue.service;
 
 import fpt.org.inblue.model.Mentor;
-import fpt.org.inblue.model.dto.CreateMentorRequest;
 import fpt.org.inblue.model.dto.MentorInfo;
 import org.springframework.web.multipart.MultipartFile;
 

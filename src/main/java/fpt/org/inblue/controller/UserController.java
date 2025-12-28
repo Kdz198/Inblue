@@ -1,8 +1,6 @@
 package fpt.org.inblue.controller;
 
 import fpt.org.inblue.model.User;
-import fpt.org.inblue.model.dto.CreateUserRequest;
-import fpt.org.inblue.model.dto.MentorInfo;
 import fpt.org.inblue.model.dto.UserInfo;
 import fpt.org.inblue.service.UserService;
 import org.springframework.beans.factory.annotation.Autowired;
