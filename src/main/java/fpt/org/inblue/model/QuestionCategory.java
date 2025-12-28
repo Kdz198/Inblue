@@ -17,7 +17,4 @@ public class QuestionCategory {
     int id;
     String categoryName;
     String description;
-    @JoinColumn(name = "major_id")
-    @ManyToOne
-    Major major;
 }

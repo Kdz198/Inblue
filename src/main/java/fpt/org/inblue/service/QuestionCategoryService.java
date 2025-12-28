@@ -11,5 +11,4 @@ public interface QuestionCategoryService {
     void deleteQuestionCategory(int id);
     List<QuestionCategory> getAllQuestionCategories();
 
-    List<QuestionCategory> getQuestionCategoriesByMajor(int majorId);
 }

@@ -2,10 +2,7 @@ package fpt.org.inblue.model;
 
 import fpt.org.inblue.model.enums.QuestionLevel;
 import fpt.org.inblue.model.enums.TargetLevel;
-import jakarta.persistence.Entity;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
+import jakarta.persistence.*;
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -24,4 +21,7 @@ public class QuestionSet {
     String questionSetName;
     String objective;
     TargetLevel level;
+    @JoinColumn(name = "major_id")
+    @ManyToOne
+    Major major;
 }
