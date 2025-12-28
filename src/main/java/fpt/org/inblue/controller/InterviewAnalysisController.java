@@ -24,6 +24,7 @@ public class InterviewAnalysisController {
 
         // Todo implement logic call Python service
         FaceAnalysisResponse response = faceAnalysisService.analyzeFace(file);
+        System.out.println("Name file received: " + file.getOriginalFilename());
 
         return null;
     }
