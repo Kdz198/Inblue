@@ -49,8 +49,5 @@ public class QuestionCategoryServiceImpl implements QuestionCategoryService {
         return questionCategoryRepository.findAll();
     }
 
-    @Override
-    public List<QuestionCategory> getQuestionCategoriesByMajor(int majorId) {
-        return questionCategoryRepository.findAllByMajor_Id(majorId);
-    }
+
 }

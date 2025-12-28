@@ -25,11 +25,6 @@ public class QuestionCategoryController {
         return ResponseEntity.ok(questionCategory);
     }
 
-    @GetMapping("major/{majorId}")
-    public ResponseEntity<List<QuestionCategory>> findByMajorId(@PathVariable int majorId){
-        List<QuestionCategory> questionCategories = questionCategoryService.getQuestionCategoriesByMajor(majorId);
-        return ResponseEntity.ok(questionCategories);
-    }
 
     @PostMapping
     public ResponseEntity<QuestionCategory> createQuestionCategory(@RequestBody QuestionCategory questionCategory) {
