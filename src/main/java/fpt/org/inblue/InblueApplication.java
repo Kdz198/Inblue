@@ -16,7 +16,6 @@ public class InblueApplication implements CommandLineRunner {
 
     private final UserRepository userRepository;
 
-    private final Repository repository;
 
     public static void main(String[] args) {
         SpringApplication.run(InblueApplication.class, args);
@@ -25,6 +24,6 @@ public class InblueApplication implements CommandLineRunner {
 
     @Override
     public void run(String... args) throws Exception {
-        repository.save(new Student(null, "John Doe", "WTFBRO"));
+
     }
 }
