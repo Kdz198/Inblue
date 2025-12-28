@@ -4,6 +4,7 @@ import fpt.org.inblue.model.User;
 import fpt.org.inblue.model.dto.UserInfo;
 import fpt.org.inblue.service.UserService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
@@ -23,7 +24,7 @@ public class UserController {
         return ResponseEntity.ok(userService.getAll());
     }
 
-    @PostMapping()
+    @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<User> createUser(@RequestPart("data") UserInfo data,
                                            @RequestPart(value = "avatar", required = false) MultipartFile avatar,
                                              @RequestPart(value = "cvFile", required = false) MultipartFile cvFile

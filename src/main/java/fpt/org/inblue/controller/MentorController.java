@@ -4,6 +4,7 @@ import fpt.org.inblue.model.Mentor;
 import fpt.org.inblue.model.dto.MentorInfo;
 import fpt.org.inblue.service.MentorService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
@@ -30,7 +31,7 @@ public class MentorController {
         return ResponseEntity.ok(mentor);
     }
 
-    @PostMapping()
+    @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<Mentor> createMentor(@RequestPart("data") MentorInfo data,
                                                @RequestPart(value = "avatar", required = false) MultipartFile avatar,
                                                @RequestPart(value = "identityFile", required = false) MultipartFile identityFile,
