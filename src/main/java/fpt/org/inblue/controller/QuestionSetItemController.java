@@ -1,5 +1,6 @@
 package fpt.org.inblue.controller;
 
+import fpt.org.inblue.model.QuestionSet;
 import fpt.org.inblue.model.QuestionSetItem;
 import fpt.org.inblue.service.QuestionSetItemService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -43,4 +44,9 @@ public class QuestionSetItemController {
     public ResponseEntity<Void> deleteQuestionSetItem(@PathVariable int id) {
         questionSetItemService.deleteQuestionSetItem(id);
         return ResponseEntity.noContent().build();}
+
+    @PostMapping("create-items")
+    public ResponseEntity<List<QuestionSetItem>> createQuestionSetItems(@RequestParam int easy, @RequestParam int medium, @RequestParam int hard, @RequestBody QuestionSet questionSet) {
+        List<QuestionSetItem> questionSetItems = questionSetItemService.createQuestionSetItems(easy, medium, hard, questionSet);
+    return ResponseEntity.ok(questionSetItems);}
 }

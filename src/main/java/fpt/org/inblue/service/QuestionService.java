@@ -13,4 +13,8 @@ public interface QuestionService {
 
     List<Question> getQuestionsByCategoryAndLevel(int categoryId, String level);
 
+    List<Question> getRandomQuestionsByLevel(String level, int count);
+
+    List<Question> createQuestionList(List<Question> questions);
+
 }

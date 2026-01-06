@@ -3,10 +3,11 @@ package fpt.org.inblue.service.impl;
 import fpt.org.inblue.exception.CustomException;
 import fpt.org.inblue.model.Question;
 import fpt.org.inblue.model.enums.QuestionLevel;
-import fpt.org.inblue.repository.QuestionCategoryRepository;
+
 import fpt.org.inblue.repository.QuestionRepository;
 import fpt.org.inblue.service.QuestionService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 
@@ -52,5 +53,15 @@ public class QuestionServiceImpl implements QuestionService {
     @Override
     public List<Question> getQuestionsByCategoryAndLevel(int categoryId, String level) {
         return questionRepository.findAllByCategory_IdAndLevel(categoryId, QuestionLevel.valueOf(level));
+    }
+
+    @Override
+    public List<Question> getRandomQuestionsByLevel(String level, int count) {
+        return questionRepository.findRandomByLevel(QuestionLevel.valueOf(level), PageRequest.of(0, count));
+    }
+
+    @Override
+    public List<Question> createQuestionList(List<Question> questions) {
+        return questionRepository.saveAll(questions);
     }
 }

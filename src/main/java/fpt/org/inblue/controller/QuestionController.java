@@ -45,4 +45,15 @@ public class QuestionController {
         questionService.deleteQuestion(id);
         return ResponseEntity.noContent().build();
     }
+
+    @GetMapping("random-by-level")
+    public ResponseEntity<List<Question>> getRandomQuestionsByLevel(@RequestParam String level, @RequestParam int count) {
+        List<Question> questions = questionService.getRandomQuestionsByLevel(level, count);
+        return ResponseEntity.ok(questions);}
+
+    @PostMapping("save-all")
+    public ResponseEntity<List<Question>> createQuestionList(@RequestBody List<Question> questions) {
+        List<Question> createdQuestions = questionService.createQuestionList(questions);
+        return ResponseEntity.ok(createdQuestions);
+    }
 }
