@@ -3,6 +3,7 @@ package fpt.org.inblue.controller;
 import fpt.org.inblue.model.Mentor;
 import fpt.org.inblue.model.dto.MentorInfo;
 import fpt.org.inblue.service.MentorService;
+import io.swagger.v3.oas.annotations.Operation;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -30,7 +31,7 @@ public class MentorController {
         Mentor mentor = mentorService.getMentorById(id);
         return ResponseEntity.ok(mentor);
     }
-
+    @Operation(summary = "dùng chung cho create và update mentor, nếu create thì ko có id còn update thì có id gửi kèm trong json data á")
     @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<Mentor> createMentor(@RequestPart("data") MentorInfo data,
                                                @RequestPart(value = "avatar", required = false) MultipartFile avatar,

@@ -3,10 +3,7 @@ package fpt.org.inblue.service.impl;
 import fpt.org.inblue.exception.CustomException;
 import fpt.org.inblue.model.Session;
 import fpt.org.inblue.model.dto.request.JoinSessionDtoRequest;
-import fpt.org.inblue.model.dto.dailyco.DailyWebHookPayload;
-import fpt.org.inblue.model.dto.dailyco.SessionCreationRequest;
-import fpt.org.inblue.model.dto.dailyco.DailyCoCreationRequest;
-import fpt.org.inblue.model.dto.dailyco.SessionResponse;
+import fpt.org.inblue.model.dto.dailyco.*;
 import fpt.org.inblue.model.enums.SessionStatus;
 import fpt.org.inblue.repository.SessionRepository;
 import fpt.org.inblue.service.SessionService;
@@ -115,7 +112,7 @@ public class SessionServiceImpl implements SessionService {
      * Endpoint để logging khi có participant join vào phòng
      * Hàm này sẽ nhận về một JoinSessionDtoRequest từ webhook của Daily.co
      * trong đó có participantId và sessionName (tên phòng)
-     * khi có người join thì fe sẽ lắng nghe sự kiện join metting ở dailt.co và sau đó đã có participant từ sự kiện đó rồi mới gửi về endpoint này để ghi nhận tracking người dùng tham gia vào db
+     * khi có người join thì fe sẽ lắng nghe sự kiện join meeting ở daily.co và sau đó đã có participant từ sự kiện đó rồi mới gửi về endpoint này để ghi nhận tracking người dùng tham gia vào db
      */
     @Override
     public void saveJoinRecord(JoinSessionDtoRequest request) {
@@ -203,6 +200,28 @@ public class SessionServiceImpl implements SessionService {
         long milliseconds = now + (7 * 60 * 60 * 1000); // Giờ Việt Nam là UTC+7
         // Tạo đối tượng Timestamp
         return new Timestamp(milliseconds);
+    }
+
+    public List<RecordingMetadata> fetchAllRecordings() {
+        HttpHeaders headers = new HttpHeaders();
+        headers.setBearerAuth(dailyApiKey);
+        HttpEntity<String> entity = new HttpEntity<>(headers);
+        try {
+            ResponseEntity<RecordingResponse> response = restTemplate.exchange(
+                    dailyApiUrl + "/recordings",
+                    HttpMethod.GET,
+                    entity,
+                    RecordingResponse.class
+            );
+            if (response.getStatusCode() == HttpStatus.OK && response.getBody() != null) {
+                return response.getBody().getData();
+            } else {
+                throw new RuntimeException("Lỗi khi lấy danh sách recordings: " + response.getStatusCode());
+            }
+        }
+        catch (HttpClientErrorException e) {
+            throw new RuntimeException("Lỗi REST API khi lấy danh sách recordings: " + e.getMessage());
+        }
     }
 
 }

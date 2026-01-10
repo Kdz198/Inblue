@@ -7,12 +7,12 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.experimental.FieldDefaults;
 
-@Entity
 @AllArgsConstructor
 @NoArgsConstructor
+@Entity
 @Data
 @FieldDefaults(level = AccessLevel.PRIVATE)
-public class MentorReview {
+public class MentorFeedback {
     @Id
     int id;
     @MapsId
@@ -26,11 +26,5 @@ public class MentorReview {
     @ManyToOne
     User user;
     int rating;
-    String situationNote;
-    String taskNote;
-    String actionNote;
-    String resultNote;
-    String strength;
-    String weakness;
-    String improve;
+    String comment;
 }

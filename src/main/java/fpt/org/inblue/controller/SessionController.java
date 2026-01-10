@@ -6,6 +6,7 @@ import fpt.org.inblue.model.dto.dailyco.DailyWebHookPayload;
 import fpt.org.inblue.model.dto.dailyco.SessionCreationRequest;
 import fpt.org.inblue.model.dto.dailyco.SessionResponse;
 import fpt.org.inblue.service.SessionService;
+import io.swagger.v3.oas.annotations.Operation;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -36,6 +37,22 @@ public class SessionController {
         return ResponseEntity.ok(sessionService.updateSession(session));
     }
 
+    @Operation(description = "json mẫu tạo 1 session họp với mentor(privacy ,enable_recording ko cần cho chọn mà gửi ẩn là public,cloud về, name khỏi cần cho điền cứ gửi như json mẫu, còn lại thì cho người dùng chọn )", summary = "{\n" +
+            "  \"dailyCoCreationRequest\": {\n" +
+            "    \"name\": \"\",\n" +
+            "    \"privacy\": \"public\",\n" +
+            "    \"properties\": {\n" +
+            "      \"max_participants\": 2,\n" +
+            "      \"start_video_off\": true,\n" +
+            "      \"start_audio_off\": true,\n" +
+            "      \"enable_screenshare\": true,\n" +
+            "      \"exp\": 120,\n" +
+            "      \"enable_recording\": \"cloud\"\n" +
+            "    }\n" +
+            "  },\n" +
+            "  \"userId\": 1,\n" +
+            "  \"mentorId\": 1\n" +
+            "}")
     @PostMapping("create-session")
     public ResponseEntity<SessionResponse> createSession(@RequestBody SessionCreationRequest sessionCreationRequest) {
         return ResponseEntity.ok(sessionService.createSession(sessionCreationRequest));

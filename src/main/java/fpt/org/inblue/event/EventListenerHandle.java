@@ -32,7 +32,6 @@ public class EventListenerHandle {
     @Async
     @EventListener(condition = "#userEventDto.message == 'cv'")
     public void handleCv(UserEventDto userEventDto) {
-        System.out.println("Handling CV upload event for user ID: " + userEventDto.getUser().getId());
         User user = userRepository.findById(userEventDto.getUser().getId()).orElse(null);
         if (user != null) {
             try {
@@ -48,7 +47,7 @@ public class EventListenerHandle {
     public void handleAvatar(UserEventDto userEventDto) {
         System.out.println("Handling avatar upload event for user ID: " + userEventDto.getUser().getId());
         try {
-            Thread.sleep(6000); //chờ 5s trc khi get user lên để tránh việc bị đọc dữ liệu cũ do cv chưa save kịp
+            Thread.sleep(6000); //chờ 6s trc khi get user lên để tránh việc bị đọc dữ liệu cũ do cv chưa save kịp
         } catch (InterruptedException ie) {
             Thread.currentThread().interrupt();
         }

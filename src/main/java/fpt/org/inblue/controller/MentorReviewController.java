@@ -1,9 +1,10 @@
 package fpt.org.inblue.controller;
 
 import fpt.org.inblue.model.MentorReview;
+import fpt.org.inblue.model.dto.request.CreateMentorReviewRequest;
+import fpt.org.inblue.model.dto.request.UpdateMentorReviewRequest;
 import fpt.org.inblue.service.MentorReviewService;
 import io.swagger.v3.oas.annotations.Operation;
-import jdk.jfr.Description;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -22,19 +23,9 @@ public class MentorReviewController {
         return ResponseEntity.ok(mentorReviews);
     }
 
-    @Operation(summary = "Json mẫu create", description = "{\n" +
-            "  \"session\": 1,\n" +
-            "  \"rating\": 3,\n" +
-            "  \"situationNote\": \"string\",\n" +
-            "  \"taskNote\": \"string\",\n" +
-            "  \"actionNote\": \"string\",\n" +
-            "  \"resultNote\": \"string\",\n" +
-            "  \"strength\": \"string\",\n" +
-            "  \"weakness\": \"string\",\n" +
-            "  \"improve\": \"string\"\n" +
-            "}")
+
     @PostMapping
-    public ResponseEntity<MentorReview> createMentorReview(MentorReview mentorReview) {
+    public ResponseEntity<MentorReview> createMentorReview(@RequestBody CreateMentorReviewRequest mentorReview) {
         MentorReview createdMentorReview = mentorReviewService.mentorReview(mentorReview);
         return ResponseEntity.ok(createdMentorReview);
     }
@@ -51,7 +42,7 @@ public class MentorReviewController {
             "  \"improve\": \"string\"\n" +
             "}")
     @PutMapping
-    public ResponseEntity<MentorReview> updateMentorReview(MentorReview mentorReview) {
+    public ResponseEntity<MentorReview> updateMentorReview(@RequestBody UpdateMentorReviewRequest mentorReview) {
         MentorReview updatedMentorReview = mentorReviewService.updateMentorReview(mentorReview);
         return ResponseEntity.ok(updatedMentorReview);
     }
