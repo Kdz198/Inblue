@@ -63,6 +63,10 @@ public class CandidateProfile {
     @Column(columnDefinition = "jsonb")
     private List<String> certifications; // Vd: ["AWS Cloud Practitioner", "IELTS 7.0"]
 
+    @JdbcTypeCode(SqlTypes.JSON)
+    @Column(columnDefinition = "jsonb")
+    private List<String> achievements;
+
     @CreationTimestamp
     private LocalDateTime createdAt;
     @UpdateTimestamp
