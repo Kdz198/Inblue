@@ -12,6 +12,7 @@ import java.util.List;
 
 @RestController
 @RequestMapping("api/mentor-feedbacks")
+@CrossOrigin(origins = "*")
 public class MentorFeedbackController {
     @Autowired
     private MentorFeedbackService mentorFeedbackService;

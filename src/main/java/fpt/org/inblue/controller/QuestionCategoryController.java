@@ -10,6 +10,7 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/api/question-categories")
+@CrossOrigin(origins = "*")
 public class QuestionCategoryController {
     @Autowired
     private QuestionCategoryService questionCategoryService;

@@ -11,6 +11,7 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/api/question-set-items")
+@CrossOrigin(origins = "*")
 public class QuestionSetItemController {
     @Autowired
     private QuestionSetItemService questionSetItemService;

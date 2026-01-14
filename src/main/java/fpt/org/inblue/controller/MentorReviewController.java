@@ -13,6 +13,7 @@ import java.util.List;
 
 @RestController
 @RequestMapping("api/mentor-reviews")
+@CrossOrigin(origins = "*")
 public class MentorReviewController {
     @Autowired
     private MentorReviewService mentorReviewService;
