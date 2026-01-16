@@ -9,7 +9,8 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 
 @RestController
-@RequestMapping("/api/question-majors")
+@RequestMapping("/api/majors")
+@CrossOrigin(origins = "*")
 public class MajorController {
     @Autowired
     private MajorService questionMajorService;
