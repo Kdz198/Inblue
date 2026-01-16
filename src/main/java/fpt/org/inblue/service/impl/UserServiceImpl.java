@@ -90,7 +90,9 @@ public class UserServiceImpl implements UserService {
             }
             User savedUser = userRepository.save(updateUser);
             if (!cvFile.isEmpty()) {
-                cloudinaryService.deletePdf(updateUser.getCv_public_id());
+                if(updateUser.getCv_public_id()!=null) {
+                    cloudinaryService.deletePdf(updateUser.getCv_public_id());
+                }
                 String absolutePath = FileUtil.saveFile(cvFile);
                 File file = FileUtil.getFileByPath(absolutePath);
                 MultipartFile multipartFile = FileUtil.convertFileToMultipart(file);
@@ -98,7 +100,9 @@ public class UserServiceImpl implements UserService {
                 applicationEventPublisher.publishEvent(new UserEventDto(savedUser, multipartFile, "cv"));
             }
             if (!avatar.isEmpty()) {
-                cloudinaryService.deleteImage(updateUser.getPublic_id());
+                if(updateUser.getPublic_id()!=null) {
+                    cloudinaryService.deleteImage(updateUser.getPublic_id());
+                }
                 String absolutePath = FileUtil.saveFile(avatar);
                 File file = FileUtil.getFileByPath(absolutePath);
                 MultipartFile multipartFile = FileUtil.convertFileToMultipart(file);
