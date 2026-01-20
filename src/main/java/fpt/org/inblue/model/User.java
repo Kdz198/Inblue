@@ -20,14 +20,11 @@ public class User {
     private String password;
     private Role role;
     private Boolean isActive;
-    private String bio;
     private String avatarUrl;
     private String public_id;
 
     private String university;
     private String major;
-    private String targetPosition;
-    private String targetLevel;
     private String cvUrl;
     private String cv_public_id;
 }

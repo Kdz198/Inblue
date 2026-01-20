@@ -35,6 +35,9 @@ public class EventListenerHandle {
         User user = userRepository.findById(userEventDto.getUser().getId()).orElse(null);
         if (user != null) {
             try {
+                if(user.getCv_public_id()!=null) {
+                    cloudinaryService.deletePdf(user.getCv_public_id());
+                }
                 uploadPdf(user, userEventDto.getFile());
             } catch (IOException e) {
                 throw new RuntimeException(e);
@@ -45,7 +48,6 @@ public class EventListenerHandle {
     @Async
     @EventListener(condition = "#userEventDto.message == 'avatar'")
     public void handleAvatar(UserEventDto userEventDto) {
-        System.out.println("Handling avatar upload event for user ID: " + userEventDto.getUser().getId());
         try {
             Thread.sleep(6000); //chờ 6s trc khi get user lên để tránh việc bị đọc dữ liệu cũ do cv chưa save kịp
         } catch (InterruptedException ie) {

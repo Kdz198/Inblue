@@ -1,5 +1,6 @@
 package fpt.org.inblue.controller;
 
+import fpt.org.inblue.model.CandidateProfile;
 import fpt.org.inblue.model.User;
 import fpt.org.inblue.model.dto.UserInfo;
 import fpt.org.inblue.service.UserService;
@@ -36,6 +37,11 @@ public class UserController {
         return ResponseEntity.ok(createdUser);
     }
 
+    @PostMapping(path = "upload-cv",consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public ResponseEntity<CandidateProfile> uploadCv(@RequestPart("userId") int userId,
+                                                     @RequestPart(value = "cvFile", required = false) MultipartFile cvFile) throws IOException {
+        return ResponseEntity.ok(userService.upCv(userId, cvFile));
+    }
 
     @GetMapping("/{id}")
     public ResponseEntity<User> getUserById(@PathVariable int id) {

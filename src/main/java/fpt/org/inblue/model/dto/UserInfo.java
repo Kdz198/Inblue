@@ -14,9 +14,6 @@ public class UserInfo {
     private String name;
     private String email;
     private String password;
-    private String bio;
     private String university;
     private String major;
-    private String targetPosition;
-    private String targetLevel;
 }
