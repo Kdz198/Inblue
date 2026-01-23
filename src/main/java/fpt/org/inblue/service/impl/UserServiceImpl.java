@@ -85,12 +85,6 @@ public class UserServiceImpl implements UserService {
                 updateUser.setCv_public_id(updateUser.getCv_public_id());
             }
             User savedUser = userRepository.save(updateUser);
-//            if (!cvFile.isEmpty()) {
-//                if(updateUser.getCv_public_id()!=null) {
-//                    cloudinaryService.deletePdf(updateUser.getCv_public_id());
-//                }
-//                uploadPdf(savedUser, cvFile);
-//            }
             if (!avatar.isEmpty()) {
                 if (updateUser.getPublic_id() != null) {
                     cloudinaryService.deleteImage(updateUser.getPublic_id());

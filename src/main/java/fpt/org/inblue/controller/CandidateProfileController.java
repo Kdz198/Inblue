@@ -2,6 +2,7 @@ package fpt.org.inblue.controller;
 
 import fpt.org.inblue.model.CandidateProfile;
 import fpt.org.inblue.service.CandidateProfileService;
+import io.swagger.v3.oas.annotations.Operation;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -30,6 +31,7 @@ public class CandidateProfileController {
     }
 
     @PutMapping
+    @Operation(summary = "Cập nhật hồ sơ ứng viên", description = "Sau khi import cv thì trả về candidate profile rồi thì cho người dùng chỉnh sửa tay sau đó gọi hàm này để cập nhật")
     public ResponseEntity<CandidateProfile> updateProfile(@RequestBody CandidateProfile candidateProfile){
         return ResponseEntity.ok(candidateProfileService.updateProfile(candidateProfile));}
 }

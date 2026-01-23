@@ -38,6 +38,7 @@ public class UserController {
     }
 
     @PostMapping(path = "upload-cv",consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    @Operation(summary = "hàm này để upload cv và parse cv trả về thằng candidate profile")
     public ResponseEntity<CandidateProfile> uploadCv(@RequestPart("userId") int userId,
                                                      @RequestPart(value = "cvFile", required = false) MultipartFile cvFile) throws IOException {
         return ResponseEntity.ok(userService.upCv(userId, cvFile));
