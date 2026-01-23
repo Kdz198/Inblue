@@ -38,7 +38,6 @@ public class MentorController {
                                                @RequestPart(value = "identityFile", required = false) MultipartFile identityFile,
                                                @RequestPart(value = "degreeFile", required = false) MultipartFile degreeFile,
                                                @RequestPart(value = "otherFile", required = false) MultipartFile otherFile) throws IOException {
-
         Mentor createdMentor = mentorService.createMentor(data, identityFile, degreeFile, otherFile, avatar);
         return ResponseEntity.ok(createdMentor);
     }
@@ -48,4 +47,10 @@ public class MentorController {
         Mentor updatedMentor = mentorService.updateMentor(mentor);
         return ResponseEntity.ok(updatedMentor);
     }
+
+    @GetMapping("/toggle/{id}")
+    public ResponseEntity<Void> toggleActive(@PathVariable int id) {
+        mentorService.toggleActive(id);
+        return ResponseEntity.noContent().build();
+           }
 }

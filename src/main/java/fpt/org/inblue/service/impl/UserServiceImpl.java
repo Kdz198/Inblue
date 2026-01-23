@@ -127,8 +127,6 @@ public class UserServiceImpl implements UserService {
         if (candidateProfileService.getProfileByUserId(userId) != null) {
             candidateProfileService.deleteProfile(userId);
         }
-        //uploadPdf(user, cvFile);
-
         CVParserResponse response =
                 pythonApiClient.callApi(
                         ApiPath.CV_API,
@@ -186,13 +184,11 @@ public class UserServiceImpl implements UserService {
             } else if (scale == 4.0) {
                 return score; // Giữ nguyên hệ 4
             }
-
-            // Trường hợp khác (ví dụ hệ 5 hoặc hệ khác), mặc định trả về điểm đạt được
             return score;
 
         } catch (Exception e) {
             System.err.println("Lỗi parse GPA: " + gpaStr + " - " + e.getMessage());
-            return 0.0; // Trả về mặc định khi có lỗi định dạng
+            return 0.0;
         }
     }
 

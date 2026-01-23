@@ -8,9 +8,10 @@ import java.io.IOException;
 import java.util.List;
 
 public interface MentorService {
-    public Mentor createMentor(MentorInfo data, MultipartFile identityFile, MultipartFile degreeFile, MultipartFile otherFile,MultipartFile avatar) throws IOException;
-    public Mentor getMentorById(int id);
-    public List<Mentor> getAllMentors();
-    public Mentor updateMentor( Mentor mentor);
-    public void toggleActive(int id);
+     Mentor createMentor(MentorInfo data, MultipartFile identityFile, MultipartFile degreeFile, MultipartFile otherFile,MultipartFile avatar) throws IOException;
+     Mentor getMentorById(int id);
+     List<Mentor> getAllMentors();
+     Mentor updateMentor( Mentor mentor);
+     void toggleActive(int id);
+
 }

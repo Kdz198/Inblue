@@ -112,7 +112,9 @@ public class MentorServiceImpl implements MentorService {
             }
            Mentor savedMentor = mentorRepository.save(updateMentor);
            if (!avatar.isEmpty()) {
-               cloudinaryService.deleteImage(updateMentor.getPublic_id());
+               if(updateMentor.getPublic_id()!=null) {
+                   cloudinaryService.deleteImage(updateMentor.getPublic_id());
+               }
                String absolutePath = FileUtil.saveFile(avatar);
                File file = FileUtil.getFileByPath(absolutePath);
                MultipartFile avata = FileUtil.convertFileToMultipart(file);
@@ -120,7 +122,8 @@ public class MentorServiceImpl implements MentorService {
                applicationEventPublisher.publishEvent(new MentorEventDto(savedMentor, avata,"avatar"));
            }
            if (!identityFile.isEmpty()) {
-               cloudinaryService.deletePdf(updateMentor.getPublic_id_identity());
+               if(updateMentor.getPublic_id_identity()!=null) {
+               cloudinaryService.deletePdf(updateMentor.getPublic_id_identity());}
                String absolutePath = FileUtil.saveFile(identityFile);
                File file = FileUtil.getFileByPath(absolutePath);
                MultipartFile identity = FileUtil.convertFileToMultipart(file);
@@ -128,7 +131,8 @@ public class MentorServiceImpl implements MentorService {
                applicationEventPublisher.publishEvent(new MentorEventDto(savedMentor, identity,"IdentityCard"));
            }
            if (!degreeFile.isEmpty()) {
-               cloudinaryService.deletePdf(updateMentor.getPublic_id_degree());
+               if(updateMentor.getPublic_id_degree()!=null){
+               cloudinaryService.deletePdf(updateMentor.getPublic_id_degree());}
                String absolutePath = FileUtil.saveFile(degreeFile);
                File file = FileUtil.getFileByPath(absolutePath);
                MultipartFile degree = FileUtil.convertFileToMultipart(file);
@@ -136,7 +140,8 @@ public class MentorServiceImpl implements MentorService {
                applicationEventPublisher.publishEvent(new MentorEventDto(savedMentor, degree,"Degree"));
            }
            if (!otherFile.isEmpty()) {
-                cloudinaryService.deletePdf(updateMentor.getPublic_id_other());
+               if(updateMentor.getPublic_id_other()!=null){
+                cloudinaryService.deletePdf(updateMentor.getPublic_id_other());}
                String absolutePath = FileUtil.saveFile(otherFile);
                File file = FileUtil.getFileByPath(absolutePath);
                MultipartFile other = FileUtil.convertFileToMultipart(file);
