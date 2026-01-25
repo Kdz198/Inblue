@@ -1,0 +1,26 @@
+package fpt.org.inblue.controller;
+
+import fpt.org.inblue.model.dto.request.OrchestratorRequest.*;
+import fpt.org.inblue.service.InterviewSessionService;
+import lombok.RequiredArgsConstructor;
+import org.springframework.web.bind.annotation.*;
+
+import java.util.Map;
+
+@RestController
+@RequestMapping ("/api/interview-sessions")
+@RequiredArgsConstructor
+public class InterviewSessionController {
+
+    private final InterviewSessionService interviewSessionService;
+
+    @PostMapping("/generate-job-requirement")
+    public JobRequirementData generateJobRequirement(@RequestBody String jobDescription) {
+        return interviewSessionService.getJobRequirementFromJD(jobDescription);
+    }
+
+    @GetMapping("/config-options")
+    public Map<String, Object> getInterviewConfigOptions() {
+        return interviewSessionService.getInterviewConfigOptions();
+    }
+}
