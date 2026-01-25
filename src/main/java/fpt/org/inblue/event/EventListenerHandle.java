@@ -48,15 +48,12 @@ public class EventListenerHandle {
     @Async
     @EventListener(condition = "#userEventDto.message == 'avatar'")
     public void handleAvatar(UserEventDto userEventDto) {
-        try {
-            Thread.sleep(6000); //chờ 6s trc khi get user lên để tránh việc bị đọc dữ liệu cũ do cv chưa save kịp
-        } catch (InterruptedException ie) {
-            Thread.currentThread().interrupt();
-        }
+
         User user = userRepository.findById(userEventDto.getUser().getId()).orElse(null);
         if (user != null) {
             try {
                 uploadImg(user, userEventDto.getFile());
+                System.out.println("Avatar uploaded successfully");
             } catch (IOException e) {
                 throw new RuntimeException(e);
             }

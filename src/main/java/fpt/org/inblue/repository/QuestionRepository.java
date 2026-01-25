@@ -10,7 +10,7 @@ import org.springframework.data.repository.query.Param;
 import java.util.List;
 
 public interface QuestionRepository extends JpaRepository<Question, Integer> {
-    List<Question> findAllByCategory_IdAndLevel(int categoryId, QuestionLevel level);
+    List<Question> findAllByLesson_IdAndLevel(int categoryId, QuestionLevel level);
 
     @Query("""
         SELECT q FROM Question q

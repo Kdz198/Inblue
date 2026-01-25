@@ -52,7 +52,7 @@ public class QuestionServiceImpl implements QuestionService {
 
     @Override
     public List<Question> getQuestionsByCategoryAndLevel(int categoryId, String level) {
-        return questionRepository.findAllByCategory_IdAndLevel(categoryId, QuestionLevel.valueOf(level));
+        return questionRepository.findAllByLesson_IdAndLevel(categoryId, QuestionLevel.valueOf(level));
     }
 
     @Override

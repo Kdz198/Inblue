@@ -22,7 +22,7 @@ public class Question {
     QuestionLevel level;
     @JoinColumn(name = "category_id")
     @ManyToOne
-    QuestionCategory category;
+    QuestionLesson lesson;
     String answer;
     //show gợi ý khi người dùng yêu cầu
     String hint;

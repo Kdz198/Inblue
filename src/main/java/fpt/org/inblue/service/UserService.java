@@ -11,7 +11,7 @@ import java.util.List;
 public interface UserService {
     public List<User> getAll();
     public User getById(int id);
-    public User createUser(UserInfo data, MultipartFile avatar, MultipartFile cvFile) throws IOException;
+    public User createUser(UserInfo data, MultipartFile avatar) throws IOException;
     public User updateUser(User user);
     public boolean deleteUser(int id);
 

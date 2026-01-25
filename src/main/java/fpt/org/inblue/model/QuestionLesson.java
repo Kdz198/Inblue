@@ -11,10 +11,11 @@ import lombok.experimental.FieldDefaults;
 @Data
 @Entity
 @FieldDefaults(level = lombok.AccessLevel.PRIVATE)
-public class QuestionCategory {
+public class QuestionLesson {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     int id;
     String categoryName;
-    String description;
+    String description;// đổi thành kiểu json .... để lưu đc nhiều thông tin hơn
+    String urlTutorial;
 }

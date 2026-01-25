@@ -56,7 +56,7 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
-    public User createUser(UserInfo user, MultipartFile avatar, MultipartFile cvFile) throws IOException {
+    public User createUser(UserInfo user, MultipartFile avatar) throws IOException {
         if (user.getId() == null) {
             User userBuilder = User.builder()
                     .name(user.getName())
