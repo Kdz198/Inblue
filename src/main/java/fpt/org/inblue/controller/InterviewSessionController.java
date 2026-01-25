@@ -1,5 +1,7 @@
 package fpt.org.inblue.controller;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import fpt.org.inblue.model.dto.request.InterviewSetupRequest;
 import fpt.org.inblue.model.dto.request.OrchestratorRequest.*;
 import fpt.org.inblue.service.InterviewSessionService;
 import lombok.RequiredArgsConstructor;
@@ -22,5 +24,10 @@ public class InterviewSessionController {
     @GetMapping("/config-options")
     public Map<String, Object> getInterviewConfigOptions() {
         return interviewSessionService.getInterviewConfigOptions();
+    }
+
+    @PostMapping("/create-session")
+    public String createInterviewSession(@RequestBody InterviewSetupRequest request)  {
+        return interviewSessionService.createSession(request);
     }
 }

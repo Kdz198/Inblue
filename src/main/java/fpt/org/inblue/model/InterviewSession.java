@@ -43,7 +43,7 @@ public class InterviewSession {
     // Lưu CV Snapshot
     @JdbcTypeCode(SqlTypes.JSON)
     @Column(columnDefinition = "jsonb")
-    private Object candidateProfile;
+    private  CandidateProfile candidateProfile;
 
     // Lưu JD Snapshot
     @JdbcTypeCode(SqlTypes.JSON)

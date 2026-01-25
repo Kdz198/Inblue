@@ -1,10 +1,16 @@
 package fpt.org.inblue.service.impl;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import fpt.org.inblue.constants.ApiPath;
 import fpt.org.inblue.model.InterviewSession;
+import fpt.org.inblue.model.User;
+import fpt.org.inblue.model.dto.request.InterviewSetupRequest;
+import fpt.org.inblue.model.dto.request.OrchestratorRequest;
 import fpt.org.inblue.model.dto.request.OrchestratorRequest.*;
 import fpt.org.inblue.model.dto.response.InterviewBlueprintResponse;
 import fpt.org.inblue.model.enums.InterviewEnums.*;
+import fpt.org.inblue.repository.InterviewSessionRepository;
 import fpt.org.inblue.service.InterviewSessionService;
 import fpt.org.inblue.service.PythonApiClient;
 import lombok.RequiredArgsConstructor;
@@ -12,6 +18,7 @@ import org.springframework.http.HttpMethod;
 import org.springframework.retry.annotation.Backoff;
 import org.springframework.retry.annotation.Retryable;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Arrays;
 import java.util.HashMap;
@@ -24,6 +31,7 @@ public class InterviewSessionServiceImpl implements InterviewSessionService {
 
 
     private final PythonApiClient pythonApiClient;
+    private final InterviewSessionRepository sessionRepository;
     private record jobDescription (String jd_text) {}
 
     @Override
@@ -65,6 +73,63 @@ public class InterviewSessionServiceImpl implements InterviewSessionService {
     }
 
 
+    @Transactional
+    @Override
+    @Retryable(
+            retryFor = {Exception.class},
+            maxAttempts = 3,
+            backoff = @Backoff(delay = 3000)
+    )
+    public String createSession(InterviewSetupRequest request)  {
+
+
+        OrchestratorRequest pythonPayload = OrchestratorRequest.builder()
+                .candidateProfile(request.getCandidateProfile())
+                .jobRequirement(request.getJobRequirement())
+                .sessionConfig(request.getSessionConfig())
+                .build();
+
+
+        InterviewBlueprintResponse blueprint = pythonApiClient.callApi(
+                ApiPath.ORCHESTRATOR_API,
+                HttpMethod.POST,
+                pythonPayload,
+                InterviewBlueprintResponse.class
+        );
+
+        if (blueprint == null || blueprint.getBlueprint() == null || blueprint.getBlueprint().isEmpty()) {
+            throw new RuntimeException("Python Orchestrator trả về Blueprint rỗng!");
+        }
+
+        User user = User.builder().id(request.getUserId()).build();
+
+        InterviewSession session = InterviewSession.builder()
+                .user(user) // Lấy từ FE
+                .blueprint(blueprint)        // Lưu JSON Blueprint
+
+                // Lưu Snapshot dữ liệu đầu vào (để sau này đối chứng)
+                .candidateProfile(request.getCandidateProfile())
+                .jobRequirement(request.getJobRequirement())
+                .sessionConfig(request.getSessionConfig())
+
+                // Các field indexing
+                .mode(request.getSessionConfig().getInterviewMode())
+                .domain(request.getSessionConfig().getDomain())
+                .status(InterviewSession.SessionStatus.CREATED)
+
+                .build();
+
+        // Save xuống DB (Hibernate tự handle JSONB)
+        session = sessionRepository.save(session);
+        String sessionId = session.getId().toString();
+
+
+        //Todo : Save to Redis here
+
+
+
+        return sessionId;
+    }
 
     // Helper method để convert Enum thành Map cho gọn code
     private Map<String, String> convertEnumToMap(Object enumVal) {
