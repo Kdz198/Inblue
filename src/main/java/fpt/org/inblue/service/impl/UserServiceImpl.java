@@ -148,9 +148,11 @@ public class UserServiceImpl implements UserService {
         File file = FileUtil.getFileByPath(absolutePath);
         MultipartFile multipartFile = FileUtil.convertFileToMultipart(file);
         file.delete();
-        applicationEventPublisher.publishEvent(new UserEventDto(user, multipartFile, "cv"));
+
         //event
-        return candidateProfileService.createProfile(candidateProfile);
+        var profile = candidateProfileService.createProfile(candidateProfile);
+        applicationEventPublisher.publishEvent(new UserEventDto(user, multipartFile, "cv"));
+        return profile;
     }
 
     @Recover
