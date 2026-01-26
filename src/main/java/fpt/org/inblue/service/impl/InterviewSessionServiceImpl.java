@@ -1,16 +1,16 @@
 package fpt.org.inblue.service.impl;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import fpt.org.inblue.constants.ApiPath;
 import fpt.org.inblue.model.InterviewSession;
 import fpt.org.inblue.model.User;
+import fpt.org.inblue.model.caching.InterviewSessionRedis;
 import fpt.org.inblue.model.dto.request.InterviewSetupRequest;
 import fpt.org.inblue.model.dto.request.OrchestratorRequest;
 import fpt.org.inblue.model.dto.request.OrchestratorRequest.*;
 import fpt.org.inblue.model.dto.response.InterviewBlueprintResponse;
 import fpt.org.inblue.model.enums.InterviewEnums.*;
 import fpt.org.inblue.repository.InterviewSessionRepository;
+import fpt.org.inblue.repository.caching.InterviewSessionRedisRepository;
 import fpt.org.inblue.service.InterviewSessionService;
 import fpt.org.inblue.service.PythonApiClient;
 import lombok.RequiredArgsConstructor;
@@ -23,6 +23,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.UUID;
 import java.util.stream.Collectors;
 
 @Service
@@ -32,6 +33,7 @@ public class InterviewSessionServiceImpl implements InterviewSessionService {
 
     private final PythonApiClient pythonApiClient;
     private final InterviewSessionRepository sessionRepository;
+    private final InterviewSessionRedisRepository sessionRedisRepository;
     private record jobDescription (String jd_text) {}
 
     @Override
@@ -101,6 +103,8 @@ public class InterviewSessionServiceImpl implements InterviewSessionService {
             throw new RuntimeException("Python Orchestrator trả về Blueprint rỗng!");
         }
 
+        //Todo sau này async khúc save vô DB
+
         User user = User.builder().id(request.getUserId()).build();
 
         InterviewSession session = InterviewSession.builder()
@@ -124,11 +128,20 @@ public class InterviewSessionServiceImpl implements InterviewSessionService {
         String sessionId = session.getId().toString();
 
 
-        //Todo : Save to Redis here
-        //Todo : Fix field name for request/response
+        // Save Redis
+        String sessionKey = UUID.randomUUID().toString();
+        InterviewSessionRedis sessionRedis = InterviewSessionRedis.builder()
+                .id(sessionKey)
+                .blueprint(blueprint)
+                .currentPhaseIndex(0)
+                .currentQuestionIndex(0)
+                .build();
+        sessionRedisRepository.save(sessionRedis);
 
 
-        return sessionId;
+
+
+        return sessionKey;
     }
 
     // Helper method để convert Enum thành Map cho gọn code
