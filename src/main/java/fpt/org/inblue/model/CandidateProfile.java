@@ -1,6 +1,7 @@
 package fpt.org.inblue.model;
 
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
@@ -92,9 +93,11 @@ public class CandidateProfile {
     @AllArgsConstructor
     @Builder
     public static class WorkExperience {
-        private String companyName;
+        private String company;
         private String position;
+        @JsonProperty("start_date")
         private String startDate;
+        @JsonProperty("end_date")
         private String endDate;
         private String description; // Mô tả task chính đã làm
     }
@@ -104,11 +107,13 @@ public class CandidateProfile {
     @AllArgsConstructor
     @Builder
     public static class EducationEntry {
-        private String schoolName; // Vd: FPT University
+        private String school; // Vd: FPT University
         private String major; // Vd: Software Engineering
         private String degree; // Vd: Bachelor
-        private Double gpa; // Optional -> AI có thể hỏi về nỗ lực học tập
+        private String gpa; // Optional -> AI có thể hỏi về nỗ lực học tập
+        @JsonProperty("start_date")
         private String startDate;
+        @JsonProperty("end_date")
         private String endDate;
     }
 }
