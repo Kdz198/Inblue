@@ -204,7 +204,7 @@ public class UserServiceImpl implements UserService {
     private List<CandidateProfile.WorkExperience> mapWorkExperiences(List<CVParserResponse.WorkExperienceDTO> dtos) {
         if (dtos == null) return null;
         return dtos.stream().map(dto -> CandidateProfile.WorkExperience.builder()
-                        .companyName(dto.getCompany())
+                        .company(dto.getCompany())
                         .position(dto.getPosition())
                         .description(dto.getDescription())
                         .startDate(dto.getStartDate())
@@ -216,10 +216,10 @@ public class UserServiceImpl implements UserService {
     private List<CandidateProfile.EducationEntry> mapEducations(List<CVParserResponse.EducationDTO> dtos) {
         if (dtos == null) return null;
         return dtos.stream().map(dto -> CandidateProfile.EducationEntry.builder()
-                        .schoolName(dto.getSchool())
+                        .school(dto.getSchool())
                         .major(dto.getMajor())
                         .degree(dto.getDegree())
-                        .gpa(parseGpa(dto.getGpa()))
+                        .gpa(parseGpa(dto.getGpa()).toString())
                         .startDate(dto.getStartDate())
                         .endDate(dto.getEndDate())
                         .build())
