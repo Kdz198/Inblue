@@ -34,6 +34,15 @@ public class UserController {
 
     @Operation(summary = "dùng chung cho create và update user, nếu create thì ko có id còn update thì có id gửi kèm trong json data á")
     @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    @io.swagger.v3.oas.annotations.parameters.RequestBody(
+            content = @Content(
+                    mediaType = MediaType.MULTIPART_FORM_DATA_VALUE,
+                    encoding = {
+                            @Encoding(name = "data", contentType = MediaType.APPLICATION_JSON_VALUE),
+                            @Encoding(name = "avatar", contentType = MediaType.APPLICATION_OCTET_STREAM_VALUE)
+                    }
+            )
+    )
     public ResponseEntity<User> createUser(@RequestPart("data") UserInfo data,
                                            @RequestPart(value = "avatar", required = false) MultipartFile avatar
                                            ) throws IOException {
