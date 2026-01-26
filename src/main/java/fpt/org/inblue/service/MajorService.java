@@ -5,9 +5,9 @@ import fpt.org.inblue.model.Major;
 import java.util.List;
 
 public interface MajorService {
-    Major getQuestionMajorById(int id);
-    Major createQuestionMajor(Major major);
-    Major updateQuestionMajor(Major major);
-    List<Major> getAllQuestionMajors();
-    boolean deleteQuestionMajor(int id);
+    Major getMajorById(int id);
+    Major createMajor(Major major);
+    Major updateMajor(Major major);
+    List<Major> getAllMajors();
+    boolean deleteMajor(int id);
 }

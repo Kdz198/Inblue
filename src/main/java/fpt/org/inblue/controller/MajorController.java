@@ -13,30 +13,30 @@ import java.util.List;
 @CrossOrigin(origins = "*")
 public class MajorController {
     @Autowired
-    private MajorService questionMajorService;
+    private MajorService MajorService;
 
     @GetMapping
-    public ResponseEntity<List<Major>> getAllQuestionMajors() {
-        List<Major> majors = questionMajorService.getAllQuestionMajors();
+    public ResponseEntity<List<Major>> getAllMajors() {
+        List<Major> majors = MajorService.getAllMajors();
         return ResponseEntity.ok(majors);
     }
     @PostMapping
-    public ResponseEntity<Major> createQuestionMajor(Major major) {
-        Major createdMajor = questionMajorService.createQuestionMajor(major);
+    public ResponseEntity<Major> createMajor(Major major) {
+        Major createdMajor = MajorService.createMajor(major);
         return ResponseEntity.ok(createdMajor);
     }
     @PutMapping
-    public ResponseEntity<Major> updateQuestionMajor(Major major) {
-        Major updatedMajor = questionMajorService.updateQuestionMajor(major);
+    public ResponseEntity<Major> updateMajor(Major major) {
+        Major updatedMajor = MajorService.updateMajor(major);
         return ResponseEntity.ok(updatedMajor);
     }
     @GetMapping("/{id}")
-    public ResponseEntity<Major> getQuestionMajorById(@PathVariable int id) {
-        Major major = questionMajorService.getQuestionMajorById(id);
+    public ResponseEntity<Major> getMajorById(@PathVariable int id) {
+        Major major = MajorService.getMajorById(id);
         return ResponseEntity.ok(major);}
     @DeleteMapping("/{id}")
-    public ResponseEntity<Boolean> deleteQuestionMajor(@PathVariable int id) {
-        return  ResponseEntity.ok(questionMajorService.deleteQuestionMajor(id));
+    public ResponseEntity<Boolean> deleteMajor(@PathVariable int id) {
+        return  ResponseEntity.ok(MajorService.deleteMajor(id));
         }
 }
 

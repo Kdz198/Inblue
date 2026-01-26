@@ -16,6 +16,7 @@ public class QuestionLesson {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     int id;
     String categoryName;
-    String description;// đổi thành kiểu json .... để lưu đc nhiều thông tin hơn
+    @Column(columnDefinition = "TEXT")
+    String description;
     String urlTutorial;
 }
