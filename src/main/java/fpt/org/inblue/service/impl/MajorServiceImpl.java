@@ -16,7 +16,7 @@ public class MajorServiceImpl implements MajorService {
     private MajorRepository majorRepository;
 
     @Override
-    public Major getQuestionMajorById(int id) {
+    public Major getMajorById(int id) {
         if(majorRepository.existsById(id)){
             return majorRepository.findById(id).get();
         }
@@ -26,12 +26,12 @@ public class MajorServiceImpl implements MajorService {
     }
 
     @Override
-    public Major createQuestionMajor(Major major) {
+    public Major createMajor(Major major) {
         return majorRepository.save(major);
     }
 
     @Override
-    public Major updateQuestionMajor(Major major) {
+    public Major updateMajor(Major major) {
         if(majorRepository.existsById(major.getId())){
             return majorRepository.save(major);
         }
@@ -41,12 +41,12 @@ public class MajorServiceImpl implements MajorService {
     }
 
     @Override
-    public List<Major> getAllQuestionMajors() {
+    public List<Major> getAllMajors() {
         return majorRepository.findAll();
     }
 
     @Override
-    public boolean deleteQuestionMajor(int id) {
+    public boolean deleteMajor(int id) {
         if(majorRepository.existsById(id)){
             majorRepository.deleteById(id);
             return true;

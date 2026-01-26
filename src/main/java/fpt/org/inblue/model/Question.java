@@ -18,11 +18,13 @@ public class Question {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     int questionId;
     String title;
+    @Column(columnDefinition = "TEXT")
     String content;
     QuestionLevel level;
     @JoinColumn(name = "category_id")
     @ManyToOne
     QuestionLesson lesson;
+    @Column(columnDefinition = "TEXT")
     String answer;
     //show gợi ý khi người dùng yêu cầu
     String hint;
