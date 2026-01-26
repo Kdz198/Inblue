@@ -48,8 +48,7 @@ public class PythonApiClientImpl implements PythonApiClient {
             else {
                 headers.setContentType(MediaType.APPLICATION_JSON);
                 requestEntity = new HttpEntity<>(requestBody, headers);
-            }
-            ResponseEntity<String> response = restTemplate.exchange(
+            }ResponseEntity<String> response = restTemplate.exchange(
                     PYTHON_BASE_URL + endpoint,
                     method,
                     requestEntity,
