@@ -84,4 +84,30 @@ public class InterviewSession {
     public enum SessionStatus {
         CREATED, IN_PROGRESS, COMPLETED, CANCELLED
     }
+
+
+    // ========================================================================
+    // KẾT QUẢ BUỔI PHỎNG VẤN (Update sau khi Finish)
+    // ========================================================================
+
+    @Column(name = "completed_at")
+    private LocalDateTime completedAt;
+
+    // Điểm tổng kết (0.0 - 10.0) -> Lưu cột riêng để sau này sort: "Top ứng viên điểm cao"
+    @Column(name = "overall_score")
+    private Double overallScore;
+
+    // Đánh giá xếp loại: PASSED, FAILED, CONSIDER
+    @Enumerated(EnumType.STRING)
+    private EvaluationResult result;
+
+    // LƯU CHI TIẾT KẾT QUẢ (JSONB)
+    // Chứa: List câu hỏi, câu trả lời, feedback từng câu, feedback tổng quan
+    @JdbcTypeCode(SqlTypes.JSON)
+    @Column(columnDefinition = "jsonb")
+    private InterviewResultDetail resultDetail;
+
+    public enum EvaluationResult {
+        PASSED, FAILED, CONSIDER
+    }
 }

@@ -132,6 +132,7 @@ public class InterviewSessionServiceImpl implements InterviewSessionService {
         String sessionKey = UUID.randomUUID().toString();
         InterviewSessionRedis sessionRedis = InterviewSessionRedis.builder()
                 .id(sessionKey)
+                .dbId(session.getId())
                 .blueprint(blueprint)
                 .currentPhaseIndex(0)
                 .currentQuestionIndex(0)

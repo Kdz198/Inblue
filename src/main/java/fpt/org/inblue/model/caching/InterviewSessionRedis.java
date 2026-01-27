@@ -5,6 +5,11 @@ import jakarta.persistence.Id;
 import lombok.*;
 import org.springframework.data.redis.core.RedisHash;
 
+import java.io.Serializable;
+import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
+
 @Data
 @Builder
 @NoArgsConstructor
@@ -15,7 +20,27 @@ public class InterviewSessionRedis {
     private String id;
     private InterviewBlueprintResponse blueprint;
 
+    private int dbId; // Liên kết về DB chính
+
     // Lưu trạng thái hiện tại (đang hỏi câu nào)
     private Integer currentPhaseIndex;
     private Integer currentQuestionIndex;
+
+    @Builder.Default
+    private List<InterviewExchange> chatHistory = new ArrayList<>();
+
+    @Data
+    @NoArgsConstructor
+    @AllArgsConstructor
+    @Builder
+    public static class InterviewExchange implements Serializable {
+        private String phaseName;     // Vd: Technical Core
+        private int questionId;       // ID câu hỏi trong phase
+        private int questionOrder;    // Vd: 1, 2, 3
+        private String questionText;  // Nội dung câu hỏi lúc đó
+        private String answerText;    // Ứng viên trả lời
+        private String submittedAt;     // Timestamp (System.currentTimeMillis())
+
+
+    }
 }
