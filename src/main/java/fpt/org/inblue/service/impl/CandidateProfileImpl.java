@@ -17,6 +17,7 @@ public class CandidateProfileImpl implements CandidateProfileService {
 
     @Override
     public CandidateProfile createProfile(CandidateProfile profile) {
+        System.out.println("candate service");
         return candidateProfileRepository.save(profile);
     }
 
@@ -27,7 +28,7 @@ public class CandidateProfileImpl implements CandidateProfileService {
             return profile;
         }
         else{
-            throw new CustomException("Candidate profile not found for user ID: " + userId, HttpStatus.NOT_FOUND);
+            return null;
         }
     }
 
