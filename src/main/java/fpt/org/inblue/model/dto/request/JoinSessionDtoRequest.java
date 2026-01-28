@@ -9,4 +9,6 @@ public class JoinSessionDtoRequest {
     private String sessionName;
     private int userId;
     private String participantId;
+    private boolean isMentor;
+    //do bên dailyco gửi về để handle join
 }

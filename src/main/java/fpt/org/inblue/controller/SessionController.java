@@ -8,6 +8,7 @@ import fpt.org.inblue.model.dto.dailyco.SessionResponse;
 import fpt.org.inblue.service.SessionService;
 import io.swagger.v3.oas.annotations.Operation;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -28,6 +29,7 @@ public class SessionController {
     public ResponseEntity<Session> getSession(@PathVariable int id) {
         return ResponseEntity.ok(sessionService.getSession(id));}
 
+    @Operation(description = "Lấy tất cả session liên quan đến userId", summary = "Lấy tất cả session của user")
     @GetMapping("/{userId}/by-user")
     public ResponseEntity<List<Session>> getSessionsByUserId(@PathVariable int userId) {
         return ResponseEntity.ok(sessionService.getSessionsByUserId(userId));
@@ -59,15 +61,19 @@ public class SessionController {
         return ResponseEntity.ok(sessionService.createSession(sessionCreationRequest));
     }
 
+    @Operation(description = "Ghi nhận 1 user đã tham gia vào session", summary="SessionName gửi về là roomName trong session")
     @PostMapping("join-session")
     public ResponseEntity<Void> saveJoinRecord(@RequestBody JoinSessionDtoRequest request) {
+        System.out.println("Join session request received: " + request);
         sessionService.saveJoinRecord(request);
         return ResponseEntity.ok().build();
     }
 
-    @PostMapping("webhooks/dailyco")
+    @PostMapping(value = "webhooks/dailyco") // Chấp nhận tất cả kiểu dữ liệu
     public ResponseEntity<Void> handleDailyCoWebhook(@RequestBody DailyWebHookPayload payload) {
+        System.out.println("Received Daily.co webhook event: " + payload.getEvent());
         if("participant.left".equals(payload.getEvent())) {
+            System.out.println("Handling participant.left event for payload: " + payload);
             sessionService.updateLeaveRecord(payload);
         }
         return ResponseEntity.ok().build();

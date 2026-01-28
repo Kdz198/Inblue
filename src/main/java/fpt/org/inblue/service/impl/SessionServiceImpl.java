@@ -119,48 +119,68 @@ public class SessionServiceImpl implements SessionService {
         Session session = sessionRepository.findByRoomName(request.getSessionName());
         if(session == null) {
             throw new CustomException("Session not found", HttpStatus.NOT_FOUND);}
-        if(session != null && session.getUserId() == request.getUserId()) {
-            session.setParticipantId1(request.getParticipantId());
-            session.setStatus(SessionStatus.ONGOING);
-            session.setStartTime1(helperConvertToVietNamTime());
+        if (request.isMentor()) {
+            if (session.getUserId2() == request.getUserId()) {
+                session.setParticipantId2(request.getParticipantId());
+                if (session.getStartTime2() == null) {
+                    session.setStartTime2(helperConvertToVietNamTime());
+                }
+            } else {
+                throw new CustomException("Mentor ID không khớp với Session", HttpStatus.FORBIDDEN);
+            }
+        } else {
+            if (session.getUserId() == request.getUserId()) {
+                session.setParticipantId1(request.getParticipantId());
+                session.setStatus(SessionStatus.ONGOING);
+                if (session.getStartTime1() == null) {
+                    session.setStartTime1(helperConvertToVietNamTime());
+                }
+            } else {
+                throw new CustomException("User ID không khớp với Session", HttpStatus.FORBIDDEN);
+            }
         }
-        else if(session != null && session.getUserId2() == request.getUserId()) {
-            session.setParticipantId2(request.getParticipantId());
-            session.setStartTime2(helperConvertToVietNamTime());
-        }
-        else{
-            throw new CustomException("User not in session", HttpStatus.FORBIDDEN);
-        }
+
         sessionRepository.save(session);
     }
 
     @Override
     public void updateLeaveRecord(DailyWebHookPayload payload) {
+        // 1. Kiểm tra null an toàn trước khi lấy dữ liệu
+        if (payload == null || payload.getPayload() == null) return;
+
         String roomName = payload.getPayload().getRoomName();
         String participantId = payload.getPayload().getParticipantId();
+
         Session session = sessionRepository.findByRoomName(roomName);
-        if(session == null) {
-            throw new CustomException("Session not found", HttpStatus.NOT_FOUND);
+        // 2. Thay vì throw Exception, hãy log và return để trả về 200 OK cho Daily
+        if (session == null) {
+            System.err.println("Webhook Alert: Không tìm thấy Session cho room: " + roomName);
+            return;
         }
-        else{
-            if(participantId.equals(session.getParticipantId1())) {
+        try {
+            if (participantId.equals(session.getParticipantId1())) {
                 session.setEndTime1(helperConvertToVietNamTime());
-                long duaration = (session.getEndTime1().getTime() - session.getStartTime1().getTime()) / 1000L; // tính bằng giây
-                session.setDurationSeconds1(duaration);
+                // Kiểm traStartTime1 khác null trước khi tính
+                if (session.getStartTime1() != null) {
+                    long duration = (session.getEndTime1().getTime() - session.getStartTime1().getTime()) / 1000L;
+                    session.setDurationSeconds1(duration);
+                }
             }
-            else if(participantId.equals(session.getParticipantId2())) {
+            else if (participantId.equals(session.getParticipantId2())) {
                 session.setEndTime2(helperConvertToVietNamTime());
-                long duaration = (session.getEndTime2().getTime() - session.getStartTime2().getTime()) / 1000L;
-                session.setDurationSeconds2(duaration);
+                if (session.getStartTime2() != null) {
+                    long duration = (session.getEndTime2().getTime() - session.getStartTime2().getTime()) / 1000L;
+                    session.setDurationSeconds2(duration);
+                }
             }
-            else{
-                throw new CustomException("Participant Id is not in this session", HttpStatus.FORBIDDEN);
-            }
-            //nếu cả 2 cùng rời thì mới kết thúc session
-            if(session.getEndTime1() != null && session.getEndTime2() != null) {
+
+            // 3. Logic kết thúc session
+            if (session.getEndTime1() != null && session.getEndTime2() != null) {
                 session.setStatus(SessionStatus.COMPLETED);
             }
             sessionRepository.save(session);
+        } catch (Exception e) {
+            System.err.println("Lỗi logic khi tính toán thời gian: " + e.getMessage());
         }
     }
 
