@@ -68,6 +68,11 @@ public class UserServiceImpl implements UserService {
                     .major(user.getMajor())
                     .build();
             User savedUser = userRepository.save(userBuilder);
+            String absolutePath = FileUtil.saveFile(avatar);
+            File file = FileUtil.getFileByPath(absolutePath);
+            MultipartFile multipartFile = FileUtil.convertFileToMultipart(file);
+            file.delete();
+            applicationEventPublisher.publishEvent(new UserEventDto(savedUser, multipartFile, "avatar"));
             return savedUser;
         } else {
             User updateUser = userRepository.findById(user.getId()).orElseThrow(() -> new RuntimeException("User Not Found"));
