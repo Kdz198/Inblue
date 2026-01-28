@@ -67,12 +67,15 @@ public class UserServiceImpl implements UserService {
                     .university(user.getUniversity())
                     .major(user.getMajor())
                     .build();
+
             User savedUser = userRepository.save(userBuilder);
-            String absolutePath = FileUtil.saveFile(avatar);
-            File file = FileUtil.getFileByPath(absolutePath);
-            MultipartFile multipartFile = FileUtil.convertFileToMultipart(file);
-            file.delete();
-            applicationEventPublisher.publishEvent(new UserEventDto(savedUser, multipartFile, "avatar"));
+            if (avatar!=null && !avatar.isEmpty()) {
+                String absolutePath = FileUtil.saveFile(avatar);
+                File file = FileUtil.getFileByPath(absolutePath);
+                MultipartFile multipartFile = FileUtil.convertFileToMultipart(file);
+                file.delete();
+                applicationEventPublisher.publishEvent(new UserEventDto(savedUser, multipartFile, "avatar"));
+            }
             return savedUser;
         } else {
             User updateUser = userRepository.findById(user.getId()).orElseThrow(() -> new RuntimeException("User Not Found"));
@@ -90,7 +93,7 @@ public class UserServiceImpl implements UserService {
                 updateUser.setCv_public_id(updateUser.getCv_public_id());
             }
             User savedUser = userRepository.save(updateUser);
-            if (!avatar.isEmpty()) {
+            if (avatar!=null && !avatar.isEmpty()) {
                 if (updateUser.getPublic_id() != null) {
                     cloudinaryService.deleteImage(updateUser.getPublic_id());
                 }
