@@ -7,6 +7,7 @@ import fpt.org.inblue.model.InterviewSession;
 import fpt.org.inblue.model.caching.InterviewSessionRedis;
 import fpt.org.inblue.model.dto.request.OrchestratorConductRequest;
 import fpt.org.inblue.model.dto.request.SubmitAnswerRequest;
+import fpt.org.inblue.model.dto.response.GradingResponse;
 import fpt.org.inblue.model.dto.response.InterviewBlueprintResponse;
 import fpt.org.inblue.model.dto.response.OrchestratorAnalysisResponse;
 import fpt.org.inblue.model.dto.response.QuestionResponse;
@@ -79,21 +80,13 @@ public class InterviewProcessServiceImpl implements InterviewProcessService {
         // [FIXED] Truyền session vào đây
         var pythonRequest = buildPythonRequest(currentAnchorInfo, nextAnchorInfo, contextExchanges, session);
 
-        OrchestratorAnalysisResponse aiResponse;
-        try {
-            aiResponse = pythonApiClient.callApi(
-                    ApiPath.ANALYZER_API,
-                    HttpMethod.POST,
-                    pythonRequest,
-                    OrchestratorAnalysisResponse.class
-            );
-        } catch (Exception e) {
-            System.err.println("AI Error: " + e.getMessage());
-            aiResponse = OrchestratorAnalysisResponse.builder()
-                    .action(OrchestratorAnalysisResponse.AnalysisAction.MOVE_NEXT)
-                    .responseText("Chúng ta chuyển sang câu tiếp theo nhé.")
-                    .build();
-        }
+        OrchestratorAnalysisResponse aiResponse = pythonApiClient.callApi(
+                ApiPath.ANALYZER_API,
+                HttpMethod.POST,
+                pythonRequest,
+                OrchestratorAnalysisResponse.class
+        );
+
 
         // --- BƯỚC 3: XỬ LÝ RESPONSE AI ---
         if (aiResponse.getAction() == OrchestratorAnalysisResponse.AnalysisAction.DRILL_DOWN) {
@@ -220,30 +213,116 @@ public class InterviewProcessServiceImpl implements InterviewProcessService {
                 .build();
     }
 
-    private void finishSession(InterviewSessionRedis redisSession) {
+// ... Imports
 
+    // ... Imports
+
+    private void finishSession(InterviewSessionRedis redisSession) {
         InterviewSession dbSession = sessionRepository.findById(redisSession.getDbId())
                 .orElseThrow(() -> new RuntimeException("DB Session not found"));
 
-        List<InterviewResultDetail.QAResult> qaResults = redisSession.getChatHistory().stream()
-                .map(h -> InterviewResultDetail.QAResult.builder()
-                        .questionOrder(h.getQuestionOrder())
-                        .questionText(h.getQuestionText())
-                        .answerText(h.getAnswerText())
-                        .build())
-                .toList();
+        // [UPDATE] Hàm này giờ sẽ trả về Full List (Cả Anchor lẫn Follow-up)
+        List<InterviewResultDetail.QAResult> gradedHistory = gradeAndMapFullHistory(redisSession.getChatHistory());
+
+        // Tính điểm trung bình (Chỉ tính trên các câu có điểm - tức là câu Anchor)
+        double avgScore = gradedHistory.stream()
+                .filter(r -> r.getScore() != null)
+                .mapToDouble(InterviewResultDetail.QAResult::getScore)
+                .average().orElse(0.0);
 
         InterviewResultDetail resultDetail = InterviewResultDetail.builder()
-                .history(qaResults)
-                .aiOverviewFeedback("Đang chờ AI chấm điểm...")
+                .history(gradedHistory)
+                .aiOverviewFeedback("Đã chấm điểm xong.")
                 .build();
 
         dbSession.setResultDetail(resultDetail);
+        dbSession.setOverallScore(avgScore);
         dbSession.setStatus(InterviewSession.SessionStatus.COMPLETED);
         dbSession.setCompletedAt(LocalDateTime.now());
 
         sessionRepository.save(dbSession);
         redisRepository.delete(redisSession);
+    }
+
+    // ======================================================================
+    // LOGIC GROUPING & CHẤM ĐIỂM (GIỮ LẠI FULL HISTORY)
+    // ======================================================================
+
+    private List<InterviewResultDetail.QAResult> gradeAndMapFullHistory(List<InterviewSessionRedis.InterviewExchange> fullHistory) {
+        List<InterviewResultDetail.QAResult> finalResults = new ArrayList<>();
+        List<InterviewSessionRedis.InterviewExchange> currentGroup = new ArrayList<>();
+
+        // Biến này để đánh số thứ tự tăng dần toàn cục (0, 1, 2, 3...) thay vì reset theo phase
+        int globalOrderCounter = 0;
+
+        for (var exchange : fullHistory) {
+            // Nếu gặp Mỏ neo MỚI và group cũ đã có dữ liệu -> Xử lý group cũ
+            if (exchange.getType() == InterviewSessionRedis.QuestionType.BLUEPRINT && !currentGroup.isEmpty()) {
+                // Xử lý group cũ: Chấm điểm và Add tất cả vào finalResults
+                processGroupAndAddToResult(currentGroup, finalResults, globalOrderCounter);
+
+                // Cập nhật lại global counter (cộng thêm số lượng câu hỏi trong group vừa xử lý)
+                globalOrderCounter += currentGroup.size();
+
+                currentGroup.clear();
+            }
+            currentGroup.add(exchange);
+        }
+
+        // Xử lý group cuối cùng
+        if (!currentGroup.isEmpty()) {
+            processGroupAndAddToResult(currentGroup, finalResults, globalOrderCounter);
+        }
+
+        return finalResults;
+    }
+
+    private void processGroupAndAddToResult(
+            List<InterviewSessionRedis.InterviewExchange> group,
+            List<InterviewResultDetail.QAResult> finalResults,
+            int startOrderIndex
+    ) {
+        // 1. CHẤM ĐIỂM CẢ GROUP (Lấy điểm cho chủ đề này)
+        GradingResponse gradingRes;
+        try {
+            // Gửi cả list (Anchor + Follow-ups) qua Python
+            gradingRes = pythonApiClient.callApi(
+                    ApiPath.GRADING_API,
+                    HttpMethod.POST,
+                    group,
+                    GradingResponse.class
+            );
+        } catch (Exception e) {
+            System.err.println("Grading error: " + e.getMessage());
+            gradingRes = new GradingResponse(0.0, "Lỗi hệ thống chấm điểm", "");
+        }
+
+        // 2. MAP TỪNG ITEM TRONG GROUP RA KẾT QUẢ (Để không bị mất câu bồi)
+        for (int i = 0; i < group.size(); i++) {
+            var ex = group.get(i);
+
+            // Tạo builder cơ bản
+            var qaBuilder = InterviewResultDetail.QAResult.builder()
+                    .questionOrder(startOrderIndex + i) // [FIX] Order tăng dần đều, không bị reset
+                    .questionText(ex.getQuestionText())
+                    .answerText(ex.getAnswerText());
+
+            // 3. GẮN ĐIỂM VÀ FEEDBACK
+            // Logic: Chỉ gắn điểm vào câu đầu tiên (Anchor - Mỏ neo)
+            // Các câu bồi (i > 0) sẽ để score = null
+            if (i == 0) {
+                qaBuilder.score(gradingRes.getScore())
+                        .feedback(gradingRes.getFeedback())
+                        .suggestion(gradingRes.getSuggestion());
+            } else {
+                // Câu bồi: Có thể để null hoặc copy feedback nếu muốn (thường là để null cho đỡ rối)
+                qaBuilder.score(null)
+                        .feedback(null)
+                        .suggestion(null);
+            }
+
+            finalResults.add(qaBuilder.build());
+        }
     }
 
     @Data
