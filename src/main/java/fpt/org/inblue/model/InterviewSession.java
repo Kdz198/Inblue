@@ -108,6 +108,9 @@ public class InterviewSession {
     private InterviewResultDetail resultDetail;
 
     public enum EvaluationResult {
-        PASSED, FAILED, CONSIDER
+        STRONG_HIRE, // >= 9.0: Xuất sắc, offer ngay
+        HIRE,        // >= 7.0: Đạt yêu cầu, kiến thức vững
+        CONSIDER,    // >= 5.0: Tạm được, cần phỏng vấn thêm hoặc làm vị trí thấp hơn
+        REJECT       // < 5.0: Trượt thẳng
     }
 }

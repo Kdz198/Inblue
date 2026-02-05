@@ -8,7 +8,6 @@ import fpt.org.inblue.model.caching.InterviewSessionRedis;
 import fpt.org.inblue.model.dto.request.OrchestratorConductRequest;
 import fpt.org.inblue.model.dto.request.SubmitAnswerRequest;
 import fpt.org.inblue.model.dto.response.GradingResponse;
-import fpt.org.inblue.model.dto.response.InterviewBlueprintResponse;
 import fpt.org.inblue.model.dto.response.OrchestratorAnalysisResponse;
 import fpt.org.inblue.model.dto.response.QuestionResponse;
 import fpt.org.inblue.repository.InterviewSessionRepository;
@@ -213,9 +212,6 @@ public class InterviewProcessServiceImpl implements InterviewProcessService {
                 .build();
     }
 
-// ... Imports
-
-    // ... Imports
 
     private void finishSession(InterviewSessionRedis redisSession) {
         InterviewSession dbSession = sessionRepository.findById(redisSession.getDbId())
@@ -238,11 +234,13 @@ public class InterviewProcessServiceImpl implements InterviewProcessService {
         dbSession.setResultDetail(resultDetail);
         dbSession.setOverallScore(avgScore);
         dbSession.setStatus(InterviewSession.SessionStatus.COMPLETED);
+        dbSession.setResult(determineEvaluationResult(avgScore));
         dbSession.setCompletedAt(LocalDateTime.now());
 
         sessionRepository.save(dbSession);
         redisRepository.delete(redisSession);
     }
+
 
     // ======================================================================
     // LOGIC GROUPING & CHẤM ĐIỂM (GIỮ LẠI FULL HISTORY)
@@ -323,6 +321,28 @@ public class InterviewProcessServiceImpl implements InterviewProcessService {
 
             finalResults.add(qaBuilder.build());
         }
+    }
+
+    private InterviewSession.EvaluationResult determineEvaluationResult(double overallScore) {
+        if (overallScore >= 9.0) {
+            return InterviewSession.EvaluationResult.STRONG_HIRE;
+        } else if (overallScore >= 7.0) {
+            return InterviewSession.EvaluationResult.HIRE;
+        } else if (overallScore >= 5.0) {
+            return InterviewSession.EvaluationResult.CONSIDER;
+        } else {
+            return InterviewSession.EvaluationResult.REJECT;
+        }
+    }
+
+    private String genOverviewFeedback(List<InterviewResultDetail.QAResult> gradedHistory) {
+
+        return pythonApiClient.callApi(
+                ApiPath.OVERVIEW_FEEDBACK_API,
+                HttpMethod.POST,
+                gradedHistory,
+                String.class
+        );
     }
 
     @Data
