@@ -1,10 +1,7 @@
 package fpt.org.inblue.model;
 
 import jakarta.persistence.*;
-import lombok.AccessLevel;
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import lombok.*;
 import lombok.experimental.FieldDefaults;
 
 @AllArgsConstructor
@@ -12,15 +9,16 @@ import lombok.experimental.FieldDefaults;
 @Data
 @FieldDefaults(level = AccessLevel.PRIVATE)
 @Entity
-public class QuestionSetItem {
+@Builder
+public class PracticeSetItem {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    int questionSetItemId;
+    int id;
     @JoinColumn(name = "question_id")
     @ManyToOne
-    Question question;
-    @JoinColumn(name = "question_set_id")
+    PracticeQuestion practiceQuestion;
+    @JoinColumn(name = "practice_set_id")
     @ManyToOne
-    QuestionSet questionSet;
+    PracticeSet practiceSet;
     int orderIndex;
 }

@@ -6,9 +6,9 @@ import java.util.List;
 
 public interface QuestionLessonService {
     QuestionLesson getQuestionCategory(int id);
-    QuestionLesson createQuestionCategory(QuestionLesson questionLesson);
+    QuestionLesson createQuestionLesson(QuestionLesson questionLesson);
     QuestionLesson updateQuestionCategory(QuestionLesson questionLesson);
     void deleteQuestionCategory(int id);
     List<QuestionLesson> getAllQuestionCategories();
-
+    QuestionLesson findByName(String lessonName);
 }

@@ -20,7 +20,7 @@ public class QuestionLessonServiceImpl implements QuestionLessonService {
     }
 
     @Override
-    public QuestionLesson createQuestionCategory(QuestionLesson questionLesson) {
+    public QuestionLesson createQuestionLesson(QuestionLesson questionLesson) {
         return questionLessonRepository.save(questionLesson);
     }
 
@@ -47,6 +47,11 @@ public class QuestionLessonServiceImpl implements QuestionLessonService {
     @Override
     public List<QuestionLesson> getAllQuestionCategories() {
         return questionLessonRepository.findAll();
+    }
+
+    @Override
+    public QuestionLesson findByName(String lessonName) {
+       return questionLessonRepository.findByLessonName(lessonName);
     }
 
 

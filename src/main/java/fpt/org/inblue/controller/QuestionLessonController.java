@@ -29,7 +29,7 @@ public class QuestionLessonController {
 
     @PostMapping
     public ResponseEntity<QuestionLesson> createQuestionCategory(@RequestBody QuestionLesson questionLesson) {
-        QuestionLesson createdQuestionLesson = questionLessonService.createQuestionCategory(questionLesson);
+        QuestionLesson createdQuestionLesson = questionLessonService.createQuestionLesson(questionLesson);
         return ResponseEntity.ok(createdQuestionLesson);
     }
 

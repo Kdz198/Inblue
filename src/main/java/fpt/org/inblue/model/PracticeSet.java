@@ -1,12 +1,8 @@
 package fpt.org.inblue.model;
 
-import fpt.org.inblue.model.enums.QuestionLevel;
 import fpt.org.inblue.model.enums.TargetLevel;
 import jakarta.persistence.*;
-import lombok.AccessLevel;
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import lombok.*;
 import lombok.experimental.FieldDefaults;
 
 @AllArgsConstructor
@@ -14,11 +10,12 @@ import lombok.experimental.FieldDefaults;
 @Data
 @FieldDefaults(level = AccessLevel.PRIVATE)
 @Entity
-public class QuestionSet {
+@Builder
+public class PracticeSet {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    int questionSetId;
-    String questionSetName;
+    int id;
+    String practiceSetName;
     String objective;
     TargetLevel level;
     @JoinColumn(name = "major_id")
