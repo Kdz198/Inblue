@@ -14,4 +14,5 @@ public class QuestionResponse {
     private Integer currentQuestionIndex; // Để FE hiện thanh progress bar (Câu 1/10)
     private Integer totalQuestionsInPhase;
     private String questionContent;
+    private String questionType; // BLUEPRINT hoặc FOLLOW_UP
 }

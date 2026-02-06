@@ -8,6 +8,7 @@ import org.springframework.data.redis.core.RedisHash;
 import java.io.Serializable;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.LinkedList;
 import java.util.List;
 
 @Data
@@ -26,8 +27,12 @@ public class InterviewSessionRedis {
     private Integer currentPhaseIndex;
     private Integer currentQuestionIndex;
 
+    // --- [QUAN TRỌNG] State để nhớ AI đã quyết định gì ở lượt trước ---
+    private String currentQuestionText;
+    private QuestionType currentQuestionType;
+
     @Builder.Default
-    private List<InterviewExchange> chatHistory = new ArrayList<>();
+    private List<InterviewExchange> chatHistory = new LinkedList<>();
 
     @Data
     @NoArgsConstructor
@@ -40,7 +45,13 @@ public class InterviewSessionRedis {
         private String questionText;  // Nội dung câu hỏi lúc đó
         private String answerText;    // Ứng viên trả lời
         private String submittedAt;     // Timestamp (System.currentTimeMillis())
+        private String currentQuestionText;
+        private QuestionType type; // BLUEPRINT hoặc FOLLOW_UP
+    }
 
-
+    // Enum định nghĩa loại câu hỏi
+    public enum QuestionType {
+        BLUEPRINT, // Câu hỏi gốc trong kịch bản (Mỏ neo)
+        FOLLOW_UP  // Câu hỏi bồi (AI tự nghĩ ra)
     }
 }
