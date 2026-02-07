@@ -20,14 +20,14 @@ public interface PostService {
     List<Post> getPublishPost();
     List<Post> getAllPost();
 
-    // Like methods
+    // Like
     PostLike likePost(PostLikeRequest request);
     void unlikePost(int postId, int userId);
     boolean isLiked(int postId, int userId);
     List<PostLikeResponse> getLikesByPostId(int postId);
     int countLikes(int postId);
 
-    // Comment methods
+    // Comment
     PostComment createComment(PostCommentRequest request);
     PostComment updateComment(int commentId, String content);
     void deleteComment(int commentId);

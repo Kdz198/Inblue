@@ -84,7 +84,6 @@ public class PostServiceImpl implements PostService {
         return postRepository.findAll();
     }
 
-    // ==================== LIKE METHODS ====================
 
     @Override
     public PostLike likePost(PostLikeRequest request) {
@@ -140,7 +139,6 @@ public class PostServiceImpl implements PostService {
                 .build();
     }
 
-    // ==================== COMMENT METHODS ====================
 
     @Override
     public PostComment createComment(PostCommentRequest request) {
