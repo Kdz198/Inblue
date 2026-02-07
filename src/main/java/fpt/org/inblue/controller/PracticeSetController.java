@@ -11,7 +11,7 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 
 @RestController
-@RequestMapping("/api/question-sets")
+@RequestMapping("/api/practice-sets")
 @CrossOrigin(origins = "*")
 public class PracticeSetController {
     @Autowired

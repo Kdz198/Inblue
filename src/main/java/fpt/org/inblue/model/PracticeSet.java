@@ -5,6 +5,8 @@ import jakarta.persistence.*;
 import lombok.*;
 import lombok.experimental.FieldDefaults;
 
+import java.sql.Date;
+
 @AllArgsConstructor
 @NoArgsConstructor
 @Data
@@ -18,7 +20,11 @@ public class PracticeSet {
     String practiceSetName;
     String objective;
     TargetLevel level;
+    Date startDate;
     @JoinColumn(name = "major_id")
     @ManyToOne
     Major major;
+    @JoinColumn(name = "user_id")
+    @ManyToOne
+    User user;
 }

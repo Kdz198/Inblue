@@ -14,6 +14,8 @@ import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.sql.Date;
+import java.time.LocalDate;
 import java.util.List;
 
 @Service
@@ -70,6 +72,12 @@ public class PracticeSetServiceImpl implements PracticeSetService {
         return practiceSetRepository.findAllByLevel(TargetLevel.valueOf(level));
     }
 
+    /**
+     * Tao bo on tap hoan chinh
+     * Một hàm chỉ tạo 1 bộ câu hỏi thôi nếu mà user yêu cầu tạo bao nhiêu bộ thì gọi hàm này bấy nhiêu lần
+     * @param practiceRequest
+     * @return
+     */
     @Override
     @Transactional
     public PracticeSet createFullSet(PracticeRequest practiceRequest) {
@@ -79,6 +87,7 @@ public class PracticeSetServiceImpl implements PracticeSetService {
                 .objective(practiceRequest.getObjective())
                 .level(practiceRequest.getTarget())
                 .major(major)
+                .startDate(Date.valueOf(LocalDate.now().plusDays(practiceRequest.getDateNumber()))) //ngay bat dau on tap la ngay hien tai + số ngày mà AI đề xuất
                 .build();
         practiceSet = practiceSetRepository.save(practiceSet);
 
@@ -114,6 +123,11 @@ public class PracticeSetServiceImpl implements PracticeSetService {
         return practiceSet;
     }
 
+    /**
+     * Lấy bộ on tap hoàn chỉnh bao gồm cả các câu hỏi bên trong
+     * @param id
+     * @return
+     */
     @Override
     public PracticeSetResponse getFullSet(int id) {
         PracticeSet practiceSet = getQuestionSet(id);

@@ -8,6 +8,7 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.util.Date;
 import java.util.List;
 
 @Data
@@ -18,6 +19,7 @@ public class PracticeRequest {
     String objective;
     TargetLevel target;
     int majorId;
+    int dateNumber;
    List<PracticeQuestionRequest> questions;
 }
 
