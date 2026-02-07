@@ -90,19 +90,16 @@ public class PostServiceImpl implements PostService {
         if (postLikeRepository.existsByPostPostIdAndUserId(request.getPostId(), request.getUserId())) {
             throw new RuntimeException("User đã like bài viết này rồi");
         }
-
         Post post = getPostById(request.getPostId());
         User user = userService.getById(request.getUserId());
-
-        PostLike postLike = new PostLike();
-        postLike.setPost(post);
-        postLike.setUser(user);
-
+        PostLike postLike = PostLike.builder()
+                .post(post)
+                .user(user)
+                .build();
         return postLikeRepository.save(postLike);
     }
 
     @Override
-    @Transactional
     public void unlikePost(int postId, int userId) {
         if (!postLikeRepository.existsByPostPostIdAndUserId(postId, userId)) {
             throw new RuntimeException("User chưa like bài viết này");
@@ -118,16 +115,13 @@ public class PostServiceImpl implements PostService {
     @Override
     public List<PostLikeResponse> getLikesByPostId(int postId) {
         List<PostLike> likes = postLikeRepository.findAllByPostPostId(postId);
-        return likes.stream()
-                .map(this::mapLikeToResponse)
-                .collect(Collectors.toList());
+        List<PostLikeResponse> responses = new ArrayList<>();
+        for(PostLike like : likes){
+            PostLikeResponse response = mapLikeToResponse(like);
+            responses.add(response);
+        }
+        return responses;
     }
-
-    @Override
-    public int countLikes(int postId) {
-        return postLikeRepository.countByPostPostId(postId);
-    }
-
     private PostLikeResponse mapLikeToResponse(PostLike postLike) {
         return PostLikeResponse.builder()
                 .id(postLike.getId())
@@ -139,6 +133,10 @@ public class PostServiceImpl implements PostService {
                 .build();
     }
 
+    @Override
+    public int countLikes(int postId) {
+        return postLikeRepository.countByPostPostId(postId);
+    }
 
     @Override
     public PostComment createComment(PostCommentRequest request) {
@@ -151,8 +149,7 @@ public class PostServiceImpl implements PostService {
         comment.setContent(request.getContent());
 
         if (request.getParentCommentId() != null) {
-            PostComment parentComment = postCommentRepository.findById(request.getParentCommentId())
-                    .orElseThrow(() -> new RuntimeException("Parent comment không tồn tại"));
+            PostComment parentComment = postCommentRepository.findById(request.getParentCommentId()).orElseThrow(() -> new RuntimeException("Parent comment không tồn tại"));
             comment.setParentComment(parentComment);
         }
 
@@ -197,9 +194,12 @@ public class PostServiceImpl implements PostService {
         List<PostComment> replies = postCommentRepository
                 .findAllByParentCommentIdOrderByCreatedAtAsc(parentCommentId);
 
-        return replies.stream()
-                .map(comment -> mapCommentToResponse(comment, false))
-                .collect(Collectors.toList());
+        List<PostCommentResponse> comments = new ArrayList<>();
+        for(PostComment reply : replies){
+            PostCommentResponse response = this.mapCommentToResponse(reply, false);
+            comments.add(response);
+        }
+        return comments;
     }
 
     @Override
@@ -208,28 +208,37 @@ public class PostServiceImpl implements PostService {
     }
 
     private PostCommentResponse mapCommentToResponse(PostComment comment, boolean includeReplies) {
-        PostCommentResponse response = PostCommentResponse.builder()
-                .id(comment.getId())
-                .postId(comment.getPost().getPostId())
-                .userId(comment.getUser().getId())
-                .userName(comment.getUser().getName())
-                .userAvatar(comment.getUser().getAvatarUrl())
-                .content(comment.getContent())
-                .parentCommentId(comment.getParentComment() != null ? comment.getParentComment().getId() : null)
-                .createdAt(comment.getCreatedAt())
-                .updatedAt(comment.getUpdatedAt())
-                .build();
+        PostCommentResponse response = new PostCommentResponse();
+        response.setId(comment.getId());
+        response.setPostId(comment.getPost().getPostId());
+        response.setUserId(comment.getUser().getId());
+        response.setUserName(comment.getUser().getName());
+        response.setUserAvatar(comment.getUser().getAvatarUrl());
+        response.setContent(comment.getContent());
+        response.setCreatedAt(comment.getCreatedAt());
+        response.setUpdatedAt(comment.getUpdatedAt());
+
+        if (comment.getParentComment() != null) {
+            response.setParentCommentId(comment.getParentComment().getId());
+        } else {
+            response.setParentCommentId(null);
+        }
 
         if (includeReplies) {
-            List<PostComment> replies = postCommentRepository
+            // Lấy danh sách comment con từ DB
+            List<PostComment> repliesFromDB = postCommentRepository
                     .findAllByParentCommentIdOrderByCreatedAtAsc(comment.getId());
-            if (!replies.isEmpty()) {
-                response.setReplies(replies.stream()
-                        .map(reply -> mapCommentToResponse(reply, true))
-                        .collect(Collectors.toList()));
-            } else {
-                response.setReplies(new ArrayList<>());
+
+            List<PostCommentResponse> replyResponses = new ArrayList<>();
+
+            // Lặp qua danh sách comment con
+            for (PostComment reply : repliesFromDB) {
+                PostCommentResponse convertedReply = mapCommentToResponse(reply, true);
+                replyResponses.add(convertedReply);
             }
+            response.setReplies(replyResponses);
+        } else {
+            response.setReplies(new ArrayList<>());
         }
 
         return response;

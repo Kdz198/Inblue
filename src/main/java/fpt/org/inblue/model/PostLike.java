@@ -1,10 +1,7 @@
 package fpt.org.inblue.model;
 
 import jakarta.persistence.*;
-import lombok.AccessLevel;
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import lombok.*;
 import lombok.experimental.FieldDefaults;
 import org.hibernate.annotations.CreationTimestamp;
 
@@ -16,6 +13,8 @@ import java.sql.Timestamp;
 @NoArgsConstructor
 @Data
 @Table(uniqueConstraints = @UniqueConstraint(columnNames = {"post_id", "user_id"}))
+@Builder
+//unique chỉ đc 1 value cho mỗi cột trong bảng còn dùng uniqueConstraint thì kết hợp nhiều cột với nhau để tạo thành 1 giá trị duy nhất
 public class PostLike {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
