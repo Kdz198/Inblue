@@ -130,7 +130,7 @@ public class PostController {
 
     @GetMapping("/published")
     @Operation(summary = "Lấy tất cả bài viết đã publish")
-    public ResponseEntity<List<Post>> getPublishedPosts() {
+    public ResponseEntity<List<PostResponse>> getPublishedPosts() {
         return ResponseEntity.ok(postService.getPublishPost());}
 
     @GetMapping("/change-status/{postId}")

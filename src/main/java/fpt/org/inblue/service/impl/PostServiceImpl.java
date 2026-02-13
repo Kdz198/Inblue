@@ -76,8 +76,10 @@ public class PostServiceImpl implements PostService {
     }
 
     @Override
-    public List<Post> getPublishPost() {
-        return postRepository.findAllByStatus(PostStatus.PUBLISHED);
+    public List<PostResponse> getPublishPost() {
+        return getAllPost().stream()
+                .filter(p -> p.getPost().getStatus() == PostStatus.PUBLISHED)
+                .toList();
     }
 
     @Override

@@ -18,7 +18,7 @@ public interface PostService {
     Post createPost(PostCreateRequest post) throws IOException;
     Post getPostById(int postId);
     void changeStatus(int postId, PostStatus status);
-    List<Post> getPublishPost();
+    List<PostResponse> getPublishPost();
     List<PostResponse> getAllPost();
 
     // Like
