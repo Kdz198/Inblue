@@ -77,15 +77,11 @@ public class PostServiceImpl implements PostService {
 
     @Override
     public List<PostResponse> getPublishPost() {
-        return getAllPost().stream()
-                .filter(p -> p.getPost().getStatus() == PostStatus.PUBLISHED)
-                .toList();
+        List<Post> posts = postRepository.findAllByStatus(PostStatus.PUBLISHED);
+        return mapPostToResponse(posts);
     }
 
-    @Override
-    public List<PostResponse> getAllPost() {
-        List<Post> posts = postRepository.findAll();
-
+    List<PostResponse> mapPostToResponse(List<Post> posts) {
         List<PostResponse> responses = new ArrayList<>();
         for(Post post : posts) {
             PostResponse response = new PostResponse();
@@ -97,6 +93,13 @@ public class PostServiceImpl implements PostService {
             responses.add(response);
         }
         return responses;
+    }
+
+    @Override
+    public List<PostResponse> getAllPost() {
+        List<Post> posts = postRepository.findAll();
+
+        return mapPostToResponse(posts);
     }
 
 
