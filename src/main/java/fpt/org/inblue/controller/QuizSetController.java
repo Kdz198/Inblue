@@ -13,6 +13,7 @@ import java.util.Map;
 
 @RestController
 @RequestMapping("/api/quiz-sets")
+@CrossOrigin(origins = "*")
 public class QuizSetController {
     @Autowired
     private QuizSetService quizSetService;

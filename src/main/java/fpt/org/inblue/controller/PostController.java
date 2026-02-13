@@ -8,6 +8,7 @@ import fpt.org.inblue.model.dto.request.PostCreateRequest;
 import fpt.org.inblue.model.dto.request.PostLikeRequest;
 import fpt.org.inblue.model.dto.response.PostCommentResponse;
 import fpt.org.inblue.model.dto.response.PostLikeResponse;
+import fpt.org.inblue.model.enums.PostStatus;
 import fpt.org.inblue.service.PostService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;
@@ -121,4 +122,19 @@ public class PostController {
     public ResponseEntity<Integer> countComments(@PathVariable int postId) {
         return ResponseEntity.ok( postService.countComments(postId));
     }
+    @GetMapping
+    @Operation(summary = "Lấy tất cả bài viết")
+    public ResponseEntity<List<Post>> getAllPosts() {
+        return ResponseEntity.ok(postService.getAllPost());}
+
+    @GetMapping("/published")
+    @Operation(summary = "Lấy tất cả bài viết đã publish")
+    public ResponseEntity<List<Post>> getPublishedPosts() {
+        return ResponseEntity.ok(postService.getPublishPost());}
+
+    @GetMapping("/change-status/{postId}")
+    @Operation(summary = "Thay đổi trạng thái bài viết")
+    public ResponseEntity<Map<String, String>> changeStatus(@PathVariable int postId, @RequestParam PostStatus status) {
+        postService.changeStatus(postId, status);
+        return ResponseEntity.ok(Map.of("message", "Thay đổi trạng thái thành công"));}
 }

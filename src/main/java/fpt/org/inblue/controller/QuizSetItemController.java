@@ -12,6 +12,7 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/api/quiz-set-items")
+@CrossOrigin(origins = "*")
 public class QuizSetItemController {
     @Autowired
     private QuizItemService quizItemService;

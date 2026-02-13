@@ -11,6 +11,7 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/api/candidate-profiles")
+@CrossOrigin(origins = "*")
 public class CandidateProfileController {
     @Autowired
     private CandidateProfileService candidateProfileService;
