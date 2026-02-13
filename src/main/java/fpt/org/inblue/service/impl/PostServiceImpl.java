@@ -8,6 +8,7 @@ import fpt.org.inblue.model.dto.request.PostCreateRequest;
 import fpt.org.inblue.model.dto.request.PostLikeRequest;
 import fpt.org.inblue.model.dto.response.PostCommentResponse;
 import fpt.org.inblue.model.dto.response.PostLikeResponse;
+import fpt.org.inblue.model.dto.response.PostResponse;
 import fpt.org.inblue.model.enums.PostStatus;
 import fpt.org.inblue.repository.PostCommentRepository;
 import fpt.org.inblue.repository.PostLikeRepository;
@@ -80,8 +81,20 @@ public class PostServiceImpl implements PostService {
     }
 
     @Override
-    public List<Post> getAllPost() {
-        return postRepository.findAll();
+    public List<PostResponse> getAllPost() {
+        List<Post> posts = postRepository.findAll();
+
+        List<PostResponse> responses = new ArrayList<>();
+        for(Post post : posts) {
+            PostResponse response = new PostResponse();
+            response.setPost(post);
+            response.setPostLikes(postLikeRepository.findAllByPostPostId(post.getPostId()));
+            response.setLikeCount(postLikeRepository.countByPostPostId(post.getPostId()));
+            response.setPostComments(getCommentsByPostId(post.getPostId()));
+            response.setCommentCount(postCommentRepository.countByPostPostId(post.getPostId()));
+            responses.add(response);
+        }
+        return responses;
     }
 
 

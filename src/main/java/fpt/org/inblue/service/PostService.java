@@ -8,6 +8,7 @@ import fpt.org.inblue.model.dto.request.PostCreateRequest;
 import fpt.org.inblue.model.dto.request.PostLikeRequest;
 import fpt.org.inblue.model.dto.response.PostCommentResponse;
 import fpt.org.inblue.model.dto.response.PostLikeResponse;
+import fpt.org.inblue.model.dto.response.PostResponse;
 import fpt.org.inblue.model.enums.PostStatus;
 
 import java.io.IOException;
@@ -18,7 +19,7 @@ public interface PostService {
     Post getPostById(int postId);
     void changeStatus(int postId, PostStatus status);
     List<Post> getPublishPost();
-    List<Post> getAllPost();
+    List<PostResponse> getAllPost();
 
     // Like
     PostLike likePost(PostLikeRequest request);
