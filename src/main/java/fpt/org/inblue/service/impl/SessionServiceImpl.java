@@ -78,8 +78,8 @@ public class SessionServiceImpl implements SessionService {
         headers.setBearerAuth(dailyApiKey);
         headers.setContentType(MediaType.APPLICATION_JSON);
         // Tính toán Timestamp hết hạn (Expiration Time)
-        long currentTime = System.currentTimeMillis() / 1000;
-        long exp = currentTime + request.getDailyCoCreationRequest().getProperties().getExp();
+        long exp = (request.getJoinTime().getTime()/1000) + request.getDailyCoCreationRequest().getProperties().getExp();
+
         request.getDailyCoCreationRequest().getProperties().setExp((int) exp);
         request.getDailyCoCreationRequest().setName(helperCreateName());
         HttpEntity<DailyCoCreationRequest> entity = new HttpEntity<>(request.getDailyCoCreationRequest(), headers);
@@ -100,6 +100,7 @@ public class SessionServiceImpl implements SessionService {
             session.setUserId(request.getUserId());
             session.setUserId2(request.getMentorId());
             session.setStatus(SessionStatus.SCHEDULED);
+            session.setJoinTime(request.getJoinTime());
             sessionRepository.save(session);
             return response.getBody();
         }
