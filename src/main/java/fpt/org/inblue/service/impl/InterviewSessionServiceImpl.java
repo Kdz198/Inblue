@@ -21,10 +21,7 @@ import org.springframework.retry.annotation.Retryable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.UUID;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @Service
@@ -146,6 +143,11 @@ public class InterviewSessionServiceImpl implements InterviewSessionService {
 
 
         return sessionKey;
+    }
+
+    @Override
+    public List<InterviewSession> getAllSessionsForUser(Integer userId) {
+        return  sessionRepository.findByUserId(userId);
     }
 
     // Helper method để convert Enum thành Map cho gọn code
