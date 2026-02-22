@@ -9,6 +9,7 @@ import fpt.org.inblue.repository.caching.InterviewBehaviorRedisRepository;
 import fpt.org.inblue.service.ProctoringService;
 import fpt.org.inblue.service.PythonApiClient;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpMethod;
 import org.springframework.stereotype.Service;
 
@@ -19,6 +20,7 @@ import java.util.Map;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class ProctoringServiceImpl implements ProctoringService {
 
     private final InterviewBehaviorRedisRepository behaviorRedisRepo;
@@ -33,6 +35,8 @@ public class ProctoringServiceImpl implements ProctoringService {
                 request,
                 FaceSnapshotResponse.class
         );
+        log.info( "Nhận phản hồi từ Python Proctoring API cho session [{}]: status={}, warningType={}",
+                request.getSessionKey(), response.getStatus(), response.getWarningType());
 
         if ("WARNING".equals(response.getStatus())) {
             InterviewBehaviorRedis behaviorDoc = behaviorRedisRepo.findById(request.getSessionKey())
