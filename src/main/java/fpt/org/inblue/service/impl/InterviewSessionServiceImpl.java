@@ -70,6 +70,10 @@ public class InterviewSessionServiceImpl implements InterviewSessionService {
                 .map(this::convertEnumToMap)
                 .collect(Collectors.toList()));
 
+        options.put("domains", Arrays.stream(JobDomain.values())
+                .map(this::convertEnumToMap)
+                .collect(Collectors.toList()));
+
         return options;
     }
 
@@ -164,6 +168,11 @@ public class InterviewSessionServiceImpl implements InterviewSessionService {
             map.put("label", e.getLabel());
             map.put("description", e.getDescription());
         } else if (enumVal instanceof Language e) {
+            map.put("key", e.name());
+            map.put("label", e.getLabel());
+            map.put("description", e.getDescription());
+        }
+        else if (enumVal instanceof JobDomain e) {
             map.put("key", e.name());
             map.put("label", e.getLabel());
             map.put("description", e.getDescription());
