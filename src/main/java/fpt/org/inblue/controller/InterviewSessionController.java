@@ -13,6 +13,7 @@ import java.util.Map;
 
 @RestController
 @RequestMapping ("/api/interview-sessions")
+@CrossOrigin(origins = "*")
 @RequiredArgsConstructor
 public class InterviewSessionController {
 
