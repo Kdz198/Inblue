@@ -9,6 +9,7 @@ import fpt.org.inblue.model.dto.request.OrchestratorRequest;
 import fpt.org.inblue.model.dto.request.OrchestratorRequest.*;
 import fpt.org.inblue.model.dto.response.InterviewBlueprintResponse;
 import fpt.org.inblue.model.enums.InterviewEnums.*;
+import fpt.org.inblue.model.enums.PythonService;
 import fpt.org.inblue.repository.InterviewSessionRepository;
 import fpt.org.inblue.repository.caching.InterviewSessionRedisRepository;
 import fpt.org.inblue.service.InterviewSessionService;
@@ -45,6 +46,7 @@ public class InterviewSessionServiceImpl implements InterviewSessionService {
     public JobRequirementData getJobRequirementFromJD(String description) {
 
         return pythonApiClient.callApi(
+                PythonService.LLM,
                 ApiPath.JD_API,
                 HttpMethod.POST,
                 new jobDescription(description),
@@ -93,6 +95,7 @@ public class InterviewSessionServiceImpl implements InterviewSessionService {
 
 
         InterviewBlueprintResponse blueprint = pythonApiClient.callApi(
+                PythonService.LLM,
                 ApiPath.ORCHESTRATOR_API,
                 HttpMethod.POST,
                 pythonPayload,

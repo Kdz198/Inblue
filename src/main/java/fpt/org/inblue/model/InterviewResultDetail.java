@@ -32,5 +32,7 @@ public class InterviewResultDetail {
         private String feedback; // AI nhận xét câu này
         private Double score;    // Điểm câu này (0-10)
         private String suggestion; // Gợi ý câu trả lời tốt hơn
+
+        private List<String> behavioralWarnings; //  phần này faceDetect
     }
 }

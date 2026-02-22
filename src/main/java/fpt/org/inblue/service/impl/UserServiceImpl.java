@@ -7,6 +7,7 @@ import fpt.org.inblue.model.User;
 import fpt.org.inblue.model.dto.UserEventDto;
 import fpt.org.inblue.model.dto.UserInfo;
 import fpt.org.inblue.model.dto.response.CVParserResponse;
+import fpt.org.inblue.model.enums.PythonService;
 import fpt.org.inblue.model.enums.Role;
 import fpt.org.inblue.repository.UserRepository;
 import fpt.org.inblue.service.CandidateProfileService;
@@ -131,6 +132,7 @@ public class UserServiceImpl implements UserService {
         }
         CVParserResponse response =
                 pythonApiClient.callApi(
+                        PythonService.LLM,
                         ApiPath.CV_API,
                         HttpMethod.POST,
                         cvFile,

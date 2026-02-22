@@ -8,4 +8,5 @@ public class ApiPath {
     public static final String ANALYZER_API = "/api/v1/orchestrator/analyze-response";
     public static final String GRADING_API = "/api/v1/orchestrator/grade-answer";
     public static final String OVERVIEW_FEEDBACK_API = "/api/v1/orchestrator/generate-overview";
+    public static final String PROCTORING_SNAPSHOT_API = "/api/v1/proctoring/snapshot";
 }

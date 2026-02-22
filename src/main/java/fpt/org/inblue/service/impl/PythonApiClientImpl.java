@@ -2,6 +2,7 @@ package fpt.org.inblue.service.impl;
 
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import fpt.org.inblue.model.enums.PythonService;
 import fpt.org.inblue.service.PythonApiClient;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
@@ -19,13 +20,22 @@ public class PythonApiClientImpl implements PythonApiClient {
 
     private final RestTemplate restTemplate;
 
-    @Value("${python.service.url:http://localhost:8000}")
-    private String PYTHON_BASE_URL;
+    @Value("${PYTHON_LLM_URL:}")
+    private String LLM_BASE_URL;
+
+    @Value("${PYTHON_VISION_URL:}")
+    private String VISION_BASE_URL;
+
+    private String getBaseUrl(PythonService targetService) {
+        return targetService == PythonService.VISION ? VISION_BASE_URL : LLM_BASE_URL;
+    }
 
     @Override
-    public <T> T callApi(String endpoint, HttpMethod method, Object requestBody, Class<T> responseType) {
+    public <T> T callApi( PythonService targetService, String endpoint, HttpMethod method, Object requestBody, Class<T> responseType) {
         HttpHeaders headers = new HttpHeaders();
         HttpEntity<?> requestEntity;
+
+        String baseUrl = getBaseUrl(targetService);
 
         try {
             if (requestBody instanceof MultipartFile) {
@@ -49,7 +59,7 @@ public class PythonApiClientImpl implements PythonApiClient {
                 headers.setContentType(MediaType.APPLICATION_JSON);
                 requestEntity = new HttpEntity<>(requestBody, headers);
             }ResponseEntity<String> response = restTemplate.exchange(
-                    PYTHON_BASE_URL + endpoint,
+                    baseUrl + endpoint,
                     method,
                     requestEntity,
                     String.class
