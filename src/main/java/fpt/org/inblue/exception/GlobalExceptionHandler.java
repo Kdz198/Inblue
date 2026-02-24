@@ -36,11 +36,11 @@ public class GlobalExceptionHandler {
     }
     //xử lại lỗi valid,
 
-    @ExceptionHandler(Exception.class)
-    public ResponseEntity<Map<String, String>> handleGenericException(Exception ex) {
-        Map<String, String> error = new HashMap<>();
-        error.put("error", ex.getMessage());
-        return new ResponseEntity<>(error, HttpStatus.INTERNAL_SERVER_ERROR);
-    }
+//    @ExceptionHandler(Exception.class)
+//    public ResponseEntity<Map<String, String>> handleGenericException(Exception ex) {
+//        Map<String, String> error = new HashMap<>();
+//        error.put("error", ex.getMessage());
+//        return new ResponseEntity<>(error, HttpStatus.INTERNAL_SERVER_ERROR);
+//    }
     //xử lí lỗi chương trình đảm bảo chương trình không bị sập
 }
