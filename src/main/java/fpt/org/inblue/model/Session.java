@@ -1,5 +1,6 @@
 package fpt.org.inblue.model;
 
+import com.fasterxml.jackson.annotation.JsonFormat;
 import fpt.org.inblue.model.enums.SessionStatus;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
@@ -32,6 +33,11 @@ public class Session {
     private Long durationSeconds2;
     // URL phòng Daily.co
     private String roomUrl;
+    @JsonFormat(
+            shape = JsonFormat.Shape.STRING,
+            pattern = "yyyy-MM-dd HH:mm:ss.SSS",
+            timezone = "Asia/Ho_Chi_Minh"
+    )
     private Timestamp joinTime;
 
     private String recordUrl;

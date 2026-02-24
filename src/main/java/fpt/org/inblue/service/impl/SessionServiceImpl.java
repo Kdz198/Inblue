@@ -73,13 +73,14 @@ public class SessionServiceImpl implements SessionService {
      */
     @Override
     public SessionResponse createSession(SessionCreationRequest request) {
+        System.out.println("Creating session with request: " + request.toString());
         //thiết lập header ( bắt buộc phải có autho để xác thực )
         HttpHeaders headers = new HttpHeaders();
         headers.setBearerAuth(dailyApiKey);
         headers.setContentType(MediaType.APPLICATION_JSON);
         // Tính toán Timestamp hết hạn (Expiration Time)
-        long exp = (request.getJoinTime().getTime()/1000) + request.getDailyCoCreationRequest().getProperties().getExp();
-
+        long secondsUTC = request.getJoinTime().toInstant().getEpochSecond();
+        long exp = secondsUTC + 3600; // Thời gian hết hạn là 1 giờ sau thời điểm join
         request.getDailyCoCreationRequest().getProperties().setExp((int) exp);
         request.getDailyCoCreationRequest().setName(helperCreateName());
         HttpEntity<DailyCoCreationRequest> entity = new HttpEntity<>(request.getDailyCoCreationRequest(), headers);
@@ -100,7 +101,9 @@ public class SessionServiceImpl implements SessionService {
             session.setUserId(request.getUserId());
             session.setUserId2(request.getMentorId());
             session.setStatus(SessionStatus.SCHEDULED);
+            System.out.println(request.getJoinTime()+" join time");
             session.setJoinTime(request.getJoinTime());
+            System.out.println(session.getJoinTime()+" join time after set");
             sessionRepository.save(session);
             return response.getBody();
         }
