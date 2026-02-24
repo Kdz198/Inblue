@@ -185,6 +185,18 @@ public class SessionServiceImpl implements SessionService {
         }
     }
 
+    @Override
+    public void updateSessionStatus(int sessionId, SessionStatus status) {
+        Session session = sessionRepository.findById(sessionId).orElse(null);
+        if (session == null) {
+            throw new CustomException("Session not found", HttpStatus.NOT_FOUND);
+        }
+        else{
+            session.setStatus(status);
+            sessionRepository.save(session);
+        }
+    }
+
     /**
      * Xóa một phòng họp trên Daily.co dựa trên tên phòng.
      * @param roomName Tên phòng cần xóa

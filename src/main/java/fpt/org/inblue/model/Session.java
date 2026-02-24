@@ -17,14 +17,14 @@ public class Session {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private int id;
     private String roomName;
-    // Thông tin người dùng 1
+    // Thông tin người dùng 1 ( mentee )
     private int userId;
     private String participantId1;
     private Timestamp startTime1;
     private Timestamp endTime1;
     private Long durationSeconds1;
 
-    // Thông tin người dùng 2
+    // Thông tin người dùng 2 ( mentor )
     private int userId2;
     private String participantId2;
     private Timestamp startTime2;

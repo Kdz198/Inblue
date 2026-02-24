@@ -5,6 +5,7 @@ import fpt.org.inblue.model.dto.request.JoinSessionDtoRequest;
 import fpt.org.inblue.model.dto.dailyco.DailyWebHookPayload;
 import fpt.org.inblue.model.dto.dailyco.SessionCreationRequest;
 import fpt.org.inblue.model.dto.dailyco.SessionResponse;
+import fpt.org.inblue.model.enums.SessionStatus;
 import fpt.org.inblue.service.SessionService;
 import io.swagger.v3.oas.annotations.Operation;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -76,6 +77,12 @@ public class SessionController {
             System.out.println("Handling participant.left event for payload: " + payload);
             sessionService.updateLeaveRecord(payload);
         }
+        return ResponseEntity.ok().build();
+    }
+
+    @GetMapping("update-status")
+    public ResponseEntity<Void> updateSessionStatus(@RequestParam int sessionId, @RequestParam SessionStatus status) {
+        sessionService.updateSessionStatus(sessionId, status);
         return ResponseEntity.ok().build();
     }
 }
