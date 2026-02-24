@@ -10,7 +10,7 @@ import java.util.List;
 @Data
 public class PracticeAIRequest {
     List<InterviewResultDetail.QAResult> qaResults;
-    String targetRole;
+    String targetRole; // vd "Java Fresher Software Engineer", " Data Analyst Intern"
     private String targetLevel;
     private String candidateIntroduction;
     // số lượng bộ đề muốn ôn
