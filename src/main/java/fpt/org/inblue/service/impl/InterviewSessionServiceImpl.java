@@ -9,6 +9,7 @@ import fpt.org.inblue.model.dto.request.OrchestratorRequest;
 import fpt.org.inblue.model.dto.request.OrchestratorRequest.*;
 import fpt.org.inblue.model.dto.response.InterviewBlueprintResponse;
 import fpt.org.inblue.model.enums.InterviewEnums.*;
+import fpt.org.inblue.model.enums.PythonService;
 import fpt.org.inblue.repository.InterviewSessionRepository;
 import fpt.org.inblue.repository.caching.InterviewSessionRedisRepository;
 import fpt.org.inblue.service.InterviewSessionService;
@@ -20,10 +21,7 @@ import org.springframework.retry.annotation.Retryable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.UUID;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @Service
@@ -45,6 +43,7 @@ public class InterviewSessionServiceImpl implements InterviewSessionService {
     public JobRequirementData getJobRequirementFromJD(String description) {
 
         return pythonApiClient.callApi(
+                PythonService.LLM,
                 ApiPath.JD_API,
                 HttpMethod.POST,
                 new jobDescription(description),
@@ -71,6 +70,10 @@ public class InterviewSessionServiceImpl implements InterviewSessionService {
                 .map(this::convertEnumToMap)
                 .collect(Collectors.toList()));
 
+        options.put("domains", Arrays.stream(JobDomain.values())
+                .map(this::convertEnumToMap)
+                .collect(Collectors.toList()));
+
         return options;
     }
 
@@ -93,6 +96,7 @@ public class InterviewSessionServiceImpl implements InterviewSessionService {
 
 
         InterviewBlueprintResponse blueprint = pythonApiClient.callApi(
+                PythonService.LLM,
                 ApiPath.ORCHESTRATOR_API,
                 HttpMethod.POST,
                 pythonPayload,
@@ -145,6 +149,11 @@ public class InterviewSessionServiceImpl implements InterviewSessionService {
         return sessionKey;
     }
 
+    @Override
+    public List<InterviewSession> getAllSessionsForUser(Integer userId) {
+        return  sessionRepository.findByUserId(userId);
+    }
+
     // Helper method để convert Enum thành Map cho gọn code
     private Map<String, String> convertEnumToMap(Object enumVal) {
         Map<String, String> map = new HashMap<>();
@@ -159,6 +168,11 @@ public class InterviewSessionServiceImpl implements InterviewSessionService {
             map.put("label", e.getLabel());
             map.put("description", e.getDescription());
         } else if (enumVal instanceof Language e) {
+            map.put("key", e.name());
+            map.put("label", e.getLabel());
+            map.put("description", e.getDescription());
+        }
+        else if (enumVal instanceof JobDomain e) {
             map.put("key", e.name());
             map.put("label", e.getLabel());
             map.put("description", e.getDescription());

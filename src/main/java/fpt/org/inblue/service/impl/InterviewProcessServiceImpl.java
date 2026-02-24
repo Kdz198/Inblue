@@ -10,9 +10,11 @@ import fpt.org.inblue.model.dto.request.SubmitAnswerRequest;
 import fpt.org.inblue.model.dto.response.GradingResponse;
 import fpt.org.inblue.model.dto.response.OrchestratorAnalysisResponse;
 import fpt.org.inblue.model.dto.response.QuestionResponse;
+import fpt.org.inblue.model.enums.PythonService;
 import fpt.org.inblue.repository.InterviewSessionRepository;
 import fpt.org.inblue.repository.caching.InterviewSessionRedisRepository;
 import fpt.org.inblue.service.InterviewProcessService;
+import fpt.org.inblue.service.ProctoringService;
 import fpt.org.inblue.service.PythonApiClient;
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -23,6 +25,7 @@ import org.springframework.stereotype.Service;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 @Service
 @RequiredArgsConstructor
@@ -31,6 +34,7 @@ public class InterviewProcessServiceImpl implements InterviewProcessService {
     private final InterviewSessionRedisRepository redisRepository;
     private final InterviewSessionRepository sessionRepository;
     private final PythonApiClient pythonApiClient;
+    private final ProctoringService proctoringService;
 
     @Override
     public QuestionResponse getCurrentQuestion(String sessionKey) {
@@ -80,6 +84,7 @@ public class InterviewProcessServiceImpl implements InterviewProcessService {
         var pythonRequest = buildPythonRequest(currentAnchorInfo, nextAnchorInfo, contextExchanges, session);
 
         OrchestratorAnalysisResponse aiResponse = pythonApiClient.callApi(
+                PythonService.LLM,
                 ApiPath.ANALYZER_API,
                 HttpMethod.POST,
                 pythonRequest,
@@ -93,7 +98,7 @@ public class InterviewProcessServiceImpl implements InterviewProcessService {
             session.setCurrentQuestionText(aiResponse.getResponseText());
         } else {
             if (nextAnchorInfo == null) {
-                finishSession(session);
+                finishSession(session, request.getSessionKey());
                 return QuestionResponse.builder()
                         .isFinished(true)
                         .sessionKey(session.getId())
@@ -213,12 +218,16 @@ public class InterviewProcessServiceImpl implements InterviewProcessService {
     }
 
 
-    private void finishSession(InterviewSessionRedis redisSession) {
+    private void finishSession(InterviewSessionRedis redisSession, String sessionKey) {
         InterviewSession dbSession = sessionRepository.findById(redisSession.getDbId())
                 .orElseThrow(() -> new RuntimeException("DB Session not found"));
 
-        // [UPDATE] Hàm này giờ sẽ trả về Full List (Cả Anchor lẫn Follow-up)
-        List<InterviewResultDetail.QAResult> gradedHistory = gradeAndMapFullHistory(redisSession.getChatHistory());
+        // 1. [MỚI] THU HOẠCH BEHAVIOR TỪ PROCTORING SERVICE
+        // Lấy data và đồng thời xóa luôn bản ghi trong Redis cho sạch sẽ
+        Map<Integer, List<String>> behaviorMap = proctoringService.getAndClearBehavioralRecord(redisSession.getId());
+
+        // 2. [CẬP NHẬT] Truyền behaviorMap vào hàm xử lý
+        List<InterviewResultDetail.QAResult> gradedHistory = gradeAndMapFullHistory(redisSession.getChatHistory(), behaviorMap);
 
         // Tính điểm trung bình (Chỉ tính trên các câu có điểm - tức là câu Anchor)
         double avgScore = gradedHistory.stream()
@@ -246,7 +255,7 @@ public class InterviewProcessServiceImpl implements InterviewProcessService {
     // LOGIC GROUPING & CHẤM ĐIỂM (GIỮ LẠI FULL HISTORY)
     // ======================================================================
 
-    private List<InterviewResultDetail.QAResult> gradeAndMapFullHistory(List<InterviewSessionRedis.InterviewExchange> fullHistory) {
+    private List<InterviewResultDetail.QAResult> gradeAndMapFullHistory(List<InterviewSessionRedis.InterviewExchange> fullHistory, Map<Integer, List<String>> behaviorMap) {
         List<InterviewResultDetail.QAResult> finalResults = new ArrayList<>();
         List<InterviewSessionRedis.InterviewExchange> currentGroup = new ArrayList<>();
 
@@ -257,7 +266,7 @@ public class InterviewProcessServiceImpl implements InterviewProcessService {
             // Nếu gặp Mỏ neo MỚI và group cũ đã có dữ liệu -> Xử lý group cũ
             if (exchange.getType() == InterviewSessionRedis.QuestionType.BLUEPRINT && !currentGroup.isEmpty()) {
                 // Xử lý group cũ: Chấm điểm và Add tất cả vào finalResults
-                processGroupAndAddToResult(currentGroup, finalResults, globalOrderCounter);
+                processGroupAndAddToResult(currentGroup, finalResults, globalOrderCounter, behaviorMap);
 
                 // Cập nhật lại global counter (cộng thêm số lượng câu hỏi trong group vừa xử lý)
                 globalOrderCounter += currentGroup.size();
@@ -269,7 +278,7 @@ public class InterviewProcessServiceImpl implements InterviewProcessService {
 
         // Xử lý group cuối cùng
         if (!currentGroup.isEmpty()) {
-            processGroupAndAddToResult(currentGroup, finalResults, globalOrderCounter);
+            processGroupAndAddToResult(currentGroup, finalResults, globalOrderCounter, behaviorMap);
         }
 
         return finalResults;
@@ -278,13 +287,15 @@ public class InterviewProcessServiceImpl implements InterviewProcessService {
     private void processGroupAndAddToResult(
             List<InterviewSessionRedis.InterviewExchange> group,
             List<InterviewResultDetail.QAResult> finalResults,
-            int startOrderIndex
+            int startOrderIndex,
+            Map<Integer, List<String>> behaviorMap // [THÊM MỚI] Map chứa lỗi hành vi từ Redis
     ) {
         // 1. CHẤM ĐIỂM CẢ GROUP (Lấy điểm cho chủ đề này)
         GradingResponse gradingRes;
         try {
             // Gửi cả list (Anchor + Follow-ups) qua Python
             gradingRes = pythonApiClient.callApi(
+                    PythonService.LLM,
                     ApiPath.GRADING_API,
                     HttpMethod.POST,
                     group,
@@ -299,11 +310,19 @@ public class InterviewProcessServiceImpl implements InterviewProcessService {
         for (int i = 0; i < group.size(); i++) {
             var ex = group.get(i);
 
+            // Tính index tuyến tính (global index) của câu hiện tại
+            int currentGlobalIndex = startOrderIndex + i;
+
+            // [LOGIC MỚI] MÓC LỖI TỪ RỔ RA: Lấy danh sách cảnh báo của đúng câu hỏi này.
+            // Nếu câu này ứng viên ngoan, không có lỗi -> Trả về list rỗng
+            List<String> warnings = behaviorMap.getOrDefault(currentGlobalIndex, new ArrayList<>());
+
             // Tạo builder cơ bản
             var qaBuilder = InterviewResultDetail.QAResult.builder()
-                    .questionOrder(startOrderIndex + i) // [FIX] Order tăng dần đều, không bị reset
+                    .questionOrder(currentGlobalIndex) // Dùng luôn biến vừa tính
                     .questionText(ex.getQuestionText())
-                    .answerText(ex.getAnswerText());
+                    .answerText(ex.getAnswerText())
+                    .behavioralWarnings(warnings);     // [GẮN VÀO ĐÂY] Mọi câu hỏi (neo hay bồi) đều có behavior
 
             // 3. GẮN ĐIỂM VÀ FEEDBACK
             // Logic: Chỉ gắn điểm vào câu đầu tiên (Anchor - Mỏ neo)
@@ -338,6 +357,7 @@ public class InterviewProcessServiceImpl implements InterviewProcessService {
     private String genOverviewFeedback(List<InterviewResultDetail.QAResult> gradedHistory) {
 
         return pythonApiClient.callApi(
+                PythonService.LLM,
                 ApiPath.OVERVIEW_FEEDBACK_API,
                 HttpMethod.POST,
                 gradedHistory,

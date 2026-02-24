@@ -2,6 +2,7 @@ package fpt.org.inblue.controller;
 
 import fpt.org.inblue.constants.ApiPath;
 import fpt.org.inblue.model.dto.response.CVParserResponse;
+import fpt.org.inblue.model.enums.PythonService;
 import fpt.org.inblue.service.PythonApiClient;
 import fpt.org.inblue.service.RedisTestService;
 import lombok.RequiredArgsConstructor;
@@ -70,6 +71,7 @@ public class TestController {
 
         CVParserResponse response =
                 pythonApiClient.callApi(
+                        PythonService.LLM,
                         ApiPath.CV_API,
                         HttpMethod.POST,
                         file,
