@@ -1,7 +1,10 @@
 package fpt.org.inblue.service;
 
 import fpt.org.inblue.model.PracticeSet;
+import fpt.org.inblue.model.dto.request.PracticeAIRequest;
+import fpt.org.inblue.model.dto.request.PracticeGenerateRequest;
 import fpt.org.inblue.model.dto.request.PracticeRequest;
+import fpt.org.inblue.model.dto.response.PracticeSetAIResponse;
 import fpt.org.inblue.model.dto.response.PracticeSetResponse;
 
 import java.util.List;
@@ -16,4 +19,6 @@ public interface PracticeSetService {
 
     PracticeSet createFullSet(PracticeRequest practiceRequest);
     PracticeSetResponse getFullSet(int id);
+    List<PracticeSetAIResponse> creatPracticeSetByAI(PracticeGenerateRequest request);
+    void createFullSetByAI(PracticeRequest practiceRequest);
 }

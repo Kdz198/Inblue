@@ -1,11 +1,15 @@
 package fpt.org.inblue.model;
 
 import fpt.org.inblue.model.enums.TargetLevel;
+import jakarta.annotation.Nullable;
 import jakarta.persistence.*;
 import lombok.*;
 import lombok.experimental.FieldDefaults;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
 
 import java.sql.Date;
+import java.util.List;
 
 @AllArgsConstructor
 @NoArgsConstructor
@@ -27,4 +31,7 @@ public class PracticeSet {
     @JoinColumn(name = "user_id")
     @ManyToOne
     User user;
+    @JdbcTypeCode(SqlTypes.JSON)
+    @Column(columnDefinition = "jsonb")
+    List<PracticeQuestion> questions;
 }

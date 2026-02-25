@@ -1,21 +1,30 @@
 package fpt.org.inblue.service.impl;
 
+import fpt.org.inblue.constants.ApiPath;
 import fpt.org.inblue.exception.CustomException;
 import fpt.org.inblue.model.*;
+import fpt.org.inblue.model.dto.request.PracticeAIRequest;
+import fpt.org.inblue.model.dto.request.PracticeGenerateRequest;
 import fpt.org.inblue.model.dto.request.PracticeQuestionRequest;
 import fpt.org.inblue.model.dto.request.PracticeRequest;
+import fpt.org.inblue.model.dto.response.PracticeSetAIResponse;
 import fpt.org.inblue.model.dto.response.PracticeSetResponse;
+import fpt.org.inblue.model.enums.PythonService;
 import fpt.org.inblue.model.enums.TargetLevel;
+import fpt.org.inblue.repository.InterviewSessionRepository;
 import fpt.org.inblue.repository.PracticeSetItemRepository;
 import fpt.org.inblue.repository.PracticeSetRepository;
 import fpt.org.inblue.service.*;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Lazy;
+import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.sql.Date;
 import java.time.LocalDate;
+import java.util.ArrayList;
 import java.util.List;
 
 @Service
@@ -30,6 +39,13 @@ public class PracticeSetServiceImpl implements PracticeSetService {
     private PracticeQuestionService practiceQuestionService;
     @Autowired
     private PracticeSetItemRepository practiceSetItemRepository;
+    @Autowired
+    private PythonApiClient pythonApiClient;
+    @Autowired
+    private InterviewSessionRepository interviewSessionRepository;
+    @Autowired
+    @Lazy
+    private PracticeSetService practiceSetService;
 
 
     @Override
@@ -121,6 +137,94 @@ public class PracticeSetServiceImpl implements PracticeSetService {
             practiceSetItemRepository.save(item);
         }
         return practiceSet;
+    }
+
+
+    @Override
+    public List<PracticeSetAIResponse>  creatPracticeSetByAI(PracticeGenerateRequest request) {
+        PracticeAIRequest aiRequest = new PracticeAIRequest();
+        InterviewSession interviewSession = interviewSessionRepository.findById(request.getAiInterviewId()).orElse(null);
+        CandidateProfile candidateProfile = interviewSession.getCandidateProfile();
+        aiRequest.setQaResults(interviewSession.getResultDetail().getHistory());
+        aiRequest.setTargetLevel(candidateProfile.getTargetLevel());
+        aiRequest.setTargetRole(candidateProfile.getTargetRole());
+        aiRequest.setCandidateIntroduction(candidateProfile.getIntroduction());
+        aiRequest.setPracticeSetRequest(request.getDateNumber());
+        List<PracticeSetAIResponse> response = callPython(aiRequest);
+
+        for(PracticeSetAIResponse aiResponse : response){
+            PracticeRequest practiceRequest = new PracticeRequest();
+            practiceRequest.setPracticeSetName(aiResponse.getPracticeSetName());
+            practiceRequest.setObjective(aiResponse.getObjective());
+            practiceRequest.setTarget(TargetLevel.convertFromStringToEnum(candidateProfile.getTargetLevel()));
+            practiceRequest.setMajorId(request.getMajorId());
+            practiceRequest.setDateNumber(request.getDateNumber());
+            practiceRequest.setQuestions(aiResponse.getQuestions());
+            practiceSetService.createFullSetByAI(practiceRequest);
+        }
+        return response;
+
+    }
+
+    @Transactional
+    @Override
+    public void createFullSetByAI(PracticeRequest practiceRequest) {
+        Major major = majorService.getMajorById(practiceRequest.getMajorId());
+        PracticeSet practiceSet = PracticeSet.builder()
+                .practiceSetName(practiceRequest.getPracticeSetName())
+                .objective(practiceRequest.getObjective())
+                .level(practiceRequest.getTarget())
+                .major(major)
+                .startDate(Date.valueOf(LocalDate.now().plusDays(practiceRequest.getDateNumber())))
+                .build();
+        practiceSet = practiceSetRepository.save(practiceSet);
+
+        //list này để thêm vào cột trong practice set để fe lấy lên cho dễ
+        List<PracticeQuestion> questions= new ArrayList<>();
+        //luu cac cau hoi on tap
+        for(int i = 0 ; i < practiceRequest.getQuestions().size(); i++){
+            PracticeQuestionRequest question = practiceRequest.getQuestions().get(i);
+            //lay lesson tuong ung nếu chưa có thì tạo mới rồi thêm
+            QuestionLesson lesson = questionLessonService.findByName(question.getLessonName());
+            if(lesson==null){
+                lesson = questionLessonService.createQuestionLesson(
+                        QuestionLesson.builder()
+                                .lessonName(question.getLessonName())
+                                .build());
+            }
+
+            PracticeQuestion saved = PracticeQuestion.builder()
+                    .title(question.getTitle())
+                    .content(question.getContent())
+                    .level(question.getLevel())
+                    .hint(question.getHint())
+                    .answer(question.getAnswer())
+                    .lesson(lesson)
+                    .build();
+            questions.add(saved);
+            practiceQuestionService.createQuestion(saved);
+
+            PracticeSetItem item = PracticeSetItem.builder()
+                    .practiceQuestion(saved)
+                    .practiceSet(practiceSet)
+                    .orderIndex(i+1)
+                    .build();
+            practiceSetItemRepository.save(item);
+        }
+        practiceSet.setQuestions(questions);
+
+        practiceSetRepository.save(practiceSet);
+    }
+
+    private List<PracticeSetAIResponse> callPython(PracticeAIRequest request) {
+        PracticeSetAIResponse[] response = pythonApiClient.callApi(
+                PythonService.LLM,
+                ApiPath.GENERATE_PRACTICE_SET_API,
+                HttpMethod.POST,
+                request,
+                PracticeSetAIResponse[].class
+        );
+        return List.of(response);
     }
 
     /**
