@@ -19,6 +19,6 @@ public interface SessionService {
      SessionResponse createSession(SessionCreationRequest request);
      void saveJoinRecord(JoinSessionDtoRequest request);
     void updateLeaveRecord(DailyWebHookPayload payload);
-    void updateSessionStatus(int sessionId, SessionStatus status);
+    void updateSessionStatus(int sessionId,  boolean isApproved);
     void deleteSession(String roomName);
 }

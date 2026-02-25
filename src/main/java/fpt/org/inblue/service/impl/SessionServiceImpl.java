@@ -100,10 +100,8 @@ public class SessionServiceImpl implements SessionService {
             session.setRoomUrl(response.getBody().getUrl());
             session.setUserId(request.getUserId());
             session.setUserId2(request.getMentorId());
-            session.setStatus(SessionStatus.SCHEDULED);
-            System.out.println(request.getJoinTime()+" join time");
+            session.setStatus(SessionStatus.DRAFT);
             session.setJoinTime(request.getJoinTime());
-            System.out.println(session.getJoinTime()+" join time after set");
             sessionRepository.save(session);
             return response.getBody();
         }
@@ -122,7 +120,10 @@ public class SessionServiceImpl implements SessionService {
     public void saveJoinRecord(JoinSessionDtoRequest request) {
         Session session = sessionRepository.findByRoomName(request.getSessionName());
         if(session == null) {
-            throw new CustomException("Session not found", HttpStatus.NOT_FOUND);}
+            throw new CustomException("Không tìm thấy phòng họp !!", HttpStatus.NOT_FOUND);}
+        else if(session.getStatus().equals(SessionStatus.DRAFT)) {
+            throw new CustomException("Phòng họp chưa được duyệt", HttpStatus.CONFLICT);
+        }
         if (request.isMentor()) {
             if (session.getUserId2() == request.getUserId()) {
                 session.setParticipantId2(request.getParticipantId());
@@ -189,7 +190,8 @@ public class SessionServiceImpl implements SessionService {
     }
 
     @Override
-    public void updateSessionStatus(int sessionId, SessionStatus status) {
+    public void updateSessionStatus(int sessionId, boolean isApproved) {
+        SessionStatus status = isApproved ? SessionStatus.SCHEDULED : SessionStatus.REJECTED;
         Session session = sessionRepository.findById(sessionId).orElse(null);
         if (session == null) {
             throw new CustomException("Session not found", HttpStatus.NOT_FOUND);
