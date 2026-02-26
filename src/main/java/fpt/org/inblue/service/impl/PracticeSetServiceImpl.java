@@ -14,6 +14,7 @@ import fpt.org.inblue.model.enums.TargetLevel;
 import fpt.org.inblue.repository.InterviewSessionRepository;
 import fpt.org.inblue.repository.PracticeSetItemRepository;
 import fpt.org.inblue.repository.PracticeSetRepository;
+import fpt.org.inblue.repository.UserRepository;
 import fpt.org.inblue.service.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Lazy;
@@ -26,6 +27,7 @@ import java.sql.Date;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 
 @Service
 public class PracticeSetServiceImpl implements PracticeSetService {
@@ -46,6 +48,8 @@ public class PracticeSetServiceImpl implements PracticeSetService {
     @Autowired
     @Lazy
     private PracticeSetService practiceSetService;
+    @Autowired
+    private UserRepository userRepository;
 
 
     @Override
@@ -160,6 +164,7 @@ public class PracticeSetServiceImpl implements PracticeSetService {
             practiceRequest.setMajorId(request.getMajorId());
             practiceRequest.setDateNumber(request.getDateNumber());
             practiceRequest.setQuestions(aiResponse.getQuestions());
+            practiceRequest.setUserId(request.getUserId());
             practiceSetService.createFullSetByAI(practiceRequest);
         }
         return response;
@@ -211,6 +216,8 @@ public class PracticeSetServiceImpl implements PracticeSetService {
                     .build();
             practiceSetItemRepository.save(item);
         }
+        User user = userRepository.findById(practiceRequest.getUserId()).orElse(null);
+        practiceSet.setUser(user);
         practiceSet.setQuestions(questions);
 
         practiceSetRepository.save(practiceSet);
