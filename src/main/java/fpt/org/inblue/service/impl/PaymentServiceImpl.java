@@ -12,6 +12,7 @@ import vn.payos.model.v2.paymentRequests.CreatePaymentLinkRequest;
 import vn.payos.model.webhooks.Webhook;
 import vn.payos.model.webhooks.WebhookData;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 @Service
@@ -51,6 +52,8 @@ public class PaymentServiceImpl implements PaymentService {
         if (payment == null) {
             throw new RuntimeException("Payment not found with id: " + paymentId);
         }
+        payment.setPayAt(LocalDateTime.now());
+        paymentRepository.save(payment);
         long orderCode = payment.getId();
         CreatePaymentLinkRequest request = CreatePaymentLinkRequest.builder()
                 .amount(payment.getAmount())
