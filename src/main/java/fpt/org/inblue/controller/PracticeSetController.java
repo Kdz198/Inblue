@@ -1,7 +1,10 @@
 package fpt.org.inblue.controller;
 
 import fpt.org.inblue.model.PracticeSet;
+import fpt.org.inblue.model.dto.request.PracticeAIRequest;
+import fpt.org.inblue.model.dto.request.PracticeGenerateRequest;
 import fpt.org.inblue.model.dto.request.PracticeRequest;
+import fpt.org.inblue.model.dto.response.PracticeSetAIResponse;
 import fpt.org.inblue.model.dto.response.PracticeSetResponse;
 import fpt.org.inblue.service.PracticeSetService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -53,4 +56,9 @@ public class PracticeSetController {
     @GetMapping("full-set/{id}")
     public ResponseEntity<PracticeSetResponse> getFullQuestionSet(@PathVariable int id) {
         return ResponseEntity.ok(practiceSetService.getFullSet(id));}
+
+    @PostMapping("create-by-ai")
+    public ResponseEntity<List<PracticeSetAIResponse> > createPracticeSetByAI(@RequestBody PracticeGenerateRequest request) {
+        return ResponseEntity.ok(practiceSetService.creatPracticeSetByAI(request));
+    }
 }

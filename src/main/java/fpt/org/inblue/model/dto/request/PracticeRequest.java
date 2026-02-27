@@ -15,11 +15,15 @@ import java.util.List;
 @AllArgsConstructor
 @NoArgsConstructor
 public class PracticeRequest {
+    //có thể null cho trường hợp gửi qua AI service để tạo bộ đề ôn luyện cá nhân hóa
+    int aiInterviewId;
+    int userId;
     String practiceSetName;
     String objective;
     TargetLevel target;
     int majorId;
     int dateNumber;
    List<PracticeQuestionRequest> questions;
+
 }
 

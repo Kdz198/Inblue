@@ -1,8 +1,8 @@
 package fpt.org.inblue.model.enums;
 
 public enum SessionStatus {
+    DRAFT,
     SCHEDULED,
-    ACCEPTED,
     REJECTED,
     ONGOING,
     COMPLETED,

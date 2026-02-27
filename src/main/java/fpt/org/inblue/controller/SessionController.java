@@ -5,11 +5,9 @@ import fpt.org.inblue.model.dto.request.JoinSessionDtoRequest;
 import fpt.org.inblue.model.dto.dailyco.DailyWebHookPayload;
 import fpt.org.inblue.model.dto.dailyco.SessionCreationRequest;
 import fpt.org.inblue.model.dto.dailyco.SessionResponse;
-import fpt.org.inblue.model.enums.SessionStatus;
 import fpt.org.inblue.service.SessionService;
 import io.swagger.v3.oas.annotations.Operation;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -70,6 +68,7 @@ public class SessionController {
         return ResponseEntity.ok().build();
     }
 
+
     @PostMapping(value = "webhooks/dailyco") // Chấp nhận tất cả kiểu dữ liệu
     public ResponseEntity<Void> handleDailyCoWebhook(@RequestBody DailyWebHookPayload payload) {
         System.out.println("Received Daily.co webhook event: " + payload.getEvent());
@@ -81,8 +80,8 @@ public class SessionController {
     }
 
     @GetMapping("update-status")
-    public ResponseEntity<Void> updateSessionStatus(@RequestParam int sessionId, @RequestParam SessionStatus status) {
-        sessionService.updateSessionStatus(sessionId, status);
+    public ResponseEntity<Void> updateSessionStatus(@RequestParam int sessionId, @RequestParam  boolean isApproved) {
+        sessionService.updateSessionStatus(sessionId, isApproved);
         return ResponseEntity.ok().build();
     }
 }
