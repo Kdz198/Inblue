@@ -328,6 +328,7 @@ public class InterviewProcessServiceImpl implements InterviewProcessService {
                     .questionOrder(currentGlobalIndex) // Dùng luôn biến vừa tính
                     .questionText(ex.getQuestionText())
                     .answerText(ex.getAnswerText())
+                    .questionType(ex.getType().name())
                     .behavioralWarnings(warnings);     // [GẮN VÀO ĐÂY] Mọi câu hỏi (neo hay bồi) đều có behavior
 
             // 3. GẮN ĐIỂM VÀ FEEDBACK
