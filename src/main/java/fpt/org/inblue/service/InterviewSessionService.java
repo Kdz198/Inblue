@@ -15,6 +15,6 @@ public interface InterviewSessionService {
     Map<String, Object> getInterviewConfigOptions();
     String createSession(InterviewSetupRequest request) ;
     List<InterviewSession> getAllSessionsForUser(Integer userId);
-
+    InterviewSession getSessionById(Integer sessionId);
     InterviewSessionRedis getSessionFromCache(String sesssionKey);
 }

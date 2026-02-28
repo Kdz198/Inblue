@@ -182,6 +182,12 @@ public class InterviewSessionServiceImpl implements InterviewSessionService {
     }
 
     @Override
+    public InterviewSession getSessionById(Integer sessionId) {
+        return sessionRepository.findById(sessionId)
+                .orElseThrow(() -> new RuntimeException("Session không tồn tại với ID: " + sessionId));
+    }
+
+    @Override
     public InterviewSessionRedis getSessionFromCache(String sesssionKey) {
             Optional<InterviewSessionRedis> sessionOpt = sessionRedisRepository.findById(sesssionKey);
             if (sessionOpt.isPresent()) {

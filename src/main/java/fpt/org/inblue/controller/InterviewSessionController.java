@@ -44,4 +44,9 @@ public class InterviewSessionController {
     public InterviewSessionRedis getSessionFromCache(@PathVariable String sessionKey) {
         return interviewSessionService.getSessionFromCache(sessionKey);
     }
+
+    @GetMapping("/{sessionId}")
+    public InterviewSession getSessionById(@PathVariable Integer sessionId) {
+        return interviewSessionService.getSessionById(sessionId);
+    }
 }
