@@ -2,6 +2,7 @@ package fpt.org.inblue.controller;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import fpt.org.inblue.model.InterviewSession;
+import fpt.org.inblue.model.caching.InterviewSessionRedis;
 import fpt.org.inblue.model.dto.request.InterviewSetupRequest;
 import fpt.org.inblue.model.dto.request.OrchestratorRequest.*;
 import fpt.org.inblue.service.InterviewSessionService;
@@ -37,5 +38,10 @@ public class InterviewSessionController {
     @GetMapping("/user/{userId}")
     public List<InterviewSession> getAllSessionsForUser(@PathVariable Integer userId) {
         return interviewSessionService.getAllSessionsForUser(userId);
+    }
+
+    @GetMapping("{sessionKey}")
+    public InterviewSessionRedis getSessionFromCache(@PathVariable String sessionKey) {
+        return interviewSessionService.getSessionFromCache(sessionKey);
     }
 }

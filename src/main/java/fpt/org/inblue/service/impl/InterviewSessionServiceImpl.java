@@ -165,6 +165,7 @@ public class InterviewSessionServiceImpl implements InterviewSessionService {
                     // Nếu Redis đã bị xóa (hết TTL), cập nhật trạng thái session thành CANCELLED
                     session.setStatus(InterviewSession.SessionStatus.CANCELLED);
                     sessionRepository.save(session);
+                    System.out.println( "Session " + session.getId() + " đã bị hủy do không còn trong Redis.");
                 }
             }
 
@@ -178,6 +179,15 @@ public class InterviewSessionServiceImpl implements InterviewSessionService {
 
 
         return  sessionRepository.saveAll(sessions);
+    }
+
+    @Override
+    public InterviewSessionRedis getSessionFromCache(String sesssionKey) {
+            Optional<InterviewSessionRedis> sessionOpt = sessionRedisRepository.findById(sesssionKey);
+            if (sessionOpt.isPresent()) {
+                return sessionOpt.get();
+            }
+        throw new RuntimeException("Session không tồn tại trong cache hoặc đã hết hạn!");
     }
 
     // Helper method để convert Enum thành Map cho gọn code
