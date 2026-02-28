@@ -40,12 +40,12 @@ public class InterviewSessionController {
         return interviewSessionService.getAllSessionsForUser(userId);
     }
 
-    @GetMapping("{sessionKey}")
+    @GetMapping("cache/{sessionKey}")
     public InterviewSessionRedis getSessionFromCache(@PathVariable String sessionKey) {
         return interviewSessionService.getSessionFromCache(sessionKey);
     }
 
-    @GetMapping("/{sessionId}")
+    @GetMapping("{sessionId}")
     public InterviewSession getSessionById(@PathVariable Integer sessionId) {
         return interviewSessionService.getSessionById(sessionId);
     }
