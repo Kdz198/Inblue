@@ -123,12 +123,14 @@ public class UserServiceImpl implements UserService {
     )
     @Transactional
     public CandidateProfile upCv(int userId, MultipartFile cvFile) throws IOException {
-        User user = userRepository.findById(userId).orElseThrow(() -> new RuntimeException("User Not Found"));
+        User user = userRepository.findById(userId).orElseThrow(() -> new RuntimeException("User Not Found 123"));
         if (user.getCv_public_id() != null) {
             cloudinaryService.deletePdf(user.getCv_public_id());
         }
+        int candidateId = 0;
         if (candidateProfileService.getProfileByUserId(userId) != null) {
-            candidateProfileService.deleteProfile(userId);
+//            candidateProfileService.deleteProfile(userId);
+            candidateId = candidateProfileService.getProfileByUserId(userId).getId();
         }
         CVParserResponse response =
                 pythonApiClient.callApi(
@@ -138,7 +140,7 @@ public class UserServiceImpl implements UserService {
                         cvFile,
                         CVParserResponse.class);
         CandidateProfile candidateProfile = CandidateProfile.builder()
-                .id(0)
+                .id(candidateId)
                 .user(user)
                 .targetRole(response.getTargetRole())
                 .targetLevel(response.getTargetLevel())
