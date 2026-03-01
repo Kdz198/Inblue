@@ -9,7 +9,10 @@ import fpt.org.inblue.model.enums.TargetLevel;
 import jakarta.persistence.Column;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.type.SqlTypes;
 
@@ -17,11 +20,14 @@ import java.sql.Date;
 import java.util.List;
 
 @Data
+@AllArgsConstructor
+@NoArgsConstructor
+@Builder
 public class QuizItemCreateAIRequest {
     String practiceSetName;
     String objective;
     TargetLevel level;
-    Major major;
+    String majorName;
     List<PracticeAIQuestion> questions;
 
     @Data
