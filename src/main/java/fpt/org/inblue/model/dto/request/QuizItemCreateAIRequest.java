@@ -2,7 +2,9 @@ package fpt.org.inblue.model.dto.request;
 
 import fpt.org.inblue.model.Major;
 import fpt.org.inblue.model.PracticeQuestion;
+import fpt.org.inblue.model.QuestionLesson;
 import fpt.org.inblue.model.User;
+import fpt.org.inblue.model.enums.QuestionLevel;
 import fpt.org.inblue.model.enums.TargetLevel;
 import jakarta.persistence.Column;
 import jakarta.persistence.JoinColumn;
@@ -20,5 +22,12 @@ public class QuizItemCreateAIRequest {
     String objective;
     TargetLevel level;
     Major major;
-    List<PracticeQuestion> questions;
+    List<PracticeAIQuestion> questions;
+
+    @Data
+    static class PracticeAIQuestion{
+        String title;
+        String content;
+        String answer;
+    }
 }
