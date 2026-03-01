@@ -24,6 +24,7 @@ public class InterviewResultDetail {
     @NoArgsConstructor
     @AllArgsConstructor
     public static class QAResult {
+        private String questionType;
         private int questionOrder;
         private String questionText;
         private String answerText;

@@ -111,9 +111,12 @@ public class InterviewSessionServiceImpl implements InterviewSessionService {
 
         User user = User.builder().id(request.getUserId()).build();
 
+        String sessionKey = UUID.randomUUID().toString();
+
         InterviewSession session = InterviewSession.builder()
                 .user(user) // Lấy từ FE
                 .blueprint(blueprint)        // Lưu JSON Blueprint
+                .sessionKey(sessionKey)
 
                 // Lưu Snapshot dữ liệu đầu vào (để sau này đối chứng)
                 .candidateProfile(request.getCandidateProfile())
@@ -133,7 +136,7 @@ public class InterviewSessionServiceImpl implements InterviewSessionService {
 
 
         // Save Redis
-        String sessionKey = UUID.randomUUID().toString();
+
         InterviewSessionRedis sessionRedis = InterviewSessionRedis.builder()
                 .id(sessionKey)
                 .dbId(session.getId())
@@ -151,7 +154,46 @@ public class InterviewSessionServiceImpl implements InterviewSessionService {
 
     @Override
     public List<InterviewSession> getAllSessionsForUser(Integer userId) {
-        return  sessionRepository.findByUserId(userId);
+
+        List<InterviewSession> sessions = sessionRepository.findByUserId(userId);
+
+        for (InterviewSession session : sessions) {
+            if (session.getStatus() == InterviewSession.SessionStatus.IN_PROGRESS) {
+                // Kiểm tra Redis xem session này còn tồn tại không
+                Optional<InterviewSessionRedis> redisOpt = sessionRedisRepository.findById(session.getSessionKey());
+                if (redisOpt.isEmpty()) {
+                    // Nếu Redis đã bị xóa (hết TTL), cập nhật trạng thái session thành CANCELLED
+                    session.setStatus(InterviewSession.SessionStatus.CANCELLED);
+                    sessionRepository.save(session);
+                    System.out.println( "Session " + session.getId() + " đã bị hủy do không còn trong Redis.");
+                }
+            }
+
+            if( session.getStatus() != InterviewSession.SessionStatus.COMPLETED) {
+                // Nếu chưa hoàn thành, xóa blueprint để giảm tải dữ liệu trả về cho FE
+                session.setBlueprint( null);
+            }
+        }
+
+
+
+
+        return  sessionRepository.saveAll(sessions);
+    }
+
+    @Override
+    public InterviewSession getSessionById(Integer sessionId) {
+        return sessionRepository.findById(sessionId)
+                .orElseThrow(() -> new RuntimeException("Session không tồn tại với ID: " + sessionId));
+    }
+
+    @Override
+    public InterviewSessionRedis getSessionFromCache(String sesssionKey) {
+            Optional<InterviewSessionRedis> sessionOpt = sessionRedisRepository.findById(sesssionKey);
+            if (sessionOpt.isPresent()) {
+                return sessionOpt.get();
+            }
+        throw new RuntimeException("Session không tồn tại trong cache hoặc đã hết hạn!");
     }
 
     // Helper method để convert Enum thành Map cho gọn code

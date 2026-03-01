@@ -27,6 +27,8 @@ public class InterviewSession {
     @GeneratedValue(strategy =  GenerationType.IDENTITY)
     private Integer id;
 
+    private String sessionKey; // UUID sessionKey để liên kết với Redis
+
     // ========================================================================
     // 1. CÁC CỘT LƯU JSONB (Dùng @JdbcTypeCode)
     // ========================================================================

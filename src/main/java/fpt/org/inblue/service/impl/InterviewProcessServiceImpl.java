@@ -41,6 +41,12 @@ public class InterviewProcessServiceImpl implements InterviewProcessService {
         InterviewSessionRedis session = redisRepository.findById(sessionKey)
                 .orElseThrow(() -> new RuntimeException("Session not found or expired"));
 
+        InterviewSession dbSession = sessionRepository.findById(session.getDbId())
+                .orElseThrow(() -> new RuntimeException("DB Session not found"));
+
+        dbSession.setStatus( InterviewSession.SessionStatus.IN_PROGRESS);
+        sessionRepository.save(dbSession);
+
         if (session.getCurrentQuestionText() == null) {
             var firstQ = session.getBlueprint().getBlueprint().get(0).getQuestions().get(0);
             session.setCurrentQuestionText(firstQ.getQuestionText());
@@ -322,6 +328,7 @@ public class InterviewProcessServiceImpl implements InterviewProcessService {
                     .questionOrder(currentGlobalIndex) // Dùng luôn biến vừa tính
                     .questionText(ex.getQuestionText())
                     .answerText(ex.getAnswerText())
+                    .questionType(ex.getType().name())
                     .behavioralWarnings(warnings);     // [GẮN VÀO ĐÂY] Mọi câu hỏi (neo hay bồi) đều có behavior
 
             // 3. GẮN ĐIỂM VÀ FEEDBACK

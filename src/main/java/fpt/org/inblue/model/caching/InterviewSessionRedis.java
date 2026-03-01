@@ -15,7 +15,7 @@ import java.util.List;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-@RedisHash(value = "InterviewSession", timeToLive = 3600) // 1 hour TTL
+@RedisHash(value = "InterviewSession", timeToLive = 7200) // 1 hour TTL
 public class InterviewSessionRedis {
     @Id
     private String id;
