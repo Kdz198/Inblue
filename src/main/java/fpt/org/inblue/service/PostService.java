@@ -16,7 +16,7 @@ import java.util.List;
 
 public interface PostService {
     Post createPost(PostCreateRequest post) throws IOException;
-    Post getPostById(int postId);
+    PostResponse getPostByPostId(int postId);
     void changeStatus(int postId, PostStatus status);
     List<PostResponse> getPublishPost();
     List<PostResponse> getAllPost();

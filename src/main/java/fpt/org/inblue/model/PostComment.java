@@ -25,14 +25,9 @@ public class PostComment {
     @ManyToOne
     @JoinColumn(name = "user_id", nullable = false)
     User user;
-
     @Column(columnDefinition = "TEXT")
     String content;
-
-    @ManyToOne
-    @JoinColumn(name = "parent_id")
-    PostComment parentComment;
-
+    int parentCommentId;
     @CreationTimestamp
     Timestamp createdAt;
 

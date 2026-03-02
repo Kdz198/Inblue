@@ -8,7 +8,6 @@ import lombok.NoArgsConstructor;
 import lombok.experimental.FieldDefaults;
 
 import java.sql.Timestamp;
-import java.util.List;
 
 @Data
 @NoArgsConstructor
@@ -17,14 +16,11 @@ import java.util.List;
 @FieldDefaults(level = AccessLevel.PRIVATE)
 public class PostCommentResponse {
     int id;
-    int postId;
-    int userId;
     String userName;
     String userAvatar;
     String content;
-    Integer parentCommentId;
+    int parentCommentId;
     Timestamp createdAt;
     Timestamp updatedAt;
-    List<PostCommentResponse> replies;
 }
 
