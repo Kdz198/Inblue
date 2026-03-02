@@ -54,7 +54,7 @@ public class PracticeSetServiceImpl implements PracticeSetService {
 
     @Override
     public PracticeSet getQuestionSet(int id) {
-        return practiceSetRepository.findById(id).orElse(null);
+        return practiceSetRepository.findById(id);
     }
 
     @Override

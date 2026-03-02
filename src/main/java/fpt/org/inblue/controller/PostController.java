@@ -44,7 +44,10 @@ public class PostController {
         return ResponseEntity.ok().body(postService.createPost(postCreateRequest));
     }
 
-
+    @GetMapping("/{postId}")
+    @Operation(summary = "Lấy chi tiết bài viết theo id")
+    public ResponseEntity<Post> getPostById(@PathVariable int postId) {
+        return ResponseEntity.ok(postService.getPostById(postId));}
 
     @PostMapping("/likes")
     @Operation(summary = "Like bài viết", description = "User like một bài viết, truyền postId và userId")

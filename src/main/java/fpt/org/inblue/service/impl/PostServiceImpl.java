@@ -10,8 +10,6 @@ import fpt.org.inblue.model.dto.response.PostCommentResponse;
 import fpt.org.inblue.model.dto.response.PostLikeResponse;
 import fpt.org.inblue.model.dto.response.PostResponse;
 import fpt.org.inblue.model.enums.PostStatus;
-import fpt.org.inblue.repository.PostCommentRepository;
-import fpt.org.inblue.repository.PostLikeRepository;
 import fpt.org.inblue.repository.PostRepository;
 import fpt.org.inblue.service.MajorService;
 import fpt.org.inblue.service.PostService;
@@ -38,10 +36,6 @@ public class PostServiceImpl implements PostService {
     private MajorService majorService;
     @Autowired
     private UserService userService;
-    @Autowired
-    private PostLikeRepository postLikeRepository;
-    @Autowired
-    private PostCommentRepository postCommentRepository;
 
     @Override
     public Post createPost(PostCreateRequest post) throws IOException {
@@ -55,6 +49,8 @@ public class PostServiceImpl implements PostService {
         saved.setCoverImgUrl(url);
         saved.setMajor(major);
         saved.setAuthor(user);
+        saved.setLikes(new ArrayList<>());
+        saved.setComments(new ArrayList<>());
         return postRepository.save(saved);
     }
 
@@ -86,10 +82,8 @@ public class PostServiceImpl implements PostService {
         for(Post post : posts) {
             PostResponse response = new PostResponse();
             response.setPost(post);
-            response.setPostLikes(postLikeRepository.findAllByPostPostId(post.getPostId()));
-            response.setLikeCount(postLikeRepository.countByPostPostId(post.getPostId()));
-            response.setPostComments(getCommentsByPostId(post.getPostId()));
-            response.setCommentCount(postCommentRepository.countByPostPostId(post.getPostId()));
+            response.setLikeCount(post.getLikes() != null ? post.getLikes().size() : 0);
+            response.setCommentCount(post.getComments() != null ? post.getComments().size() : 0);
             responses.add(response);
         }
         return responses;
@@ -98,52 +92,66 @@ public class PostServiceImpl implements PostService {
     @Override
     public List<PostResponse> getAllPost() {
         List<Post> posts = postRepository.findAll();
-
         return mapPostToResponse(posts);
     }
 
 
     @Override
+    @Transactional
     public PostLike likePost(PostLikeRequest request) {
-        if (postLikeRepository.existsByPostPostIdAndUserId(request.getPostId(), request.getUserId())) {
-            throw new RuntimeException("User đã like bài viết này rồi");
-        }
         Post post = getPostById(request.getPostId());
         User user = userService.getById(request.getUserId());
+
+        // Kiểm tra user đã like chưa
+        boolean alreadyLiked = post.getLikes().stream()
+                .anyMatch(like -> like.getUser().getId() == request.getUserId());
+        if (alreadyLiked) {
+            throw new RuntimeException("User đã like bài viết này rồi");
+        }
+
+        // Tạo like mới và thêm vào post
         PostLike postLike = PostLike.builder()
-                .post(post)
                 .user(user)
                 .build();
-        return postLikeRepository.save(postLike);
+
+        post.getLikes().add(postLike);
+        postRepository.save(post);
+
+        return postLike;
     }
 
     @Override
+    @Transactional
     public void unlikePost(int postId, int userId) {
-        if (!postLikeRepository.existsByPostPostIdAndUserId(postId, userId)) {
+        Post post = getPostById(postId);
+
+        boolean removed = post.getLikes().removeIf(like -> like.getUser().getId() == userId);
+        if (!removed) {
             throw new RuntimeException("User chưa like bài viết này");
         }
-        postLikeRepository.deleteByPostPostIdAndUserId(postId, userId);
+
+        postRepository.save(post);
     }
 
     @Override
     public boolean isLiked(int postId, int userId) {
-        return postLikeRepository.existsByPostPostIdAndUserId(postId, userId);
+        Post post = getPostById(postId);
+        return post.getLikes().stream()
+                .anyMatch(like -> like.getUser().getId() == userId);
     }
 
     @Override
     public List<PostLikeResponse> getLikesByPostId(int postId) {
-        List<PostLike> likes = postLikeRepository.findAllByPostPostId(postId);
-        List<PostLikeResponse> responses = new ArrayList<>();
-        for(PostLike like : likes){
-            PostLikeResponse response = mapLikeToResponse(like);
-            responses.add(response);
-        }
-        return responses;
+        Post post = getPostById(postId);
+        return post.getLikes().stream()
+                .map(like -> mapLikeToResponse(like, postId))
+                .collect(Collectors.toList());
     }
-    private PostLikeResponse mapLikeToResponse(PostLike postLike) {
+
+    private PostLikeResponse mapLikeToResponse(PostLike postLike, int postId) {
         return PostLikeResponse.builder()
                 .id(postLike.getId())
-                .postId(postLike.getPost().getPostId())
+                .postId(postId)
                 .userId(postLike.getUser().getId())
                 .userName(postLike.getUser().getName())
                 .userAvatar(postLike.getUser().getAvatarUrl())
@@ -153,82 +161,119 @@ public class PostServiceImpl implements PostService {
 
     @Override
     public int countLikes(int postId) {
-        return postLikeRepository.countByPostPostId(postId);
+        Post post = getPostById(postId);
+        return post.getLikes() != null ? post.getLikes().size() : 0;
     }
 
     @Override
+    @Transactional
     public PostComment createComment(PostCommentRequest request) {
         Post post = getPostById(request.getPostId());
         User user = userService.getById(request.getUserId());
 
         PostComment comment = new PostComment();
-        comment.setPost(post);
         comment.setUser(user);
         comment.setContent(request.getContent());
 
+        // Nếu là reply
         if (request.getParentCommentId() != null) {
-            PostComment parentComment = postCommentRepository.findById(request.getParentCommentId()).orElseThrow(() -> new RuntimeException("Parent comment không tồn tại"));
+            PostComment parentComment = post.getComments().stream()
+                    .filter(c -> c.getId() == request.getParentCommentId())
+                    .findFirst()
+                    .orElseThrow(() -> new RuntimeException("Parent comment không tồn tại"));
             comment.setParentComment(parentComment);
         }
 
-        return postCommentRepository.save(comment);
+        post.getComments().add(comment);
+        postRepository.save(post);
+
+        return comment;
     }
 
     @Override
+    @Transactional
     public PostComment updateComment(int commentId, String content) {
-        PostComment comment = postCommentRepository.findById(commentId)
-                .orElseThrow(() -> new RuntimeException("Comment không tồn tại"));
-        comment.setContent(content);
-        return postCommentRepository.save(comment);
+        List<Post> allPosts = postRepository.findAll();
+        for (Post post : allPosts) {
+            for (PostComment comment : post.getComments()) {
+                if (comment.getId() == commentId) {
+                    comment.setContent(content);
+                    postRepository.save(post);
+                    return comment;
+                }
+            }
+        }
+        throw new RuntimeException("Comment không tồn tại");
     }
 
     @Override
+    @Transactional
     public void deleteComment(int commentId) {
-        if (!postCommentRepository.existsById(commentId)) {
-            throw new RuntimeException("Comment không tồn tại");
+        List<Post> allPosts = postRepository.findAll();
+        for (Post post : allPosts) {
+            post.getComments().removeIf(c -> c.getParentComment() != null && c.getParentComment().getId() == commentId);
+            boolean removed = post.getComments().removeIf(c -> c.getId() == commentId);
+            if (removed) {
+                postRepository.save(post);
+                return;
+            }
         }
-        postCommentRepository.deleteById(commentId);
+        throw new RuntimeException("Comment không tồn tại");
     }
 
     @Override
     public PostCommentResponse getCommentById(int commentId) {
-        PostComment comment = postCommentRepository.findById(commentId)
-                .orElseThrow(() -> new RuntimeException("Comment không tồn tại"));
-        return mapCommentToResponse(comment, true);
+        List<Post> allPosts = postRepository.findAll();
+        for (Post post : allPosts) {
+            for (PostComment comment : post.getComments()) {
+                if (comment.getId() == commentId) {
+                    return mapCommentToResponse(comment, post.getPostId(), post.getComments(), true);
+                }
+            }
+        }
+        throw new RuntimeException("Comment không tồn tại");
     }
 
     @Override
     public List<PostCommentResponse> getCommentsByPostId(int postId) {
-        List<PostComment> rootComments = postCommentRepository
-                .findAllByPostPostIdAndParentCommentIsNullOrderByCreatedAtDesc(postId);
-
-        return rootComments.stream()
-                .map(comment -> mapCommentToResponse(comment, true))
-                .collect(Collectors.toList());
+        Post post = getPostById(postId);
+        List<PostCommentResponse> responseList = new ArrayList<>();
+        List<PostComment> allComments = post.getComments();
+        for (PostComment c : allComments) {
+            if (c.getParentComment() == null) {
+                PostCommentResponse res = mapCommentToResponse(c, postId, allComments, true);
+                responseList.add(res);
+            }
+        }
+        return responseList;
     }
 
     @Override
     public List<PostCommentResponse> getReplies(int parentCommentId) {
-        List<PostComment> replies = postCommentRepository
-                .findAllByParentCommentIdOrderByCreatedAtAsc(parentCommentId);
-
-        List<PostCommentResponse> comments = new ArrayList<>();
-        for(PostComment reply : replies){
-            PostCommentResponse response = this.mapCommentToResponse(reply, false);
-            comments.add(response);
+        List<Post> allPosts = postRepository.findAll();
+        for (Post post : allPosts) {
+            boolean hasParent = post.getComments().stream()
+                    .anyMatch(c -> c.getId() == parentCommentId);
+            if (hasParent) {
+                return post.getComments().stream()
+                        .filter(c -> c.getParentComment() != null && c.getParentComment().getId() == parentCommentId)
+                        .map(c -> mapCommentToResponse(c, post.getPostId(), post.getComments(), false))
+                        .collect(Collectors.toList());
+            }
         }
-        return comments;
+        return new ArrayList<>();
     }
 
     @Override
     public int countComments(int postId) {
-        return postCommentRepository.countByPostPostId(postId);
+        Post post = getPostById(postId);
+        return post.getComments() != null ? post.getComments().size() : 0;
     }
 
-    private PostCommentResponse mapCommentToResponse(PostComment comment, boolean includeReplies) {
+    private PostCommentResponse mapCommentToResponse(PostComment comment, int postId, List<PostComment> allComments, boolean includeReplies) {
         PostCommentResponse response = new PostCommentResponse();
         response.setId(comment.getId());
-        response.setPostId(comment.getPost().getPostId());
+        response.setPostId(postId);
         response.setUserId(comment.getUser().getId());
         response.setUserName(comment.getUser().getName());
         response.setUserAvatar(comment.getUser().getAvatarUrl());
@@ -243,18 +288,12 @@ public class PostServiceImpl implements PostService {
         }
 
         if (includeReplies) {
-            // Lấy danh sách comment con từ DB
-            List<PostComment> repliesFromDB = postCommentRepository
-                    .findAllByParentCommentIdOrderByCreatedAtAsc(comment.getId());
-
-            List<PostCommentResponse> replyResponses = new ArrayList<>();
-
-            // Lặp qua danh sách comment con
-            for (PostComment reply : repliesFromDB) {
-                PostCommentResponse convertedReply = mapCommentToResponse(reply, true);
-                replyResponses.add(convertedReply);
-            }
-            response.setReplies(replyResponses);
+            // Lấy replies
+            List<PostCommentResponse> replies = allComments.stream()
+                    .filter(c -> c.getParentComment() != null && c.getParentComment().getId() == comment.getId())
+                    .map(c -> mapCommentToResponse(c, postId, allComments, true))
+                    .collect(Collectors.toList());
+            response.setReplies(replies);
         } else {
             response.setReplies(new ArrayList<>());
         }

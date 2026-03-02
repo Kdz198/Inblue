@@ -19,11 +19,6 @@ public class PostLike {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     int id;
-
-    @ManyToOne
-    @JoinColumn(name = "post_id", nullable = false)
-    Post post;
-
     @ManyToOne
     @JoinColumn(name = "user_id", nullable = false)
     User user;
