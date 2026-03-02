@@ -31,7 +31,9 @@ public class QuizItemCreateAIRequest {
     List<PracticeAIQuestion> questions;
 
     @Data
-    static class PracticeAIQuestion{
+    @AllArgsConstructor
+    @NoArgsConstructor
+    public static class PracticeAIQuestion{
         String title;
         String content;
         String answer;

@@ -17,8 +17,5 @@ public class QuizSetItemController {
     @Autowired
     private QuizItemService quizItemService;
 
-    @GetMapping("/by-quiz-set/{quizSetId}")
-    public ResponseEntity<List<QuizItem>> getItemsByQuizSetId(@PathVariable int quizSetId){
-        return ResponseEntity.ok(quizItemService.getItemsByQuizSetId(quizSetId));
-    }
+
 }

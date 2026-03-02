@@ -23,6 +23,11 @@ public class QuizSetController {
         return ResponseEntity.ok(quizSetService.createFullQuizSet(practiceSetId, QuizName, items));
     }
 
+    @PostMapping("create-full-ai")
+    public ResponseEntity<List<QuizItem>> createFullQuizSetByAI(@RequestParam int practiceSetId) {
+        return ResponseEntity.ok(quizSetService.saveAllItemsByAI(practiceSetId));
+    }
+
     @GetMapping
     public ResponseEntity<List<QuizSet>> getAll() {
         return ResponseEntity.ok(quizSetService.getAllQuizSet());
@@ -47,4 +52,6 @@ public class QuizSetController {
     public ResponseEntity<Void> deleteQuizSet(@PathVariable int quizId){
         quizSetService.deleteQuizSet(quizId);
         return ResponseEntity.noContent().build();}
+
+
 }

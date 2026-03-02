@@ -1,19 +1,29 @@
 package fpt.org.inblue.service.impl;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
+
+import fpt.org.inblue.constants.ApiPath;
 import fpt.org.inblue.exception.CustomException;
+import fpt.org.inblue.model.PracticeQuestion;
+import fpt.org.inblue.model.PracticeSet;
 import fpt.org.inblue.model.QuizItem;
 import fpt.org.inblue.model.QuizSet;
+import fpt.org.inblue.model.dto.request.QuizItemCreateAIRequest;
 import fpt.org.inblue.model.dto.request.QuizItemCreateRequest;
+import fpt.org.inblue.model.enums.PythonService;
+import fpt.org.inblue.repository.PracticeSetRepository;
 import fpt.org.inblue.repository.QuizItemRepository;
 import fpt.org.inblue.repository.QuizSetRepository;
+import fpt.org.inblue.service.PythonApiClient;
 import fpt.org.inblue.service.QuizItemService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import tools.jackson.databind.ObjectMapper;
 
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 @Service
@@ -22,12 +32,10 @@ public class QuizItemServiceImpl implements QuizItemService {
     private QuizItemRepository quizItemRepository;
     @Autowired
     private ObjectMapper objectMapper;
-    @Autowired
-    private QuizSetRepository quizSetRepository;
+
 
     @Override
-    public List<QuizItem> saveAllItems(List<QuizItemCreateRequest> dtos, int quizSetId) {
-        QuizSet quizSet = quizSetRepository.findById(quizSetId).get();
+    public List<QuizItem> saveAllItems(List<QuizItemCreateRequest> dtos) {
 
         List<QuizItem> items = dtos.stream().map(dto -> {
             try {
@@ -37,7 +45,6 @@ public class QuizItemServiceImpl implements QuizItemService {
                         // Nén Map thành JSON
                         .correctAnswer(dto.getCorrectAnswer())
                         .explanation(dto.getExplanation())
-                        .quizSet(quizSet)
                         .build();
             } catch (Exception e) {
                 throw new RuntimeException(e);
@@ -47,8 +54,6 @@ public class QuizItemServiceImpl implements QuizItemService {
         return quizItemRepository.saveAll(items);
     }
 
-    @Override
-    public List<QuizItem> getItemsByQuizSetId(int quizId) {
-        return quizItemRepository.findAllByQuizSet_QuizId(quizId);
-    }
+
+
 }

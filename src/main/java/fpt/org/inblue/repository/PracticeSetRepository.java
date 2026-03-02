@@ -8,4 +8,6 @@ import java.util.List;
 
 public interface PracticeSetRepository extends JpaRepository<PracticeSet, Integer> {
     List<PracticeSet> findAllByLevel(TargetLevel level);
+
+    PracticeSet findById(int id);
 }

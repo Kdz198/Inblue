@@ -129,7 +129,6 @@ public class UserServiceImpl implements UserService {
         }
         int candidateId = 0;
         if (candidateProfileService.getProfileByUserId(userId) != null) {
-//            candidateProfileService.deleteProfile(userId);
             candidateId = candidateProfileService.getProfileByUserId(userId).getId();
         }
         CVParserResponse response =

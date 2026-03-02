@@ -14,12 +14,8 @@ public class QuizItem {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     int id;
-    @JoinColumn(name = "quiz_id")
-    @ManyToOne
-    QuizSet quizSet;
     @Column(columnDefinition = "TEXT")
     private String question;
-
     @Column(columnDefinition = "TEXT")
     private String options; // Lưu dạng JSON: {"A": "...", "B": "..."}
     private String correctAnswer;
