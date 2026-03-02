@@ -49,8 +49,6 @@ public class PostServiceImpl implements PostService {
         saved.setCoverImgUrl(url);
         saved.setMajor(major);
         saved.setAuthor(user);
-        saved.setLikes(new ArrayList<>());
-        saved.setComments(new ArrayList<>());
         return postRepository.save(saved);
     }
 
