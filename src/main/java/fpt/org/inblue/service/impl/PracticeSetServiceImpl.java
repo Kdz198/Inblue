@@ -160,7 +160,7 @@ public class PracticeSetServiceImpl implements PracticeSetService {
             practiceRequest.setPracticeSetName(aiResponse.getPracticeSetName());
             practiceRequest.setObjective(aiResponse.getObjective());
             practiceRequest.setTarget(TargetLevel.convertFromStringToEnum(candidateProfile.getTargetLevel()));
-            practiceRequest.setMajorId(request.getMajorId());
+//            practiceRequest.setMajorId(request.getMajorId());
             System.out.println("date number from python: " + aiResponse.getDateNumber());
             practiceRequest.setDateNumber(aiResponse.getDateNumber());
             practiceRequest.setQuestions(aiResponse.getQuestions());
@@ -174,7 +174,7 @@ public class PracticeSetServiceImpl implements PracticeSetService {
     @Transactional
     @Override
     public void createFullSetByAI(PracticeRequest practiceRequest,int aiInterviewId) {
-        Major major = majorService.getMajorById(practiceRequest.getMajorId());
+        Major major = majorService.getMajorById(1);
         System.out.println("DAte number: " + practiceRequest.getDateNumber());
         System.out.println(Date.valueOf(LocalDate.now().plusDays(practiceRequest.getDateNumber())));
         PracticeSet practiceSet = PracticeSet.builder()

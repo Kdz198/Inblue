@@ -8,6 +8,6 @@ import lombok.Data;
 public class PracticeGenerateRequest {
     int userId;
     int aiInterviewId;
-    int majorId;
+//    String majorId;
     int dateNumber;
 }
