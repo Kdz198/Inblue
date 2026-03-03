@@ -20,5 +20,6 @@ public interface PracticeSetService {
     PracticeSet createFullSet(PracticeRequest practiceRequest);
     PracticeSetResponse getFullSet(int id);
     List<PracticeSetAIResponse> creatPracticeSetByAI(PracticeGenerateRequest request);
-    void createFullSetByAI(PracticeRequest practiceRequest);
+    void createFullSetByAI(PracticeRequest practiceRequest,int aiInterviewId);
+    List<PracticeSet> getAllByInterviewSession(int interviewSessionId);
 }

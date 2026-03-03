@@ -165,7 +165,7 @@ public class PracticeSetServiceImpl implements PracticeSetService {
             practiceRequest.setDateNumber(request.getDateNumber());
             practiceRequest.setQuestions(aiResponse.getQuestions());
             practiceRequest.setUserId(request.getUserId());
-            practiceSetService.createFullSetByAI(practiceRequest);
+            practiceSetService.createFullSetByAI(practiceRequest, request.getAiInterviewId());
         }
         return response;
 
@@ -173,7 +173,7 @@ public class PracticeSetServiceImpl implements PracticeSetService {
 
     @Transactional
     @Override
-    public void createFullSetByAI(PracticeRequest practiceRequest) {
+    public void createFullSetByAI(PracticeRequest practiceRequest,int aiInterviewId) {
         Major major = majorService.getMajorById(practiceRequest.getMajorId());
         PracticeSet practiceSet = PracticeSet.builder()
                 .practiceSetName(practiceRequest.getPracticeSetName())
@@ -219,8 +219,13 @@ public class PracticeSetServiceImpl implements PracticeSetService {
         User user = userRepository.findById(practiceRequest.getUserId()).orElse(null);
         practiceSet.setUser(user);
         practiceSet.setQuestions(questions);
-
+        practiceSet.setInterviewSessionId(aiInterviewId);
         practiceSetRepository.save(practiceSet);
+    }
+
+    @Override
+    public List<PracticeSet> getAllByInterviewSession(int interviewSessionId) {
+        return practiceSetRepository.findAllByInterviewSessionId(interviewSessionId);
     }
 
     private List<PracticeSetAIResponse> callPython(PracticeAIRequest request) {

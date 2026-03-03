@@ -61,4 +61,9 @@ public class PracticeSetController {
     public ResponseEntity<List<PracticeSetAIResponse> > createPracticeSetByAI(@RequestBody PracticeGenerateRequest request) {
         return ResponseEntity.ok(practiceSetService.creatPracticeSetByAI(request));
     }
+
+    @GetMapping("interview-session/{interviewSessionId}")
+    public ResponseEntity<List<PracticeSet>> getAllByInterviewSession(@PathVariable int interviewSessionId) {
+        return ResponseEntity.ok(practiceSetService.getAllByInterviewSession(interviewSessionId));
+    }
 }

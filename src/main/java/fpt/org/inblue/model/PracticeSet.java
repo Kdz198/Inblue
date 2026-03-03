@@ -34,4 +34,5 @@ public class PracticeSet {
     @JdbcTypeCode(SqlTypes.JSON)
     @Column(columnDefinition = "jsonb")
     List<PracticeQuestion> questions;
+    Integer interviewSessionId;
 }
