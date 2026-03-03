@@ -7,13 +7,13 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.experimental.FieldDefaults;
-import org.hibernate.annotations.Cascade;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.annotations.UpdateTimestamp;
 import org.hibernate.type.SqlTypes;
 
 import java.sql.Date;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -32,16 +32,17 @@ public class Post {
     String content;
     @Column(columnDefinition = "TEXT")
     String summary;
+    @Enumerated(EnumType.STRING)
     PostStatus status;
     @JoinColumn(name = "author_id")
-    @ManyToOne
+    @ManyToOne(fetch = FetchType.LAZY)
     User author;
     @CreationTimestamp
-    Date creationDate;
+    Instant creationDate;
     @UpdateTimestamp
-    Date lastModifiedDate;
+    Instant lastModifiedDate;
     @JoinColumn(name ="major_id")
-    @ManyToOne
+    @ManyToOne(fetch = FetchType.LAZY)
     Major major;
     String coverImgUrl;
     String public_id;

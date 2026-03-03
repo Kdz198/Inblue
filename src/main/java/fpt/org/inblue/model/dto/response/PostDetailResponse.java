@@ -6,6 +6,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.sql.Date;
+import java.time.Instant;
 import java.util.List;
 
 @Data
@@ -18,8 +19,8 @@ public class PostDetailResponse {
     String content;
     String summary;
     String status;
-    Date creationDate;
-    Date lastModifiedDate;
+    Instant creationDate;
+    Instant lastModifiedDate;
     String coverImgUrl;
     List<String> tags;
     AuthorResponse author;

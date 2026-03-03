@@ -10,6 +10,7 @@ import fpt.org.inblue.model.dto.response.PostCommentResponse;
 import fpt.org.inblue.model.dto.response.PostLikeResponse;
 import fpt.org.inblue.model.dto.response.PostResponse;
 import fpt.org.inblue.model.enums.PostStatus;
+import org.springframework.data.domain.Page;
 
 import java.io.IOException;
 import java.util.List;
@@ -20,6 +21,7 @@ public interface PostService {
     void changeStatus(int postId, PostStatus status);
     List<PostResponse> getPublishPost();
     List<PostResponse> getAllPost();
+    Page<PostResponse> getNewFeed(int page, int size);
 
     // Like
     PostLike likePost(PostLikeRequest request);

@@ -15,6 +15,7 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -42,6 +43,14 @@ public class PostController {
     )
     public ResponseEntity<Post> createPost(@ModelAttribute PostCreateRequest postCreateRequest) throws IOException {
         return ResponseEntity.ok().body(postService.createPost(postCreateRequest));
+    }
+
+
+    @GetMapping("/feed")
+    @Operation(summary = "Lấy new feed", description = "Trả về danh sách bài viết mới nhất, có phân trang")
+    public ResponseEntity<Page<PostResponse>> getNewFeed(@RequestParam(defaultValue = "0") int page, @RequestParam(defaultValue = "10") int size) {
+
+        return ResponseEntity.ok(postService.getNewFeed(page, size));
     }
 
     @GetMapping("/{postId}")
