@@ -64,20 +64,18 @@ public class PracticeSetServiceImpl implements PracticeSetService {
 
     @Override
     public PracticeSet updateQuestionSet(PracticeSet practiceSet) {
-        if(practiceSetRepository.existsById(practiceSet.getId())){
+        if (practiceSetRepository.existsById(practiceSet.getId())) {
             return practiceSetRepository.save(practiceSet);
-        }
-        else{
+        } else {
             throw new CustomException("question set not found", HttpStatus.NOT_FOUND);
         }
     }
 
     @Override
     public void deleteQuestionSet(int id) {
-        if(practiceSetRepository.existsById(id)){
+        if (practiceSetRepository.existsById(id)) {
             practiceSetRepository.deleteById(id);
-        }
-        else{
+        } else {
             throw new CustomException("question set not found", HttpStatus.NOT_FOUND);
         }
     }
@@ -95,6 +93,7 @@ public class PracticeSetServiceImpl implements PracticeSetService {
     /**
      * Tao bo on tap hoan chinh
      * Một hàm chỉ tạo 1 bộ câu hỏi thôi nếu mà user yêu cầu tạo bao nhiêu bộ thì gọi hàm này bấy nhiêu lần
+     *
      * @param practiceRequest
      * @return
      */
@@ -112,15 +111,15 @@ public class PracticeSetServiceImpl implements PracticeSetService {
         practiceSet = practiceSetRepository.save(practiceSet);
 
         //luu cac cau hoi on tap
-        for(int i = 0 ; i < practiceRequest.getQuestions().size(); i++){
+        for (int i = 0; i < practiceRequest.getQuestions().size(); i++) {
             PracticeQuestionRequest question = practiceRequest.getQuestions().get(i);
             //lay lesson tuong ung nếu chưa có thì tạo mới rồi thêm
             QuestionLesson lesson = questionLessonService.findByName(question.getLessonName());
-            if(lesson==null){
+            if (lesson == null) {
                 lesson = questionLessonService.createQuestionLesson(
                         QuestionLesson.builder()
-                        .lessonName(question.getLessonName())
-                        .build());
+                                .lessonName(question.getLessonName())
+                                .build());
             }
 
             PracticeQuestion saved = PracticeQuestion.builder()
@@ -136,7 +135,7 @@ public class PracticeSetServiceImpl implements PracticeSetService {
             PracticeSetItem item = PracticeSetItem.builder()
                     .practiceQuestion(saved)
                     .practiceSet(practiceSet)
-                    .orderIndex(i+1)
+                    .orderIndex(i + 1)
                     .build();
             practiceSetItemRepository.save(item);
         }
@@ -145,7 +144,7 @@ public class PracticeSetServiceImpl implements PracticeSetService {
 
 
     @Override
-    public List<PracticeSetAIResponse>  creatPracticeSetByAI(PracticeGenerateRequest request) {
+    public List<PracticeSetAIResponse> creatPracticeSetByAI(PracticeGenerateRequest request) {
         PracticeAIRequest aiRequest = new PracticeAIRequest();
         InterviewSession interviewSession = interviewSessionRepository.findById(request.getAiInterviewId()).orElse(null);
         CandidateProfile candidateProfile = interviewSession.getCandidateProfile();
@@ -155,7 +154,7 @@ public class PracticeSetServiceImpl implements PracticeSetService {
         aiRequest.setCandidateIntroduction(candidateProfile.getIntroduction());
         aiRequest.setPracticeSetRequest(request.getDateNumber());
         List<PracticeSetAIResponse> response = callPython(aiRequest);
-        for(PracticeSetAIResponse aiResponse : response){
+        for (PracticeSetAIResponse aiResponse : response) {
             PracticeRequest practiceRequest = new PracticeRequest();
             practiceRequest.setPracticeSetName(aiResponse.getPracticeSetName());
             practiceRequest.setObjective(aiResponse.getObjective());
@@ -173,7 +172,7 @@ public class PracticeSetServiceImpl implements PracticeSetService {
 
     @Transactional
     @Override
-    public void createFullSetByAI(PracticeRequest practiceRequest,int aiInterviewId) {
+    public void createFullSetByAI(PracticeRequest practiceRequest, int aiInterviewId) {
         Major major = majorService.getMajorById(practiceRequest.getMajorId());
         System.out.println("DAte number: " + practiceRequest.getDateNumber());
         System.out.println(Date.valueOf(LocalDate.now().plusDays(practiceRequest.getDateNumber())));
@@ -182,18 +181,18 @@ public class PracticeSetServiceImpl implements PracticeSetService {
                 .objective(practiceRequest.getObjective())
                 .level(practiceRequest.getTarget())
                 .major(major)
-                .startDate(Date.valueOf(LocalDate.now().plusDays(practiceRequest.getDateNumber()+1)))
+                .startDate(Date.valueOf(LocalDate.now().plusDays(practiceRequest.getDateNumber() + 1)))
                 .build();
         practiceSet = practiceSetRepository.save(practiceSet);
 
         //list này để thêm vào cột trong practice set để fe lấy lên cho dễ
-        List<PracticeQuestion> questions= new ArrayList<>();
+        List<PracticeQuestion> questions = new ArrayList<>();
         //luu cac cau hoi on tap
-        for(int i = 0 ; i < practiceRequest.getQuestions().size(); i++){
+        for (int i = 0; i < practiceRequest.getQuestions().size(); i++) {
             PracticeQuestionRequest question = practiceRequest.getQuestions().get(i);
             //lay lesson tuong ung nếu chưa có thì tạo mới rồi thêm
             QuestionLesson lesson = questionLessonService.findByName(question.getLessonName());
-            if(lesson==null){
+            if (lesson == null) {
                 lesson = questionLessonService.createQuestionLesson(
                         QuestionLesson.builder()
                                 .lessonName(question.getLessonName())
@@ -214,7 +213,7 @@ public class PracticeSetServiceImpl implements PracticeSetService {
             PracticeSetItem item = PracticeSetItem.builder()
                     .practiceQuestion(saved)
                     .practiceSet(practiceSet)
-                    .orderIndex(i+1)
+                    .orderIndex(i + 1)
                     .build();
             practiceSetItemRepository.save(item);
         }
@@ -226,8 +225,13 @@ public class PracticeSetServiceImpl implements PracticeSetService {
     }
 
     @Override
-    public List<PracticeSet> getAllByInterviewSession(int interviewSessionId) {
-        return practiceSetRepository.findAllByInterviewSessionId(interviewSessionId);
+    public List<PracticeSetResponse> getAllByInterviewSession(int interviewSessionId) {
+        List<PracticeSet> practiceSets = practiceSetRepository.findAllByInterviewSessionId(interviewSessionId);
+        List<PracticeSetResponse> responses = new ArrayList<>();
+        for(PracticeSet practiceSet : practiceSets) {
+            responses.add(mapToResponse(practiceSet));
+        }
+        return responses;
     }
 
     private List<PracticeSetAIResponse> callPython(PracticeAIRequest request) {
@@ -243,23 +247,45 @@ public class PracticeSetServiceImpl implements PracticeSetService {
 
     /**
      * Lấy bộ on tap hoàn chỉnh bao gồm cả các câu hỏi bên trong
+     *
      * @param id
      * @return
      */
     @Override
     public PracticeSetResponse getFullSet(int id) {
         PracticeSet practiceSet = getQuestionSet(id);
-        if(practiceSet!=null){
-            List<PracticeSetItem> item = practiceSetItemRepository.findAllByPracticeSet_Id(id);
-            PracticeSetResponse response = new PracticeSetResponse();
-            response.setPracticeSet(practiceSet);
-            response.setPracticeSetItem(item);
-            return response;
-        }
-        else{
+        if (practiceSet != null) {
+            return mapToResponse(practiceSet);
+
+        } else {
             throw new CustomException("practice set not found", HttpStatus.NOT_FOUND);
         }
     }
 
+    public PracticeSetResponse mapToResponse(PracticeSet practiceSet) {
+        List<PracticeSetResponse.PracticeQuestionDto> questionDtos = new ArrayList<>();
+        for(PracticeQuestion practiceQuestion : practiceSet.getQuestions()) {
+            PracticeSetResponse.PracticeQuestionDto practiceQuestionDto = PracticeSetResponse.PracticeQuestionDto.builder()
+                    .questionId(practiceQuestion.getQuestionId())
+                    .title(practiceQuestion.getTitle())
+                    .content(practiceQuestion.getContent())
+                    .level(practiceQuestion.getLevel())
+                    .lessonName(practiceQuestion.getLesson().getLessonName())
+                    .answer(practiceQuestion.getAnswer())
+                    .hint(practiceQuestion.getHint())
+                    .build();
+            questionDtos.add(practiceQuestionDto);
+        }
+        PracticeSetResponse response = PracticeSetResponse.builder()
+                .id(practiceSet.getId())
+                .practiceSetName(practiceSet.getPracticeSetName())
+                .objective(practiceSet.getObjective())
+                .level(practiceSet.getLevel())
+                .startDate(practiceSet.getStartDate())
+                .questions(questionDtos)
+                .build();
+
+        return response;
+    }
 
 }

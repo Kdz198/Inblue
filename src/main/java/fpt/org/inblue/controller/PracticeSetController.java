@@ -63,7 +63,7 @@ public class PracticeSetController {
     }
 
     @GetMapping("interview-session/{interviewSessionId}")
-    public ResponseEntity<List<PracticeSet>> getAllByInterviewSession(@PathVariable int interviewSessionId) {
+    public ResponseEntity<List<PracticeSetResponse>> getAllByInterviewSession(@PathVariable int interviewSessionId) {
         return ResponseEntity.ok(practiceSetService.getAllByInterviewSession(interviewSessionId));
     }
 }
