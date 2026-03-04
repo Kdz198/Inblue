@@ -5,6 +5,7 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.io.Serializable;
 import java.sql.Date;
 import java.time.Instant;
 import java.util.List;
@@ -13,7 +14,7 @@ import java.util.List;
 @Builder
 @AllArgsConstructor
 @NoArgsConstructor
-public class PostDetailResponse {
+public class PostDetailResponse implements Serializable {
     int postId;
     String title;
     String content;
@@ -30,7 +31,7 @@ public class PostDetailResponse {
     @Builder
     @AllArgsConstructor
     @NoArgsConstructor
-    public static class AuthorResponse {
+    public static class AuthorResponse implements Serializable{
         String name;
         String avatar;
     }
