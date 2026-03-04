@@ -1,5 +1,6 @@
 package fpt.org.inblue.model;
 
+import fpt.org.inblue.model.enums.Major;
 import fpt.org.inblue.model.enums.Role;
 import jakarta.persistence.*;
 import lombok.*;
@@ -24,7 +25,8 @@ public class User {
     private String public_id;
 
     private String university;
-    private String major;
+    @Enumerated(EnumType.STRING)
+    private Major major;
     private String cvUrl;
     private String cv_public_id;
 }

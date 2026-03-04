@@ -100,12 +100,12 @@ public class PracticeSetServiceImpl implements PracticeSetService {
     @Override
     @Transactional
     public PracticeSet createFullSet(PracticeRequest practiceRequest) {
-        Major major = majorService.getMajorById(practiceRequest.getMajorId());
+        User user = userRepository.findById(practiceRequest.getUserId()).orElseThrow(()-> new CustomException("User not found", HttpStatus.NOT_FOUND));
         PracticeSet practiceSet = PracticeSet.builder()
                 .practiceSetName(practiceRequest.getPracticeSetName())
                 .objective(practiceRequest.getObjective())
                 .level(practiceRequest.getTarget())
-                .major(major)
+                .major(user.getMajor())
                 .startDate(Date.valueOf(LocalDate.now().plusDays(practiceRequest.getDateNumber()))) //ngay bat dau on tap la ngay hien tai + số ngày mà AI đề xuất
                 .build();
         practiceSet = practiceSetRepository.save(practiceSet);
@@ -154,12 +154,12 @@ public class PracticeSetServiceImpl implements PracticeSetService {
         aiRequest.setCandidateIntroduction(candidateProfile.getIntroduction());
         aiRequest.setPracticeSetRequest(request.getDateNumber());
         List<PracticeSetAIResponse> response = callPython(aiRequest);
+        User user = userRepository.findById(request.getUserId()).orElseThrow(()-> new CustomException("User not found", HttpStatus.NOT_FOUND));
         for (PracticeSetAIResponse aiResponse : response) {
             PracticeRequest practiceRequest = new PracticeRequest();
             practiceRequest.setPracticeSetName(aiResponse.getPracticeSetName());
             practiceRequest.setObjective(aiResponse.getObjective());
             practiceRequest.setTarget(TargetLevel.convertFromStringToEnum(candidateProfile.getTargetLevel()));
-            practiceRequest.setMajorId(request.getMajorId());
             System.out.println("date number from python: " + aiResponse.getDateNumber());
             practiceRequest.setDateNumber(aiResponse.getDateNumber());
             practiceRequest.setQuestions(aiResponse.getQuestions());
@@ -173,14 +173,12 @@ public class PracticeSetServiceImpl implements PracticeSetService {
     @Transactional
     @Override
     public void createFullSetByAI(PracticeRequest practiceRequest, int aiInterviewId) {
-        Major major = majorService.getMajorById(practiceRequest.getMajorId());
-        System.out.println("DAte number: " + practiceRequest.getDateNumber());
-        System.out.println(Date.valueOf(LocalDate.now().plusDays(practiceRequest.getDateNumber())));
+        User user = userRepository.findById(practiceRequest.getUserId()).orElseThrow(()-> new CustomException("User not found", HttpStatus.NOT_FOUND));
         PracticeSet practiceSet = PracticeSet.builder()
                 .practiceSetName(practiceRequest.getPracticeSetName())
                 .objective(practiceRequest.getObjective())
                 .level(practiceRequest.getTarget())
-                .major(major)
+                .major(user.getMajor())
                 .startDate(Date.valueOf(LocalDate.now().plusDays(practiceRequest.getDateNumber() + 1)))
                 .build();
         practiceSet = practiceSetRepository.save(practiceSet);
@@ -217,7 +215,6 @@ public class PracticeSetServiceImpl implements PracticeSetService {
                     .build();
             practiceSetItemRepository.save(item);
         }
-        User user = userRepository.findById(practiceRequest.getUserId()).orElse(null);
         practiceSet.setUser(user);
         practiceSet.setQuestions(questions);
         practiceSet.setInterviewSessionId(aiInterviewId);

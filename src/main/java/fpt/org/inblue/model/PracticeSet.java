@@ -1,7 +1,7 @@
 package fpt.org.inblue.model;
 
+import fpt.org.inblue.model.enums.Major;
 import fpt.org.inblue.model.enums.TargetLevel;
-import jakarta.annotation.Nullable;
 import jakarta.persistence.*;
 import lombok.*;
 import lombok.experimental.FieldDefaults;
@@ -25,8 +25,7 @@ public class PracticeSet {
     String objective;
     TargetLevel level;
     Date startDate;
-    @JoinColumn(name = "major_id")
-    @ManyToOne
+    @Enumerated(EnumType.STRING)
     Major major;
     @JoinColumn(name = "user_id")
     @ManyToOne

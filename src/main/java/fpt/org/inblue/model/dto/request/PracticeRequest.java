@@ -21,7 +21,6 @@ public class PracticeRequest {
     String practiceSetName;
     String objective;
     TargetLevel target;
-    int majorId;
     int dateNumber;
    List<PracticeQuestionRequest> questions;
 

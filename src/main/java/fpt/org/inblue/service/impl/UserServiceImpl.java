@@ -7,6 +7,7 @@ import fpt.org.inblue.model.User;
 import fpt.org.inblue.model.dto.UserEventDto;
 import fpt.org.inblue.model.dto.UserInfo;
 import fpt.org.inblue.model.dto.response.CVParserResponse;
+import fpt.org.inblue.model.enums.Major;
 import fpt.org.inblue.model.enums.PythonService;
 import fpt.org.inblue.model.enums.Role;
 import fpt.org.inblue.repository.UserRepository;
@@ -66,7 +67,7 @@ public class UserServiceImpl implements UserService {
                     .role(Role.USER)
                     .isActive(true)
                     .university(user.getUniversity())
-                    .major(user.getMajor())
+                    .major(Major.valueOf(user.getMajor()))
                     .build();
 
             User savedUser = userRepository.save(userBuilder);
@@ -83,7 +84,7 @@ public class UserServiceImpl implements UserService {
             updateUser.setName(user.getName());
             updateUser.setEmail(user.getEmail());
             updateUser.setUniversity(user.getUniversity());
-            updateUser.setMajor(user.getMajor());
+            updateUser.setMajor(Major.valueOf(user.getMajor()));
             updateUser.setPassword(user.getPassword());
             if (updateUser.getAvatarUrl() != null) {
                 updateUser.setAvatarUrl(updateUser.getAvatarUrl());

@@ -126,7 +126,6 @@ public class QuizSetServiceImpl implements QuizSetService {
         QuizItemCreateAIRequest request = QuizItemCreateAIRequest.builder()
                 .practiceSetName(practice.getPracticeSetName())
                 .level(practice.getLevel())
-                .majorName(practice.getMajor().getMajorName())
                 .objective(practice.getObjective())
                 .questions(aiQuestions)
                 .build();
