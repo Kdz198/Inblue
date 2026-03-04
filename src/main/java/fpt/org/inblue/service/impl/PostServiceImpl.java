@@ -194,7 +194,7 @@ public class PostServiceImpl implements PostService {
     }
 
     @Override
-    @Cacheable(value = "new_feed", key = "#page + '-' + #size")
+//    @Cacheable(value = "new_feed", key = "#page + '-' + #size")
     public Page<PostResponse> getNewFeed(int page, int size) {
         log.warn("🔥 CACHE MISS! Đang xuống PostgreSQL để lấy page: {}, size: {}", page, size);
         Pageable pageable = PageRequest.of(page, size);
