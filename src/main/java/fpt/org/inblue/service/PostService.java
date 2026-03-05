@@ -32,5 +32,4 @@ public interface PostService {
     PostComment createComment(PostCommentRequest request);
     PostComment updateComment(int commentId, String content);
     void deleteComment(int commentId);
-    int countComments(int postId);
 }

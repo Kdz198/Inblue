@@ -336,11 +336,7 @@ public class PostServiceImpl implements PostService {
         throw new RuntimeException("Comment không tồn tại");
     }
 
-    @Override
-    public int countComments(int postId) {
-        Post post = getPostById(postId);
-        return post.getComments() != null ? post.getComments().size() : 0;
-    }
+
 
     private PostCommentResponse mapCommentToResponse(PostComment comment) {
         PostCommentResponse response = new PostCommentResponse();

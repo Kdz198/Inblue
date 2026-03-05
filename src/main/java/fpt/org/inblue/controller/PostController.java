@@ -98,11 +98,7 @@ public class PostController {
         return ResponseEntity.ok().build();
     }
 
-    @GetMapping("/{postId}/comments/count")
-    @Operation(summary = "Đếm số lượng comments của bài viết")
-    public ResponseEntity<Integer> countComments(@PathVariable int postId) {
-        return ResponseEntity.ok( postService.countComments(postId));
-    }
+
     @GetMapping
     @Operation(summary = "Lấy tất cả bài viết")
     public ResponseEntity<List<PostResponse>> getAllPosts() {
