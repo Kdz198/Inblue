@@ -7,6 +7,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.experimental.FieldDefaults;
 
+import java.io.Serializable;
 import java.sql.Timestamp;
 
 @Data
@@ -14,7 +15,7 @@ import java.sql.Timestamp;
 @AllArgsConstructor
 @Builder
 @FieldDefaults(level = AccessLevel.PRIVATE)
-public class PostCommentResponse {
+public class PostCommentResponse implements Serializable {
     int id;
     String userName;
     String userAvatar;

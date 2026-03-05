@@ -15,7 +15,9 @@ import fpt.org.inblue.repository.PostRepository;
 import fpt.org.inblue.service.MajorService;
 import fpt.org.inblue.service.PostService;
 import fpt.org.inblue.service.UserService;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
@@ -29,6 +31,7 @@ import java.util.List;
 import java.util.Map;
 
 @Service
+@Slf4j
 public class PostServiceImpl implements PostService {
     @Autowired
     private PostMapper postMapper;
@@ -40,6 +43,8 @@ public class PostServiceImpl implements PostService {
     private MajorService majorService;
     @Autowired
     private UserService userService;
+
+    // TODO OPTIMIZE - tránh n+1 query khi lấy post, like, comment SẼ LÀM SAU NÀY
 
     @Override
     public Post createPost(PostCreateRequest post) throws IOException {
@@ -189,7 +194,9 @@ public class PostServiceImpl implements PostService {
     }
 
     @Override
+//    @Cacheable(value = "new_feed", key = "#page + '-' + #size")
     public Page<PostResponse> getNewFeed(int page, int size) {
+        log.warn("🔥 CACHE MISS! Đang xuống PostgreSQL để lấy page: {}, size: {}", page, size);
         Pageable pageable = PageRequest.of(page, size);
 
         Page<Post> postPage = postRepository.findAllByOrderByCreationDateDesc(pageable);
