@@ -34,8 +34,6 @@ public class PracticeSetServiceImpl implements PracticeSetService {
     @Autowired
     private PracticeSetRepository practiceSetRepository;
     @Autowired
-    private MajorService majorService;
-    @Autowired
     private QuestionLessonService questionLessonService;
     @Autowired
     private PracticeQuestionService practiceQuestionService;
@@ -224,6 +222,16 @@ public class PracticeSetServiceImpl implements PracticeSetService {
     @Override
     public List<PracticeSetResponse> getAllByInterviewSession(int interviewSessionId) {
         List<PracticeSet> practiceSets = practiceSetRepository.findAllByInterviewSessionId(interviewSessionId);
+        List<PracticeSetResponse> responses = new ArrayList<>();
+        for(PracticeSet practiceSet : practiceSets) {
+            responses.add(mapToResponse(practiceSet));
+        }
+        return responses;
+    }
+
+    @Override
+    public List<PracticeSetResponse> getByUser(int userId) {
+        List<PracticeSet> practiceSets = practiceSetRepository.findAllByUser_Id(userId);
         List<PracticeSetResponse> responses = new ArrayList<>();
         for(PracticeSet practiceSet : practiceSets) {
             responses.add(mapToResponse(practiceSet));

@@ -28,5 +28,5 @@ public class Payment {
     PaymentStatus status ;
     @CreationTimestamp
     LocalDateTime createdAt;
-    LocalDateTime payAt;
+    String transactionCode;
 }

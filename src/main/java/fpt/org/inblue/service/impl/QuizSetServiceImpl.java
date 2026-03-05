@@ -128,6 +128,7 @@ public class QuizSetServiceImpl implements QuizSetService {
                 .level(practice.getLevel())
                 .objective(practice.getObjective())
                 .questions(aiQuestions)
+                .majorName(String.valueOf(practice.getMajor()))
                 .build();
 
         QuizItemCreateRequest[] response = pythonApiClient.callApi(

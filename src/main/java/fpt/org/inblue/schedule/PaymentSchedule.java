@@ -35,7 +35,7 @@ public class PaymentSchedule {
    public void checkPaymentStatus() {
         System.out.println("Checking pending payments at " + LocalDateTime.now());
         LocalDateTime times = LocalDateTime.now().minusMinutes(10);
-        List<Payment> payments = paymentRepository.findByStatusAndPayAtBefore(PaymentStatus.PENDING, times);
+        List<Payment> payments = paymentRepository.findByStatusAndCreatedAtBefore(PaymentStatus.PENDING, times);
 
         for(Payment payment : payments) {
             try {

@@ -27,6 +27,7 @@ public class QuizItemCreateAIRequest {
     String practiceSetName;
     String objective;
     TargetLevel level;
+    String majorName;
     List<PracticeAIQuestion> questions;
 
     @Data

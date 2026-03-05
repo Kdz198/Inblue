@@ -12,5 +12,5 @@ import java.util.List;
 public interface PaymentRepository extends JpaRepository<Payment, Integer> {
     Payment findById(int id);
 
-    List<Payment> findByStatusAndPayAtBefore(PaymentStatus status, LocalDateTime payAtBefore);
+    List<Payment> findByStatusAndCreatedAtBefore(PaymentStatus status, LocalDateTime payAtBefore);
 }

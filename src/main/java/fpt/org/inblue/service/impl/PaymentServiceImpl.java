@@ -52,7 +52,6 @@ public class PaymentServiceImpl implements PaymentService {
         if (payment == null) {
             throw new RuntimeException("Payment not found with id: " + paymentId);
         }
-        payment.setPayAt(LocalDateTime.now());
         paymentRepository.save(payment);
         long orderCode = payment.getId();
         CreatePaymentLinkRequest request = CreatePaymentLinkRequest.builder()
