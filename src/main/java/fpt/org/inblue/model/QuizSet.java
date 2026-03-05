@@ -28,7 +28,7 @@ public class QuizSet {
     @CreationTimestamp
     Timestamp createdAt;
     boolean isSubmitted;
-    @JdbcTypeCode(SqlTypes.JSON)
-    @Column(columnDefinition = "jsonb")
+    @OneToMany(cascade = CascadeType.ALL,orphanRemoval = true)
+    @JoinColumn(name = "quiz_id", referencedColumnName = "quizId")
     List<QuizItem> questions;
 }

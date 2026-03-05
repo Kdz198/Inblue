@@ -22,6 +22,7 @@ import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import tools.jackson.databind.ObjectMapper;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -43,6 +44,8 @@ public class QuizSetServiceImpl implements QuizSetService {
     @Autowired
     @Lazy
     private QuizSetService quizSetService;
+    @Autowired
+    private ObjectMapper objectMapper;
 
     @Override
     public QuizSet createQuizSet(int practiceSetId, String QuizName) {
@@ -149,18 +152,36 @@ public class QuizSetServiceImpl implements QuizSetService {
                 QuizItemCreateRequest[].class
         );
         List<QuizItemCreateRequest> quizItemCreateRequests = List.of(response);
-        List<QuizItem> items = quizSetService.createFullQuizSet(practiceSetId,"Bài kiểm tra: "+ practice.getPracticeSetName() , quizItemCreateRequests);
-        return mapToQuizItemResponse(items);
+        List<QuizItem> quizItems = new ArrayList<>();
+
+        for(QuizItemCreateRequest item : quizItemCreateRequests){
+            String optionsJson = objectMapper.writeValueAsString(item.getOptions());
+            QuizItem quizItem = new QuizItem();
+            quizItem.setQuestion(item.getQuestion());
+            quizItem.setOptions(optionsJson);
+            quizItem.setCorrectAnswer(item.getCorrectAnswer());
+            quizItem.setExplanation(item.getExplanation());
+            quizItem.setUserResponse(null);
+            quizItems.add(quizItem);
+        }
+        QuizSet quizSet = new QuizSet();
+        quizSet.setQuizName("Bài kiểm tra: "+practice.getPracticeSetName() );
+        quizSet.setPracticeSet(practice);
+        quizSet.setQuestions(quizItems);
+        quizSet.setScore(0);
+        quizSet.setSubmitted(false);
+        quizSet.setQuestions(quizItems);
+        quizSetRepository.save(quizSet);
+        return mapToQuizItemResponse(quizItemCreateRequests);
     }
 
-    List<QuizItemResponse> mapToQuizItemResponse(List<QuizItem> quizItems) {
+    List<QuizItemResponse> mapToQuizItemResponse(List<QuizItemCreateRequest> requests)  {
         List<QuizItemResponse> responses = new ArrayList<>();
-        for (QuizItem item : quizItems) {
+        for (QuizItemCreateRequest item : requests) {
+            String optionsJson = objectMapper.writeValueAsString(item.getOptions());
             QuizItemResponse response = new QuizItemResponse();
-            response.setId(item.getId());
             response.setQuestion(item.getQuestion());
-            response.setOptions(item.getOptions());
-            responses.add(response);
+            response.setOptions(optionsJson);
         }
         return responses;
 
