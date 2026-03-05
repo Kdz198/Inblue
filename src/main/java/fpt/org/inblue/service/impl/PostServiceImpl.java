@@ -17,7 +17,6 @@ import fpt.org.inblue.service.PostService;
 import fpt.org.inblue.service.UserService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.cache.annotation.Cacheable;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
@@ -266,26 +265,6 @@ public class PostServiceImpl implements PostService {
     }
 
     @Override
-    public List<PostLikeResponse> getLikesByPostId(int postId) {
-        Post post = getPostById(postId);
-        List<PostLikeResponse> responses = new ArrayList<>();
-        for (PostLike like : post.getLikes()) {
-            PostLikeResponse response = PostLikeResponse.builder()
-                    .userName(like.getUser().getName())
-                    .userAvatar(like.getUser().getAvatarUrl())
-                    .build();
-            responses.add(response);
-        }
-        return responses;
-    }
-
-    @Override
-    public int countLikes(int postId) {
-        Post post = getPostById(postId);
-        return post.getLikes() != null ? post.getLikes().size() : 0;
-    }
-
-    @Override
     @Transactional
     public PostComment createComment(PostCommentRequest request) {
         Post post = getPostById(request.getPostId());
@@ -355,58 +334,6 @@ public class PostServiceImpl implements PostService {
             }
         }
         throw new RuntimeException("Comment không tồn tại");
-    }
-
-    @Override
-    public PostCommentResponse getCommentById(int commentId) {
-        List<Post> allPosts = postRepository.findAll();
-        for (Post post : allPosts) {
-            for (PostComment comment : post.getComments()) {
-                if (comment.getId() == commentId) {
-                    return mapCommentToResponse(comment);
-                }
-            }
-        }
-        throw new RuntimeException("Comment không tồn tại");
-    }
-
-    @Override
-    public List<PostCommentResponse> getCommentsByPostId(int postId) {
-        Post post = getPostById(postId);
-        List<PostCommentResponse> responseList = new ArrayList<>();
-        List<PostComment> allComments = post.getComments();
-        for (PostComment c : allComments) {
-            PostCommentResponse res = mapCommentToResponse(c);
-            responseList.add(res);
-        }
-        return responseList;
-    }
-
-    @Override
-    public List<PostCommentResponse> getReplies(int parentCommentId) {
-        List<Post> allPosts = postRepository.findAll();
-        for (Post post : allPosts) {
-            // Kiểm tra parent comment có tồn tại không
-            boolean hasParent = false;
-            for (PostComment c : post.getComments()) {
-                if (c.getId() == parentCommentId) {
-                    hasParent = true;
-                    break;
-                }
-            }
-
-            if (hasParent) {
-                List<PostCommentResponse> replies = new ArrayList<>();
-                for (PostComment c : post.getComments()) {
-                    if (c.getParentCommentId() == parentCommentId) {
-                        PostCommentResponse res = mapCommentToResponse(c);
-                        replies.add(res);
-                    }
-                }
-                return replies;
-            }
-        }
-        return new ArrayList<>();
     }
 
     @Override

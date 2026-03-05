@@ -27,15 +27,10 @@ public interface PostService {
     PostLike likePost(PostLikeRequest request);
     void unlikePost(int postId, int userId);
     boolean isLiked(int postId, int userId);
-    List<PostLikeResponse> getLikesByPostId(int postId);
-    int countLikes(int postId);
 
     // Comment
     PostComment createComment(PostCommentRequest request);
     PostComment updateComment(int commentId, String content);
     void deleteComment(int commentId);
-    PostCommentResponse getCommentById(int commentId);
-    List<PostCommentResponse> getCommentsByPostId(int postId);
-    List<PostCommentResponse> getReplies(int parentCommentId);
     int countComments(int postId);
 }
