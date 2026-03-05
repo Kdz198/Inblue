@@ -3,6 +3,7 @@ package fpt.org.inblue.service;
 import fpt.org.inblue.model.QuizItem;
 import fpt.org.inblue.model.QuizSet;
 import fpt.org.inblue.model.dto.request.QuizItemCreateRequest;
+import fpt.org.inblue.model.dto.response.QuizItemResponse;
 
 import java.util.*;
 
@@ -14,7 +15,7 @@ public interface QuizSetService {
     void deleteQuizSet(int quizId);
     List<QuizItem> createFullQuizSet(int practiceSetId, String QuizName, List<QuizItemCreateRequest> items);
     List<QuizSet> getAllQuizSet();
-    List<QuizItem> saveAllItemsByAI(int practiceSetId);
+    List<QuizItemResponse> saveAllItemsByAI(int practiceSetId);
     List<QuizSet> getAllByPracticeSet(int practiceSetId);
 
 }

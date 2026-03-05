@@ -3,6 +3,7 @@ package fpt.org.inblue.controller;
 import fpt.org.inblue.model.QuizItem;
 import fpt.org.inblue.model.QuizSet;
 import fpt.org.inblue.model.dto.request.QuizItemCreateRequest;
+import fpt.org.inblue.model.dto.response.QuizItemResponse;
 import fpt.org.inblue.service.QuizSetService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
@@ -24,7 +25,7 @@ public class QuizSetController {
     }
 
     @PostMapping("create-full-ai")
-    public ResponseEntity<List<QuizItem>> createFullQuizSetByAI(@RequestParam int practiceSetId) {
+    public ResponseEntity<List<QuizItemResponse>> createFullQuizSetByAI(@RequestParam int practiceSetId) {
         return ResponseEntity.ok(quizSetService.saveAllItemsByAI(practiceSetId));
     }
 

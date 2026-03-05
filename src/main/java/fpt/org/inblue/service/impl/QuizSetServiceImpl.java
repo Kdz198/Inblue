@@ -8,6 +8,7 @@ import fpt.org.inblue.model.QuizItem;
 import fpt.org.inblue.model.QuizSet;
 import fpt.org.inblue.model.dto.request.QuizItemCreateAIRequest;
 import fpt.org.inblue.model.dto.request.QuizItemCreateRequest;
+import fpt.org.inblue.model.dto.response.QuizItemResponse;
 import fpt.org.inblue.model.enums.PythonService;
 import fpt.org.inblue.repository.PracticeSetRepository;
 import fpt.org.inblue.repository.QuizSetRepository;
@@ -112,7 +113,8 @@ public class QuizSetServiceImpl implements QuizSetService {
         return quizItemService.saveAllItems(items);
     }
 
-    public List<QuizItem> saveAllItemsByAI(int practiceSetId){
+    @Override
+    public List<QuizItemResponse> saveAllItemsByAI(int practiceSetId){
         PracticeSet practice = practiceSetRepository.findById(practiceSetId);
         if(practice == null){
             throw new CustomException("Practice set not found", HttpStatus.NOT_FOUND);
@@ -128,7 +130,6 @@ public class QuizSetServiceImpl implements QuizSetService {
                 .level(practice.getLevel())
                 .objective(practice.getObjective())
                 .questions(aiQuestions)
-                .majorName(String.valueOf(practice.getMajor()))
                 .build();
 
         QuizItemCreateRequest[] response = pythonApiClient.callApi(
@@ -139,9 +140,22 @@ public class QuizSetServiceImpl implements QuizSetService {
                 QuizItemCreateRequest[].class
         );
         List<QuizItemCreateRequest> quizItemCreateRequests = List.of(response);
-        return quizSetService.createFullQuizSet(practiceSetId,"Bài kiểm tra: "+ practice.getPracticeSetName() , quizItemCreateRequests);
+        List<QuizItem> items = quizSetService.createFullQuizSet(practiceSetId,"Bài kiểm tra: "+ practice.getPracticeSetName() , quizItemCreateRequests);
+        return mapToQuizItemResponse(items);
     }
 
+    List<QuizItemResponse> mapToQuizItemResponse(List<QuizItem> quizItems) {
+        List<QuizItemResponse> responses = new ArrayList<>();
+        for (QuizItem item : quizItems) {
+            QuizItemResponse response = new QuizItemResponse();
+            response.setId(item.getId());
+            response.setQuestion(item.getQuestion());
+            response.setOptions(item.getOptions());
+            responses.add(response);
+        }
+        return responses;
+
+    }
     @Override
     public List<QuizSet> getAllByPracticeSet(int practiceSetId) {
         return quizSetRepository.findAllByPracticeSet_Id(practiceSetId);
