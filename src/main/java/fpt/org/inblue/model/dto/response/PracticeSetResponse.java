@@ -26,6 +26,7 @@ public class PracticeSetResponse {
     String objective;
     TargetLevel level;
     Date startDate;
+    Integer interviewSessionId;
     List<PracticeQuestionDto> questions;
 
     @Data

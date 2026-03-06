@@ -231,7 +231,7 @@ public class PracticeSetServiceImpl implements PracticeSetService {
 
     @Override
     public List<PracticeSetResponse> getByUser(int userId) {
-        List<PracticeSet> practiceSets = practiceSetRepository.findAllByUser_Id(userId);
+        List<PracticeSet> practiceSets = practiceSetRepository.findAllByUser_IdOrderByStartDateAsc(userId);
         List<PracticeSetResponse> responses = new ArrayList<>();
         for(PracticeSet practiceSet : practiceSets) {
             responses.add(mapToResponse(practiceSet));
@@ -288,6 +288,7 @@ public class PracticeSetServiceImpl implements PracticeSetService {
                 .level(practiceSet.getLevel())
                 .startDate(practiceSet.getStartDate())
                 .questions(questionDtos)
+                .interviewSessionId(practiceSet.getInterviewSessionId())
                 .build();
 
         return response;

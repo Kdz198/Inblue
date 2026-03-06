@@ -14,4 +14,6 @@ public interface PracticeSetRepository extends JpaRepository<PracticeSet, Intege
     List<PracticeSet> findAllByInterviewSessionId(Integer interviewSessionId);
 
     List<PracticeSet> findAllByUser_Id(int userId);
+
+    List<PracticeSet> findAllByUser_IdOrderByStartDateAsc(int userId);
 }
