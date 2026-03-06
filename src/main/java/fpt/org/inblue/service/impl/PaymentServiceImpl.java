@@ -14,6 +14,7 @@ import vn.payos.model.webhooks.WebhookData;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.UUID;
 
 @Service
 public class PaymentServiceImpl implements PaymentService {
@@ -52,11 +53,12 @@ public class PaymentServiceImpl implements PaymentService {
         if (payment == null) {
             throw new RuntimeException("Payment not found with id: " + paymentId);
         }
+        String transactionCode = UUID.randomUUID().toString();
+        payment.setTransactionCode(transactionCode);
         paymentRepository.save(payment);
-        long orderCode = payment.getId();
         CreatePaymentLinkRequest request = CreatePaymentLinkRequest.builder()
                 .amount(payment.getAmount())
-                .orderCode(orderCode)
+                .orderCode(Long.valueOf(transactionCode))
                 .description("Thanh toán đơn hàng")
                 .returnUrl(returnUrl)
                 .cancelUrl(cancelUrl)

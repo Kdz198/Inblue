@@ -2,15 +2,19 @@ package fpt.org.inblue.service.impl;
 
 import fpt.org.inblue.cloudinary.CloudinaryService;
 import fpt.org.inblue.constants.ApiPath;
+import fpt.org.inblue.exception.CustomException;
 import fpt.org.inblue.model.CandidateProfile;
+import fpt.org.inblue.model.MemberShipPlan;
 import fpt.org.inblue.model.User;
+import fpt.org.inblue.model.UserUsage;
 import fpt.org.inblue.model.dto.UserEventDto;
 import fpt.org.inblue.model.dto.UserInfo;
 import fpt.org.inblue.model.dto.response.CVParserResponse;
-import fpt.org.inblue.model.enums.Major;
-import fpt.org.inblue.model.enums.PythonService;
-import fpt.org.inblue.model.enums.Role;
+import fpt.org.inblue.model.dto.response.UserSubscriptionResponse;
+import fpt.org.inblue.model.enums.*;
+import fpt.org.inblue.repository.MemberShipPlanRepository;
 import fpt.org.inblue.repository.UserRepository;
+import fpt.org.inblue.repository.UserUsageRepository;
 import fpt.org.inblue.service.CandidateProfileService;
 import fpt.org.inblue.service.PythonApiClient;
 import fpt.org.inblue.service.UserService;
@@ -18,6 +22,7 @@ import fpt.org.inblue.utils.FileUtil;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.http.HttpMethod;
+import org.springframework.http.HttpStatus;
 import org.springframework.retry.annotation.Backoff;
 import org.springframework.retry.annotation.Recover;
 import org.springframework.retry.annotation.Retryable;
@@ -28,7 +33,9 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.io.File;
 import java.io.IOException;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.Date;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -46,6 +53,10 @@ public class UserServiceImpl implements UserService {
     private PythonApiClient pythonApiClient;
     @Autowired
     private CandidateProfileService candidateProfileService;
+    @Autowired
+    private MemberShipPlanRepository memberShipPlanRepository;
+    @Autowired
+    private UserUsageRepository userUsageRepository;
 
     @Override
     public List<User> getAll() {
@@ -59,6 +70,7 @@ public class UserServiceImpl implements UserService {
 
     @Override
     public User createUser(UserInfo user, MultipartFile avatar) throws IOException {
+        MemberShipPlan memberShipPlan = memberShipPlanRepository.findByName(PlanName.NEW);
         if (user.getId() == null) {
             User userBuilder = User.builder()
                     .name(user.getName())
@@ -68,10 +80,11 @@ public class UserServiceImpl implements UserService {
                     .isActive(true)
                     .university(user.getUniversity())
                     .major(Major.valueOf(user.getMajor()))
+                    .membershipPlan(memberShipPlan)
                     .build();
 
             User savedUser = userRepository.save(userBuilder);
-            if (avatar!=null && !avatar.isEmpty()) {
+            if (avatar != null && !avatar.isEmpty()) {
                 String absolutePath = FileUtil.saveFile(avatar);
                 File file = FileUtil.getFileByPath(absolutePath);
                 MultipartFile multipartFile = FileUtil.convertFileToMultipart(file);
@@ -95,7 +108,7 @@ public class UserServiceImpl implements UserService {
                 updateUser.setCv_public_id(updateUser.getCv_public_id());
             }
             User savedUser = userRepository.save(updateUser);
-            if (avatar!=null && !avatar.isEmpty()) {
+            if (avatar != null && !avatar.isEmpty()) {
                 if (updateUser.getPublic_id() != null) {
                     cloudinaryService.deleteImage(updateUser.getPublic_id());
                 }
@@ -105,15 +118,10 @@ public class UserServiceImpl implements UserService {
                 file.delete();
                 applicationEventPublisher.publishEvent(new UserEventDto(savedUser, multipartFile, "avatar"));
             }
+
+            subscribePlan(savedUser.getId(), memberShipPlan.getId());
             return savedUser;
         }
-    }
-
-    public void uploadPdf(User user, MultipartFile file) throws IOException {
-        Map<String, String> map = cloudinaryService.uploadDocument(file);
-        user.setCvUrl(map.get("secure_url"));
-        user.setCv_public_id(map.get("public_id"));
-        userRepository.save(user);
     }
 
     @Override
@@ -237,20 +245,126 @@ public class UserServiceImpl implements UserService {
                         .build())
                 .collect(Collectors.toList());
     }
-
     @Override
-    public User updateUser(User user) {
-        return userRepository.save(user);
+    @Transactional
+    public User subscribePlan(int userId, int planId) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new CustomException("User không tồn tại", HttpStatus.NOT_FOUND));
+        MemberShipPlan plan = memberShipPlanRepository.findById(planId)
+                .orElseThrow(() -> new CustomException("Gói không tồn tại", HttpStatus.NOT_FOUND));
+
+        user.setMembershipPlan(plan);
+        user = userRepository.save(user);
+
+        // Reset usage khi đăng ký gói mới
+        UserUsage usage = userUsageRepository.findByUser_Id(userId)
+                .orElse(UserUsage.builder().user(user).build());
+        usage.setAiInterviewUsed(0);
+        usage.setPracticeSetUsed(0);
+        usage.setQuizSetUsed(0);
+        usage.setExpiredAt(LocalDate.now().plusDays(plan.getDurationDays()));
+        userUsageRepository.save(usage);
+        return user;
     }
 
     @Override
-    public boolean deleteUser(int id) {
-        if (userRepository.existsById(id)) {
-            userRepository.deleteById(id);
-            return true;
+    public UserSubscriptionResponse getActiveSubscription(int userId) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new CustomException("User không tồn tại", HttpStatus.NOT_FOUND));
+
+        MemberShipPlan plan = user.getMembershipPlan();
+        UserUsage usage = userUsageRepository.findByUser_Id(userId)
+                .orElse(UserUsage.builder().aiInterviewUsed(0).practiceSetUsed(0).quizSetUsed(0).build());
+
+        return UserSubscriptionResponse.builder()
+                .planName(plan.getName())
+                .price(plan.getPrice())
+                .durationDays(plan.getDurationDays())
+                .maxAiInterview(plan.getMax_ai_interview())
+                .maxPracticeSets(plan.getMax_practice_sets())
+                .maxQuizSets(plan.getMax_quiz_sets())
+                .aiInterviewUsed(usage.getAiInterviewUsed())
+                .practiceSetUsed(usage.getPracticeSetUsed())
+                .quizSetUsed(usage.getQuizSetUsed())
+                .aiInterviewRemaining(Math.max(0, plan.getMax_ai_interview() - usage.getAiInterviewUsed()))
+                .practiceSetRemaining(Math.max(0, plan.getMax_practice_sets() - usage.getPracticeSetUsed()))
+                .quizSetRemaining(Math.max(0, plan.getMax_quiz_sets() - usage.getQuizSetUsed()))
+                .isActive(true)
+                .expiredAt(usage.getExpiredAt())
+                .build();
+    }
+
+    @Override
+    public void checkQuota(int userId,Feature checkFeature){
+        MemberShipPlan plan = getPlan(userId);
+        UserUsage usage = getOrCreateUsage(userId);
+        if(usage.getExpiredAt().isBefore(LocalDate.now())){
+            throw new CustomException("Hạn sử dụng gói đã hết. Vui lòng gia hạn hoặc nâng cấp gói.", HttpStatus.BAD_REQUEST);
         }
-        return false;
+        switch(checkFeature){
+            case Feature.AI_INTERVIEW :
+                if (usage.getAiInterviewUsed() >= plan.getMax_ai_interview()) {
+                    throw new CustomException(
+                            "Bạn đã hết lượt phỏng vấn AI (" + plan.getMax_ai_interview() + "/" + plan.getMax_ai_interview() + "). Vui lòng nâng cấp gói.",
+                            HttpStatus.BAD_REQUEST);
+                }
+                break;
+            case Feature.PRACTICE_SET:
+                if (usage.getPracticeSetUsed() >= plan.getMax_practice_sets()) {
+                    throw new CustomException(
+                            "Bạn đã hết lượt tạo bộ ôn luyện cá nhân hóa. Vui lòng nâng cấp gói.",
+                            HttpStatus.BAD_REQUEST);
+                }
+                break;
+            case Feature.QUIZ:
+                if (usage.getQuizSetUsed() >= plan.getMax_quiz_sets()) {
+                    throw new CustomException(
+                            "Bạn đã hết lượt taọ bài kiểm tra. Vui lòng nâng cấp gói.",
+                            HttpStatus.BAD_REQUEST);
+                }
+                break;
+        }
+    }
+    @Override
+    public void incrementUsage(int userId, Feature feature) {
+        UserUsage usage = userUsageRepository.findByUser_Id(userId)
+                .orElseThrow(() -> new CustomException("Không tìm thấy usage của user", HttpStatus.NOT_FOUND));
+        switch (feature) {
+            case Feature.AI_INTERVIEW:
+                usage.setAiInterviewUsed(usage.getAiInterviewUsed() + 1);
+                break;
+            case Feature.PRACTICE_SET:
+                usage.setPracticeSetUsed(usage.getPracticeSetUsed() + 1);
+                break;
+            case Feature.QUIZ:
+                usage.setQuizSetUsed(usage.getQuizSetUsed() + 1);
+                break;
+        }
+        userUsageRepository.save(usage);
     }
 
+    private MemberShipPlan getPlan(int userId) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new CustomException("User không tồn tại", HttpStatus.NOT_FOUND));
+        MemberShipPlan plan = user.getMembershipPlan();
+        if (plan == null) {
+            throw new CustomException("User chưa đăng ký gói nào. Vui lòng đăng ký gói để sử dụng.", HttpStatus.FORBIDDEN);
+        }
+        return plan;
+    }
 
+    private UserUsage getOrCreateUsage(int userId) {
+        return userUsageRepository.findByUser_Id(userId)
+                .orElseGet(() -> {
+                    User user = userRepository.findById(userId)
+                            .orElseThrow(() -> new CustomException("User không tồn tại", HttpStatus.NOT_FOUND));
+                    UserUsage newUsage = UserUsage.builder()
+                            .user(user)
+                            .aiInterviewUsed(0)
+                            .practiceSetUsed(0)
+                            .quizSetUsed(0)
+                            .build();
+                    return userUsageRepository.save(newUsage);
+                });
+    }
 }

@@ -10,6 +10,7 @@ import fpt.org.inblue.model.dto.request.QuizItemCreateAIRequest;
 import fpt.org.inblue.model.dto.request.QuizItemCreateRequest;
 import fpt.org.inblue.model.dto.response.QuizItemResponse;
 import fpt.org.inblue.model.dto.response.QuizResponse;
+import fpt.org.inblue.model.enums.Feature;
 import fpt.org.inblue.model.enums.Major;
 import fpt.org.inblue.model.enums.PythonService;
 import fpt.org.inblue.repository.PracticeSetRepository;
@@ -17,6 +18,7 @@ import fpt.org.inblue.repository.QuizSetRepository;
 import fpt.org.inblue.service.PythonApiClient;
 import fpt.org.inblue.service.QuizItemService;
 import fpt.org.inblue.service.QuizSetService;
+import fpt.org.inblue.service.UserService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.http.HttpMethod;
@@ -47,6 +49,8 @@ public class QuizSetServiceImpl implements QuizSetService {
     private QuizSetService quizSetService;
     @Autowired
     private ObjectMapper objectMapper;
+    @Autowired
+    private UserService userService;
 
     @Override
     public QuizSet createQuizSet(int practiceSetId, String QuizName) {
@@ -119,7 +123,10 @@ public class QuizSetServiceImpl implements QuizSetService {
     }
 
     @Override
-    public QuizResponse saveAllItemsByAI(int practiceSetId){
+    public QuizResponse saveAllItemsByAI(int practiceSetId, int userId){
+        // Kiểm tra quota tạo quiz (chỉ gói PREMIUM)
+        userService.checkQuota(userId, Feature.QUIZ);
+
         PracticeSet practice = practiceSetRepository.findById(practiceSetId);
         if(practice == null){
             throw new CustomException("Practice set not found", HttpStatus.NOT_FOUND);
@@ -173,6 +180,9 @@ public class QuizSetServiceImpl implements QuizSetService {
         quizSet.setSubmitted(false);
         quizSet.setQuestions(quizItems);
         QuizSet saved = quizSetRepository.save(quizSet);
+
+        // Tăng số lượt quiz đã dùng
+        userService.incrementUsage(userId,Feature.QUIZ);
         return mapToQuizItemResponse(saved.getQuestions(), saved.getQuizId());
     }
 
@@ -193,10 +203,7 @@ public class QuizSetServiceImpl implements QuizSetService {
         return quizResponse;
 
     }
-    @Override
-    public List<QuizSet> getAllByPracticeSet(int practiceSetId) {
-        return quizSetRepository.findAllByPracticeSet_Id(practiceSetId);
-    }
+
 
     @Override
     public List<QuizSet> getAllQuizSet() {

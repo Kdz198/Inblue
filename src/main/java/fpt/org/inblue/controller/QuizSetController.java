@@ -26,8 +26,8 @@ public class QuizSetController {
     }
 
     @PostMapping("create-full-ai")
-    public ResponseEntity<QuizResponse> createFullQuizSetByAI(@RequestParam int practiceSetId) {
-        return ResponseEntity.ok(quizSetService.saveAllItemsByAI(practiceSetId));
+    public ResponseEntity<QuizResponse> createFullQuizSetByAI(@RequestParam int practiceSetId, @RequestParam int userId) {
+        return ResponseEntity.ok(quizSetService.saveAllItemsByAI(practiceSetId, userId));
     }
 
     @GetMapping

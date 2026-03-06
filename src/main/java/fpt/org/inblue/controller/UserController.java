@@ -3,6 +3,8 @@ package fpt.org.inblue.controller;
 import fpt.org.inblue.model.CandidateProfile;
 import fpt.org.inblue.model.User;
 import fpt.org.inblue.model.dto.UserInfo;
+import fpt.org.inblue.model.dto.response.UserSubscriptionResponse;
+import fpt.org.inblue.model.enums.Feature;
 import fpt.org.inblue.service.UserService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -77,6 +79,16 @@ public class UserController {
     @GetMapping("/{id}")
     public ResponseEntity<User> getUserById(@PathVariable int id) {
         return ResponseEntity.ok(userService.getById(id));
+    }
+
+    @PostMapping("/subscribe")
+    public ResponseEntity<User> subscribePlan(@RequestParam int userId, @RequestParam int planId) {
+        return ResponseEntity.ok(userService.subscribePlan(userId, planId));
+    }
+
+    @GetMapping("/{userId}/subscription")
+    public ResponseEntity<UserSubscriptionResponse> getActiveSubscription(@PathVariable int userId) {
+        return ResponseEntity.ok(userService.getActiveSubscription(userId));
     }
 
 }

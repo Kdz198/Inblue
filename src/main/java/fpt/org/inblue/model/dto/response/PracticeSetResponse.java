@@ -14,6 +14,7 @@ import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.type.SqlTypes;
 
 import java.sql.Date;
+import java.sql.Timestamp;
 import java.util.List;
 
 @Data
@@ -28,6 +29,7 @@ public class PracticeSetResponse {
     Date startDate;
     Integer interviewSessionId;
     List<PracticeQuestionDto> questions;
+    List<Quiz> quizzes;
 
     @Data
     @Builder
@@ -39,5 +41,14 @@ public class PracticeSetResponse {
         String lessonName;
         String answer;
         String hint;
+    }
+
+    @Data
+    @Builder
+    public static class Quiz{
+        int quizId;
+        String quizName;
+        int index;
+        boolean isSubmit;
     }
 }

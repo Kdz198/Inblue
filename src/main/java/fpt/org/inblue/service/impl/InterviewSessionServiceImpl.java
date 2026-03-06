@@ -8,12 +8,14 @@ import fpt.org.inblue.model.dto.request.InterviewSetupRequest;
 import fpt.org.inblue.model.dto.request.OrchestratorRequest;
 import fpt.org.inblue.model.dto.request.OrchestratorRequest.*;
 import fpt.org.inblue.model.dto.response.InterviewBlueprintResponse;
+import fpt.org.inblue.model.enums.Feature;
 import fpt.org.inblue.model.enums.InterviewEnums.*;
 import fpt.org.inblue.model.enums.PythonService;
 import fpt.org.inblue.repository.InterviewSessionRepository;
 import fpt.org.inblue.repository.caching.InterviewSessionRedisRepository;
 import fpt.org.inblue.service.InterviewSessionService;
 import fpt.org.inblue.service.PythonApiClient;
+import fpt.org.inblue.service.UserService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpMethod;
 import org.springframework.retry.annotation.Backoff;
@@ -32,6 +34,7 @@ public class InterviewSessionServiceImpl implements InterviewSessionService {
     private final PythonApiClient pythonApiClient;
     private final InterviewSessionRepository sessionRepository;
     private final InterviewSessionRedisRepository sessionRedisRepository;
+    private final UserService userService;
     private record jobDescription (String jd_text) {}
 
     @Override
@@ -87,6 +90,8 @@ public class InterviewSessionServiceImpl implements InterviewSessionService {
     )
     public String createSession(InterviewSetupRequest request)  {
 
+        // Kiểm tra quota phỏng vấn AI
+        userService.checkQuota(request.getUserId(), Feature.AI_INTERVIEW);
 
         OrchestratorRequest pythonPayload = OrchestratorRequest.builder()
                 .candidateProfile(request.getCandidateProfile())
@@ -133,8 +138,6 @@ public class InterviewSessionServiceImpl implements InterviewSessionService {
         // Save xuống DB (Hibernate tự handle JSONB)
         session = sessionRepository.save(session);
         String sessionId = session.getId().toString();
-
-
         // Save Redis
 
         InterviewSessionRedis sessionRedis = InterviewSessionRedis.builder()
@@ -145,10 +148,8 @@ public class InterviewSessionServiceImpl implements InterviewSessionService {
                 .currentQuestionIndex(0)
                 .build();
         sessionRedisRepository.save(sessionRedis);
-
-
-
-
+        //tăng lượt sử dụng
+        userService.incrementUsage(request.getUserId(),Feature.AI_INTERVIEW);
         return sessionKey;
     }
 

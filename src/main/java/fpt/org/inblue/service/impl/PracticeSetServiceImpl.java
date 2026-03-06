@@ -9,12 +9,10 @@ import fpt.org.inblue.model.dto.request.PracticeQuestionRequest;
 import fpt.org.inblue.model.dto.request.PracticeRequest;
 import fpt.org.inblue.model.dto.response.PracticeSetAIResponse;
 import fpt.org.inblue.model.dto.response.PracticeSetResponse;
+import fpt.org.inblue.model.enums.Feature;
 import fpt.org.inblue.model.enums.PythonService;
 import fpt.org.inblue.model.enums.TargetLevel;
-import fpt.org.inblue.repository.InterviewSessionRepository;
-import fpt.org.inblue.repository.PracticeSetItemRepository;
-import fpt.org.inblue.repository.PracticeSetRepository;
-import fpt.org.inblue.repository.UserRepository;
+import fpt.org.inblue.repository.*;
 import fpt.org.inblue.service.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Lazy;
@@ -32,6 +30,8 @@ import java.util.Optional;
 @Service
 public class PracticeSetServiceImpl implements PracticeSetService {
     @Autowired
+    private QuizSetRepository quizSetRepository;
+    @Autowired
     private PracticeSetRepository practiceSetRepository;
     @Autowired
     private QuestionLessonService questionLessonService;
@@ -48,7 +48,8 @@ public class PracticeSetServiceImpl implements PracticeSetService {
     private PracticeSetService practiceSetService;
     @Autowired
     private UserRepository userRepository;
-
+    @Autowired
+    private UserService userService;
 
     @Override
     public PracticeSet getQuestionSet(int id) {
@@ -143,6 +144,9 @@ public class PracticeSetServiceImpl implements PracticeSetService {
 
     @Override
     public List<PracticeSetAIResponse> creatPracticeSetByAI(PracticeGenerateRequest request) {
+        // Kiểm tra quota tạo practice set
+        userService.checkQuota(request.getUserId(), Feature.PRACTICE_SET);
+
         PracticeAIRequest aiRequest = new PracticeAIRequest();
         InterviewSession interviewSession = interviewSessionRepository.findById(request.getAiInterviewId()).orElse(null);
         CandidateProfile candidateProfile = interviewSession.getCandidateProfile();
@@ -152,7 +156,6 @@ public class PracticeSetServiceImpl implements PracticeSetService {
         aiRequest.setCandidateIntroduction(candidateProfile.getIntroduction());
         aiRequest.setPracticeSetRequest(request.getDateNumber());
         List<PracticeSetAIResponse> response = callPython(aiRequest);
-        User user = userRepository.findById(request.getUserId()).orElseThrow(()-> new CustomException("User not found", HttpStatus.NOT_FOUND));
         for (PracticeSetAIResponse aiResponse : response) {
             PracticeRequest practiceRequest = new PracticeRequest();
             practiceRequest.setPracticeSetName(aiResponse.getPracticeSetName());
@@ -164,6 +167,9 @@ public class PracticeSetServiceImpl implements PracticeSetService {
             practiceRequest.setUserId(request.getUserId());
             practiceSetService.createFullSetByAI(practiceRequest, request.getAiInterviewId());
         }
+
+        // Tăng số lượt practice set đã dùng
+        userService.incrementUsage(request.getUserId(),Feature.PRACTICE_SET);
         return response;
 
     }
@@ -281,6 +287,18 @@ public class PracticeSetServiceImpl implements PracticeSetService {
                     .build();
             questionDtos.add(practiceQuestionDto);
         }
+        List<QuizSet> quizzes = quizSetRepository.findAllByPracticeSet_Id(practiceSet.getId());
+        List<PracticeSetResponse.Quiz> quizDtos = new ArrayList<>();
+        int i =1;
+        for(QuizSet quizSet : quizzes) {
+            PracticeSetResponse.Quiz quiz = PracticeSetResponse.Quiz.builder()
+                    .quizId(quizSet.getQuizId())
+                    .quizName(quizSet.getQuizName())
+                    .isSubmit(quizSet.isSubmitted())
+                    .index(i++)
+                    .build();
+            quizDtos.add(quiz);
+        }
         PracticeSetResponse response = PracticeSetResponse.builder()
                 .id(practiceSet.getId())
                 .practiceSetName(practiceSet.getPracticeSetName())
@@ -289,6 +307,7 @@ public class PracticeSetServiceImpl implements PracticeSetService {
                 .startDate(practiceSet.getStartDate())
                 .questions(questionDtos)
                 .interviewSessionId(practiceSet.getInterviewSessionId())
+                .quizzes(quizDtos)
                 .build();
 
         return response;
