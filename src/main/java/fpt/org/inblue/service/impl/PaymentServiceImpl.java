@@ -15,6 +15,7 @@ import vn.payos.model.webhooks.WebhookData;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
+import java.util.concurrent.ThreadLocalRandom;
 
 @Service
 public class PaymentServiceImpl implements PaymentService {
@@ -53,18 +54,24 @@ public class PaymentServiceImpl implements PaymentService {
         if (payment == null) {
             throw new RuntimeException("Payment not found with id: " + paymentId);
         }
-        String transactionCode = UUID.randomUUID().toString();
+        String transactionCode = UUID.randomUUID().toString().replace("-", "");
         payment.setTransactionCode(transactionCode);
         paymentRepository.save(payment);
         CreatePaymentLinkRequest request = CreatePaymentLinkRequest.builder()
                 .amount(payment.getAmount())
-                .orderCode(Long.valueOf(transactionCode))
+                .orderCode(generateUniqueOrderCode())
                 .description("Thanh toán đơn hàng")
                 .returnUrl(returnUrl)
                 .cancelUrl(cancelUrl)
                 .build();
         var paymentLink = payOS.paymentRequests().create(request);
         return paymentLink.getCheckoutUrl();
+    }
+
+    public long generateUniqueOrderCode() {
+        long timestamp = System.currentTimeMillis() % 1000000000L; // Lấy 9 số cuối của timestamp
+        int randomSuffix = ThreadLocalRandom.current().nextInt(100, 999); // Thêm 3 số ngẫu nhiên
+        return Long.parseLong(timestamp + "" + randomSuffix);
     }
 
 
