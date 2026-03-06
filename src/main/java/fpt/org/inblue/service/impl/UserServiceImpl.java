@@ -245,6 +245,7 @@ public class UserServiceImpl implements UserService {
                         .build())
                 .collect(Collectors.toList());
     }
+
     @Override
     @Transactional
     public User subscribePlan(int userId, int planId) {
@@ -262,7 +263,13 @@ public class UserServiceImpl implements UserService {
         usage.setAiInterviewUsed(0);
         usage.setPracticeSetUsed(0);
         usage.setQuizSetUsed(0);
-        usage.setExpiredAt(LocalDate.now().plusDays(plan.getDurationDays()));
+
+        if (plan.getDurationDays().equals(Integer.MAX_VALUE)) {
+            usage.setExpiredAt(LocalDate.now().plusYears(100));
+        } else {
+            usage.setExpiredAt(LocalDate.now().plusDays(plan.getDurationDays()));
+        }
+
         userUsageRepository.save(usage);
         return user;
     }
@@ -295,14 +302,15 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
-    public void checkQuota(int userId,Feature checkFeature){
+    public void checkQuota(int userId, Feature checkFeature) {
         MemberShipPlan plan = getPlan(userId);
         UserUsage usage = getOrCreateUsage(userId);
-        if(usage.getExpiredAt().isBefore(LocalDate.now())){
+        System.out.println(usage);
+        if (usage.getExpiredAt().isBefore(LocalDate.now())) {
             throw new CustomException("Hạn sử dụng gói đã hết. Vui lòng gia hạn hoặc nâng cấp gói.", HttpStatus.BAD_REQUEST);
         }
-        switch(checkFeature){
-            case Feature.AI_INTERVIEW :
+        switch (checkFeature) {
+            case Feature.AI_INTERVIEW:
                 if (usage.getAiInterviewUsed() >= plan.getMax_ai_interview()) {
                     throw new CustomException(
                             "Bạn đã hết lượt phỏng vấn AI (" + plan.getMax_ai_interview() + "/" + plan.getMax_ai_interview() + "). Vui lòng nâng cấp gói.",
@@ -325,6 +333,7 @@ public class UserServiceImpl implements UserService {
                 break;
         }
     }
+
     @Override
     public void incrementUsage(int userId, Feature feature) {
         UserUsage usage = userUsageRepository.findByUser_Id(userId)
