@@ -9,6 +9,7 @@ import fpt.org.inblue.model.QuizSet;
 import fpt.org.inblue.model.dto.request.QuizItemCreateAIRequest;
 import fpt.org.inblue.model.dto.request.QuizItemCreateRequest;
 import fpt.org.inblue.model.dto.response.QuizItemResponse;
+import fpt.org.inblue.model.dto.response.QuizResponse;
 import fpt.org.inblue.model.enums.Major;
 import fpt.org.inblue.model.enums.PythonService;
 import fpt.org.inblue.repository.PracticeSetRepository;
@@ -118,7 +119,7 @@ public class QuizSetServiceImpl implements QuizSetService {
     }
 
     @Override
-    public List<QuizItemResponse> saveAllItemsByAI(int practiceSetId){
+    public QuizResponse saveAllItemsByAI(int practiceSetId){
         PracticeSet practice = practiceSetRepository.findById(practiceSetId);
         if(practice == null){
             throw new CustomException("Practice set not found", HttpStatus.NOT_FOUND);
@@ -171,19 +172,25 @@ public class QuizSetServiceImpl implements QuizSetService {
         quizSet.setScore(0);
         quizSet.setSubmitted(false);
         quizSet.setQuestions(quizItems);
-        quizSetRepository.save(quizSet);
-        return mapToQuizItemResponse(quizItemCreateRequests);
+        QuizSet saved = quizSetRepository.save(quizSet);
+        return mapToQuizItemResponse(saved.getQuestions(), saved.getQuizId());
     }
 
-    List<QuizItemResponse> mapToQuizItemResponse(List<QuizItemCreateRequest> requests)  {
+    QuizResponse mapToQuizItemResponse(List<QuizItem> requests,int quizId)  {
         List<QuizItemResponse> responses = new ArrayList<>();
-        for (QuizItemCreateRequest item : requests) {
+        for (QuizItem item : requests) {
             String optionsJson = objectMapper.writeValueAsString(item.getOptions());
             QuizItemResponse response = new QuizItemResponse();
+            response.setId(item.getId());
             response.setQuestion(item.getQuestion());
             response.setOptions(optionsJson);
+            responses.add(response);
         }
-        return responses;
+        QuizResponse quizResponse = QuizResponse.builder()
+                .quizId(quizId)
+                .items(responses)
+                .build();
+        return quizResponse;
 
     }
     @Override
