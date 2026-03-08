@@ -34,4 +34,7 @@ public class User {
     @ManyToOne
     @JoinColumn(name = "membership_plan_id")
     private MemberShipPlan membershipPlan;
+
+    @Column(name ="wallet_balance")
+    private long walletBalance;
 }
