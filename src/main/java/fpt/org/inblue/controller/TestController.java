@@ -5,7 +5,11 @@ import fpt.org.inblue.model.dto.response.CVParserResponse;
 import fpt.org.inblue.model.enums.PythonService;
 import fpt.org.inblue.service.PythonApiClient;
 import fpt.org.inblue.service.RedisTestService;
+import io.micrometer.tracing.Tracer;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.slf4j.MDC;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.*;
@@ -16,6 +20,7 @@ import static fpt.org.inblue.constants.ApiPath.CV_API;
 @RestController
 @CrossOrigin("*")
 @RequiredArgsConstructor
+@Slf4j
 public class TestController {
 
     private final RedisTestService redisTestService;
@@ -28,7 +33,16 @@ public class TestController {
 
     @GetMapping("/test")
     public String test() {
+        log.info("test trace Id");
+        log.info("MDC traceId={}", MDC.get("traceId"));
+        log.info("MDC spanId={}", MDC.get("spanId"));
         return "This is a test endpoint for CI/CD.";
+    }
+
+    @GetMapping("/error")
+    public String triggerError() {
+        // Tạo một lỗi Generic Exception để test
+        throw new RuntimeException("Đây là lỗi có chủ đích để test TraceID trên Dozzle!");
     }
 
     @GetMapping("/status")
