@@ -36,5 +36,5 @@ public class User {
     private MemberShipPlan membershipPlan;
 
     @Column(name ="wallet_balance")
-    private long walletBalance;
+    private Long walletBalance;
 }
