@@ -21,6 +21,7 @@ import fpt.org.inblue.service.UserService;
 import fpt.org.inblue.utils.FileUtil;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationEventPublisher;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
 import org.springframework.retry.annotation.Backoff;
@@ -58,6 +59,7 @@ public class UserServiceImpl implements UserService {
     @Autowired
     private UserUsageRepository userUsageRepository;
 
+
     @Override
     public List<User> getAll() {
         return userRepository.findAll();
@@ -69,6 +71,7 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
+    @Transactional
     public User createUser(UserInfo user, MultipartFile avatar) throws IOException {
         MemberShipPlan memberShipPlan = memberShipPlanRepository.findByName(PlanName.NEW);
         if (user.getId() == null) {
@@ -81,6 +84,7 @@ public class UserServiceImpl implements UserService {
                     .university(user.getUniversity())
                     .major(Major.valueOf(user.getMajor()))
                     .membershipPlan(memberShipPlan)
+                    .walletBalance(0L)
                     .build();
 
             User savedUser = userRepository.save(userBuilder);
@@ -91,6 +95,7 @@ public class UserServiceImpl implements UserService {
                 file.delete();
                 applicationEventPublisher.publishEvent(new UserEventDto(savedUser, multipartFile, "avatar"));
             }
+            savedUser = subscribePlan(savedUser.getId(), memberShipPlan.getId());
             return savedUser;
         } else {
             User updateUser = userRepository.findById(user.getId()).orElseThrow(() -> new RuntimeException("User Not Found"));
@@ -118,8 +123,6 @@ public class UserServiceImpl implements UserService {
                 file.delete();
                 applicationEventPublisher.publishEvent(new UserEventDto(savedUser, multipartFile, "avatar"));
             }
-
-            subscribePlan(savedUser.getId(), memberShipPlan.getId());
             return savedUser;
         }
     }
@@ -249,6 +252,7 @@ public class UserServiceImpl implements UserService {
     @Override
     @Transactional
     public User subscribePlan(int userId, int planId) {
+        System.out.println("Subscribing user " + userId + " to plan " + planId);
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new CustomException("User không tồn tại", HttpStatus.NOT_FOUND));
         MemberShipPlan plan = memberShipPlanRepository.findById(planId)
@@ -269,8 +273,8 @@ public class UserServiceImpl implements UserService {
         } else {
             usage.setExpiredAt(LocalDate.now().plusDays(plan.getDurationDays()));
         }
-
         userUsageRepository.save(usage);
+        System.out.println(usage+"USAGE");
         return user;
     }
 
