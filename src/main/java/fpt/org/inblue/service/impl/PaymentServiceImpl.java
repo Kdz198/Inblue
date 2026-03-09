@@ -1,11 +1,15 @@
 package fpt.org.inblue.service.impl;
 
+import fpt.org.inblue.exception.CustomException;
 import fpt.org.inblue.model.Payment;
+import fpt.org.inblue.model.User;
 import fpt.org.inblue.model.enums.PaymentStatus;
 import fpt.org.inblue.repository.PaymentRepository;
+import fpt.org.inblue.repository.UserRepository;
 import fpt.org.inblue.service.PaymentService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import vn.payos.PayOS;
 import vn.payos.model.v2.paymentRequests.CreatePaymentLinkRequest;
@@ -27,10 +31,20 @@ public class PaymentServiceImpl implements PaymentService {
     private String returnUrl;
     @Value("${payos.cancel-url}")
     private String cancelUrl;
+    @Autowired
+    private UserRepository userRepository;
 
     @Override
-    public Payment createPayment(Payment payment) {
-        return paymentRepository.save(payment);
+    public String createPayment(long amount, int userId) {
+        long transactionCode =generateUniqueOrderCode();
+        User user = userRepository.findById(userId).orElseThrow(() -> new CustomException("User not found", HttpStatus.NOT_FOUND));
+        Payment payment = new Payment();
+        payment.setAmount(amount);
+        payment.setUser(user);
+        payment.setStatus(PaymentStatus.PENDING);
+        payment.setTransactionCode(String.valueOf(transactionCode));
+        paymentRepository.save(payment);
+        return createPayOSPayment(amount, transactionCode);
     }
 
     @Override
@@ -48,18 +62,10 @@ public class PaymentServiceImpl implements PaymentService {
         return paymentRepository.findAll();
     }
 
-    @Override
-    public String createPayOSPayment(int paymentId) {
-        Payment payment = paymentRepository.findById(paymentId);
-        if (payment == null) {
-            throw new RuntimeException("Payment not found with id: " + paymentId);
-        }
-        String transactionCode = UUID.randomUUID().toString().replace("-", "");
-        payment.setTransactionCode(transactionCode);
-        paymentRepository.save(payment);
+    public String createPayOSPayment(long amount, long transactionCode) {
         CreatePaymentLinkRequest request = CreatePaymentLinkRequest.builder()
-                .amount(payment.getAmount())
-                .orderCode(generateUniqueOrderCode())
+                .amount(amount)
+                .orderCode(transactionCode)
                 .description("Thanh toán đơn hàng")
                 .returnUrl(returnUrl)
                 .cancelUrl(cancelUrl)

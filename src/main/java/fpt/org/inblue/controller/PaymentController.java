@@ -16,13 +16,11 @@ import java.util.List;
 public class PaymentController {
     @Autowired
     private PaymentService paymentService;
-    @Autowired
-    private PaymentRepository paymentRepository;
 
-    @PostMapping
-    public ResponseEntity<Payment> createPayment(@RequestBody Payment payment) {
-        Payment createdPayment = paymentService.createPayment(payment);
-        return ResponseEntity.ok(createdPayment);
+
+    @PostMapping("/pay")
+    public ResponseEntity<String> createPayment(@RequestParam long amount,@RequestParam int userId) {
+        return ResponseEntity.ok(paymentService.createPayment(amount,userId));
     }
     @GetMapping("/{id}")
     public ResponseEntity<Payment> getPayment(@PathVariable int id) {
@@ -34,10 +32,7 @@ public class PaymentController {
         return ResponseEntity.ok(paymentService.getPayments());
     }
 
-    @PostMapping("pay")
-    public ResponseEntity<String> createPaymentLink(@RequestParam int paymentId)  {
-        return ResponseEntity.ok(paymentService.createPayOSPayment(paymentId));
-    }
+
 
     @PostMapping("/webhook")
     public void handlePayOsWebhook(@RequestBody Webhook body){
