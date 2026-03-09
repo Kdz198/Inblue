@@ -32,7 +32,10 @@ public class PaymentController {
         return ResponseEntity.ok(paymentService.getPayments());
     }
 
-
+    @GetMapping("/cancel")
+    public ResponseEntity<Payment> cancelPayment(@RequestParam String transactionCode) {
+        return ResponseEntity.ok(paymentService.cancelPayment(transactionCode));
+    }
 
     @PostMapping("/webhook")
     public void handlePayOsWebhook(@RequestBody Webhook body){

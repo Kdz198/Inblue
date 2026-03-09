@@ -21,11 +21,13 @@ public class Transaction {
     private int id;
     private long amount;
     private String description;
+    private String transactionCode;
     @JoinColumn(name ="user_id")
     @ManyToOne
     private User user;
-    private boolean type;
     @CreationTimestamp
     private LocalDateTime createdAt;
+    private boolean transactionType;
+    private long currentBalance;
     //true là nạp tiền, false là rút tiền
 }

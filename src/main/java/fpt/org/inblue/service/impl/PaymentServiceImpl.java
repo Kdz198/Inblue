@@ -2,9 +2,11 @@ package fpt.org.inblue.service.impl;
 
 import fpt.org.inblue.exception.CustomException;
 import fpt.org.inblue.model.Payment;
+import fpt.org.inblue.model.Transaction;
 import fpt.org.inblue.model.User;
 import fpt.org.inblue.model.enums.PaymentStatus;
 import fpt.org.inblue.repository.PaymentRepository;
+import fpt.org.inblue.repository.TransactionRepository;
 import fpt.org.inblue.repository.UserRepository;
 import fpt.org.inblue.service.PaymentService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -21,6 +23,8 @@ import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.ThreadLocalRandom;
 
+import static fpt.org.inblue.utils.HelperUtil.generateUniqueOrderCode;
+
 @Service
 public class PaymentServiceImpl implements PaymentService {
     @Autowired
@@ -33,6 +37,8 @@ public class PaymentServiceImpl implements PaymentService {
     private String cancelUrl;
     @Autowired
     private UserRepository userRepository;
+    @Autowired
+    private TransactionRepository transactionRepository;
 
     @Override
     public String createPayment(long amount, int userId) {
@@ -66,7 +72,7 @@ public class PaymentServiceImpl implements PaymentService {
         CreatePaymentLinkRequest request = CreatePaymentLinkRequest.builder()
                 .amount(amount)
                 .orderCode(transactionCode)
-                .description("Thanh toán đơn hàng")
+                .description("PAYMENT")
                 .returnUrl(returnUrl)
                 .cancelUrl(cancelUrl)
                 .build();
@@ -74,27 +80,46 @@ public class PaymentServiceImpl implements PaymentService {
         return paymentLink.getCheckoutUrl();
     }
 
-    public long generateUniqueOrderCode() {
-        long timestamp = System.currentTimeMillis() % 1000000000L; // Lấy 9 số cuối của timestamp
-        int randomSuffix = ThreadLocalRandom.current().nextInt(100, 999); // Thêm 3 số ngẫu nhiên
-        return Long.parseLong(timestamp + "" + randomSuffix);
-    }
-
 
     @Override
     public void handlePayOsWebhook(Webhook body) {
         try {
             WebhookData webhookData = payOS.webhooks().verify(body);
-            Payment payment = paymentRepository.findById(Math.toIntExact(webhookData.getOrderCode()));
-            if (webhookData.getCode().equals("00")) {
-                payment.setStatus(PaymentStatus.COMPLETED);
-            } else if(webhookData.getCode().equals("02")) {
-                payment.setStatus(PaymentStatus.FAILED);
+            String type = webhookData.getDescription().split(" ")[1];
+            String transactionCode = String.valueOf(webhookData.getOrderCode());
+            if(type.equals("PAYMENT")){
+                Payment payment = paymentRepository.findByTransactionCode(transactionCode);
+                if (webhookData.getDesc().equals("success")) {
+                    payment.setStatus(PaymentStatus.COMPLETED);
+                } else {
+                    payment.setStatus(PaymentStatus.FAILED);
+                }
+                paymentRepository.save(payment);
             }
-            paymentRepository.save(payment);
+            else{
+                Transaction transaction = transactionRepository.findByTransactionCode(transactionCode);
+                User user = transaction.getUser();
+                transaction.setDescription("Nạp tiền vào ví Inblue");
+                long currentBalance = transaction.getUser().getWalletBalance();
+                currentBalance += transaction.getAmount();
+                transaction.setCurrentBalance(currentBalance);
+                user.setWalletBalance(currentBalance);
+                transactionRepository.save(transaction);
+                userRepository.save(user);
+            }
+
         } catch (Exception e) {
             System.err.println("Error processing PayOS webhook: " + e.getMessage());
         }
+    }
 
+    @Override
+    public Payment cancelPayment(String transactionCode) {
+        Payment payment = paymentRepository.findByTransactionCode(transactionCode);
+        if (payment == null) {
+            throw new CustomException("Payment not found with transaction code: " + transactionCode, HttpStatus.NOT_FOUND);
+        }
+        payment.setStatus(PaymentStatus.FAILED);
+        return paymentRepository.save(payment);
     }
 }

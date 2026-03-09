@@ -1,9 +1,9 @@
 package fpt.org.inblue.schedule;
 
 import fpt.org.inblue.model.Payment;
+import fpt.org.inblue.model.dto.payos.PaymentStatusResponse;
 import fpt.org.inblue.model.enums.PaymentStatus;
 import fpt.org.inblue.repository.PaymentRepository;
-import lombok.Data;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpEntity;
@@ -13,7 +13,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestTemplate;
-import vn.payos.PayOS;
+
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -31,7 +31,7 @@ public class PaymentSchedule {
     private String apiKey;
     @Value("${payos.checksum-key}")
 
-    @Scheduled(fixedDelay = 600000)
+    @Scheduled(fixedDelay = 300000)
    public void checkPaymentStatus() {
         System.out.println("Checking pending payments at " + LocalDateTime.now());
         LocalDateTime times = LocalDateTime.now().minusMinutes(10);
@@ -41,7 +41,7 @@ public class PaymentSchedule {
             try {
                 System.out.println("Checking payment: " + payment.getId());
                 String url = "https://api-merchant.payos.vn/v2/payment-requests/"
-                        + payment.getId();
+                        + payment.getTransactionCode();
 
                 HttpHeaders headers = new HttpHeaders();
                 headers.set("x-client-id", clientId);
@@ -63,12 +63,12 @@ public class PaymentSchedule {
                     if ("CANCELLED".equals(status)) {
                         payment.setStatus(PaymentStatus.FAILED);
                         paymentRepository.save(payment);
-                        System.out.println("✓ Auto-cancelled payment: " + payment.getId());
+                        System.out.println("Auto-cancelled payment: " + payment.getId());
                     }
                     else if ("EXPIRED".equals(status)) {
                         payment.setStatus(PaymentStatus.FAILED);
                         paymentRepository.save(payment);
-                        System.out.println("✓ Expired payment: " + payment.getId());
+                        System.out.println("Expired payment: " + payment.getId());
                     }
                 }
             } catch (Exception e) {
@@ -78,16 +78,4 @@ public class PaymentSchedule {
     }
 
 }
-@Data
-class PaymentStatusResponse {
-    private String code;
-    private String desc;
-    private PaymentStatusData data;
-}
 
-@Data
-class PaymentStatusData {
-    private String status;
-    private Long orderCode;
-    private Integer amount;
-}

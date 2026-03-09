@@ -9,6 +9,6 @@ public interface PaymentService {
      String createPayment(long amount, int userId);
     Payment getPayment(int id);
     List<Payment> getPayments();
-
     void handlePayOsWebhook(Webhook body);
+    Payment cancelPayment(String transactionCode);
 }
