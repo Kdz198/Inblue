@@ -12,6 +12,9 @@ public class RedisTestService {
 
     private final RedisTemplate<String, Object> redisTemplate;
 
+    public void testLog () {
+        throw new RuntimeException("Đây là lỗi test log");
+    }
     // Lưu nguyên con Object vào Hash
     // Mỗi field ứng với 1 thuộc tính của Object - giúp update mà ko cần lấy nguyên object ra
     public void saveFoodAsHash(String id, Food food) {
