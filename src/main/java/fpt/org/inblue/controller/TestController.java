@@ -42,6 +42,7 @@ public class TestController {
     @GetMapping("/error")
     public String triggerError() {
         // Tạo một lỗi Generic Exception để test
+        redisTestService.testLog();
         throw new RuntimeException("Đây là lỗi có chủ đích để test TraceID trên Dozzle!");
     }
 

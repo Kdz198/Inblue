@@ -21,12 +21,12 @@ public class MajorController {
         return ResponseEntity.ok(majors);
     }
     @PostMapping
-    public ResponseEntity<Major> createMajor(Major major) {
+    public ResponseEntity<Major> createMajor(@RequestBody Major major) {
         Major createdMajor = MajorService.createMajor(major);
         return ResponseEntity.ok(createdMajor);
     }
     @PutMapping
-    public ResponseEntity<Major> updateMajor(Major major) {
+    public ResponseEntity<Major> updateMajor(@RequestBody Major major) {
         Major updatedMajor = MajorService.updateMajor(major);
         return ResponseEntity.ok(updatedMajor);
     }
