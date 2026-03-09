@@ -5,6 +5,9 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import org.hibernate.annotations.CreationTimestamp;
+
+import java.time.LocalDateTime;
 
 @Entity
 @Table(name = "transactions")
@@ -22,5 +25,7 @@ public class Transaction {
     @ManyToOne
     private User user;
     private boolean type;
+    @CreationTimestamp
+    private LocalDateTime createdAt;
     //true là nạp tiền, false là rút tiền
 }

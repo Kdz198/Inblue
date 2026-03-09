@@ -1,6 +1,7 @@
 package fpt.org.inblue.exception;
 
 import lombok.extern.slf4j.Slf4j;
+import org.slf4j.MDC;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.FieldError;
@@ -16,34 +17,40 @@ import java.util.Map;
 @ControllerAdvice
 @Slf4j
 public class GlobalExceptionHandler {
-    @ExceptionHandler(CustomException.class)
-    public ResponseEntity<String> handleCustomException(CustomException ex) {
-        return new ResponseEntity<>(ex.getMessage(), ex.getStatus());
+
+    private String getTraceId() {
+        String traceId = MDC.get("traceId");
+        return traceId != null ? traceId : "N/A";
     }
-    //xử lí lỗi bên CustomeException
-    //phản hồi với thông điệp tùy chỉnh
+
+    @ExceptionHandler(CustomException.class)
+    public ResponseEntity<Map<String, String>> handleCustomException(CustomException ex) {
+        Map<String, String> response = new HashMap<>();
+        response.put("error", ex.getMessage());
+        response.put("traceId", getTraceId());
+        log.error("CustomException: {}", ex.getMessage());
+        return new ResponseEntity<>(response, ex.getStatus());
+    }
 
     @ExceptionHandler(MethodArgumentNotValidException.class)
     public ResponseEntity<Map<String, String>> handleValidationExceptions(MethodArgumentNotValidException ex) {
         Map<String, String> errors = new HashMap<>();
+        errors.put("traceId", getTraceId());
         List<ObjectError> allErrors = ex.getBindingResult().getAllErrors();
         for (ObjectError error : allErrors) {
             if (error instanceof FieldError) {
-                String fieldName = ((FieldError) error).getField();
-                String errorMessage = error.getDefaultMessage();
-                errors.put(fieldName, errorMessage);
+                errors.put(((FieldError) error).getField(), error.getDefaultMessage());
             }
         }
         return new ResponseEntity<>(errors, HttpStatus.BAD_REQUEST);
     }
-    //xử lại lỗi valid,
 
     @ExceptionHandler(Exception.class)
     public ResponseEntity<Map<String, String>> handleGenericException(Exception ex) {
-        Map<String, String> error = new HashMap<>();
-        error.put("error", ex.getMessage());
-        log.error(ex.getMessage(), ex);
-        return new ResponseEntity<>(error, HttpStatus.INTERNAL_SERVER_ERROR);
+        Map<String, String> response = new HashMap<>();
+        response.put("error", ex.getMessage());
+        response.put("traceId", getTraceId());
+        log.error("Unhandled Exception: ", ex);
+        return new ResponseEntity<>(response, HttpStatus.INTERNAL_SERVER_ERROR);
     }
-    //xử lí lỗi chương trình đảm bảo chương trình không bị sập
 }
