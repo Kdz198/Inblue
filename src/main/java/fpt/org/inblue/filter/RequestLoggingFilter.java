@@ -21,6 +21,15 @@ public class RequestLoggingFilter extends OncePerRequestFilter {
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
             throws ServletException, IOException {
 
+
+        String contentType = request.getContentType();
+        // Bỏ qua, không cache body nếu là upload file
+        if (contentType != null && contentType.startsWith("multipart/form-data")) {
+            log.info("▶ Nhận API (Upload File): [{} {}]", request.getMethod(), request.getRequestURI());
+            filterChain.doFilter(request, response);
+            return; // Cho đi thẳng luôn, kết thúc tại đây
+        }
+
         // 1. Chỉ bọc Request lại để giữ được luồng data (Stream)
         ContentCachingRequestWrapper requestWrapper = new ContentCachingRequestWrapper(request, 10240);
         // 2. Cho request đi tiếp vào Controller xử lý
@@ -28,7 +37,7 @@ public class RequestLoggingFilter extends OncePerRequestFilter {
         // thì Controller mới "đọc" data, lúc đó cái wrapper mới cache lại được body.
         filterChain.doFilter(requestWrapper, response);
 
-// 3. Lấy Request Body ra (Dành cho raw JSON/XML)
+// 3. Lấy Request Body ra (Dành cho raw JSON/XML)`
         String requestBody = new String(requestWrapper.getContentAsByteArray(), StandardCharsets.UTF_8);
 
         // 4. In log (TraceID tự động dính kèm)
