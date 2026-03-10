@@ -15,6 +15,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import vn.payos.PayOS;
 import vn.payos.model.v2.paymentRequests.CreatePaymentLinkRequest;
+import vn.payos.model.v2.paymentRequests.CreatePaymentLinkResponse;
 import vn.payos.model.webhooks.Webhook;
 import vn.payos.model.webhooks.WebhookData;
 
@@ -76,7 +77,7 @@ public class PaymentServiceImpl implements PaymentService {
                 .returnUrl(returnUrl)
                 .cancelUrl(cancelUrl)
                 .build();
-        var paymentLink = payOS.paymentRequests().create(request);
+        CreatePaymentLinkResponse paymentLink = payOS.paymentRequests().create(request);
         return paymentLink.getCheckoutUrl();
     }
 

@@ -28,6 +28,6 @@ public class Transaction {
     @CreationTimestamp
     private LocalDateTime createdAt;
     private boolean transactionType;
-    private long currentBalance;
     //true là nạp tiền, false là rút tiền
+    private long currentBalance;
 }
