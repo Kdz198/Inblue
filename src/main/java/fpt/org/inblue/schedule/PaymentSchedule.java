@@ -29,7 +29,6 @@ public class PaymentSchedule {
     private String clientId;
     @Value("${payos.api-key}")
     private String apiKey;
-    @Value("${payos.checksum-key}")
 
     @Scheduled(fixedDelay = 300000)
    public void checkPaymentStatus() {
