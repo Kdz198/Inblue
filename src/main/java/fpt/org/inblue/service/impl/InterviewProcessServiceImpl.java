@@ -99,7 +99,8 @@ public class InterviewProcessServiceImpl implements InterviewProcessService {
 
 
         // --- BƯỚC 3: XỬ LÝ RESPONSE AI ---
-        if (aiResponse.getAction() == OrchestratorAnalysisResponse.AnalysisAction.DRILL_DOWN) {
+        if (aiResponse.getAction() == OrchestratorAnalysisResponse.AnalysisAction.DRILL_DOWN
+        || aiResponse.getAction() == OrchestratorAnalysisResponse.AnalysisAction.CLARIFY_AND_SUPPORT) {
             session.setCurrentQuestionType(InterviewSessionRedis.QuestionType.FOLLOW_UP);
             session.setCurrentQuestionText(aiResponse.getResponseText());
         } else {

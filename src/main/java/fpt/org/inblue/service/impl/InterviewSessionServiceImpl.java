@@ -170,7 +170,7 @@ public class InterviewSessionServiceImpl implements InterviewSessionService {
                 }
             }
 
-            if( session.getStatus() != InterviewSession.SessionStatus.COMPLETED) {
+            if( session.getStatus() == InterviewSession.SessionStatus.CANCELLED) {
                 // Nếu chưa hoàn thành, xóa blueprint để giảm tải dữ liệu trả về cho FE
                 session.setBlueprint( null);
             }
