@@ -20,6 +20,7 @@ public class ChatServiceImpl implements ChatService {
 
     @Override
     public void processMessage(ChatDto message) {
+        System.out.println("Received message: " + message.toString());
         int senderId = parseId(message.getSenderId());
         int recipientId = parseId(message.getRecipientId());
         String senderType = getType(message.getSenderId());
@@ -45,9 +46,12 @@ public class ChatServiceImpl implements ChatService {
         int rId = parseId(recipientId);
         String rType = getType(recipientId);
 
+        List<ChatMessage> history = chatMessageRepository.getHistory(
+                sId, sType,
+                rId, rType
+        );
+        return history;
 
-
-        return List.of();
     }
 
     public int parseId(String id) {

@@ -7,12 +7,12 @@ import org.springframework.messaging.handler.annotation.MessageMapping;
 import org.springframework.messaging.handler.annotation.Payload;
 import org.springframework.stereotype.Controller;
 
-@Controller("api/chat")
+@Controller
 public class ChatController {
     @Autowired
     private ChatService chatService;
 
-    @MessageMapping
+    @MessageMapping("/chat")
     public void processMessage(@Payload ChatDto message) {
         chatService.processMessage(message);
     }
