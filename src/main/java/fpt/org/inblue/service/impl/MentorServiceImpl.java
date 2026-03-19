@@ -39,7 +39,7 @@ public class MentorServiceImpl implements MentorService {
        if(data.getId()==null){
            mentor = mentorMapper.toEntity(data);
            mentor.setRole(Role.MENTOR);
-           mentor.setActive(true);
+           mentor.setActive(false);
            mentor.setTotalSession(0);
            mentor.setAverageRating(0);
            mentor = mentorRepository.save(mentor);
