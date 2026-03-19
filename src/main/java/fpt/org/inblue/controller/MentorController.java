@@ -2,6 +2,7 @@ package fpt.org.inblue.controller;
 
 import fpt.org.inblue.model.Mentor;
 import fpt.org.inblue.model.dto.MentorInfo;
+import fpt.org.inblue.model.dto.response.MentorResponse;
 import fpt.org.inblue.service.MentorService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
@@ -23,15 +24,13 @@ public class MentorController {
     private MentorService mentorService;
 
     @GetMapping
-    public ResponseEntity<List<Mentor>> getAllMentors() {
-        List<Mentor> mentors = mentorService.getAllMentors();
-        return ResponseEntity.ok(mentors);
+    public ResponseEntity<List<MentorResponse>> getAllMentors() {
+        return ResponseEntity.ok(mentorService.getAllMentors());
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<Mentor> getMentorById(@PathVariable int id) {
-        Mentor mentor = mentorService.getMentorById(id);
-        return ResponseEntity.ok(mentor);
+    public ResponseEntity<MentorResponse> getMentorById(@PathVariable int id) {
+        return ResponseEntity.ok(mentorService.getMentorById(id));
     }
 
     @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
@@ -55,11 +54,6 @@ public class MentorController {
         return ResponseEntity.ok(createdMentor);
     }
 
-    @PutMapping
-    public ResponseEntity<Mentor> updateMentor(@RequestBody Mentor mentor) {
-        Mentor updatedMentor = mentorService.updateMentor(mentor);
-        return ResponseEntity.ok(updatedMentor);
-    }
 
     @GetMapping("/toggle/{id}")
     public ResponseEntity<Void> toggleActive(@PathVariable int id) {

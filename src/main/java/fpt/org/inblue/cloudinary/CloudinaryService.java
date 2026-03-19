@@ -31,43 +31,22 @@ public class CloudinaryService {
         return result;
     }
     public Map<String, String> uploadDocument(MultipartFile file) throws IOException {
-        String originalFilename = StringUtils.hasText(file.getOriginalFilename())
-                ? file.getOriginalFilename()
-                : "document.pdf";
-
-// Lấy đuôi file
-        String extension = "";
-        int lastDotIndex = originalFilename.lastIndexOf('.');
-        if (lastDotIndex > 0 && lastDotIndex < originalFilename.length() - 1) {
-            extension = originalFilename.substring(lastDotIndex + 1).toLowerCase();
-        }
-
-// Nếu không có đuôi hoặc đuôi lạ thì mặc định pdf
-        if (extension.isEmpty() || !List.of("pdf", "doc", "docx", "xls", "xlsx", "ppt", "pptx").contains(extension)) {
-            extension = "pdf";
-        }
-        String publicIdWithExtension = "my_app/docs/" + UUID.randomUUID().toString() + "." + extension;
-
+        String publicId = "my_app/docs/" + UUID.randomUUID().toString();
         Map uploadResult = cloudinary.uploader().upload(
                 file.getBytes(),
                 ObjectUtils.asMap(
-                        "public_id", publicIdWithExtension,
-                        "resource_type", "raw",
+                        "public_id", publicId,
+                        "resource_type", "auto",
                         "access_mode", "public",
-                        "allowed_formats", new String[]{"pdf", "doc", "docx", "xls", "xlsx", "ppt", "pptx"},
                         "overwrite", true
                 )
         );
 
-        String publicId = (String) uploadResult.get("public_id");
-        String secureUrl = (String) uploadResult.get("secure_url");
-
         Map<String, String> result = new HashMap<>();
-        result.put("public_id", publicId);
-        result.put("secure_url", secureUrl);
+        result.put("public_id", (String) uploadResult.get("public_id"));
+        result.put("secure_url", (String) uploadResult.get("secure_url"));
         return result;
     }
-
 
     public Map deleteImage(String publicId) throws IOException {
         Map result = cloudinary.uploader().destroy(publicId, ObjectUtils.asMap("invalidate",true));

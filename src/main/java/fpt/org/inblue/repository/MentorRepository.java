@@ -31,4 +31,6 @@ public interface MentorRepository extends JpaRepository<Mentor, Integer> {
     @Transactional
     @Query("UPDATE Mentor m SET m.otherFile = :url, m.public_id_other = :publicId WHERE m.id = :id")
     void updateOtherFile(@Param("id") int id, @Param("url") String url, @Param("publicId") String publicId);
+
+    Mentor getMentorById(int id);
 }

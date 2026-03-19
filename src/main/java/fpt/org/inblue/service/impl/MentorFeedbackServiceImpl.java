@@ -10,6 +10,7 @@ import fpt.org.inblue.model.dto.request.CreateMentorFeedbackRequest;
 import fpt.org.inblue.model.dto.request.UpdateMentorFeedbackRequest;
 import fpt.org.inblue.model.enums.SessionStatus;
 import fpt.org.inblue.repository.MentorFeedbackRepository;
+import fpt.org.inblue.repository.MentorRepository;
 import fpt.org.inblue.repository.SessionRepository;
 import fpt.org.inblue.service.MentorFeedbackService;
 import fpt.org.inblue.service.MentorService;
@@ -30,13 +31,13 @@ public class MentorFeedbackServiceImpl implements MentorFeedbackService {
     @Autowired
     private MentorFeedbackMapper mentorFeedbackMapper;
     @Autowired
-    private MentorService mentorService;
+   private MentorRepository mentorRepository;
     @Autowired
     private UserService userService;
 
     @Override
     public MentorFeedback createMentorFeedback(CreateMentorFeedbackRequest mentorFeedback) {
-        Mentor mentor = mentorService.getMentorById(mentorFeedback.getMentorId());
+        Mentor mentor = mentorRepository.getMentorById(mentorFeedback.getMentorId());
         User user = userService.getById(mentorFeedback.getUserId());
         Session session = sessionRepository.findById(mentorFeedback.getSessionId()).get();
         if(session!=null && user!=null && mentor!=null && session.getStatus().equals(SessionStatus.COMPLETED)){
@@ -44,11 +45,23 @@ public class MentorFeedbackServiceImpl implements MentorFeedbackService {
             feedback.setSession(session);
             feedback.setMentor(mentor);
             feedback.setUser(user);
+            mentor.setTotalSession(mentor.getTotalSession()+1);
+            mentor.setAverageRating(caculateAverageRating(mentor.getId()));
+            mentorRepository.save(mentor);
             return mentorFeedbackRepository.save(feedback);
         }
         else{
             throw new CustomException("Session| Mentor| User not found or session is not complete !!", HttpStatus.NOT_FOUND);
         }
+    }
+
+    private double caculateAverageRating(int mentorId){
+        List<MentorFeedback> feedbacks = mentorFeedbackRepository.findAllByMentor_Id(mentorId);
+        double sum = 0;
+        for(MentorFeedback feedback: feedbacks){
+            sum+=feedback.getRating();
+        }
+        return sum/feedbacks.size();
     }
 
     @Override
@@ -62,7 +75,6 @@ public class MentorFeedbackServiceImpl implements MentorFeedbackService {
             throw new CustomException("Mentor feedback not found", HttpStatus.NOT_FOUND);
         }
     }
-
     @Override
     public MentorFeedback getMentorFeedbackBySessionId(int sessionId) {
         return mentorFeedbackRepository.findById(sessionId).get();

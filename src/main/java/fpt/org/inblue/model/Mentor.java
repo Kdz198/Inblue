@@ -31,7 +31,6 @@ public class Mentor {
     private int yearsOfExperience;
     private String linkedInUrl;
     private String currentCompany;
-    private int rate;
     private String identityImg;
     private String public_id_identity;
 
@@ -41,4 +40,5 @@ public class Mentor {
     private String otherFile;
     private String public_id_other;
     private int totalSession;
+    private double averageRating;
 }

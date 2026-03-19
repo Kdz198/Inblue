@@ -2,10 +2,12 @@ package fpt.org.inblue.service.impl;
 
 import fpt.org.inblue.cloudinary.CloudinaryService;
 import fpt.org.inblue.exception.CustomException;
+import fpt.org.inblue.mapper.MentorMapper;
 import fpt.org.inblue.model.Mentor;
 import fpt.org.inblue.model.dto.request.CreateMentorRequest;
 import fpt.org.inblue.model.dto.MentorEventDto;
 import fpt.org.inblue.model.dto.MentorInfo;
+import fpt.org.inblue.model.dto.response.MentorResponse;
 import fpt.org.inblue.model.enums.Role;
 import fpt.org.inblue.repository.MentorRepository;
 import fpt.org.inblue.service.MentorService;
@@ -28,134 +30,88 @@ public class MentorServiceImpl implements MentorService {
     private ApplicationEventPublisher applicationEventPublisher;
     @Autowired
     private CloudinaryService cloudinaryService;
+    @Autowired
+    private MentorMapper mentorMapper;
 
     @Override
     public Mentor createMentor(MentorInfo data, MultipartFile identityFile, MultipartFile degreeFile, MultipartFile otherFile,MultipartFile avatar) throws IOException {
+        Mentor mentor;
        if(data.getId()==null){
-           CreateMentorRequest mentor = new CreateMentorRequest();
-           MentorInfo mentorInfo = new MentorInfo(data.getName(), data.getEmail(), data.getPassword(), data.getBio(), data.getExpertise(), data.getYearsOfExperience(), data.getLinkedInUrl(), data.getCurrentCompany())
-                   ;
-           mentor.setData(mentorInfo);
-           mentor.setAvatar(avatar);
-           mentor.setIdentityFile(identityFile);
-           mentor.setDegreeFile(degreeFile);
-           mentor.setOtherFile(otherFile);
-
-           Mentor mentorEntity = Mentor.builder()
-                   .name(mentor.getData().getName())
-                   .email(mentor.getData().getEmail())
-                   .password(mentor.getData().getPassword())
-                   .role(Role.MENTOR)
-                   .isActive(false)
-                   .bio(mentor.getData().getBio())
-                   .expertise(mentor.getData().getExpertise())
-                   .yearsOfExperience(mentor.getData().getYearsOfExperience())
-                   .linkedInUrl(mentor.getData().getLinkedInUrl())
-                   .currentCompany(mentor.getData().getCurrentCompany())
-                   .rate(0)
-                   .totalSession(0)
-                   .build();
-           Mentor savedMentor = mentorRepository.save(mentorEntity);
-           // Save avatar file
-           String absolutePath = FileUtil.saveFile(mentor.getAvatar());
-           File file = FileUtil.getFileByPath(absolutePath);
-           MultipartFile avata = FileUtil.convertFileToMultipart(file);
-           file.delete();
-           applicationEventPublisher.publishEvent(new MentorEventDto(savedMentor, avata,"avatar"));
-           // Save identity file
-           String absolutePath_1 = FileUtil.saveFile(mentor.getIdentityFile());
-           File file_1 = FileUtil.getFileByPath(absolutePath_1);
-           MultipartFile identity = FileUtil.convertFileToMultipart(file_1);
-           file_1.delete();
-           applicationEventPublisher.publishEvent(new MentorEventDto(savedMentor, identity,"IdentityCard"));
-
-//        // Save degree file
-           String absolutePath_2 = FileUtil.saveFile(mentor.getDegreeFile());
-           File file_2 = FileUtil.getFileByPath(absolutePath_2);
-           MultipartFile degree = FileUtil.convertFileToMultipart(file_2);
-           file_2.delete();
-           applicationEventPublisher.publishEvent(new MentorEventDto(savedMentor, degree,"Degree"));
-//        // Save other file
-           String absolutePath_3 = FileUtil.saveFile(mentor.getOtherFile());
-           File file_3 = FileUtil.getFileByPath(absolutePath_3);
-           MultipartFile other = FileUtil.convertFileToMultipart(file_3);
-           file_3.delete();
-           applicationEventPublisher.publishEvent(new MentorEventDto(savedMentor, other,"Other"));
-           return savedMentor;
+           mentor = mentorMapper.toEntity(data);
+           mentor.setRole(Role.MENTOR);
+           mentor.setActive(true);
+           mentor.setTotalSession(0);
+           mentor.setAverageRating(0);
+           mentor = mentorRepository.save(mentor);
+           processAndPublishFileEvent(mentor, avatar, "avatar");
+           processAndPublishFileEvent(mentor, identityFile, "IdentityCard");
+           processAndPublishFileEvent(mentor, degreeFile, "Degree");
+           processAndPublishFileEvent(mentor, otherFile, "Other");
+           return mentor;
        }
        else{
-           Mentor updateMentor = mentorRepository.findById(data.getId()).orElseThrow(() -> new RuntimeException("Mentor Not Found"));
-           updateMentor.setName(data.getName());
-           updateMentor.setEmail(data.getEmail());
-           updateMentor.setBio(data.getBio());
-           updateMentor.setExpertise(data.getExpertise());
-           updateMentor.setYearsOfExperience(data.getYearsOfExperience());
-           updateMentor.setLinkedInUrl(data.getLinkedInUrl());
-           updateMentor.setCurrentCompany(data.getCurrentCompany());
-           updateMentor.setPassword(data.getPassword());
+           mentor = mentorRepository.findById(data.getId()).orElseThrow(() -> new RuntimeException("Mentor Not Found"));
+           mentorMapper.updateMentorFromDto(data, mentor);
 
-            if(updateMentor.getAvatarUrl()!=null) {
-                updateMentor.setAvatarUrl(updateMentor.getAvatarUrl());
-                updateMentor.setPublic_id(updateMentor.getPublic_id());
+            if(mentor.getAvatarUrl()!=null) {
+                mentor.setAvatarUrl(mentor.getAvatarUrl());
+                mentor.setPublic_id(mentor.getPublic_id());
             }
-            if(updateMentor.getIdentityImg()!=null) {
-                updateMentor.setIdentityImg(updateMentor.getIdentityImg());
-                updateMentor.setPublic_id_identity(updateMentor.getPublic_id_identity());
+            if(mentor.getIdentityImg()!=null) {
+                mentor.setIdentityImg(mentor.getIdentityImg());
+                mentor.setPublic_id_identity(mentor.getPublic_id_identity());
             }
-            if(updateMentor.getDegreeImg()!=null) {
-                updateMentor.setDegreeImg(updateMentor.getDegreeImg());
-                updateMentor.setPublic_id_degree(updateMentor.getPublic_id_degree());
+            if(mentor.getDegreeImg()!=null) {
+                mentor.setDegreeImg(mentor.getDegreeImg());
+                mentor.setPublic_id_degree(mentor.getPublic_id_degree());
             }
-            if(updateMentor.getOtherFile()!=null) {
-                updateMentor.setOtherFile(updateMentor.getOtherFile());
-                updateMentor.setPublic_id_other(updateMentor.getPublic_id_other());
+            if(mentor.getOtherFile()!=null) {
+                mentor.setOtherFile(mentor.getOtherFile());
+                mentor.setPublic_id_other(mentor.getPublic_id_other());
             }
-           Mentor savedMentor = mentorRepository.save(updateMentor);
-           if (!avatar.isEmpty()) {
-               if(updateMentor.getPublic_id()!=null) {
-                   cloudinaryService.deleteImage(updateMentor.getPublic_id());
+           mentor = mentorRepository.save(mentor);
+           if (avatar!=null &&!avatar.isEmpty()) {
+               if(mentor.getPublic_id()!=null) {
+                   cloudinaryService.deleteImage(mentor.getPublic_id());
                }
-               String absolutePath = FileUtil.saveFile(avatar);
-               File file = FileUtil.getFileByPath(absolutePath);
-               MultipartFile avata = FileUtil.convertFileToMultipart(file);
-               file.delete();
-               applicationEventPublisher.publishEvent(new MentorEventDto(savedMentor, avata,"avatar"));
+               processAndPublishFileEvent(mentor, avatar, "avatar");
            }
-           if (!identityFile.isEmpty()) {
-               if(updateMentor.getPublic_id_identity()!=null) {
-               cloudinaryService.deletePdf(updateMentor.getPublic_id_identity());}
-               String absolutePath = FileUtil.saveFile(identityFile);
-               File file = FileUtil.getFileByPath(absolutePath);
-               MultipartFile identity = FileUtil.convertFileToMultipart(file);
-               file.delete();
-               applicationEventPublisher.publishEvent(new MentorEventDto(savedMentor, identity,"IdentityCard"));
+           if (identityFile!=null && !identityFile.isEmpty()) {
+               if(mentor.getPublic_id_identity()!=null) {
+               cloudinaryService.deletePdf(mentor.getPublic_id_identity());}
+               processAndPublishFileEvent(mentor, identityFile, "IdentityCard");
            }
-           if (!degreeFile.isEmpty()) {
-               if(updateMentor.getPublic_id_degree()!=null){
-               cloudinaryService.deletePdf(updateMentor.getPublic_id_degree());}
-               String absolutePath = FileUtil.saveFile(degreeFile);
-               File file = FileUtil.getFileByPath(absolutePath);
-               MultipartFile degree = FileUtil.convertFileToMultipart(file);
-               file.delete();
-               applicationEventPublisher.publishEvent(new MentorEventDto(savedMentor, degree,"Degree"));
+           if (degreeFile!=null && !degreeFile.isEmpty()) {
+               if(mentor.getPublic_id_degree()!=null){
+               cloudinaryService.deletePdf(mentor.getPublic_id_degree());}
+               processAndPublishFileEvent(mentor, degreeFile, "Degree");
            }
-           if (!otherFile.isEmpty()) {
-               if(updateMentor.getPublic_id_other()!=null){
-                cloudinaryService.deletePdf(updateMentor.getPublic_id_other());}
-               String absolutePath = FileUtil.saveFile(otherFile);
-               File file = FileUtil.getFileByPath(absolutePath);
-               MultipartFile other = FileUtil.convertFileToMultipart(file);
-               file.delete();
-               applicationEventPublisher.publishEvent(new MentorEventDto(savedMentor, other,"Other"));
+           if (otherFile!=null && !otherFile.isEmpty()) {
+               if(mentor.getPublic_id_other()!=null){
+                cloudinaryService.deletePdf(mentor.getPublic_id_other());}
+              processAndPublishFileEvent(mentor, otherFile, "Other");
            }
-           return savedMentor;
+           return mentor;
        }
     }
 
+    private void processAndPublishFileEvent(Mentor mentor, MultipartFile file, String type) throws IOException {
+        if (file != null && !file.isEmpty()) {
+            String absolutePath = FileUtil.saveFile(file);
+            File tempFile = FileUtil.getFileByPath(absolutePath);
+            try {
+                MultipartFile multipartFile = FileUtil.convertFileToMultipart(tempFile);
+                applicationEventPublisher.publishEvent(new MentorEventDto(mentor, multipartFile, type));
+            } finally {
+                tempFile.delete();
+            }
+        }
+    }
+
     @Override
-    public Mentor getMentorById(int id) {
+    public MentorResponse getMentorById(int id) {
         if(mentorRepository.existsById(id)){
-            return mentorRepository.findById(id).get();
+            return mentorMapper.toMentorResponse(mentorRepository.findById(id).get());
         }
         else {
             throw new CustomException("Mentor not found", HttpStatus.NOT_FOUND);
@@ -163,19 +119,10 @@ public class MentorServiceImpl implements MentorService {
     }
 
     @Override
-    public List<Mentor> getAllMentors() {
-        return mentorRepository.findAll();
+    public List<MentorResponse> getAllMentors() {
+        return mentorMapper.toMentorResponseList(mentorRepository.findAll());
     }
 
-    @Override
-    public Mentor updateMentor(Mentor mentor) {
-        if(mentorRepository.existsById(mentor.getId())){
-            return mentorRepository.save(mentor);
-        }
-        else {
-            throw new CustomException("Mentor not found", HttpStatus.NOT_FOUND);
-        }
-    }
 
     @Override
     public void toggleActive(int id) {

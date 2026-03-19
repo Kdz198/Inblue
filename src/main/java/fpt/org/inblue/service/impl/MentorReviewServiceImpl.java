@@ -9,6 +9,7 @@ import fpt.org.inblue.model.User;
 import fpt.org.inblue.model.dto.request.CreateMentorReviewRequest;
 import fpt.org.inblue.model.dto.request.UpdateMentorReviewRequest;
 import fpt.org.inblue.model.enums.SessionStatus;
+import fpt.org.inblue.repository.MentorRepository;
 import fpt.org.inblue.repository.MentorReviewRepository;
 import fpt.org.inblue.repository.SessionRepository;
 import fpt.org.inblue.service.MentorReviewService;
@@ -30,13 +31,13 @@ public class MentorReviewServiceImpl implements MentorReviewService {
     @Autowired
     private MentorReviewMapper mentorReviewMapper;
     @Autowired
-    private MentorService mentorService;
+    private MentorRepository mentorRepo;
     @Autowired
     private UserService userService;
 
     @Override
     public MentorReview mentorReview(CreateMentorReviewRequest mentorReview) {
-        Mentor mentor = mentorService.getMentorById(mentorReview.getMentorId());
+        Mentor mentor = mentorRepo.getMentorById(mentorReview.getMentorId());
         User user = userService.getById(mentorReview.getUserId());
         Session session = sessionRepo.findById(mentorReview.getSessionId()).orElse(null);
         if(session==null || user==null || mentor==null){
