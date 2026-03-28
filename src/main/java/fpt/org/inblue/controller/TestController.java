@@ -21,6 +21,7 @@ import static fpt.org.inblue.constants.ApiPath.CV_API;
 @CrossOrigin("*")
 @RequiredArgsConstructor
 @Slf4j
+@RequestMapping("/api/test")
 public class TestController {
 
     private final RedisTestService redisTestService;

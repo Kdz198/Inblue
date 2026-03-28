@@ -1,6 +1,7 @@
 package fpt.org.inblue.model.dto;
 
 import jakarta.annotation.Nullable;
+import jakarta.validation.constraints.NotNull;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -12,6 +13,7 @@ public class UserInfo {
     @Nullable
     private Integer id;
     private String name;
+    @NotNull
     private String email;
     private String password;
     private String university;

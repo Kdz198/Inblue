@@ -33,4 +33,6 @@ public interface MentorRepository extends JpaRepository<Mentor, Integer> {
     void updateOtherFile(@Param("id") int id, @Param("url") String url, @Param("publicId") String publicId);
 
     Mentor getMentorById(int id);
+
+    Mentor findByEmail(String email);
 }

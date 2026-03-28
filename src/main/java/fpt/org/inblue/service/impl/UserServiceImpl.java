@@ -75,6 +75,9 @@ public class UserServiceImpl implements UserService {
     public User createUser(UserInfo user, MultipartFile avatar) throws IOException {
         MemberShipPlan memberShipPlan = memberShipPlanRepository.findByName(PlanName.NEW);
         if (user.getId() == null) {
+            if(userRepository.existsByEmail(user.getEmail())){
+                throw new CustomException("Email đã tồn tại", HttpStatus.BAD_REQUEST);
+            }
             User userBuilder = User.builder()
                     .name(user.getName())
                     .email(user.getEmail())
@@ -98,6 +101,9 @@ public class UserServiceImpl implements UserService {
             savedUser = subscribePlan(savedUser.getId(), memberShipPlan.getId());
             return savedUser;
         } else {
+            if(userRepository.existsByEmailAndIdNot(user.getEmail(), user.getId())){
+                throw new CustomException("Email đã tồn tại", HttpStatus.BAD_REQUEST);
+            }
             User updateUser = userRepository.findById(user.getId()).orElseThrow(() -> new RuntimeException("User Not Found"));
             updateUser.setName(user.getName());
             updateUser.setEmail(user.getEmail());
