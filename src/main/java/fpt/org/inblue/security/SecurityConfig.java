@@ -53,7 +53,7 @@ public class SecurityConfig {
 //                        .requestMatchers("/api/mentors/**").hasRole(Role.MENTOR.name())
 //                        .requestMatchers("/api/payments/**").hasAnyRole(Role.ADMIN.name(), Role.STAFF.name())
 //                        .requestMatchers("/api/users/subscribe").authenticated()
-                        .anyRequest().authenticated())
+                        .anyRequest().permitAll())
                 .securityContext(context -> context.requireExplicitSave(false));
                 http.addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
         return http.build();
