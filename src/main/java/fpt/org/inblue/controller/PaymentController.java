@@ -1,8 +1,7 @@
 package fpt.org.inblue.controller;
 
 import fpt.org.inblue.model.Payment;
-import fpt.org.inblue.model.enums.PaymentStatus;
-import fpt.org.inblue.repository.PaymentRepository;
+import fpt.org.inblue.model.enums.PaymentPurpose;
 import fpt.org.inblue.service.PaymentService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
@@ -19,8 +18,8 @@ public class PaymentController {
 
 
     @PostMapping("/pay")
-    public ResponseEntity<String> createPayment(@RequestParam long amount,@RequestParam int userId) {
-        return ResponseEntity.ok(paymentService.createPayment(amount,userId));
+    public ResponseEntity<String> createPayment(@RequestParam long amount,@RequestParam int userId, @RequestParam PaymentPurpose paymentPurpose) {
+        return ResponseEntity.ok(paymentService.createPayment(amount,userId, paymentPurpose));
     }
     @GetMapping("/{id}")
     public ResponseEntity<Payment> getPayment(@PathVariable int id) {

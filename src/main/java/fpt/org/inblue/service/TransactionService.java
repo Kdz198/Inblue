@@ -2,6 +2,7 @@ package fpt.org.inblue.service;
 
 import fpt.org.inblue.model.Transaction;
 import fpt.org.inblue.model.dto.request.TransactionRequest;
+import fpt.org.inblue.model.enums.PaymentPurpose;
 
 import java.util.List;
 
@@ -11,6 +12,6 @@ public interface TransactionService {
     List<Transaction> getAllTransactions();
     List<Transaction> getTransactionsByUserId(int userId);
     void deleteTransactionByTransactionCode(String transactionCode);
-    String transferOut(long amount, int userId);
+    String transferOut(long amount, int userId, PaymentPurpose paymentPurpose);
 
 }

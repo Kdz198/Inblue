@@ -4,6 +4,8 @@ import fpt.org.inblue.model.Payment;
 import fpt.org.inblue.model.dto.payos.PaymentStatusResponse;
 import fpt.org.inblue.model.enums.PaymentStatus;
 import fpt.org.inblue.repository.PaymentRepository;
+import fpt.org.inblue.repository.TransactionRepository;
+import fpt.org.inblue.utils.HelperUtil;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpEntity;
@@ -29,6 +31,8 @@ public class PaymentSchedule {
     private String clientId;
     @Value("${payos.api-key}")
     private String apiKey;
+    @Autowired
+    private TransactionRepository transactionRepository;
 
     @Scheduled(fixedDelay = 300000)
    public void checkPaymentStatus() {
@@ -56,18 +60,16 @@ public class PaymentSchedule {
                 );
 
                 if (response.getBody() != null) {
+                    String transactionCode = payment.getTransactionCode();
+                    String type = HelperUtil.getPrefix(transactionCode);
                     String status = response.getBody().getData().getStatus();
-                    System.out.println("Payment " + payment.getId() + " status: " + status);
-
-                    if ("CANCELLED".equals(status)) {
+                    if (type.equals("100") && ("CANCELLED".equals(status) || "EXPIRED".equals(status) || "PENDING".equals(status))) {
                         payment.setStatus(PaymentStatus.FAILED);
                         paymentRepository.save(payment);
                         System.out.println("Auto-cancelled payment: " + payment.getId());
                     }
-                    else if ("EXPIRED".equals(status)) {
-                        payment.setStatus(PaymentStatus.FAILED);
-                        paymentRepository.save(payment);
-                        System.out.println("Expired payment: " + payment.getId());
+                    else if (type.equals("200") && ("CANCELLED".equals(status) || "EXPIRED".equals(status)  || "PENDING".equals(status))) {
+                        transactionRepository.deleteByTransactionCode(payment.getTransactionCode());
                     }
                 }
             } catch (Exception e) {

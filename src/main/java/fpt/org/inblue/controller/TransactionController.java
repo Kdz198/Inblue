@@ -1,6 +1,7 @@
 package fpt.org.inblue.controller;
 
 import fpt.org.inblue.model.Transaction;
+import fpt.org.inblue.model.enums.PaymentPurpose;
 import fpt.org.inblue.service.TransactionService;
 import io.swagger.v3.oas.annotations.Operation;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -46,8 +47,8 @@ public class TransactionController {
 
     @Operation(summary ="Dùng cho giao dịch khi mà mua gói từ ví")
     @PostMapping("/transfer-out")
-    public ResponseEntity<String> transferOut(@RequestParam long amount, @RequestParam int userId) {
-        String result = transactionService.transferOut(amount, userId);
+    public ResponseEntity<String> transferOut(@RequestParam long amount, @RequestParam int userId, @RequestParam PaymentPurpose paymentPurpose) {
+        String result = transactionService.transferOut(amount, userId,paymentPurpose);
         return ResponseEntity.ok(result);
     }
 }

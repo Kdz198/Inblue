@@ -1,5 +1,6 @@
 package fpt.org.inblue.model;
 
+import fpt.org.inblue.model.enums.PaymentPurpose;
 import fpt.org.inblue.model.enums.PaymentStatus;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
@@ -29,4 +30,7 @@ public class Payment {
     @CreationTimestamp
     LocalDateTime createdAt;
     String transactionCode;
+    @Enumerated(EnumType.STRING)
+    PaymentPurpose paymentPurpose;
+
 }

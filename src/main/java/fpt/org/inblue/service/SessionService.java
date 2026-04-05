@@ -21,4 +21,5 @@ public interface SessionService {
     void updateLeaveRecord(DailyWebHookPayload payload);
     void updateSessionStatus(int sessionId,  boolean isApproved);
     void deleteSession(String roomName);
+    String makePayment(int sessionId);
 }

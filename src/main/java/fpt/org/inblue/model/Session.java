@@ -43,4 +43,7 @@ public class Session {
     private String recordUrl;
 
     private SessionStatus status;
+    private Integer duration;
+    private Integer totalPrice;
+    private String transactionCode;
 }

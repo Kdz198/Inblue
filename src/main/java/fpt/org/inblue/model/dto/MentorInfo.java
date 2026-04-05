@@ -20,9 +20,10 @@ public class MentorInfo {
     String expertise;
     int yearsOfExperience;
     String linkedInUrl;
-       String currentCompany;
+    String currentCompany;
+    int pricePerMinute;
 
-    public MentorInfo(String name, String email, String password, String bio, String expertise, int yearsOfExperience, String linkedInUrl, String currentCompany) {
+    public MentorInfo(String name, String email, String password, String bio, String expertise, int yearsOfExperience, String linkedInUrl, String currentCompany, int pricePerMinute) {
         this.name = name;
         this.email = email;
         this.password = password;
@@ -31,5 +32,6 @@ public class MentorInfo {
         this.yearsOfExperience = yearsOfExperience;
         this.linkedInUrl = linkedInUrl;
         this.currentCompany = currentCompany;
+        this.pricePerMinute = pricePerMinute;
     }
 }

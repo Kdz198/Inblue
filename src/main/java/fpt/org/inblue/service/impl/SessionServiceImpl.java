@@ -5,7 +5,9 @@ import fpt.org.inblue.model.Session;
 import fpt.org.inblue.model.dto.request.JoinSessionDtoRequest;
 import fpt.org.inblue.model.dto.dailyco.*;
 import fpt.org.inblue.model.enums.SessionStatus;
+import fpt.org.inblue.model.enums.PaymentPurpose;
 import fpt.org.inblue.repository.SessionRepository;
+import fpt.org.inblue.service.PaymentService;
 import fpt.org.inblue.service.SessionService;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.*;
@@ -22,15 +24,17 @@ public class SessionServiceImpl implements SessionService {
     public final String dailyApiUrl;
     public final String dailyApiKey;
     public final SessionRepository sessionRepository;
+    private final PaymentService paymentService;
 
     public SessionServiceImpl(@Value("${daily.api.url}") String dailyApiUrl,
                               @Value("${daily.api.key}") String dailyApiKey,
                               SessionRepository sessionRepository,
-                              RestTemplate restTemplate) {
+                              RestTemplate restTemplate, PaymentService paymentService) {
         this.dailyApiUrl = dailyApiUrl;
         this.dailyApiKey = dailyApiKey;
         this.sessionRepository = sessionRepository;
         this.restTemplate = restTemplate;
+        this.paymentService = paymentService;
     }
 
 
@@ -73,8 +77,6 @@ public class SessionServiceImpl implements SessionService {
      */
     @Override
     public SessionResponse createSession(SessionCreationRequest request) {
-        System.out.println("Creating session with request: " + request.toString());
-        //thiết lập header ( bắt buộc phải có autho để xác thực )
         HttpHeaders headers = new HttpHeaders();
         headers.setBearerAuth(dailyApiKey);
         headers.setContentType(MediaType.APPLICATION_JSON);
@@ -102,6 +104,8 @@ public class SessionServiceImpl implements SessionService {
             session.setUserId2(request.getMentorId());
             session.setStatus(SessionStatus.DRAFT);
             session.setJoinTime(request.getJoinTime());
+            session.setDuration(request.getDuration());
+            session.setTotalPrice(request.getTotalPrice());
             sessionRepository.save(session);
             return response.getBody();
         }
@@ -230,6 +234,15 @@ public class SessionServiceImpl implements SessionService {
                 throw new RuntimeException("Lỗi REST API khi xóa phòng: " + e.getMessage());
             }
         }
+    }
+
+    @Override
+    public String makePayment(int sessionId) {
+        Session session = sessionRepository.findById(sessionId).orElseThrow(() -> new CustomException("Session not found", HttpStatus.NOT_FOUND));
+        if (session.getStatus() != SessionStatus.SCHEDULED) {
+            throw new CustomException("Session chưa được duyệt hoặc đã bị hủy", HttpStatus.CONFLICT);
+        }
+        return paymentService.createPayment(session.getTotalPrice(), session.getUserId(), PaymentPurpose.MENTOR_INTERVIEW);
     }
 
     public Timestamp helperConvertToVietNamTime() {

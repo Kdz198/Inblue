@@ -42,6 +42,7 @@ public class MentorServiceImpl implements MentorService {
            mentor.setActive(false);
            mentor.setTotalSession(0);
            mentor.setAverageRating(0);
+           mentor.setPricePerMinute(data.getPricePerMinute());
            mentor = mentorRepository.save(mentor);
            processAndPublishFileEvent(mentor, avatar, "avatar");
            processAndPublishFileEvent(mentor, identityFile, "IdentityCard");

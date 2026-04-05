@@ -1,6 +1,7 @@
 package fpt.org.inblue.model.dto.payos;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.Data;
 
 @Data
@@ -9,4 +10,5 @@ public class PaymentStatusData {
     private String status;
     private Long orderCode;
     private Integer amount;
+
 }

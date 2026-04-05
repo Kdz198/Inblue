@@ -1,5 +1,6 @@
 package fpt.org.inblue.model;
 
+import fpt.org.inblue.model.enums.PaymentPurpose;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -30,4 +31,5 @@ public class Transaction {
     private boolean transactionType;
     //true là nạp tiền, false là rút tiền
     private long currentBalance;
+    private PaymentPurpose paymentPurpose;
 }

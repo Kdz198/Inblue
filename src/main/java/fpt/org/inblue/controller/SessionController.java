@@ -84,4 +84,10 @@ public class SessionController {
         sessionService.updateSessionStatus(sessionId, isApproved);
         return ResponseEntity.ok().build();
     }
+
+    @GetMapping("make-payment")
+    public ResponseEntity<String> makePayment(@RequestParam int sessionId) {
+        String paymentUrl = sessionService.makePayment(sessionId);
+        return ResponseEntity.ok(paymentUrl);
+    }
 }

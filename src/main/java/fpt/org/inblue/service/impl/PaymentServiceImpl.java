@@ -2,13 +2,18 @@ package fpt.org.inblue.service.impl;
 
 import fpt.org.inblue.exception.CustomException;
 import fpt.org.inblue.model.Payment;
+import fpt.org.inblue.model.Session;
 import fpt.org.inblue.model.Transaction;
 import fpt.org.inblue.model.User;
 import fpt.org.inblue.model.enums.PaymentStatus;
+import fpt.org.inblue.model.enums.PaymentPurpose;
+import fpt.org.inblue.model.enums.SessionStatus;
 import fpt.org.inblue.repository.PaymentRepository;
+import fpt.org.inblue.repository.SessionRepository;
 import fpt.org.inblue.repository.TransactionRepository;
 import fpt.org.inblue.repository.UserRepository;
 import fpt.org.inblue.service.PaymentService;
+import fpt.org.inblue.utils.HelperUtil;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
@@ -19,10 +24,7 @@ import vn.payos.model.v2.paymentRequests.CreatePaymentLinkResponse;
 import vn.payos.model.webhooks.Webhook;
 import vn.payos.model.webhooks.WebhookData;
 
-import java.time.LocalDateTime;
 import java.util.List;
-import java.util.UUID;
-import java.util.concurrent.ThreadLocalRandom;
 
 import static fpt.org.inblue.utils.HelperUtil.generateUniqueOrderCode;
 
@@ -40,16 +42,19 @@ public class PaymentServiceImpl implements PaymentService {
     private UserRepository userRepository;
     @Autowired
     private TransactionRepository transactionRepository;
+    @Autowired
+    private SessionRepository sessionRepository;
 
     @Override
-    public String createPayment(long amount, int userId) {
+    public String createPayment(long amount, int userId, PaymentPurpose paymentPurpose) {
         long transactionCode =generateUniqueOrderCode();
         User user = userRepository.findById(userId).orElseThrow(() -> new CustomException("User not found", HttpStatus.NOT_FOUND));
         Payment payment = new Payment();
         payment.setAmount(amount);
         payment.setUser(user);
         payment.setStatus(PaymentStatus.PENDING);
-        payment.setTransactionCode(String.valueOf(transactionCode));
+        payment.setTransactionCode(String.valueOf(100+transactionCode));
+        payment.setPaymentPurpose(paymentPurpose);
         paymentRepository.save(payment);
         return createPayOSPayment(amount, transactionCode);
     }
@@ -86,14 +91,17 @@ public class PaymentServiceImpl implements PaymentService {
     public void handlePayOsWebhook(Webhook body) {
         try {
             WebhookData webhookData = payOS.webhooks().verify(body);
-            String type = webhookData.getDescription().split(" ")[1];
             String transactionCode = String.valueOf(webhookData.getOrderCode());
-            if(type.equals("PAYMENT")){
+            String type = HelperUtil.getPrefix(transactionCode);
+            System.out.println("Received PayOS webhook for transaction code: " + transactionCode + ", type: " + type + ", status: " );
+            if(type.equals("100")){
                 Payment payment = paymentRepository.findByTransactionCode(transactionCode);
                 if (webhookData.getDesc().equals("success")) {
                     payment.setStatus(PaymentStatus.COMPLETED);
-                } else {
-                    payment.setStatus(PaymentStatus.FAILED);
+                }
+                if(payment.getPaymentPurpose().equals(PaymentPurpose.MENTOR_INTERVIEW)){
+                    Session session = sessionRepository.findByTransactionCode(transactionCode);
+                    session.setStatus(SessionStatus.PAID);
                 }
                 paymentRepository.save(payment);
             }

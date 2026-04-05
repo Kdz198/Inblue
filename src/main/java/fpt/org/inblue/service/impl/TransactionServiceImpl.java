@@ -5,6 +5,7 @@ import fpt.org.inblue.mapper.TransactionMapper;
 import fpt.org.inblue.model.Transaction;
 import fpt.org.inblue.model.User;
 import fpt.org.inblue.model.dto.request.TransactionRequest;
+import fpt.org.inblue.model.enums.PaymentPurpose;
 import fpt.org.inblue.repository.TransactionRepository;
 import fpt.org.inblue.repository.UserRepository;
 import fpt.org.inblue.service.TransactionService;
@@ -24,8 +25,7 @@ import static fpt.org.inblue.utils.HelperUtil.generateUniqueOrderCode;
 public class TransactionServiceImpl implements TransactionService {
     @Autowired
     private TransactionRepository transactionRepository;
-    @Autowired
-    private TransactionMapper transactionMapper;
+
     @Autowired
     private UserRepository userRepository;
     @Autowired
@@ -43,7 +43,7 @@ public class TransactionServiceImpl implements TransactionService {
         Transaction transaction = new Transaction();
         transaction.setAmount(amount);
         transaction.setUser(user);
-        transaction.setTransactionCode(String.valueOf(transactionCode));
+        transaction.setTransactionCode(String.valueOf(200+transactionCode));
         transaction.setTransactionType(true);
         transactionRepository.save(transaction);
        return createPayOSPayment(amount, transactionCode);
@@ -82,7 +82,7 @@ public class TransactionServiceImpl implements TransactionService {
     }
 
     @Override
-    public String transferOut(long amount, int userId) {
+    public String transferOut(long amount, int userId, PaymentPurpose paymentPurpose) {
         User user = userRepository.findById(userId).orElseThrow(() -> new CustomException("User not found", HttpStatus.NOT_FOUND));
         if(user.getWalletBalance() < amount){
             throw new CustomException("Insufficient balance", HttpStatus.BAD_REQUEST);
@@ -96,6 +96,7 @@ public class TransactionServiceImpl implements TransactionService {
         transaction.setTransactionCode(String.valueOf(generateUniqueOrderCode()));
         transaction.setDescription("Rút tiền từ ví");
         transaction.setCurrentBalance(currentBalance);
+        transaction.setPaymentPurpose(paymentPurpose);
         transactionRepository.save(transaction);
         userRepository.save(user);
         return "Transfer out successful. Current balance: " + currentBalance;

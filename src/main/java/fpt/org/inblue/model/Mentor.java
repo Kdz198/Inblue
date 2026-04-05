@@ -41,4 +41,6 @@ public class Mentor {
     private String public_id_other;
     private int totalSession;
     private double averageRating;
+
+    private Integer pricePerMinute;
 }

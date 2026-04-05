@@ -14,4 +14,6 @@ public class SessionCreationRequest {
     int userId;
     int mentorId;
     Timestamp joinTime;
+    int duration; // in minutes
+    int totalPrice;
 }
