@@ -24,13 +24,11 @@ public class CustomUserDetailService implements UserDetailsService {
     @NotNull
     @Override
     public UserDetails loadUserByUsername(String email) throws UsernameNotFoundException {
+        System.out.println("CustomUserDetailService: Loading user by email: " + email);
         User user = userRepository.findByEmail(email);
-        if(!user.getIsActive()){
-            throw new UsernameNotFoundException("User is not active");
-        }
-        if(user != null){
+        if (user != null && user.getIsActive()) {
             List<SimpleGrantedAuthority> authorities = List.of(
-                    new SimpleGrantedAuthority("ROLE_"+user.getRole())
+                    new SimpleGrantedAuthority("ROLE_" + user.getRole())
             );
             return new CustomUserDetails(
                     user.getId(),
@@ -40,27 +38,25 @@ public class CustomUserDetailService implements UserDetailsService {
                     user.getIsActive()
             );
         }
-        else{
-            Mentor mentor = mentorRepository.findByEmail(email);
-            if(mentor != null && mentor.isActive()){
-                List<SimpleGrantedAuthority> authorities = List.of(
-                        new SimpleGrantedAuthority("ROLE_"+mentor.getRole())
-                );
-                return new CustomUserDetails(
-                        mentor.getId(),
-                        mentor.getEmail(),
-                        mentor.getPassword(),
-                        authorities,
-                        mentor.isActive()
-                );
+        Mentor mentor = mentorRepository.findByEmail(email);
 
-            }
-            else{
-                throw new UsernameNotFoundException("User not found");
-            }
+        if (mentor != null && mentor.isActive()) {
+            List<SimpleGrantedAuthority> authorities = List.of(
+                    new SimpleGrantedAuthority("ROLE_" + mentor.getRole())
+            );
+            return new CustomUserDetails(
+                    mentor.getId(),
+                    mentor.getEmail(),
+                    mentor.getPassword(),
+                    authorities,
+                    mentor.isActive()
+            );
+
         }
+        throw new UsernameNotFoundException("User not found with email: " + email);
     }
-
-
-
 }
+
+
+
+

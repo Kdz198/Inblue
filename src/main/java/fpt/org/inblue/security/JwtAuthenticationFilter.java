@@ -22,11 +22,12 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain) throws ServletException, IOException {
+        System.out.println("JwtAuthenticationFilter: Processing request " + request.getRequestURI());
         String path = request.getRequestURI();
         if (path.startsWith("/api/auth/")
                 || path.startsWith("/swagger-ui/")
                 || path.startsWith("/v3/api-docs")
-                || path.startsWith("/api")
+                || path.startsWith("/oauth2/")
         ) {
             filterChain.doFilter(request, response);
             return;

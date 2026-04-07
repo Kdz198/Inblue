@@ -7,6 +7,7 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
 import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
@@ -28,12 +29,19 @@ public class SecurityConfig {
     @Value("${frontend.url}")
     private String frontendUrl;
 
+    @Autowired
+    private Oauth2Handler oauth2Handler;
+    @Autowired
+    CustomOAuth2UserService customOAuth2UserService;
+    @Autowired
+    private CustomUserDetailService customUserDetailService;
+
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
                 .cors(cors -> cors.configurationSource(request -> {
                     CorsConfiguration corsConfiguration = new CorsConfiguration();
-                    corsConfiguration.setAllowedOriginPatterns(Arrays.asList("http://localhost:3000", "http://localhost:8080",frontendUrl,"https://api.kdz.asia"));
+                    corsConfiguration.setAllowedOriginPatterns(Arrays.asList("http://localhost:3000", "http://localhost:8080", frontendUrl, "https://api.kdz.asia", "http://localhost:5173"));
                     corsConfiguration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"));
                     corsConfiguration.setAllowedHeaders(Arrays.asList("*"));
                     corsConfiguration.setAllowCredentials(true);
@@ -44,21 +52,35 @@ public class SecurityConfig {
                 .httpBasic(httpBasic -> httpBasic.disable())
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
-                        .requestMatchers("/api/auth/**","/v3/api-docs/**",
+                        .requestMatchers("/api/auth/**", "/v3/api-docs/**",
                                 "/swagger-ui/**",
                                 "/swagger-ui.html",
                                 "/swagger-resources/**",
-                                "/webjars/**","/api/test/**").permitAll()
+                                "/webjars/**", "/api/test/**").permitAll()
 //                        .requestMatchers("/api/users/**").hasRole(Role.USER.name())
 //                        .requestMatchers("/api/mentors/**").hasRole(Role.MENTOR.name())
 //                        .requestMatchers("/api/payments/**").hasAnyRole(Role.ADMIN.name(), Role.STAFF.name())
 //                        .requestMatchers("/api/users/subscribe").authenticated()
                         .anyRequest().permitAll())
+                .oauth2Login(oauth2 -> oauth2.userInfoEndpoint(userInfo -> userInfo.userService(customOAuth2UserService))
+                        .successHandler(oauth2Handler)
+                )
                 .securityContext(context -> context.requireExplicitSave(false));
-                http.addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
+        http.addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
         return http.build();
     }
+    @Bean
+    public DaoAuthenticationProvider daoAuthenticationProvider() {
 
+        DaoAuthenticationProvider authProvider = new DaoAuthenticationProvider(customUserDetailService);
+
+
+        authProvider.setHideUserNotFoundExceptions(false);
+
+        authProvider.setPasswordEncoder(passwordEncoder());
+
+        return authProvider;
+    }
     @Bean
     public AuthenticationManager authenticationManager(
             AuthenticationConfiguration configuration) throws Exception {
@@ -69,4 +91,6 @@ public class SecurityConfig {
     public PasswordEncoder passwordEncoder() {
         return NoOpPasswordEncoder.getInstance();
     }
+
+
 }

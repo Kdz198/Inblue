@@ -9,6 +9,7 @@ import org.springframework.security.authentication.UsernamePasswordAuthenticatio
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.servlet.view.RedirectView;
 
 @RestController
 @RequestMapping("api/auth")
@@ -21,9 +22,15 @@ public class AuthController {
 
     @PostMapping("/login")
     public ResponseEntity<String> login (@RequestBody LoginRequest loginRequest) {
+        System.out.println("Login attempt for email: " + loginRequest.getEmail());
         Authentication auth = authenticationManager.authenticate(new UsernamePasswordAuthenticationToken(loginRequest.getEmail(), loginRequest.getPassword()));
         SecurityContextHolder.getContext().setAuthentication(auth);
         String token = jwtUtils.generateToken(auth);
         return ResponseEntity.ok().header("Authorization", "Bearer " + token).body(token);
+    }
+    @GetMapping("/login-with-google")
+    public RedirectView googleLogin() {
+        System.out.println("Redirecting to Google for authentication...");
+        return new RedirectView("/oauth2/authorization/google");
     }
 }

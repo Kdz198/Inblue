@@ -42,6 +42,7 @@ public class PaymentSchedule {
 
         for(Payment payment : payments) {
             try {
+                Thread.sleep(500);
                 System.out.println("Checking payment: " + payment.getId());
                 String url = "https://api-merchant.payos.vn/v2/payment-requests/"
                         + payment.getTransactionCode();
@@ -77,6 +78,8 @@ public class PaymentSchedule {
             }
         }
     }
+
+  
 
 }
 
