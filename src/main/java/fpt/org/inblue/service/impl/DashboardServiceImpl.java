@@ -25,7 +25,7 @@ public class DashboardServiceImpl implements DashboardService {
 
     @Override
     public int getMentorTotal() {
-        return mentorRepository.countMentorByActive(true);
+        return mentorRepository.countMentorByIsActive(true);
     }
 
     @Override
