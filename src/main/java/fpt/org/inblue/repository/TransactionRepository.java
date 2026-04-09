@@ -11,4 +11,6 @@ public interface TransactionRepository extends JpaRepository<Transaction, Intege
     Transaction findByTransactionCode(String transactionCode);
 
     void deleteByTransactionCode(String transactionCode);
+
+    List<Transaction> findAllByTransactionType(boolean transactionType);
 }
