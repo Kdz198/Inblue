@@ -47,13 +47,13 @@ public class PaymentServiceImpl implements PaymentService {
 
     @Override
     public String createPayment(long amount, int userId, PaymentPurpose paymentPurpose) {
-        long transactionCode =generateUniqueOrderCode();
+        long transactionCode = Long.parseLong("100"+generateUniqueOrderCode());
         User user = userRepository.findById(userId).orElseThrow(() -> new CustomException("User not found", HttpStatus.NOT_FOUND));
         Payment payment = new Payment();
         payment.setAmount(amount);
         payment.setUser(user);
         payment.setStatus(PaymentStatus.PENDING);
-        payment.setTransactionCode("100"+transactionCode);
+        payment.setTransactionCode(String.valueOf(transactionCode));
         payment.setPaymentPurpose(paymentPurpose);
         paymentRepository.save(payment);
         return createPayOSPayment(amount, transactionCode);
