@@ -53,7 +53,7 @@ public class PaymentServiceImpl implements PaymentService {
         payment.setAmount(amount);
         payment.setUser(user);
         payment.setStatus(PaymentStatus.PENDING);
-        payment.setTransactionCode(String.valueOf(100+transactionCode));
+        payment.setTransactionCode("100"+transactionCode);
         payment.setPaymentPurpose(paymentPurpose);
         paymentRepository.save(payment);
         return createPayOSPayment(amount, transactionCode);
