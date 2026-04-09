@@ -46,6 +46,6 @@ public class DashboardServiceImpl implements DashboardService {
 
     @Override
     public List<Transaction> getTransactionOut() {
-        return transactionRepository.findAllByTransactionType(false);
+        return transactionRepository.findAllByTransactionType(true);
     }
 }
