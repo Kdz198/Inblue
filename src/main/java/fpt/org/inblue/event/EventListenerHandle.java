@@ -1,14 +1,22 @@
 package fpt.org.inblue.event;
 
 import fpt.org.inblue.cloudinary.CloudinaryService;
+import fpt.org.inblue.model.FeatureUsageLog;
 import fpt.org.inblue.model.Mentor;
 import fpt.org.inblue.model.User;
+import fpt.org.inblue.model.dto.FeatureUsageLogDto;
 import fpt.org.inblue.model.dto.MentorEventDto;
 import fpt.org.inblue.model.dto.UserEventDto;
+import fpt.org.inblue.model.enums.FeatureName;
+import fpt.org.inblue.repository.FeatureUsageLogRepository;
 import fpt.org.inblue.repository.MentorRepository;
 import fpt.org.inblue.repository.UserRepository;
+import fpt.org.inblue.security.CustomUserDetails;
+import fpt.org.inblue.security.JwtUtils;
 import org.springframework.context.event.EventListener;
 import org.springframework.scheduling.annotation.Async;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Component;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -22,11 +30,15 @@ public class EventListenerHandle {
     private final UserRepository userRepository;
     private final CloudinaryService cloudinaryService;
     private final MentorRepository mentorRepository;
+    private final JwtUtils jwtUtils;
+    private final FeatureUsageLogRepository featureUsageLogRepository;
 
-    public EventListenerHandle(UserRepository userRepository, CloudinaryService cloudinaryService, MentorRepository mentorRepository) {
+    public EventListenerHandle(UserRepository userRepository, CloudinaryService cloudinaryService, MentorRepository mentorRepository, JwtUtils jwtUtils, FeatureUsageLogRepository featureUsageLogRepository) {
         this.userRepository = userRepository;
         this.cloudinaryService = cloudinaryService;
         this.mentorRepository = mentorRepository;
+        this.jwtUtils = jwtUtils;
+        this.featureUsageLogRepository = featureUsageLogRepository;
     }
 
     @Async
@@ -107,5 +119,15 @@ public class EventListenerHandle {
         else if(mentorEventDto.getMessage().equals("Other")){
             mentorRepository.updateOtherFile(mentorEventDto.getMentor().getId(),certificateUrl,certificatePublicId);
         }
+    }
+
+    @EventListener
+    @Async
+    public void writeLog(FeatureUsageLogDto dto){
+        int userId = jwtUtils.getUserIdFromToken(dto.getToken());
+        FeatureUsageLog log = new FeatureUsageLog();
+        log.setFeatureName(dto.getFeatureName());
+        log.setUserId(userId);
+        featureUsageLogRepository.save(log);
     }
 }

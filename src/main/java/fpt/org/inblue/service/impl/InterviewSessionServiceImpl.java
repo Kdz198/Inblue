@@ -4,19 +4,24 @@ import fpt.org.inblue.constants.ApiPath;
 import fpt.org.inblue.model.InterviewSession;
 import fpt.org.inblue.model.User;
 import fpt.org.inblue.model.caching.InterviewSessionRedis;
+import fpt.org.inblue.model.dto.FeatureUsageLogDto;
 import fpt.org.inblue.model.dto.request.InterviewSetupRequest;
 import fpt.org.inblue.model.dto.request.OrchestratorRequest;
 import fpt.org.inblue.model.dto.request.OrchestratorRequest.*;
 import fpt.org.inblue.model.dto.response.InterviewBlueprintResponse;
 import fpt.org.inblue.model.enums.Feature;
+import fpt.org.inblue.model.enums.FeatureName;
 import fpt.org.inblue.model.enums.InterviewEnums.*;
 import fpt.org.inblue.model.enums.PythonService;
 import fpt.org.inblue.repository.InterviewSessionRepository;
 import fpt.org.inblue.repository.caching.InterviewSessionRedisRepository;
+import fpt.org.inblue.security.JwtUtils;
 import fpt.org.inblue.service.InterviewSessionService;
 import fpt.org.inblue.service.PythonApiClient;
 import fpt.org.inblue.service.UserService;
+import fpt.org.inblue.utils.HelperUtil;
 import lombok.RequiredArgsConstructor;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.http.HttpMethod;
 import org.springframework.retry.annotation.Backoff;
 import org.springframework.retry.annotation.Retryable;
@@ -35,6 +40,9 @@ public class InterviewSessionServiceImpl implements InterviewSessionService {
     private final InterviewSessionRepository sessionRepository;
     private final InterviewSessionRedisRepository sessionRedisRepository;
     private final UserService userService;
+    private final JwtUtils jwtUtils;
+    private final ApplicationEventPublisher applicationEventPublisher;
+
     private record jobDescription (String jd_text) {}
 
     @Override
@@ -150,6 +158,13 @@ public class InterviewSessionServiceImpl implements InterviewSessionService {
         sessionRedisRepository.save(sessionRedis);
         //tăng lượt sử dụng
         userService.incrementUsage(request.getUserId(),Feature.AI_INTERVIEW);
+        //ghi log
+        String token = HelperUtil.getToke();
+        int userId = jwtUtils.getUserIdFromToken(token);
+        FeatureUsageLogDto dto = new FeatureUsageLogDto();
+        dto.setToken(token);
+        dto.setFeatureName(FeatureName.QUIZ);
+        applicationEventPublisher.publishEvent(dto);
         return sessionKey;
     }
 

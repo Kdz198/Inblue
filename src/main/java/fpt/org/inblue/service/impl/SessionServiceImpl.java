@@ -2,14 +2,18 @@ package fpt.org.inblue.service.impl;
 
 import fpt.org.inblue.exception.CustomException;
 import fpt.org.inblue.model.Session;
+import fpt.org.inblue.model.dto.FeatureUsageLogDto;
 import fpt.org.inblue.model.dto.request.JoinSessionDtoRequest;
 import fpt.org.inblue.model.dto.dailyco.*;
+import fpt.org.inblue.model.enums.FeatureName;
 import fpt.org.inblue.model.enums.SessionStatus;
 import fpt.org.inblue.model.enums.PaymentPurpose;
 import fpt.org.inblue.repository.SessionRepository;
 import fpt.org.inblue.service.PaymentService;
 import fpt.org.inblue.service.SessionService;
+import fpt.org.inblue.utils.HelperUtil;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.http.*;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.HttpClientErrorException;
@@ -25,16 +29,18 @@ public class SessionServiceImpl implements SessionService {
     public final String dailyApiKey;
     public final SessionRepository sessionRepository;
     private final PaymentService paymentService;
+    private final ApplicationEventPublisher applicationEventPublisher;
 
     public SessionServiceImpl(@Value("${daily.api.url}") String dailyApiUrl,
                               @Value("${daily.api.key}") String dailyApiKey,
                               SessionRepository sessionRepository,
-                              RestTemplate restTemplate, PaymentService paymentService) {
+                              RestTemplate restTemplate, PaymentService paymentService, ApplicationEventPublisher applicationEventPublisher) {
         this.dailyApiUrl = dailyApiUrl;
         this.dailyApiKey = dailyApiKey;
         this.sessionRepository = sessionRepository;
         this.restTemplate = restTemplate;
         this.paymentService = paymentService;
+        this.applicationEventPublisher = applicationEventPublisher;
     }
 
 
@@ -186,6 +192,11 @@ public class SessionServiceImpl implements SessionService {
             // 3. Logic kết thúc session
             if (session.getEndTime1() != null && session.getEndTime2() != null) {
                 session.setStatus(SessionStatus.COMPLETED);
+                String token = HelperUtil.getToke();
+                FeatureUsageLogDto dto = new FeatureUsageLogDto();
+                dto.setToken(token);
+                dto.setFeatureName(FeatureName.MENTOR_INTERVIEW);
+                applicationEventPublisher.publishEvent(dto);
             }
             sessionRepository.save(session);
         } catch (Exception e) {

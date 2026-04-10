@@ -16,5 +16,5 @@ public interface QuizSetService {
     void deleteQuizSet(int quizId);
     List<QuizItem> createFullQuizSet(int practiceSetId, String QuizName, List<QuizItemCreateRequest> items);
     List<QuizSet> getAllQuizSet();
-    QuizResponse saveAllItemsByAI(int practiceSetId, int userId);
+    QuizResponse saveAllItemsByAI(int practiceSetId);
 }

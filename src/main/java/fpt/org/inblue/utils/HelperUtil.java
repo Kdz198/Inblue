@@ -1,5 +1,9 @@
 package fpt.org.inblue.utils;
 
+import jakarta.servlet.http.HttpServletRequest;
+import org.springframework.web.context.request.RequestContextHolder;
+import org.springframework.web.context.request.ServletRequestAttributes;
+
 import java.util.concurrent.ThreadLocalRandom;
 
 public class HelperUtil {
@@ -27,5 +31,17 @@ public class HelperUtil {
         }
 
         return orderCode; // Trả về chuỗi gốc nếu không đủ 3 ký tự
+    }
+
+    public static String getToke(){
+        ServletRequestAttributes attributes = (ServletRequestAttributes) RequestContextHolder.getRequestAttributes();
+        if(attributes!=null){
+            HttpServletRequest request = attributes.getRequest();
+            String authHeader = request.getHeader("Authorization");
+            if(authHeader!=null && authHeader.startsWith("Bearer ")){
+                return authHeader.substring(7);
+            }
+        }
+        return null;
     }
 }
