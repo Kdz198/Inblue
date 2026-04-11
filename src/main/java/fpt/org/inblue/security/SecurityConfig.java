@@ -56,7 +56,7 @@ public class SecurityConfig {
                                 "/swagger-ui/**",
                                 "/swagger-ui.html",
                                 "/swagger-resources/**",
-                                "/webjars/**", "/api/test/**").permitAll()
+                                "/webjars/**", "/api/test/**","/ws-chat/**").permitAll()
 //                        .requestMatchers("/api/users/**").hasRole(Role.USER.name())
 //                        .requestMatchers("/api/mentors/**").hasRole(Role.MENTOR.name())
 //                        .requestMatchers("/api/payments/**").hasAnyRole(Role.ADMIN.name(), Role.STAFF.name())
