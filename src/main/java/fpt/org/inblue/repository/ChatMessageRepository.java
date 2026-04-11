@@ -16,4 +16,12 @@ public interface ChatMessageRepository extends JpaRepository<ChatMessage, Intege
             @Param("id1") int id1, @Param("type1") String type1,
             @Param("id2") int id2, @Param("type2") String type2
     );
+
+    @Query("SELECT DISTINCT " +
+            "CASE WHEN c.senderId = :myId AND c.senderType = :myType THEN c.recipientId ELSE c.senderId END " +
+            "FROM ChatMessage c " +
+            "WHERE (c.senderId = :myId AND c.senderType = :myType) " +
+            "OR (c.recipientId = :myId AND c.recipientType = :myType)")
+    List<Integer> findPartnerIds(@Param("myId") int myId, @Param("myType") String myType);
+
 }

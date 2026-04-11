@@ -1,6 +1,7 @@
 package fpt.org.inblue.controller;
 
 import fpt.org.inblue.model.ChatMessage;
+import fpt.org.inblue.model.enums.Role;
 import fpt.org.inblue.service.ChatService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
@@ -23,4 +24,9 @@ public class ChatMessageController {
         List<ChatMessage> history = chatService.getChatHistory(currentFullId, recipientFullId);
         return ResponseEntity.ok(history);
     }
+
+    @GetMapping("/contacts")
+    public ResponseEntity<List<Integer>> getContacts(@RequestParam int myId, @RequestParam Role role) {
+        List<Integer> contacts = chatService.findAllContact(myId,role);
+        return ResponseEntity.ok(contacts);}
 }

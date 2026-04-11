@@ -2,6 +2,7 @@ package fpt.org.inblue.service.impl;
 
 import fpt.org.inblue.model.ChatMessage;
 import fpt.org.inblue.model.dto.ChatDto;
+import fpt.org.inblue.model.enums.Role;
 import fpt.org.inblue.repository.ChatMessageRepository;
 import fpt.org.inblue.service.ChatService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -52,6 +53,11 @@ public class ChatServiceImpl implements ChatService {
         );
         return history;
 
+    }
+
+    @Override
+    public List<Integer> findAllContact(int myId, Role role) {
+        return chatMessageRepository.findPartnerIds(myId,role.toString());
     }
 
     public int parseId(String id) {
