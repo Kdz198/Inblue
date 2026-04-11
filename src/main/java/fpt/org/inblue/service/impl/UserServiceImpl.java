@@ -10,6 +10,7 @@ import fpt.org.inblue.model.UserUsage;
 import fpt.org.inblue.model.dto.UserEventDto;
 import fpt.org.inblue.model.dto.UserInfo;
 import fpt.org.inblue.model.dto.response.CVParserResponse;
+import fpt.org.inblue.model.dto.response.UserResponse;
 import fpt.org.inblue.model.dto.response.UserSubscriptionResponse;
 import fpt.org.inblue.model.enums.*;
 import fpt.org.inblue.repository.MemberShipPlanRepository;
@@ -342,6 +343,24 @@ public class UserServiceImpl implements UserService {
                 }
                 break;
         }
+    }
+
+    @Override
+    public UserResponse getUserResponseById(int userId) {
+        User user = userRepository.findById(userId).orElseThrow(() -> new RuntimeException("User Not Found"));
+            return UserResponse.builder()
+                    .id(user.getId())
+                    .name(user.getName())
+                    .email(user.getEmail())
+                    .role(user.getRole())
+                    .isActive(user.getIsActive())
+                    .avatarUrl(user.getAvatarUrl())
+                    .public_id(user.getPublic_id())
+                    .university(user.getUniversity())
+                    .major(user.getMajor())
+                    .cvUrl(user.getCvUrl())
+                    .cv_public_id(user.getCv_public_id())
+                    .build();
     }
 
     @Override

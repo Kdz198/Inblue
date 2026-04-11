@@ -3,6 +3,7 @@ package fpt.org.inblue.controller;
 import fpt.org.inblue.model.CandidateProfile;
 import fpt.org.inblue.model.User;
 import fpt.org.inblue.model.dto.UserInfo;
+import fpt.org.inblue.model.dto.response.UserResponse;
 import fpt.org.inblue.model.dto.response.UserSubscriptionResponse;
 import fpt.org.inblue.model.enums.Feature;
 import fpt.org.inblue.service.UserService;
@@ -91,4 +92,8 @@ public class UserController {
         return ResponseEntity.ok(userService.getActiveSubscription(userId));
     }
 
+    @GetMapping("/find-by-id/{userId}")
+    public ResponseEntity<UserResponse> getUserResponseById(@PathVariable int userId) {
+        return ResponseEntity.ok(userService.getUserResponseById(userId));
+    }
 }

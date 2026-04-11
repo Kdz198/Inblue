@@ -3,6 +3,7 @@ package fpt.org.inblue.service;
 import fpt.org.inblue.model.CandidateProfile;
 import fpt.org.inblue.model.User;
 import fpt.org.inblue.model.dto.UserInfo;
+import fpt.org.inblue.model.dto.response.UserResponse;
 import fpt.org.inblue.model.dto.response.UserSubscriptionResponse;
 import fpt.org.inblue.model.enums.Feature;
 import org.springframework.web.multipart.MultipartFile;
@@ -22,4 +23,5 @@ public interface UserService {
     UserSubscriptionResponse getActiveSubscription(int userId);
     void incrementUsage(int userId, Feature feature);
     void checkQuota(int userId,Feature checkFeature);
+    UserResponse getUserResponseById(int userId);
 }
