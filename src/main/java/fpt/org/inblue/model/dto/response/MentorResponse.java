@@ -20,4 +20,6 @@ public class MentorResponse {
      String otherFile;
      int totalSession;
      double averageRating;
+     int pricePerMinute;
+
 }
