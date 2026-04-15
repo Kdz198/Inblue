@@ -364,6 +364,11 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
+    public List<UserUsage> getUserUsage() {
+        return userUsageRepository.findAll();
+    }
+
+    @Override
     public void incrementUsage(int userId, Feature feature) {
         UserUsage usage = userUsageRepository.findByUser_Id(userId)
                 .orElseThrow(() -> new CustomException("Không tìm thấy usage của user", HttpStatus.NOT_FOUND));

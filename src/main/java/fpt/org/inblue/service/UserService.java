@@ -2,6 +2,7 @@ package fpt.org.inblue.service;
 
 import fpt.org.inblue.model.CandidateProfile;
 import fpt.org.inblue.model.User;
+import fpt.org.inblue.model.UserUsage;
 import fpt.org.inblue.model.dto.UserInfo;
 import fpt.org.inblue.model.dto.response.UserResponse;
 import fpt.org.inblue.model.dto.response.UserSubscriptionResponse;
@@ -24,4 +25,5 @@ public interface UserService {
     void incrementUsage(int userId, Feature feature);
     void checkQuota(int userId,Feature checkFeature);
     UserResponse getUserResponseById(int userId);
+    List<UserUsage> getUserUsage();
 }

@@ -96,4 +96,8 @@ public class UserController {
     public ResponseEntity<UserResponse> getUserResponseById(@PathVariable int userId) {
         return ResponseEntity.ok(userService.getUserResponseById(userId));
     }
+
+    @GetMapping("/usage")
+    public ResponseEntity<List<?>> getUserUsage() {
+        return ResponseEntity.ok(userService.getUserUsage());}
 }
