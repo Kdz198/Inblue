@@ -25,5 +25,5 @@ public interface UserService {
     void incrementUsage(int userId, Feature feature);
     void checkQuota(int userId,Feature checkFeature);
     UserResponse getUserResponseById(int userId);
-    List<UserUsage> getUserUsage();
+    List<UserSubscriptionResponse> getUserUsage();
 }

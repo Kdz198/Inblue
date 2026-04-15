@@ -37,6 +37,7 @@ import java.io.File;
 import java.io.IOException;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
@@ -364,8 +365,34 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
-    public List<UserUsage> getUserUsage() {
-        return userUsageRepository.findAll();
+    public List<UserSubscriptionResponse> getUserUsage() {
+        List<User> user = userRepository.findAll();
+        List<UserSubscriptionResponse> responses = new ArrayList<>();
+
+       for(User u : user){
+           MemberShipPlan plan = u.getMembershipPlan();
+           UserUsage usage = userUsageRepository.findByUser_Id(u.getId())
+                   .orElse(UserUsage.builder().aiInterviewUsed(0).practiceSetUsed(0).quizSetUsed(0).build());
+
+           UserSubscriptionResponse response = UserSubscriptionResponse.builder()
+                   .planName(plan.getName())
+                   .price(plan.getPrice())
+                   .durationDays(plan.getDurationDays())
+                   .maxAiInterview(plan.getMax_ai_interview())
+                   .maxPracticeSets(plan.getMax_practice_sets())
+                   .maxQuizSets(plan.getMax_quiz_sets())
+                   .aiInterviewUsed(usage.getAiInterviewUsed())
+                   .practiceSetUsed(usage.getPracticeSetUsed())
+                   .quizSetUsed(usage.getQuizSetUsed())
+                   .aiInterviewRemaining(Math.max(0, plan.getMax_ai_interview() - usage.getAiInterviewUsed()))
+                   .practiceSetRemaining(Math.max(0, plan.getMax_practice_sets() - usage.getPracticeSetUsed()))
+                   .quizSetRemaining(Math.max(0, plan.getMax_quiz_sets() - usage.getQuizSetUsed()))
+                   .isActive(true)
+                   .expiredAt(usage.getExpiredAt())
+                   .build();
+           responses.add(response);
+       }
+        return responses;
     }
 
     @Override
