@@ -52,7 +52,7 @@ public class TransactionServiceImpl implements TransactionService {
     private String createPayOSPayment(long amount, long transactionCode) {
         CreatePaymentLinkRequest request = CreatePaymentLinkRequest.builder()
                 .amount(amount)
-                .orderCode(transactionCode)
+                .orderCode(200+transactionCode)
                 .description("WALLET")
                 .returnUrl(returnUrl)
                 .cancelUrl(cancelUrl)
