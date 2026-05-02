@@ -36,14 +36,14 @@ public class PaymentSchedule {
 
     @Scheduled(fixedDelay = 300000)
    public void checkPaymentStatus() {
-        System.out.println("Checking pending payments at " + LocalDateTime.now());
+//        System.out.println("Checking pending payments at " + LocalDateTime.now());
         LocalDateTime times = LocalDateTime.now().minusMinutes(10);
         List<Payment> payments = paymentRepository.findByStatusAndCreatedAtBefore(PaymentStatus.PENDING, times);
 
         for(Payment payment : payments) {
             try {
                 Thread.sleep(500);
-                System.out.println("Checking payment: " + payment.getId());
+//                System.out.println("Checking payment: " + payment.getId());
                 String url = "https://api-merchant.payos.vn/v2/payment-requests/"
                         + payment.getTransactionCode();
 
