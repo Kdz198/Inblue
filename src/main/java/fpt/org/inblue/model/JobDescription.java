@@ -1,5 +1,6 @@
 package fpt.org.inblue.model;
 
+import fpt.org.inblue.model.enums.JobDescriptionStatus;
 import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
@@ -52,8 +53,10 @@ public class JobDescription {
     @Builder.Default
     private String currency = "VND"; // VND hoặc USD
 
+    @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 50)
-    private String status; // OPEN, CLOSED, DRAFT
+    @Builder.Default
+    private JobDescriptionStatus status = JobDescriptionStatus.DRAFT; // OPEN, CLOSED, DRAFT
 
     @Builder.Default
     Boolean isDeleted = false;
