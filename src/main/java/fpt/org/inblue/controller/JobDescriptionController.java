@@ -58,12 +58,12 @@ public class JobDescriptionController {
         return ResponseEntity.ok(updatedJobDescription);
     }
 
-    @DeleteMapping("/{id}")
-    @Operation(summary = "Permanent delete a job description")
-    public ResponseEntity<Map<String, String>> delete(@PathVariable Long id) {
-        jobDescriptionService.delete(id);
-        return ResponseEntity.ok(Map.of("message", "Xóa mô tả công việc thành công"));
-    }
+//    @DeleteMapping("/{id}")
+//    @Operation(summary = "Permanent delete a job description")
+//    public ResponseEntity<Map<String, String>> delete(@PathVariable Long id) {
+//        jobDescriptionService.delete(id);
+//        return ResponseEntity.ok(Map.of("message", "Xóa mô tả công việc thành công"));
+//    }
 
     @DeleteMapping("/{id}/soft")
     @Operation(summary = "Soft delete a job description")

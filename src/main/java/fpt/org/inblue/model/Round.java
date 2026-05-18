@@ -8,6 +8,7 @@ import org.hibernate.annotations.UpdateTimestamp;
 import org.hibernate.type.SqlTypes;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 @Entity
 @Data
@@ -47,23 +48,39 @@ public class Round {
     @NoArgsConstructor
     @AllArgsConstructor
     @Builder
-    public static class RoundConfig {  // Đống config này cũng để tạm vậy đi chưa cần dùng tới, sẽ sài lúc triển khai factory - pattern method
-        // 1. Dành cho Ứng viên đọc
-        private String instruction;         // VD: "Bạn hãy viết 1 email xin lỗi khách hàng..."
-        private String submissionFormat;    // VD: "TEXT", "PDF", "AUDIO" (FE dựa vào đây để render UI)
-        private Integer timeLimitMinutes;   // Giới hạn thời gian làm bài (nếu có)
+    public static class RoundConfig {
+        // --- CÁC FIELD DÙNG CHUNG CHO MỌI VÒNG ---
+        private String instruction;
+        private String submissionFormat;    // TEXT, PDF, MULTIPLE_CHOICE, SQL_SCRIPT, MERMAID
+        private Integer timeLimitMinutes;
+        private Integer maxScore;           // Thang điểm tối đa (VD: 100)
 
-        // 2. Dành cho AI đọc để chấm điểm
-        private String aiSystemPrompt;      // VD: "Bạn là HR Manager đóng vai trò đánh giá ứng viên..."
-        private String evaluationCriteria;  // VD: "Cần có lời xin lỗi, điểm trừ nếu đổ lỗi, tối đa 300 chữ..."
+        // --- CÁC FIELD CHO AI CHẤM ĐIỂM (Dùng cho Tự luận, Email, DB Design, Interview) ---
+        private String aiSystemPrompt;
+        private String evaluationCriteria;
+
+        // --- FIELD DÀNH RIÊNG CHO VÒNG QUIZ ---
+        // Nếu không phải vòng QUIZ, list này cứ để null, PostgreSQL jsonb sẽ tự động bỏ qua không lưu
+        private List<QuizQuestion> quizQuestions;
     }
 
-    // Tạm thời để vậy trước mốt chỉnh sau
+    // Class con định nghĩa cấu trúc 1 câu hỏi trắc nghiệm
+    @Data
+    @NoArgsConstructor
+    @AllArgsConstructor
+    @Builder
+    public static class QuizQuestion {
+        private String questionText;    // Nội dung câu hỏi
+        private List<String> options;   // Danh sách đáp án: ["A. Spring Boot", "B. Nodejs", "C. Django"]
+        private String correctAnswer;   // Đáp án đúng (VD: "A")
+        private Integer points;         // Điểm của câu này (VD: 10)
+    }
+
     public enum RoundType {
         CV_SCREENING,          // Vòng lọc CV
         EMAIL_SIMULATOR,       // Vòng giả lập viết Email
         QUIZ,                  // Vòng trắc nghiệm
-        AI_BEHAVIORAL_INTERVIEW, // AI phỏng vấn hành vi/văn hóa
-        AI_TECH_INTERVIEW      // AI phỏng vấn kỹ thuật
+        DB_DESIGN,             // Vòng thiết kế Cơ sở dữ liệu
+        AI_INTERVIEW           // Gộp chung Behavioral & Tech cho gọn
     }
 }
