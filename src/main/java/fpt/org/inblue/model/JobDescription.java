@@ -1,6 +1,7 @@
 package fpt.org.inblue.model;
 
 import fpt.org.inblue.model.enums.JobDescriptionStatus;
+import fpt.org.inblue.model.enums.TargetLevel;
 import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
@@ -35,7 +36,8 @@ public class JobDescription {
 
     // Phân loại cấp bậc (Intern, Fresher, Junior, Middle, Senior)
     @Column(length = 50)
-    private String level;
+    @Enumerated(EnumType.STRING)
+    private TargetLevel level;
 
     private Double salaryMin;
     private Double salaryMax;

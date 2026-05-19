@@ -6,10 +6,14 @@ import fpt.org.inblue.model.Company;
 import fpt.org.inblue.model.JobDescription;
 import fpt.org.inblue.model.dto.request.CreateJobDescriptionRequest;
 import fpt.org.inblue.model.dto.request.UpdateJobDescriptionRequest;
+import fpt.org.inblue.model.enums.JobDescriptionStatus;
+import fpt.org.inblue.model.enums.TargetLevel;
 import fpt.org.inblue.repository.CompanyRepository;
 import fpt.org.inblue.repository.JobDescriptionRepository;
+import fpt.org.inblue.repository.JobDescriptionSpecification;
 import fpt.org.inblue.service.JobDescriptionService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -48,7 +52,7 @@ public class JobDescriptionServiceImpl implements JobDescriptionService {
     public List<JobDescription> getByCompanyId(Long companyId) {
         Company company = companyRepository.findById(companyId)
                 .orElseThrow(() -> new CustomException("Không tìm thấy công ty với ID: " + companyId, HttpStatus.NOT_FOUND));
-        return  company.getJobDescriptions();
+        return company.getJobDescriptions();
     }
 
     @Override
@@ -95,6 +99,31 @@ public class JobDescriptionServiceImpl implements JobDescriptionService {
         jobDescription.setIsDeleted(true);
         jobDescription.setDeletedAt(LocalDateTime.now());
         jobDescriptionRepository.save(jobDescription);
+    }
+
+    @Override
+    public List<JobDescription> searchJobs(String keyword, JobDescriptionStatus status, TargetLevel level, Double salaryMin, Double salaryMax) {
+
+        Specification<JobDescription> spec = Specification.where((root, query, criteriaBuilder) -> criteriaBuilder.conjunction());
+        spec= spec.and(JobDescriptionSpecification.isNotDeleted());
+        if (keyword != null && !keyword.trim().isEmpty()) {
+            spec = spec.and(JobDescriptionSpecification.titleContains(keyword));
+        }
+        if (status != null) {
+            spec = spec.and(JobDescriptionSpecification.hasStatus(status));
+        }
+        if(level != null){
+            spec = spec.and(JobDescriptionSpecification.levelEquals(level));
+        }
+        if(salaryMin != null){
+            spec = spec.and(JobDescriptionSpecification.hasSalaryGreaterThanOrEqual(salaryMin));
+        }
+        if(salaryMax != null){
+            spec = spec.and(JobDescriptionSpecification.hasSalaryLessThanOrEqual(salaryMax));
+        }
+
+
+        return jobDescriptionRepository.findAll(spec);
     }
 }
 

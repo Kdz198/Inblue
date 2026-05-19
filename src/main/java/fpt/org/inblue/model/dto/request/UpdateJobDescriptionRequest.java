@@ -1,6 +1,7 @@
 package fpt.org.inblue.model.dto.request;
 
 import fpt.org.inblue.model.enums.JobDescriptionStatus;
+import fpt.org.inblue.model.enums.TargetLevel;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -18,7 +19,7 @@ public class UpdateJobDescriptionRequest {
     private String description;
     private String requirements;
     private String benefits;
-    private String level; // Intern, Fresher, Junior, Middle, Senior
+    private TargetLevel level; // Intern, Fresher, Junior, Middle, Senior
     private Double salaryMin;
     private Double salaryMax;
     private String currency;
