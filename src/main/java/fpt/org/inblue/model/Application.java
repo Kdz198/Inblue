@@ -18,7 +18,7 @@ public class Application {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
-    private Long userId;
+    private int userId;
     private Long jdId;
     @Builder.Default
     private Integer currentRoundOrder = 1;
