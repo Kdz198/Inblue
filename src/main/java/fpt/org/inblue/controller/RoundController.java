@@ -15,7 +15,7 @@ public class RoundController {
     @Autowired
     private RoundService roundService;
 
-    @PostMapping("/jd/{jdId}")
+    @PutMapping("/jd/{jdId}")
     public ResponseEntity<List<Round>> setUpRoundForJd(@PathVariable Long jdId, @RequestBody SetupJdRoundsRequest request) {
         List<Round> rounds = roundService.setUpRoundForJd(jdId, request);
         return ResponseEntity.ok(rounds);
