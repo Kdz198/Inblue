@@ -4,16 +4,16 @@ import fpt.org.inblue.exception.CustomException;
 import fpt.org.inblue.model.JobDescription;
 import fpt.org.inblue.model.Round;
 import fpt.org.inblue.model.dto.request.SetupJdRoundsRequest;
+import fpt.org.inblue.model.dto.request.UpdateJdRoundRequest;
 import fpt.org.inblue.repository.JobDescriptionRepository;
 import fpt.org.inblue.repository.RoundRepository;
-import fpt.org.inblue.service.JobDescriptionService;
 import fpt.org.inblue.service.RoundService;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Optional;
+import java.util.*;
+import java.util.stream.Collectors;
 
 @Service
 public class RoundServiceImpl implements RoundService {
@@ -62,11 +62,74 @@ public class RoundServiceImpl implements RoundService {
             rounds.add(round);
             jd.get().getRounds().add(round);
         }
-
-
         jobDescriptionRepository.save(jd.get());
-
         return rounds;
+    }
+
+    @Override
+    @Transactional
+    public List<Round> updateRoundForJd(Long jdId, UpdateJdRoundRequest request) {
+        JobDescription jd = jobDescriptionRepository.findById(jdId)
+                .orElseThrow(() -> new CustomException("Job Description không tồn tại", HttpStatus.NOT_FOUND));
+
+        Map<Long, Round> existingRoundMap = jd.getRounds().stream()
+                .filter(r -> r.getId() != null)
+                .collect(Collectors.toMap(Round::getId, r -> r));
+
+        List<Round> updatedRounds = new ArrayList<>();
+        for (UpdateJdRoundRequest.RoundItemDto item : request.getRounds()) {
+            Round round;
+            if (item.getId() != null) {
+                round = existingRoundMap.get(item.getId());
+                if (round == null) {
+                    throw new CustomException("Round với id " + item.getId() + " không tồn tại", HttpStatus.BAD_REQUEST);
+                }
+            } else {
+                round = new Round();
+            }
+
+            round.setName(item.getName());
+            round.setRoundOrder(item.getRoundOrder());
+            round.setRoundType(item.getRoundType());
+            round.setPassThreshold(item.getPassThreshold());
+
+            Round.RoundConfig roundConfig = new Round.RoundConfig();
+            roundConfig.setInstruction(item.getConfigData().getInstruction());
+            roundConfig.setSubmissionFormat(item.getConfigData().getSubmissionFormat());
+            roundConfig.setTimeLimitMinutes(item.getConfigData().getTimeLimitMinutes());
+            roundConfig.setMaxScore(item.getConfigData().getMaxScore());
+            roundConfig.setAiSystemPrompt(item.getConfigData().getAiSystemPrompt());
+            roundConfig.setEvaluationCriteria(item.getConfigData().getEvaluationCriteria());
+
+            List<Round.QuizQuestion> quizQuestions = new ArrayList<>();
+            if (item.getConfigData().getQuizQuestions() != null) {
+                for (UpdateJdRoundRequest.QuizQuestionDto dto : item.getConfigData().getQuizQuestions()) {
+                    Round.QuizQuestion question = new Round.QuizQuestion();
+                    question.setQuestionText(dto.getQuestionText());
+                    question.setOptions(dto.getOptions());
+                    question.setCorrectAnswer(dto.getCorrectAnswer());
+                    question.setPoints(dto.getPoints());
+                    quizQuestions.add(question);
+                }
+            }
+            roundConfig.setQuizQuestions(quizQuestions);
+            round.setConfigData(roundConfig);
+            updatedRounds.add(round);
+        }
+        jd.getRounds().clear();
+        jd.getRounds().addAll(updatedRounds);
+        jobDescriptionRepository.save(jd);
+
+        return jd.getRounds();
+    }
+
+    @Override
+    public Round getRoundById(Long roundId){
+        Optional<Round> round = roundRepository.findById(roundId);
+        if(round.isEmpty()){
+            throw new CustomException("Round không tồn tại", HttpStatus.NOT_FOUND);
+        }
+        return round.get();
     }
 
 
