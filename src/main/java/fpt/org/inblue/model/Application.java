@@ -26,7 +26,7 @@ public class Application {
     @Builder.Default
     private ApplicationStatus status = ApplicationStatus.IN_PROGRESS;
     @Column(name = "overall_score")
-    private Double overallScore;
+    private Double overallScore=-1.0;
     @Builder.Default
     Boolean isDeleted = false;
     @CreationTimestamp
