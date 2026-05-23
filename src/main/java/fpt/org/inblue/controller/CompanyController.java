@@ -60,4 +60,14 @@ public class CompanyController {
         Company company = companyService.getById(id);
         return ResponseEntity.ok(company);
     }
+
+    @GetMapping
+    public ResponseEntity<?> getAllCompanies() {
+        return ResponseEntity.ok(companyService.getAll());
+    }
+
+    @DeleteMapping("/{id}")
+    public ResponseEntity<?> deleteCompanyById(@PathVariable Long id) {
+        companyService.deleteById(id);
+        return ResponseEntity.noContent().build();}
 }

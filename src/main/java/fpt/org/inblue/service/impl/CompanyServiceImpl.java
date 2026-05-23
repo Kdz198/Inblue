@@ -15,6 +15,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
+import java.util.List;
 import java.util.Map;
 import java.util.logging.Logger;
 
@@ -135,6 +136,18 @@ public class CompanyServiceImpl implements CompanyService {
         }
 
         return companyRepository.save(company);
+    }
+
+    @Override
+    public List<Company> getAll() {
+        return companyRepository.findAll();
+    }
+
+    @Override
+    public void deleteById(Long id) {
+        Company company = companyRepository.findById(id)
+                .orElseThrow(() -> new CustomException("Không tìm thấy công ty với ID: " + id, HttpStatus.NOT_FOUND));
+        company.setIsDeleted(true);
     }
 
     private String extractPublicIdFromUrl(String url) {

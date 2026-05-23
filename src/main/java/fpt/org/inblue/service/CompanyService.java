@@ -6,6 +6,7 @@ import fpt.org.inblue.model.dto.request.UpdateCompanyRequest;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
+import java.util.List;
 
 public interface CompanyService {
     Company getById(Long id);
@@ -13,5 +14,6 @@ public interface CompanyService {
                    MultipartFile banner) throws IOException;
     Company update(UpdateCompanyRequest request, MultipartFile logo,
                    MultipartFile banner) throws IOException;
-
+    List<Company> getAll();
+        void deleteById(Long id);
 }
