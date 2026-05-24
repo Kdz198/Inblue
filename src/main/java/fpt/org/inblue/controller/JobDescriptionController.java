@@ -77,12 +77,12 @@ public class JobDescriptionController {
     @GetMapping("/search")
     @Operation(summary = "Search job descriptions by keyword and status")
     public ResponseEntity<List<JobDescription>> searchJobs(
-            @RequestParam(required = false) String keyword,
+            @RequestParam(required = false) String titleKeyword,
             @RequestParam(required = false) JobDescriptionStatus status,
             @RequestParam(required = false) TargetLevel level,
             @RequestParam(required = false) Double salaryMin,
             @RequestParam(required = false) Double salaryMax) {
-        return ResponseEntity.ok(jobDescriptionService.searchJobs(keyword, status,level,salaryMin,salaryMax));
+        return ResponseEntity.ok(jobDescriptionService.searchJobs(titleKeyword, status,level,salaryMin,salaryMax));
     }
 }
 
