@@ -12,39 +12,34 @@ import org.springframework.stereotype.Component;
 @Slf4j
 public class LoggingAspect {
 
-    // Khai báo "bắt" tất cả các hàm nằm trong các package controller, service, repository
     @Pointcut("within(fpt.org.inblue.controller..*) || " +
             "within(fpt.org.inblue.service..*) || " +
-            "within(fpt.org.inblue.repository..*)" +
-            "within(fpt.org.inblue.utils..*)" +
-            "within(fpt.org.inblue.event..*)") // Có thể thêm package khác nếu muốn
-    public void applicationPackagePointcut() {
-        // Pointcut signature
-    }
+            "within(fpt.org.inblue.repository..*) || " +
+            "within(fpt.org.inblue.utils..*) || " +
+            "within(fpt.org.inblue.event..*)")
+    public void applicationPackagePointcut() {}
 
-    // Tự động bọc log xung quanh các hàm bị "bắt"
     @Around("applicationPackagePointcut()")
     public Object logAround(ProceedingJoinPoint joinPoint) throws Throwable {
-        // Lấy tên class và tên hàm đang chạy
         String className = joinPoint.getSignature().getDeclaringTypeName();
         String methodName = joinPoint.getSignature().getName();
 
-        // 1. Tự động log khi BẮT ĐẦU vào hàm
-        log.info("▶ Bắt đầu chạy: {}.{}()", className, methodName);
-
+        // Đo thời gian từ lúc bắt đầu vào hàm
         long start = System.currentTimeMillis();
+
         try {
             // Cho phép hàm chạy bình thường
             Object result = joinPoint.proceed();
 
-            // 2. Tự động log khi chạy XONG hàm (thành công)
+            // CHỈ LOG 1 LẦN DUY NHẤT KHI CHẠY XONG THÀNH CÔNG
             long elapsedTime = System.currentTimeMillis() - start;
-            log.info("✔ Chạy xong: {}.{}() - Mất: {} ms", className, methodName, elapsedTime);
+            log.info("✔ Hoàn thành: {}.{}() - Mất: {} ms", className, methodName, elapsedTime);
 
             return result;
-        } catch (IllegalArgumentException e) {
-            // Tự động log nếu có lỗi
-            log.error("✘ Lỗi tại: {}.{}() - Chi tiết: {}", className, methodName, e.getMessage());
+        } catch (Throwable e) {
+            // Log nếu có lỗi xảy ra và vẫn tính được tổng thời gian đã tiêu tốn
+            long elapsedTime = System.currentTimeMillis() - start;
+            log.error("✘ Lỗi tại: {}.{}() - Sau: {} ms - Chi tiết: {}", className, methodName, elapsedTime, e.getMessage());
             throw e;
         }
     }
