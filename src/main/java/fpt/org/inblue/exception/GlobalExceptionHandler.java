@@ -64,25 +64,35 @@ public class GlobalExceptionHandler {
         Map<String, Object> body = new LinkedHashMap<>();
         body.put("timestamp", LocalDateTime.now());
         body.put("message", "Bạn không có quyền thực hiện hành động này!");
+        body.put("traceId", getTraceId());
 
         return new ResponseEntity<>(body, HttpStatus.FORBIDDEN);
     }
 
-    @ExceptionHandler(RuntimeException.class)
-    public ResponseEntity<Map<String, String>> handleRuntimeException(RuntimeException ex) {
-        Map<String, String> errors = new HashMap<>();
-        errors.put("error", "Internal Server Error");
-        errors.put("message", ex.getMessage());
-        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(errors);
-    }
-
     @ExceptionHandler(UsernameNotFoundException.class)
-    public ResponseEntity<String> handleUsernameNotFoundException(UsernameNotFoundException ex) {
-        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(ex.getMessage());
+    public ResponseEntity<Map<String, String>> handleUsernameNotFoundException(
+            UsernameNotFoundException ex
+    ) {
+        Map<String, String> response = new HashMap<>();
+
+        response.put("error", ex.getMessage());
+        response.put("traceId", getTraceId());
+
+        return ResponseEntity
+                .status(HttpStatus.NOT_FOUND)
+                .body(response);
     }
     @ExceptionHandler(BadCredentialsException.class)
-    public ResponseEntity<String> handleBadCredentials(BadCredentialsException e) {
-        return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
-                .body(e.getMessage());
+    public ResponseEntity<Map<String, String>> handleBadCredentials(
+            BadCredentialsException ex
+    ) {
+        Map<String, String> response = new HashMap<>();
+
+        response.put("error", ex.getMessage());
+        response.put("traceId", getTraceId());
+
+        return ResponseEntity
+                .status(HttpStatus.UNAUTHORIZED)
+                .body(response);
     }
 }
