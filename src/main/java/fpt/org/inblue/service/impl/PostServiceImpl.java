@@ -10,7 +10,7 @@ import fpt.org.inblue.model.dto.response.PostCommentResponse;
 import fpt.org.inblue.model.dto.response.PostDetailResponse;
 import fpt.org.inblue.model.dto.response.PostLikeResponse;
 import fpt.org.inblue.model.dto.response.PostResponse;
-import fpt.org.inblue.model.enums.PostStatus;
+import fpt.org.inblue.enums.PostStatus;
 import fpt.org.inblue.repository.PostRepository;
 import fpt.org.inblue.service.MajorService;
 import fpt.org.inblue.service.PostService;

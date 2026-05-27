@@ -1,6 +1,6 @@
 package fpt.org.inblue.model;
 
-import fpt.org.inblue.model.enums.FeatureName;
+import fpt.org.inblue.enums.FeatureName;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Data;

@@ -1,8 +1,7 @@
 package fpt.org.inblue.service;
 
 import fpt.org.inblue.model.Transaction;
-import fpt.org.inblue.model.dto.request.TransactionRequest;
-import fpt.org.inblue.model.enums.PaymentPurpose;
+import fpt.org.inblue.enums.PaymentPurpose;
 
 import java.util.List;
 

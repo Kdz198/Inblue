@@ -1,7 +1,7 @@
 package fpt.org.inblue.model;
 
-import fpt.org.inblue.model.enums.PaymentPurpose;
-import fpt.org.inblue.model.enums.PaymentStatus;
+import fpt.org.inblue.enums.PaymentPurpose;
+import fpt.org.inblue.enums.PaymentStatus;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;

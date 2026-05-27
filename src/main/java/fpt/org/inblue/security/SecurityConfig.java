@@ -1,6 +1,5 @@
 package fpt.org.inblue.security;
 
-import fpt.org.inblue.model.enums.Role;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;

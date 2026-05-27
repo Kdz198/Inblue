@@ -1,6 +1,6 @@
 package fpt.org.inblue.model;
 
-import fpt.org.inblue.model.enums.QuestionLevel;
+import fpt.org.inblue.enums.QuestionLevel;
 import jakarta.persistence.*;
 import lombok.*;
 import lombok.experimental.FieldDefaults;

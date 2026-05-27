@@ -1,7 +1,7 @@
 package fpt.org.inblue.controller;
 
 import fpt.org.inblue.model.Payment;
-import fpt.org.inblue.model.enums.PaymentPurpose;
+import fpt.org.inblue.enums.PaymentPurpose;
 import fpt.org.inblue.service.PaymentService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;

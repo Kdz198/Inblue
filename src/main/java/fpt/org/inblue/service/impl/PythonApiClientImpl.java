@@ -2,7 +2,7 @@ package fpt.org.inblue.service.impl;
 
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import fpt.org.inblue.model.enums.PythonService;
+import fpt.org.inblue.enums.PythonService;
 import fpt.org.inblue.service.PythonApiClient;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;

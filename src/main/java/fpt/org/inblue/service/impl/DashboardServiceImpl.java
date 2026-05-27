@@ -2,8 +2,8 @@ package fpt.org.inblue.service.impl;
 
 import fpt.org.inblue.model.Payment;
 import fpt.org.inblue.model.Transaction;
-import fpt.org.inblue.model.enums.PaymentStatus;
-import fpt.org.inblue.model.enums.Role;
+import fpt.org.inblue.enums.PaymentStatus;
+import fpt.org.inblue.enums.Role;
 import fpt.org.inblue.repository.*;
 import fpt.org.inblue.service.DashboardService;
 import org.springframework.beans.factory.annotation.Autowired;

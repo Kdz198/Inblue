@@ -1,5 +1,6 @@
 package fpt.org.inblue.model.dto.request;
 
+import fpt.org.inblue.enums.RoundType;
 import fpt.org.inblue.model.Round;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Min;
@@ -25,7 +26,7 @@ public class UpdateJdRoundRequest {
         @Min(value = 1, message = "Thứ tự vòng phải bắt đầu từ 1")
         private Integer roundOrder;
         @NotNull(message = "Loại vòng là bắt buộc")
-        private Round.RoundType roundType;
+        private RoundType roundType;
 
         @NotNull(message = "Điểm sàn không được để trống")
         @Min(0)

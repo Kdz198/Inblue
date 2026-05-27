@@ -1,7 +1,7 @@
 package fpt.org.inblue.model;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
-import fpt.org.inblue.model.enums.SessionStatus;
+import fpt.org.inblue.enums.SessionStatus;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Data;

@@ -1,7 +1,7 @@
 package fpt.org.inblue.service;
 
 import fpt.org.inblue.model.Payment;
-import fpt.org.inblue.model.enums.PaymentPurpose;
+import fpt.org.inblue.enums.PaymentPurpose;
 import vn.payos.model.webhooks.Webhook;
 
 import java.util.List;

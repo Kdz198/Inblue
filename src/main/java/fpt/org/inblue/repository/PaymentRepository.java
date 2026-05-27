@@ -1,7 +1,7 @@
 package fpt.org.inblue.repository;
 
 import fpt.org.inblue.model.Payment;
-import fpt.org.inblue.model.enums.PaymentStatus;
+import fpt.org.inblue.enums.PaymentStatus;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 

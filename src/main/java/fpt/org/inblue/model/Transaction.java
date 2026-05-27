@@ -1,6 +1,6 @@
 package fpt.org.inblue.model;
 
-import fpt.org.inblue.model.enums.PaymentPurpose;
+import fpt.org.inblue.enums.PaymentPurpose;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;

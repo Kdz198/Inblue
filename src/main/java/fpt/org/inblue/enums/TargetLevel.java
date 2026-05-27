@@ -1,6 +1,5 @@
-package fpt.org.inblue.model.enums;
+package fpt.org.inblue.enums;
 
-import lombok.Data;
 import lombok.Getter;
 
 @Getter

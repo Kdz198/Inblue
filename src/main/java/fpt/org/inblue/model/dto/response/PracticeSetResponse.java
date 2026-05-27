@@ -1,20 +1,13 @@
 package fpt.org.inblue.model.dto.response;
 
-import fpt.org.inblue.model.*;
-import fpt.org.inblue.model.enums.QuestionLevel;
-import fpt.org.inblue.model.enums.TargetLevel;
-import jakarta.persistence.Column;
-import jakarta.persistence.JoinColumn;
-import jakarta.persistence.ManyToOne;
+import fpt.org.inblue.enums.QuestionLevel;
+import fpt.org.inblue.enums.TargetLevel;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-import org.hibernate.annotations.JdbcTypeCode;
-import org.hibernate.type.SqlTypes;
 
 import java.sql.Date;
-import java.sql.Timestamp;
 import java.util.List;
 
 @Data

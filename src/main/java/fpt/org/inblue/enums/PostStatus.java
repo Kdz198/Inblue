@@ -1,4 +1,4 @@
-package fpt.org.inblue.model.enums;
+package fpt.org.inblue.enums;
 
 public enum PostStatus {
     DRAFT,

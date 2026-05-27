@@ -1,7 +1,6 @@
 package fpt.org.inblue.model.dto.request;
 
-import fpt.org.inblue.model.Post;
-import fpt.org.inblue.model.enums.PostStatus;
+import fpt.org.inblue.enums.PostStatus;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Data;
 import lombok.NoArgsConstructor;

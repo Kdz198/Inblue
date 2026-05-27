@@ -1,7 +1,7 @@
 package fpt.org.inblue.controller;
 
 import fpt.org.inblue.model.Transaction;
-import fpt.org.inblue.model.enums.PaymentPurpose;
+import fpt.org.inblue.enums.PaymentPurpose;
 import fpt.org.inblue.service.TransactionService;
 import io.swagger.v3.oas.annotations.Operation;
 import org.springframework.beans.factory.annotation.Autowired;

@@ -1,7 +1,7 @@
 package fpt.org.inblue.model;
 
-import fpt.org.inblue.model.enums.JobDescriptionStatus;
-import fpt.org.inblue.model.enums.TargetLevel;
+import fpt.org.inblue.enums.JobDescriptionStatus;
+import fpt.org.inblue.enums.TargetLevel;
 import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;

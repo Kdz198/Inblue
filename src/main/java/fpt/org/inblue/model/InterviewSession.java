@@ -3,7 +3,7 @@ package fpt.org.inblue.model;
 
 import fpt.org.inblue.model.dto.request.OrchestratorRequest;
 import fpt.org.inblue.model.dto.response.InterviewBlueprintResponse;
-import fpt.org.inblue.model.enums.InterviewEnums;
+import fpt.org.inblue.enums.InterviewEnums;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;

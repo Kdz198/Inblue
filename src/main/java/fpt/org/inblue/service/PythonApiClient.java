@@ -1,6 +1,6 @@
 package fpt.org.inblue.service;
 
-import fpt.org.inblue.model.enums.PythonService;
+import fpt.org.inblue.enums.PythonService;
 import org.springframework.http.HttpMethod;
 
 public interface PythonApiClient {

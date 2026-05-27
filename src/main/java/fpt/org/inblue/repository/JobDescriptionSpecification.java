@@ -1,8 +1,8 @@
 package fpt.org.inblue.repository;
 
 import fpt.org.inblue.model.JobDescription;
-import fpt.org.inblue.model.enums.JobDescriptionStatus;
-import fpt.org.inblue.model.enums.TargetLevel;
+import fpt.org.inblue.enums.JobDescriptionStatus;
+import fpt.org.inblue.enums.TargetLevel;
 import org.springframework.data.jpa.domain.Specification;
 
 public class JobDescriptionSpecification {

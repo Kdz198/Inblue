@@ -2,7 +2,7 @@ package fpt.org.inblue.model.dto.request;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import fpt.org.inblue.model.CandidateProfile;
-import fpt.org.inblue.model.enums.InterviewEnums;
+import fpt.org.inblue.enums.InterviewEnums;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;

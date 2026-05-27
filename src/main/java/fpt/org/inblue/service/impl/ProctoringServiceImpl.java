@@ -4,7 +4,7 @@ import fpt.org.inblue.constants.ApiPath;
 import fpt.org.inblue.model.caching.InterviewBehaviorRedis;
 import fpt.org.inblue.model.dto.request.FaceSnapshotRequest;
 import fpt.org.inblue.model.dto.response.FaceSnapshotResponse;
-import fpt.org.inblue.model.enums.PythonService;
+import fpt.org.inblue.enums.PythonService;
 import fpt.org.inblue.repository.caching.InterviewBehaviorRedisRepository;
 import fpt.org.inblue.service.ProctoringService;
 import fpt.org.inblue.service.PythonApiClient;

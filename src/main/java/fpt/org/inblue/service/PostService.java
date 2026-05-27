@@ -6,10 +6,8 @@ import fpt.org.inblue.model.PostLike;
 import fpt.org.inblue.model.dto.request.PostCommentRequest;
 import fpt.org.inblue.model.dto.request.PostCreateRequest;
 import fpt.org.inblue.model.dto.request.PostLikeRequest;
-import fpt.org.inblue.model.dto.response.PostCommentResponse;
-import fpt.org.inblue.model.dto.response.PostLikeResponse;
 import fpt.org.inblue.model.dto.response.PostResponse;
-import fpt.org.inblue.model.enums.PostStatus;
+import fpt.org.inblue.enums.PostStatus;
 import org.springframework.data.domain.Page;
 
 import java.io.IOException;

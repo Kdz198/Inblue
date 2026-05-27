@@ -3,8 +3,8 @@ package fpt.org.inblue.service;
 import fpt.org.inblue.model.JobDescription;
 import fpt.org.inblue.model.dto.request.CreateJobDescriptionRequest;
 import fpt.org.inblue.model.dto.request.UpdateJobDescriptionRequest;
-import fpt.org.inblue.model.enums.JobDescriptionStatus;
-import fpt.org.inblue.model.enums.TargetLevel;
+import fpt.org.inblue.enums.JobDescriptionStatus;
+import fpt.org.inblue.enums.TargetLevel;
 
 import java.io.IOException;
 import java.util.List;

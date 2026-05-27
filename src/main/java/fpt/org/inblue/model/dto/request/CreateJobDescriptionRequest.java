@@ -1,7 +1,7 @@
 package fpt.org.inblue.model.dto.request;
 
-import fpt.org.inblue.model.enums.JobDescriptionStatus;
-import fpt.org.inblue.model.enums.TargetLevel;
+import fpt.org.inblue.enums.JobDescriptionStatus;
+import fpt.org.inblue.enums.TargetLevel;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;

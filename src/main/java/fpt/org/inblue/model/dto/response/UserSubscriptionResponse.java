@@ -1,6 +1,6 @@
 package fpt.org.inblue.model.dto.response;
 
-import fpt.org.inblue.model.enums.PlanName;
+import fpt.org.inblue.enums.PlanName;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;

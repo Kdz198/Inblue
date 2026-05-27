@@ -2,6 +2,7 @@ package fpt.org.inblue.service.impl;
 
 import fpt.org.inblue.cloudinary.CloudinaryService;
 import fpt.org.inblue.constants.ApiPath;
+import fpt.org.inblue.enums.*;
 import fpt.org.inblue.exception.CustomException;
 import fpt.org.inblue.model.CandidateProfile;
 import fpt.org.inblue.model.MemberShipPlan;
@@ -12,7 +13,6 @@ import fpt.org.inblue.model.dto.UserInfo;
 import fpt.org.inblue.model.dto.response.CVParserResponse;
 import fpt.org.inblue.model.dto.response.UserResponse;
 import fpt.org.inblue.model.dto.response.UserSubscriptionResponse;
-import fpt.org.inblue.model.enums.*;
 import fpt.org.inblue.repository.MemberShipPlanRepository;
 import fpt.org.inblue.repository.UserRepository;
 import fpt.org.inblue.repository.UserUsageRepository;
@@ -22,7 +22,6 @@ import fpt.org.inblue.service.UserService;
 import fpt.org.inblue.utils.FileUtil;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationEventPublisher;
-import org.springframework.context.annotation.Lazy;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
 import org.springframework.retry.annotation.Backoff;
@@ -38,9 +37,7 @@ import java.io.IOException;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
-import java.util.Date;
 import java.util.List;
-import java.util.Map;
 import java.util.stream.Collectors;
 
 @Service

@@ -1,7 +1,7 @@
 package fpt.org.inblue.model;
 
-import fpt.org.inblue.model.enums.Major;
-import fpt.org.inblue.model.enums.TargetLevel;
+import fpt.org.inblue.enums.Major;
+import fpt.org.inblue.enums.TargetLevel;
 import jakarta.persistence.*;
 import lombok.*;
 import lombok.experimental.FieldDefaults;

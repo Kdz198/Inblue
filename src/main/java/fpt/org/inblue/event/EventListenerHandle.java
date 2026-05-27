@@ -7,16 +7,12 @@ import fpt.org.inblue.model.User;
 import fpt.org.inblue.model.dto.FeatureUsageLogDto;
 import fpt.org.inblue.model.dto.MentorEventDto;
 import fpt.org.inblue.model.dto.UserEventDto;
-import fpt.org.inblue.model.enums.FeatureName;
 import fpt.org.inblue.repository.FeatureUsageLogRepository;
 import fpt.org.inblue.repository.MentorRepository;
 import fpt.org.inblue.repository.UserRepository;
-import fpt.org.inblue.security.CustomUserDetails;
 import fpt.org.inblue.security.JwtUtils;
 import org.springframework.context.event.EventListener;
 import org.springframework.scheduling.annotation.Async;
-import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Component;
 import org.springframework.web.multipart.MultipartFile;
 

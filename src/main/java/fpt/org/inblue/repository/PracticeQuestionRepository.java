@@ -1,7 +1,7 @@
 package fpt.org.inblue.repository;
 
 import fpt.org.inblue.model.PracticeQuestion;
-import fpt.org.inblue.model.enums.QuestionLevel;
+import fpt.org.inblue.enums.QuestionLevel;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;

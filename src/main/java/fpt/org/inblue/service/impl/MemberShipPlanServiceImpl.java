@@ -2,7 +2,7 @@ package fpt.org.inblue.service.impl;
 
 import fpt.org.inblue.exception.CustomException;
 import fpt.org.inblue.model.MemberShipPlan;
-import fpt.org.inblue.model.enums.PlanName;
+import fpt.org.inblue.enums.PlanName;
 import fpt.org.inblue.repository.MemberShipPlanRepository;
 import fpt.org.inblue.service.MemberShipPlanService;
 import org.springframework.beans.factory.annotation.Autowired;

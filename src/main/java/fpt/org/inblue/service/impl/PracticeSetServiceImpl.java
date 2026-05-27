@@ -10,10 +10,10 @@ import fpt.org.inblue.model.dto.request.PracticeQuestionRequest;
 import fpt.org.inblue.model.dto.request.PracticeRequest;
 import fpt.org.inblue.model.dto.response.PracticeSetAIResponse;
 import fpt.org.inblue.model.dto.response.PracticeSetResponse;
-import fpt.org.inblue.model.enums.Feature;
-import fpt.org.inblue.model.enums.FeatureName;
-import fpt.org.inblue.model.enums.PythonService;
-import fpt.org.inblue.model.enums.TargetLevel;
+import fpt.org.inblue.enums.Feature;
+import fpt.org.inblue.enums.FeatureName;
+import fpt.org.inblue.enums.PythonService;
+import fpt.org.inblue.enums.TargetLevel;
 import fpt.org.inblue.repository.*;
 import fpt.org.inblue.security.JwtUtils;
 import fpt.org.inblue.service.*;
@@ -30,7 +30,6 @@ import java.sql.Date;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Optional;
 
 @Service
 public class PracticeSetServiceImpl implements PracticeSetService {

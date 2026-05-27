@@ -1,6 +1,6 @@
 package fpt.org.inblue.model;
 
-import fpt.org.inblue.model.enums.ApplicationStatus;
+import fpt.org.inblue.enums.ApplicationStatus;
 import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;

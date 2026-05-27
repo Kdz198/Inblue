@@ -1,7 +1,7 @@
 package fpt.org.inblue.service.impl;
 
 import fpt.org.inblue.model.FeatureUsageLog;
-import fpt.org.inblue.model.enums.FeatureName;
+import fpt.org.inblue.enums.FeatureName;
 import fpt.org.inblue.repository.FeatureUsageLogRepository;
 import fpt.org.inblue.service.FeatureUsageLogService;
 import org.springframework.beans.factory.annotation.Autowired;

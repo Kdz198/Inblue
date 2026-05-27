@@ -2,20 +2,16 @@ package fpt.org.inblue.controller;
 
 import fpt.org.inblue.constants.ApiPath;
 import fpt.org.inblue.model.dto.response.CVParserResponse;
-import fpt.org.inblue.model.enums.PythonService;
+import fpt.org.inblue.enums.PythonService;
 import fpt.org.inblue.service.PythonApiClient;
 import fpt.org.inblue.service.RedisTestService;
-import io.micrometer.tracing.Tracer;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.slf4j.MDC;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
-
-import static fpt.org.inblue.constants.ApiPath.CV_API;
 
 @RestController
 @CrossOrigin("*")

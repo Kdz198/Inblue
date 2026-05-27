@@ -2,7 +2,7 @@ package fpt.org.inblue.security;
 
 import fpt.org.inblue.model.Mentor;
 import fpt.org.inblue.model.User;
-import fpt.org.inblue.model.enums.Role;
+import fpt.org.inblue.enums.Role;
 import fpt.org.inblue.repository.MentorRepository;
 import fpt.org.inblue.repository.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;

@@ -10,7 +10,7 @@ import fpt.org.inblue.model.dto.request.SubmitAnswerRequest;
 import fpt.org.inblue.model.dto.response.GradingResponse;
 import fpt.org.inblue.model.dto.response.OrchestratorAnalysisResponse;
 import fpt.org.inblue.model.dto.response.QuestionResponse;
-import fpt.org.inblue.model.enums.PythonService;
+import fpt.org.inblue.enums.PythonService;
 import fpt.org.inblue.repository.InterviewSessionRepository;
 import fpt.org.inblue.repository.caching.InterviewSessionRedisRepository;
 import fpt.org.inblue.service.InterviewProcessService;

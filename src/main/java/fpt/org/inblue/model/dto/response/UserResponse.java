@@ -1,9 +1,7 @@
 package fpt.org.inblue.model.dto.response;
 
-import fpt.org.inblue.model.MemberShipPlan;
-import fpt.org.inblue.model.enums.Major;
-import fpt.org.inblue.model.enums.Role;
-import jakarta.persistence.*;
+import fpt.org.inblue.enums.Major;
+import fpt.org.inblue.enums.Role;
 import lombok.Builder;
 import lombok.Data;
 

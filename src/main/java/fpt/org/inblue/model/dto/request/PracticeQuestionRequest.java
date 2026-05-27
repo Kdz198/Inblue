@@ -1,6 +1,6 @@
 package fpt.org.inblue.model.dto.request;
 
-import fpt.org.inblue.model.enums.QuestionLevel;
+import fpt.org.inblue.enums.QuestionLevel;
 import lombok.Data;
 
 @Data

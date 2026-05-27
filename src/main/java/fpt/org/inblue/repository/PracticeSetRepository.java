@@ -1,7 +1,7 @@
 package fpt.org.inblue.repository;
 
 import fpt.org.inblue.model.PracticeSet;
-import fpt.org.inblue.model.enums.TargetLevel;
+import fpt.org.inblue.enums.TargetLevel;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 import java.util.List;

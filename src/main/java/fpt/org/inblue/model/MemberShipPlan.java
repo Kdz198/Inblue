@@ -1,10 +1,9 @@
 package fpt.org.inblue.model;
 
-import fpt.org.inblue.model.enums.PlanName;
+import fpt.org.inblue.enums.PlanName;
 import jakarta.persistence.*;
 import lombok.*;
 import lombok.experimental.FieldDefaults;
-import org.hibernate.validator.constraints.UniqueElements;
 
 @AllArgsConstructor
 @NoArgsConstructor

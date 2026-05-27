@@ -1,6 +1,6 @@
 package fpt.org.inblue.model.dto;
 
-import fpt.org.inblue.model.enums.FeatureName;
+import fpt.org.inblue.enums.FeatureName;
 import lombok.Data;
 
 @Data

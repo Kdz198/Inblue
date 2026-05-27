@@ -1,7 +1,7 @@
 package fpt.org.inblue.controller;
 
 import fpt.org.inblue.model.ChatMessage;
-import fpt.org.inblue.model.enums.Role;
+import fpt.org.inblue.enums.Role;
 import fpt.org.inblue.service.ChatService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;

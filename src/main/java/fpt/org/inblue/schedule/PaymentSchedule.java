@@ -2,7 +2,7 @@ package fpt.org.inblue.schedule;
 
 import fpt.org.inblue.model.Payment;
 import fpt.org.inblue.model.dto.payos.PaymentStatusResponse;
-import fpt.org.inblue.model.enums.PaymentStatus;
+import fpt.org.inblue.enums.PaymentStatus;
 import fpt.org.inblue.repository.PaymentRepository;
 import fpt.org.inblue.repository.TransactionRepository;
 import fpt.org.inblue.utils.HelperUtil;

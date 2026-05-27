@@ -1,7 +1,7 @@
 package fpt.org.inblue.repository;
 
 import fpt.org.inblue.model.Post;
-import fpt.org.inblue.model.enums.PostStatus;
+import fpt.org.inblue.enums.PostStatus;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;

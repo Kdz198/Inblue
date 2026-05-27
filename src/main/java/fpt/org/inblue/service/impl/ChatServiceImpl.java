@@ -2,7 +2,7 @@ package fpt.org.inblue.service.impl;
 
 import fpt.org.inblue.model.ChatMessage;
 import fpt.org.inblue.model.dto.ChatDto;
-import fpt.org.inblue.model.enums.Role;
+import fpt.org.inblue.enums.Role;
 import fpt.org.inblue.repository.ChatMessageRepository;
 import fpt.org.inblue.service.ChatService;
 import org.springframework.beans.factory.annotation.Autowired;

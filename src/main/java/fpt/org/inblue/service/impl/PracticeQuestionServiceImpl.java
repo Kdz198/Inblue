@@ -2,7 +2,7 @@ package fpt.org.inblue.service.impl;
 
 import fpt.org.inblue.exception.CustomException;
 import fpt.org.inblue.model.PracticeQuestion;
-import fpt.org.inblue.model.enums.QuestionLevel;
+import fpt.org.inblue.enums.QuestionLevel;
 
 import fpt.org.inblue.repository.PracticeQuestionRepository;
 import fpt.org.inblue.service.PracticeQuestionService;

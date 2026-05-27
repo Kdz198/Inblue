@@ -1,6 +1,6 @@
 package fpt.org.inblue.model.dto.response;
 
-import fpt.org.inblue.model.enums.BehaviorStatus;
+import fpt.org.inblue.enums.BehaviorStatus;
 import lombok.*;
 
 @Data
