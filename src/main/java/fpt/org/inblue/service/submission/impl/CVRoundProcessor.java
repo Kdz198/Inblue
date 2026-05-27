@@ -16,7 +16,8 @@ public class CVRoundProcessor implements RoundSubmissionProcessor {
     }
 
     @Override
-    public void process(ApplicationDetail detail) {
+    public Object process(ApplicationDetail detail) {
 
+        return null;
     }
 }

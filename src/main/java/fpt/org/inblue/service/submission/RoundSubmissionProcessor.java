@@ -8,5 +8,5 @@ import fpt.org.inblue.model.Round.*;
 public interface RoundSubmissionProcessor {
 
     RoundType getSupportedType();
-    void process(ApplicationDetail detail);
+    Object process(ApplicationDetail detail);
 }
