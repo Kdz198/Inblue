@@ -1,13 +1,12 @@
 package fpt.org.inblue.model;
 
-import fpt.org.inblue.model.enums.Role;
+import fpt.org.inblue.enums.Role;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-import java.util.Map;
 @Entity
 @NoArgsConstructor
 @Data
