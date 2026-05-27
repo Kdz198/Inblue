@@ -22,7 +22,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain) throws ServletException, IOException {
-        System.out.println("JwtAuthenticationFilter: Processing request " + request.getRequestURI());
+//        System.out.println("JwtAuthenticationFilter: Processing request " + request.getRequestURI());
         String path = request.getRequestURI();
         if (path.startsWith("/api/auth/")
                 || path.startsWith("/swagger-ui/")
