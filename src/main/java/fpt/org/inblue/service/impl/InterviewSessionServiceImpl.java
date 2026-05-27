@@ -1,6 +1,7 @@
 package fpt.org.inblue.service.impl;
 
 import fpt.org.inblue.constants.ApiPath;
+import fpt.org.inblue.enums.InterviewEnums;
 import fpt.org.inblue.model.InterviewSession;
 import fpt.org.inblue.model.User;
 import fpt.org.inblue.model.caching.InterviewSessionRedis;
@@ -66,21 +67,21 @@ public class InterviewSessionServiceImpl implements InterviewSessionService {
         Map<String, Object> options = new HashMap<>();
 
         // 1. Danh sách Interview Mode
-        options.put("interview_modes", Arrays.stream(InterviewMode.values())
+        options.put("interview_modes", Arrays.stream(InterviewEnums.InterviewMode.values())
                 .map(this::convertEnumToMap)
                 .collect(Collectors.toList()));
 
         // 2. Danh sách Difficulty
-        options.put("difficulties", Arrays.stream(DifficultyLevel.values())
+        options.put("difficulties", Arrays.stream(InterviewEnums.DifficultyLevel.values())
                 .map(this::convertEnumToMap)
                 .collect(Collectors.toList()));
 
         // 3. Danh sách Language
-        options.put("languages", Arrays.stream(Language.values())
+        options.put("languages", Arrays.stream(InterviewEnums.Language.values())
                 .map(this::convertEnumToMap)
                 .collect(Collectors.toList()));
 
-        options.put("domains", Arrays.stream(JobDomain.values())
+        options.put("domains", Arrays.stream(InterviewEnums.JobDomain.values())
                 .map(this::convertEnumToMap)
                 .collect(Collectors.toList()));
 
@@ -216,20 +217,20 @@ public class InterviewSessionServiceImpl implements InterviewSessionService {
         Map<String, String> map = new HashMap<>();
 
         // Dùng reflection hoặc ép kiểu để lấy dữ liệu (vì các Enum đều có cấu trúc giống nhau)
-        if (enumVal instanceof InterviewMode e) {
+        if (enumVal instanceof InterviewEnums.InterviewMode e) {
             map.put("key", e.name());
             map.put("label", e.getLabel());
             map.put("description", e.getDescription());
-        } else if (enumVal instanceof DifficultyLevel e) {
+        } else if (enumVal instanceof InterviewEnums.DifficultyLevel e) {
             map.put("key", e.name());
             map.put("label", e.getLabel());
             map.put("description", e.getDescription());
-        } else if (enumVal instanceof Language e) {
+        } else if (enumVal instanceof InterviewEnums.Language e) {
             map.put("key", e.name());
             map.put("label", e.getLabel());
             map.put("description", e.getDescription());
         }
-        else if (enumVal instanceof JobDomain e) {
+        else if (enumVal instanceof InterviewEnums.JobDomain e) {
             map.put("key", e.name());
             map.put("label", e.getLabel());
             map.put("description", e.getDescription());
