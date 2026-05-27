@@ -1,9 +1,11 @@
 package fpt.org.inblue.service.impl;
 
+import fpt.org.inblue.enums.RoundType;
 import fpt.org.inblue.exception.CustomException;
 import fpt.org.inblue.mapper.JobDescriptionMapper;
 import fpt.org.inblue.model.Company;
 import fpt.org.inblue.model.JobDescription;
+import fpt.org.inblue.model.Round;
 import fpt.org.inblue.model.dto.request.CreateJobDescriptionRequest;
 import fpt.org.inblue.model.dto.request.UpdateJobDescriptionRequest;
 import fpt.org.inblue.enums.JobDescriptionStatus;
@@ -124,6 +126,17 @@ public class JobDescriptionServiceImpl implements JobDescriptionService {
 
 
         return jobDescriptionRepository.findAll(spec);
+    }
+
+    @Override
+    public Round getRoundByOrder(Long jdId, int order) {
+        JobDescription jobDescription = jobDescriptionRepository.findById(jdId)
+                .orElseThrow(() -> new CustomException("Không tìm thấy mô tả công việc với ID: " + jdId, HttpStatus.NOT_FOUND));
+
+        return jobDescription.getRounds().stream()
+                .filter(round -> round.getRoundOrder() == order)
+                .findFirst()
+                .orElseThrow(() -> new CustomException("Không tìm thấy vòng phỏng vấn với thứ tự: " + order, HttpStatus.NOT_FOUND));
     }
 }
 

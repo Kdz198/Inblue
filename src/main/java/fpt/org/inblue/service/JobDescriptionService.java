@@ -1,6 +1,8 @@
 package fpt.org.inblue.service;
 
+import fpt.org.inblue.enums.RoundType;
 import fpt.org.inblue.model.JobDescription;
+import fpt.org.inblue.model.Round;
 import fpt.org.inblue.model.dto.request.CreateJobDescriptionRequest;
 import fpt.org.inblue.model.dto.request.UpdateJobDescriptionRequest;
 import fpt.org.inblue.enums.JobDescriptionStatus;
@@ -24,6 +26,8 @@ public interface JobDescriptionService {
     void delete(Long id);
 
     void softDelete(Long id);
-     List<JobDescription> searchJobs(String keyword, JobDescriptionStatus status, TargetLevel level, Double salaryMin, Double salaryMax);
+    List<JobDescription> searchJobs(String keyword, JobDescriptionStatus status, TargetLevel level, Double salaryMin, Double salaryMax);
+
+    Round getRoundByOrder (Long jdId, int order);
 }
 
