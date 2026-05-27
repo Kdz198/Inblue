@@ -70,8 +70,8 @@ public class PostController {
     }
     @GetMapping("/likes/{postId}/check/{userId}")
     @Operation(summary = "Kiểm tra user đã like bài viết chưa")
-    public ResponseEntity<Map<String, Boolean>> checkLiked(@PathVariable int postId, @PathVariable int userId) {
-        return ResponseEntity.ok(Map.of("isLiked", postService.isLiked(postId, userId)));
+    public ResponseEntity<Map<String, String>> checkLiked(@PathVariable int postId, @PathVariable int userId) {
+        return ResponseEntity.ok(Map.of("isLiked", postService.isLiked(postId, userId) ? "true" : "false"));
     }
 
 

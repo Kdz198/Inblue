@@ -1,6 +1,7 @@
 package fpt.org.inblue.exception;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import lombok.RequiredArgsConstructor;
 import org.slf4j.MDC;
 import org.springframework.core.MethodParameter;
 import org.springframework.http.MediaType;
@@ -15,9 +16,10 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 
 @RestControllerAdvice
+@RequiredArgsConstructor
 public class SuccessResponseHandler implements ResponseBodyAdvice<Object> {
 
-    private final ObjectMapper objectMapper = new ObjectMapper();
+    private final ObjectMapper objectMapper;
 
     @Override
     public boolean supports(MethodParameter returnType, Class<? extends HttpMessageConverter<?>> converterType) {
