@@ -80,22 +80,9 @@ public class UserController {
         return ResponseEntity.ok(userService.getById(id));
     }
 
-    @PostMapping("/subscribe")
-    public ResponseEntity<User> subscribePlan(@RequestParam int userId, @RequestParam int planId) {
-        return ResponseEntity.ok(userService.subscribePlan(userId, planId));
-    }
-
-    @GetMapping("/{userId}/subscription")
-    public ResponseEntity<UserSubscriptionResponse> getActiveSubscription(@PathVariable int userId) {
-        return ResponseEntity.ok(userService.getActiveSubscription(userId));
-    }
-
     @GetMapping("/find-by-id/{userId}")
     public ResponseEntity<UserResponse> getUserResponseById(@PathVariable int userId) {
         return ResponseEntity.ok(userService.getUserResponseById(userId));
     }
 
-    @GetMapping("/usage")
-    public ResponseEntity<List<?>> getUserUsage() {
-        return ResponseEntity.ok(userService.getUserUsage());}
 }

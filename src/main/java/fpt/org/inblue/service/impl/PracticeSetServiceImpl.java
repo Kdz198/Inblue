@@ -1,25 +1,21 @@
 package fpt.org.inblue.service.impl;
 
 import fpt.org.inblue.constants.ApiPath;
+import fpt.org.inblue.enums.PythonService;
+import fpt.org.inblue.enums.TargetLevel;
 import fpt.org.inblue.exception.CustomException;
 import fpt.org.inblue.model.*;
-import fpt.org.inblue.model.dto.FeatureUsageLogDto;
 import fpt.org.inblue.model.dto.request.PracticeAIRequest;
 import fpt.org.inblue.model.dto.request.PracticeGenerateRequest;
 import fpt.org.inblue.model.dto.request.PracticeQuestionRequest;
 import fpt.org.inblue.model.dto.request.PracticeRequest;
 import fpt.org.inblue.model.dto.response.PracticeSetAIResponse;
 import fpt.org.inblue.model.dto.response.PracticeSetResponse;
-import fpt.org.inblue.enums.Feature;
-import fpt.org.inblue.enums.FeatureName;
-import fpt.org.inblue.enums.PythonService;
-import fpt.org.inblue.enums.TargetLevel;
 import fpt.org.inblue.repository.*;
 import fpt.org.inblue.security.JwtUtils;
 import fpt.org.inblue.service.*;
 import fpt.org.inblue.utils.HelperUtil;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
@@ -52,10 +48,6 @@ public class PracticeSetServiceImpl implements PracticeSetService {
     private PracticeSetService practiceSetService;
     @Autowired
     private UserRepository userRepository;
-    @Autowired
-    private UserService userService;
-    @Autowired
-    private ApplicationEventPublisher applicationEventPublisher;
     @Autowired
     private JwtUtils jwtUtils;
 
@@ -154,8 +146,6 @@ public class PracticeSetServiceImpl implements PracticeSetService {
     public List<PracticeSetAIResponse> creatPracticeSetByAI(PracticeGenerateRequest request) {
         String token = HelperUtil.getToke();
         int userId = jwtUtils.getUserIdFromToken(token);
-        // Kiểm tra quota tạo practice set
-        userService.checkQuota(userId, Feature.PRACTICE_SET);
 
         PracticeAIRequest aiRequest = new PracticeAIRequest();
         InterviewSession interviewSession = interviewSessionRepository.findById(request.getAiInterviewId()).orElse(null);
@@ -177,14 +167,6 @@ public class PracticeSetServiceImpl implements PracticeSetService {
             practiceRequest.setUserId(userId);
             practiceSetService.createFullSetByAI(practiceRequest, request.getAiInterviewId());
         }
-
-        // Tăng số lượt practice set đã dùng
-        userService.incrementUsage(userId,Feature.PRACTICE_SET);
-        //ghi log
-        FeatureUsageLogDto dto = new FeatureUsageLogDto();
-        dto.setToken(token);
-        dto.setFeatureName(FeatureName.PRACTICE);
-        applicationEventPublisher.publishEvent(dto);
         return response;
 
     }

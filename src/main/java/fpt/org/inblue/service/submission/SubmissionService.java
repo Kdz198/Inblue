@@ -21,7 +21,6 @@ public class SubmissionService {
 
     @Transactional
     public Object submitRound(ApplicationDetail detail) {
-
         Application currentApplication = applicationService.getApplicationById(detail.getApplicationId());
         Round currentRound = jobDescriptionService.getRoundByOrder( currentApplication.getJdId(), currentApplication.getCurrentRoundOrder());
 

@@ -117,13 +117,5 @@ public class EventListenerHandle {
         }
     }
 
-    @EventListener
-    @Async
-    public void writeLog(FeatureUsageLogDto dto){
-        int userId = jwtUtils.getUserIdFromToken(dto.getToken());
-        FeatureUsageLog log = new FeatureUsageLog();
-        log.setFeatureName(dto.getFeatureName());
-        log.setUserId(userId);
-        featureUsageLogRepository.save(log);
-    }
+
 }

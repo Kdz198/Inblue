@@ -2,24 +2,20 @@ package fpt.org.inblue.service.impl;
 
 import fpt.org.inblue.constants.ApiPath;
 import fpt.org.inblue.enums.InterviewEnums;
+import fpt.org.inblue.enums.PythonService;
 import fpt.org.inblue.model.InterviewSession;
 import fpt.org.inblue.model.User;
 import fpt.org.inblue.model.caching.InterviewSessionRedis;
-import fpt.org.inblue.model.dto.FeatureUsageLogDto;
 import fpt.org.inblue.model.dto.request.InterviewSetupRequest;
 import fpt.org.inblue.model.dto.request.OrchestratorRequest;
-import fpt.org.inblue.model.dto.request.OrchestratorRequest.*;
+import fpt.org.inblue.model.dto.request.OrchestratorRequest.JobRequirementData;
 import fpt.org.inblue.model.dto.response.InterviewBlueprintResponse;
-import fpt.org.inblue.enums.Feature;
-import fpt.org.inblue.enums.FeatureName;
-import fpt.org.inblue.enums.PythonService;
 import fpt.org.inblue.repository.InterviewSessionRepository;
 import fpt.org.inblue.repository.caching.InterviewSessionRedisRepository;
 import fpt.org.inblue.security.JwtUtils;
 import fpt.org.inblue.service.InterviewSessionService;
 import fpt.org.inblue.service.PythonApiClient;
 import fpt.org.inblue.service.UserService;
-import fpt.org.inblue.utils.HelperUtil;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.http.HttpMethod;
@@ -98,9 +94,6 @@ public class InterviewSessionServiceImpl implements InterviewSessionService {
     )
     public String createSession(InterviewSetupRequest request)  {
 
-        // Kiểm tra quota phỏng vấn AI
-        userService.checkQuota(request.getUserId(), Feature.AI_INTERVIEW);
-
         OrchestratorRequest pythonPayload = OrchestratorRequest.builder()
                 .candidateProfile(request.getCandidateProfile())
                 .jobRequirement(request.getJobRequirement())
@@ -146,7 +139,6 @@ public class InterviewSessionServiceImpl implements InterviewSessionService {
         // Save xuống DB (Hibernate tự handle JSONB)
         session = sessionRepository.save(session);
         String sessionId = session.getId().toString();
-        // Save Redis
 
         InterviewSessionRedis sessionRedis = InterviewSessionRedis.builder()
                 .id(sessionKey)
@@ -156,15 +148,6 @@ public class InterviewSessionServiceImpl implements InterviewSessionService {
                 .currentQuestionIndex(0)
                 .build();
         sessionRedisRepository.save(sessionRedis);
-        //tăng lượt sử dụng
-        userService.incrementUsage(request.getUserId(),Feature.AI_INTERVIEW);
-        //ghi log
-        String token = HelperUtil.getToke();
-        int userId = jwtUtils.getUserIdFromToken(token);
-        FeatureUsageLogDto dto = new FeatureUsageLogDto();
-        dto.setToken(token);
-        dto.setFeatureName(FeatureName.QUIZ);
-        applicationEventPublisher.publishEvent(dto);
         return sessionKey;
     }
 

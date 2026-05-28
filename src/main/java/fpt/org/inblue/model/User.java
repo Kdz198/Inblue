@@ -31,10 +31,6 @@ public class User {
     private String cvUrl;
     private String cv_public_id;
 
-    @ManyToOne
-    @JoinColumn(name = "membership_plan_id")
-    private MemberShipPlan membershipPlan;
-
     @Column(name ="wallet_balance")
     private Long walletBalance;
 }

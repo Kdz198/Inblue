@@ -131,8 +131,6 @@ public class QuizSetServiceImpl implements QuizSetService {
     public QuizResponse saveAllItemsByAI(int practiceSetId){
         String token = HelperUtil.getToke();
         int userId = jwtUtils.getUserIdFromToken(token);
-        // Kiểm tra quota tạo quiz (chỉ gói PREMIUM)
-        userService.checkQuota(userId, Feature.QUIZ);
 
         PracticeSet practice = practiceSetRepository.findById(practiceSetId);
         if(practice == null){
@@ -187,15 +185,6 @@ public class QuizSetServiceImpl implements QuizSetService {
         quizSet.setSubmitted(false);
         quizSet.setQuestions(quizItems);
         QuizSet saved = quizSetRepository.save(quizSet);
-
-        // Tăng số lượt quiz đã dùng
-        userService.incrementUsage(userId,Feature.QUIZ);
-        //ghi log
-
-        FeatureUsageLogDto dto = new FeatureUsageLogDto();
-        dto.setToken(token);
-        dto.setFeatureName(FeatureName.QUIZ);
-        applicationEventPublisher.publishEvent(dto);
         return mapToQuizItemResponse(saved.getQuestions(), saved.getQuizId());
     }
 

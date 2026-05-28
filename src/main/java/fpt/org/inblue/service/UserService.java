@@ -15,14 +15,6 @@ public interface UserService {
      List<User> getAll();
      User getById(int id);
      User createUser(UserInfo data, MultipartFile avatar) throws IOException;
-
      CandidateProfile upCv(int userId, MultipartFile cvFile) throws IOException;
-
-    // Subscription related methods
-    User subscribePlan(int userId, int planId);
-    UserSubscriptionResponse getActiveSubscription(int userId);
-    void incrementUsage(int userId, Feature feature);
-    void checkQuota(int userId,Feature checkFeature);
     UserResponse getUserResponseById(int userId);
-    List<UserSubscriptionResponse> getUserUsage();
 }

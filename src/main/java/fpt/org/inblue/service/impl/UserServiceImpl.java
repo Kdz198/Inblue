@@ -2,20 +2,17 @@ package fpt.org.inblue.service.impl;
 
 import fpt.org.inblue.cloudinary.CloudinaryService;
 import fpt.org.inblue.constants.ApiPath;
-import fpt.org.inblue.enums.*;
+import fpt.org.inblue.enums.Major;
+import fpt.org.inblue.enums.PythonService;
+import fpt.org.inblue.enums.Role;
 import fpt.org.inblue.exception.CustomException;
 import fpt.org.inblue.model.CandidateProfile;
-import fpt.org.inblue.model.MemberShipPlan;
 import fpt.org.inblue.model.User;
-import fpt.org.inblue.model.UserUsage;
 import fpt.org.inblue.model.dto.UserEventDto;
 import fpt.org.inblue.model.dto.UserInfo;
 import fpt.org.inblue.model.dto.response.CVParserResponse;
 import fpt.org.inblue.model.dto.response.UserResponse;
-import fpt.org.inblue.model.dto.response.UserSubscriptionResponse;
-import fpt.org.inblue.repository.MemberShipPlanRepository;
 import fpt.org.inblue.repository.UserRepository;
-import fpt.org.inblue.repository.UserUsageRepository;
 import fpt.org.inblue.service.CandidateProfileService;
 import fpt.org.inblue.service.PythonApiClient;
 import fpt.org.inblue.service.UserService;
@@ -31,12 +28,9 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
-
 import java.io.File;
 import java.io.IOException;
-import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -53,10 +47,6 @@ public class UserServiceImpl implements UserService {
     private PythonApiClient pythonApiClient;
     @Autowired
     private CandidateProfileService candidateProfileService;
-    @Autowired
-    private MemberShipPlanRepository memberShipPlanRepository;
-    @Autowired
-    private UserUsageRepository userUsageRepository;
 
 
     @Override
@@ -72,7 +62,6 @@ public class UserServiceImpl implements UserService {
     @Override
     @Transactional
     public User createUser(UserInfo user, MultipartFile avatar) throws IOException {
-        MemberShipPlan memberShipPlan = memberShipPlanRepository.findByName(PlanName.NEW);
         if (user.getId() == null) {
             if(userRepository.existsByEmail(user.getEmail())){
                 throw new CustomException("Email đã tồn tại", HttpStatus.BAD_REQUEST);
@@ -85,7 +74,6 @@ public class UserServiceImpl implements UserService {
                     .isActive(true)
                     .university(user.getUniversity())
                     .major(Major.valueOf(user.getMajor()))
-                    .membershipPlan(memberShipPlan)
                     .walletBalance(0L)
                     .build();
 
@@ -97,7 +85,6 @@ public class UserServiceImpl implements UserService {
                 file.delete();
                 applicationEventPublisher.publishEvent(new UserEventDto(savedUser, multipartFile, "avatar"));
             }
-            savedUser = subscribePlan(savedUser.getId(), memberShipPlan.getId());
             return savedUser;
         } else {
             if(userRepository.existsByEmailAndIdNot(user.getEmail(), user.getId())){
@@ -254,94 +241,6 @@ public class UserServiceImpl implements UserService {
                 .collect(Collectors.toList());
     }
 
-    @Override
-    @Transactional
-    public User subscribePlan(int userId, int planId) {
-        System.out.println("Subscribing user " + userId + " to plan " + planId);
-        User user = userRepository.findById(userId)
-                .orElseThrow(() -> new CustomException("User không tồn tại", HttpStatus.NOT_FOUND));
-        MemberShipPlan plan = memberShipPlanRepository.findById(planId)
-                .orElseThrow(() -> new CustomException("Gói không tồn tại", HttpStatus.NOT_FOUND));
-
-        user.setMembershipPlan(plan);
-        user = userRepository.save(user);
-
-        // Reset usage khi đăng ký gói mới
-        UserUsage usage = userUsageRepository.findByUser_Id(userId)
-                .orElse(UserUsage.builder().user(user).build());
-        usage.setAiInterviewUsed(0);
-        usage.setPracticeSetUsed(0);
-        usage.setQuizSetUsed(0);
-
-        if (plan.getDurationDays().equals(Integer.MAX_VALUE)) {
-            usage.setExpiredAt(LocalDate.now().plusYears(100));
-        } else {
-            usage.setExpiredAt(LocalDate.now().plusDays(plan.getDurationDays()));
-        }
-        userUsageRepository.save(usage);
-        System.out.println(usage+"USAGE");
-        return user;
-    }
-
-    @Override
-    public UserSubscriptionResponse getActiveSubscription(int userId) {
-        User user = userRepository.findById(userId)
-                .orElseThrow(() -> new CustomException("User không tồn tại", HttpStatus.NOT_FOUND));
-
-        MemberShipPlan plan = user.getMembershipPlan();
-        UserUsage usage = userUsageRepository.findByUser_Id(userId)
-                .orElse(UserUsage.builder().aiInterviewUsed(0).practiceSetUsed(0).quizSetUsed(0).build());
-
-        return UserSubscriptionResponse.builder()
-                .planName(plan.getName())
-                .price(plan.getPrice())
-                .durationDays(plan.getDurationDays())
-                .maxAiInterview(plan.getMax_ai_interview())
-                .maxPracticeSets(plan.getMax_practice_sets())
-                .maxQuizSets(plan.getMax_quiz_sets())
-                .aiInterviewUsed(usage.getAiInterviewUsed())
-                .practiceSetUsed(usage.getPracticeSetUsed())
-                .quizSetUsed(usage.getQuizSetUsed())
-                .aiInterviewRemaining(Math.max(0, plan.getMax_ai_interview() - usage.getAiInterviewUsed()))
-                .practiceSetRemaining(Math.max(0, plan.getMax_practice_sets() - usage.getPracticeSetUsed()))
-                .quizSetRemaining(Math.max(0, plan.getMax_quiz_sets() - usage.getQuizSetUsed()))
-                .isActive(true)
-                .expiredAt(usage.getExpiredAt())
-                .build();
-    }
-
-    @Override
-    public void checkQuota(int userId, Feature checkFeature) {
-        MemberShipPlan plan = getPlan(userId);
-        UserUsage usage = getOrCreateUsage(userId);
-        System.out.println(usage);
-        if (usage.getExpiredAt().isBefore(LocalDate.now())) {
-            throw new CustomException("Hạn sử dụng gói đã hết. Vui lòng gia hạn hoặc nâng cấp gói.", HttpStatus.BAD_REQUEST);
-        }
-        switch (checkFeature) {
-            case Feature.AI_INTERVIEW:
-                if (usage.getAiInterviewUsed() >= plan.getMax_ai_interview()) {
-                    throw new CustomException(
-                            "Bạn đã hết lượt phỏng vấn AI (" + plan.getMax_ai_interview() + "/" + plan.getMax_ai_interview() + "). Vui lòng nâng cấp gói.",
-                            HttpStatus.BAD_REQUEST);
-                }
-                break;
-            case Feature.PRACTICE_SET:
-                if (usage.getPracticeSetUsed() >= plan.getMax_practice_sets()) {
-                    throw new CustomException(
-                            "Bạn đã hết lượt tạo bộ ôn luyện cá nhân hóa. Vui lòng nâng cấp gói.",
-                            HttpStatus.BAD_REQUEST);
-                }
-                break;
-            case Feature.QUIZ:
-                if (usage.getQuizSetUsed() >= plan.getMax_quiz_sets()) {
-                    throw new CustomException(
-                            "Bạn đã hết lượt taọ bài kiểm tra. Vui lòng nâng cấp gói.",
-                            HttpStatus.BAD_REQUEST);
-                }
-                break;
-        }
-    }
 
     @Override
     public UserResponse getUserResponseById(int userId) {
@@ -361,77 +260,5 @@ public class UserServiceImpl implements UserService {
                     .build();
     }
 
-    @Override
-    public List<UserSubscriptionResponse> getUserUsage() {
-        List<User> user = userRepository.findAll();
-        List<UserSubscriptionResponse> responses = new ArrayList<>();
 
-       for(User u : user){
-           MemberShipPlan plan = u.getMembershipPlan();
-           UserUsage usage = userUsageRepository.findByUser_Id(u.getId())
-                   .orElse(UserUsage.builder().aiInterviewUsed(0).practiceSetUsed(0).quizSetUsed(0).build());
-
-           UserSubscriptionResponse response = UserSubscriptionResponse.builder()
-                   .planName(plan.getName())
-                   .price(plan.getPrice())
-                   .durationDays(plan.getDurationDays())
-                   .maxAiInterview(plan.getMax_ai_interview())
-                   .maxPracticeSets(plan.getMax_practice_sets())
-                   .maxQuizSets(plan.getMax_quiz_sets())
-                   .aiInterviewUsed(usage.getAiInterviewUsed())
-                   .practiceSetUsed(usage.getPracticeSetUsed())
-                   .quizSetUsed(usage.getQuizSetUsed())
-                   .aiInterviewRemaining(Math.max(0, plan.getMax_ai_interview() - usage.getAiInterviewUsed()))
-                   .practiceSetRemaining(Math.max(0, plan.getMax_practice_sets() - usage.getPracticeSetUsed()))
-                   .quizSetRemaining(Math.max(0, plan.getMax_quiz_sets() - usage.getQuizSetUsed()))
-                   .isActive(true)
-                   .expiredAt(usage.getExpiredAt())
-                   .build();
-           responses.add(response);
-       }
-        return responses;
-    }
-
-    @Override
-    public void incrementUsage(int userId, Feature feature) {
-        UserUsage usage = userUsageRepository.findByUser_Id(userId)
-                .orElseThrow(() -> new CustomException("Không tìm thấy usage của user", HttpStatus.NOT_FOUND));
-        switch (feature) {
-            case Feature.AI_INTERVIEW:
-                usage.setAiInterviewUsed(usage.getAiInterviewUsed() + 1);
-                break;
-            case Feature.PRACTICE_SET:
-                usage.setPracticeSetUsed(usage.getPracticeSetUsed() + 1);
-                break;
-            case Feature.QUIZ:
-                usage.setQuizSetUsed(usage.getQuizSetUsed() + 1);
-                break;
-        }
-        userUsageRepository.save(usage);
-    }
-
-    private MemberShipPlan getPlan(int userId) {
-        User user = userRepository.findById(userId)
-                .orElseThrow(() -> new CustomException("User không tồn tại", HttpStatus.NOT_FOUND));
-        MemberShipPlan plan = user.getMembershipPlan();
-        if (plan == null) {
-            throw new CustomException("User chưa đăng ký gói nào. Vui lòng đăng ký gói để sử dụng.", HttpStatus.FORBIDDEN);
-        }
-        return plan;
-    }
-
-    private UserUsage getOrCreateUsage(int userId) {
-        return userUsageRepository.findByUser_Id(userId)
-                .orElseGet(() -> {
-                    User user = userRepository.findById(userId)
-                            .orElseThrow(() -> new CustomException("User không tồn tại", HttpStatus.NOT_FOUND));
-                    UserUsage newUsage = UserUsage.builder()
-                            .user(user)
-                            .aiInterviewUsed(0)
-                            .practiceSetUsed(0)
-                            .quizSetUsed(0)
-                            .build();
-                    return userUsageRepository.save(newUsage);
-                });
-    }
 }
