@@ -1,6 +1,7 @@
 package fpt.org.inblue.controller;
 
 import fpt.org.inblue.model.ApplicationDetail;
+import fpt.org.inblue.model.dto.SubmissionResult;
 import fpt.org.inblue.model.dto.request.SubmitRequest;
 import fpt.org.inblue.service.submission.SubmissionService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -17,8 +18,8 @@ public class ApplicationDetailController {
     private SubmissionService submissionService;
 
     @PostMapping
-    public ResponseEntity<ApplicationDetail> submitApplicationDetail(@RequestBody SubmitRequest submitRequest) {
-        ApplicationDetail result = submissionService.submitRound(submitRequest);
+    public ResponseEntity<SubmissionResult> submitApplicationDetail(@RequestBody SubmitRequest submitRequest) {
+        SubmissionResult result = submissionService.submitRound(submitRequest);
         return ResponseEntity.ok(result);
     }
 }

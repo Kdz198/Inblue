@@ -5,6 +5,7 @@ import fpt.org.inblue.model.Application;
 import fpt.org.inblue.model.ApplicationDetail;
 import fpt.org.inblue.model.ApplicationDetail.*;
 import fpt.org.inblue.model.Round;
+import fpt.org.inblue.model.dto.SubmissionResult;
 import fpt.org.inblue.model.dto.request.SubmitRequest;
 import fpt.org.inblue.repository.ApplicationDetailRepository;
 import fpt.org.inblue.service.ApplicationService;
@@ -23,11 +24,11 @@ public class SubmissionService {
     private final ApplicationDetailRepository applicationDetailRepository;
 
     @Transactional
-    public ApplicationDetail submitRound(SubmitRequest detail) {
+    public SubmissionResult submitRound(SubmitRequest detail) {
         Application currentApplication = applicationService.getApplicationById(detail.getApplicationId());
         Round currentRound = jobDescriptionService.getRoundByOrder( currentApplication.getJdId(), currentApplication.getCurrentRoundOrder());
         RoundSubmissionProcessor processor = roundProcessorFactory.getProcessor(currentRound.getRoundType());
-        ApplicationDetail app = processor.process(detail);
-        return applicationDetailRepository.save(app);
+
+        return processor.process(detail);
     }
 }
