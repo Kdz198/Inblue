@@ -5,6 +5,7 @@ import fpt.org.inblue.exception.CustomException;
 import fpt.org.inblue.exception.GlobalExceptionHandler;
 import fpt.org.inblue.model.ApplicationDetail;
 import fpt.org.inblue.model.Round;
+import fpt.org.inblue.model.dto.ProcessDto;
 import fpt.org.inblue.model.dto.SubmissionResult;
 import fpt.org.inblue.model.dto.request.SubmitRequest;
 import fpt.org.inblue.repository.ApplicationDetailRepository;
@@ -36,25 +37,23 @@ public class QuizRoundProcessor implements RoundSubmissionProcessor {
 
     @Override
     @Transactional
-    public SubmissionResult process(SubmitRequest detail) {
+    public SubmissionResult process(ProcessDto dto) {
         //Lấy dữ liệu từ câu hỏi ra và đối chiếu với đáp án của user
-        Round round = roundRepository.findById(detail.getRoundId())
-                .orElseThrow(() -> new CustomException("Không tìm thấy vòng thi", HttpStatus.NOT_FOUND));
+        Round round = dto.getRound();
         ApplicationDetail applicationDetail = new ApplicationDetail();
         List<ApplicationDetail.QuizAnswer> quizAnswers = new ArrayList<>();
         double score = 0.0;
         for (int i = 0; i < round.getConfigData().getQuizQuestions().size(); i++) {
             String correctAnswer = round.getConfigData().getQuizQuestions().get(i).getCorrectAnswer();
-            String userAnswer = detail.getSubmissionData().getQuizAnswers().get(i);
+            String userAnswer = dto.getSubmissionData().getQuizAnswers().get(i);
             quizAnswers.add(new ApplicationDetail.QuizAnswer(round.getConfigData().getQuizQuestions().get(i).getQuestionText(), userAnswer, correctAnswer.equals(userAnswer)));
             score+= correctAnswer.equals(userAnswer) ? round.getConfigData().getQuizQuestions().get(i).getPoints() : 0.0;
         }
         applicationDetail.setSubmissionData(new ApplicationDetail.SubmissionData(null,null,quizAnswers));
-        applicationDetail.setApplicationId(detail.getApplicationId());
-        applicationDetail.setRoundId(detail.getRoundId());
+        applicationDetail.setApplicationId(dto.getApplication().getId());
+        applicationDetail.setRoundId(dto.getRound().getId());
         applicationDetail.setFinalScore(score);
         applicationDetail.setFinalResult(score>= round.getPassThreshold() && round.getIsAuto()? ApplicationDetail.RoundResult.PASSED : ApplicationDetail.RoundResult.FAILED);
-
         applicationDetailRepository.save(applicationDetail);
         return SubmissionResult.completed(applicationDetail);
 

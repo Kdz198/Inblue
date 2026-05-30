@@ -2,6 +2,7 @@ package fpt.org.inblue.service.submission.impl;
 
 import fpt.org.inblue.enums.RoundType;
 import fpt.org.inblue.model.ApplicationDetail;
+import fpt.org.inblue.model.dto.ProcessDto;
 import fpt.org.inblue.model.dto.SubmissionResult;
 import fpt.org.inblue.model.dto.request.SubmitRequest;
 import fpt.org.inblue.service.submission.RoundSubmissionProcessor;
@@ -18,7 +19,7 @@ public class CVRoundProcessor implements RoundSubmissionProcessor {
     }
 
     @Override
-    public SubmissionResult process(SubmitRequest detail) {
+    public SubmissionResult process(ProcessDto detail) {
 
         return null;
     }
