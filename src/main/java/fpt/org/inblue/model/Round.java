@@ -38,6 +38,7 @@ public class Round {
 
     @Builder.Default
     Boolean isDeleted = false;
+    private Boolean isAuto = false;
 
     @CreationTimestamp
     LocalDateTime createdAt;
