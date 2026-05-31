@@ -1,5 +1,7 @@
 package fpt.org.inblue.model.dto.request;
 
+import jakarta.annotation.Nullable;
+import jakarta.validation.constraints.Null;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -10,24 +12,18 @@ import java.util.List;
 
 @Data
 @Builder
+@NoArgsConstructor
+@AllArgsConstructor
 public class SubmitRequest {
     private Long applicationId;
-    private Long roundId;
-    private SubmitRequest.SubmissionData submissionData;
+    private String textContent;
 
-    @Data
-    @NoArgsConstructor
-    @AllArgsConstructor
-    @Builder
-    public static class SubmissionData {
-        // Dành cho vòng tự luận, Email, SQL Script (Frontend gửi text lên)
-        private String textContent;
+    // Dành cho vòng upload CV hoặc file kiến trúc (Frontend gửi link file sau khi upload S3)
 
-        // Dành cho vòng upload CV hoặc file kiến trúc (Frontend gửi link file sau khi upload S3)
-        private MultipartFile file;
+    @Nullable
+    private MultipartFile file;
 
-        // Dành riêng cho vòng QUIZ
-        private List<String> quizAnswers;
-    }
+    // Dành riêng cho vòng QUIZ
+    private List<String> quizAnswers;
 
 }

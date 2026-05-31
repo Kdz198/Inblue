@@ -9,4 +9,6 @@ public interface ApplicationService {
     Application getApplicationById(Long id);
     List<Application> getAllApplications();
     List<Application> getAllApplicationsByUserId();
+
+    void moveToNextRound(Application currentApplication);
 }
