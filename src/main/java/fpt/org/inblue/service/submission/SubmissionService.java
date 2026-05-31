@@ -24,17 +24,23 @@ public class SubmissionService {
     private final RoundProcessorFactory roundProcessorFactory;
     private final ApplicationService applicationService;
     private final JobDescriptionService jobDescriptionService;
-    private final ApplicationDetailRepository applicationDetailRepository;
 
     @Transactional
     public SubmissionResult submitRound(SubmitRequest detail) {
+        System.out.println("Received submission: " + detail);
         Application currentApplication = applicationService.getApplicationById(detail.getApplicationId());
         Round currentRound = jobDescriptionService.getRoundByOrder( currentApplication.getJdId(), currentApplication.getCurrentRoundOrder());
         RoundSubmissionProcessor processor = roundProcessorFactory.getProcessor(currentRound.getRoundType());
         ProcessDto processDto = new ProcessDto();
         processDto.setApplication(currentApplication);
         processDto.setRound(currentRound);
-        processDto.setSubmissionData(detail.getSubmissionData());
-        return processor.process(processDto);
+        processDto.setFile(detail.getFile());
+        processDto.setQuizAnswers(detail.getQuizAnswers());
+        processDto.setTextContent(detail.getTextContent());
+        SubmissionResult submissionResult = processor.process(processDto);
+        if(submissionResult.getRoundResult().equals(RoundResult.PASSED)){
+            applicationService.moveToNextRound(currentApplication);
+        }
+        return submissionResult;
     }
 }

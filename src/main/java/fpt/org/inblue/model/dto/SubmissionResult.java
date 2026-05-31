@@ -1,7 +1,9 @@
 package fpt.org.inblue.model.dto;
 
 import fpt.org.inblue.model.ApplicationDetail;
+import lombok.Data;
 
+@Data
 public class SubmissionResult {
 
     public enum Status{

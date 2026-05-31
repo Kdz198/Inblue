@@ -38,6 +38,7 @@ public class QuizRoundProcessor implements RoundSubmissionProcessor {
     @Override
     @Transactional
     public SubmissionResult process(ProcessDto dto) {
+        System.out.println("Processing quiz round for application " + dto.getApplication().getId() + " and round " + dto.getRound().getId());
         //Lấy dữ liệu từ câu hỏi ra và đối chiếu với đáp án của user
         Round round = dto.getRound();
         ApplicationDetail applicationDetail = new ApplicationDetail();
@@ -45,7 +46,7 @@ public class QuizRoundProcessor implements RoundSubmissionProcessor {
         double score = 0.0;
         for (int i = 0; i < round.getConfigData().getQuizQuestions().size(); i++) {
             String correctAnswer = round.getConfigData().getQuizQuestions().get(i).getCorrectAnswer();
-            String userAnswer = dto.getSubmissionData().getQuizAnswers().get(i);
+            String userAnswer = dto.getQuizAnswers().get(i);
             quizAnswers.add(new ApplicationDetail.QuizAnswer(round.getConfigData().getQuizQuestions().get(i).getQuestionText(), userAnswer, correctAnswer.equals(userAnswer)));
             score+= correctAnswer.equals(userAnswer) ? round.getConfigData().getQuizQuestions().get(i).getPoints() : 0.0;
         }
@@ -56,6 +57,5 @@ public class QuizRoundProcessor implements RoundSubmissionProcessor {
         applicationDetail.setFinalResult(score>= round.getPassThreshold() && round.getIsAuto()? ApplicationDetail.RoundResult.PASSED : ApplicationDetail.RoundResult.FAILED);
         applicationDetailRepository.save(applicationDetail);
         return SubmissionResult.completed(applicationDetail);
-
     }
 }
