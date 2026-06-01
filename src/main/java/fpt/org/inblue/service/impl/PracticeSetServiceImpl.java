@@ -40,7 +40,7 @@ public class PracticeSetServiceImpl implements PracticeSetService {
     @Autowired
     private PracticeSetItemRepository practiceSetItemRepository;
     @Autowired
-    private PythonApiClient pythonApiClient;
+    private LLMApiClient LLMApiClient;
     @Autowired
     private InterviewSessionRepository interviewSessionRepository;
     @Autowired
@@ -243,7 +243,7 @@ public class PracticeSetServiceImpl implements PracticeSetService {
     }
 
     private List<PracticeSetAIResponse> callPython(PracticeAIRequest request) {
-        PracticeSetAIResponse[] response = pythonApiClient.callApi(
+        PracticeSetAIResponse[] response = LLMApiClient.callApi(
                 PythonService.LLM,
                 ApiPath.GENERATE_PRACTICE_SET_API,
                 HttpMethod.POST,

@@ -7,7 +7,7 @@ import fpt.org.inblue.model.dto.response.FaceSnapshotResponse;
 import fpt.org.inblue.enums.PythonService;
 import fpt.org.inblue.repository.caching.InterviewBehaviorRedisRepository;
 import fpt.org.inblue.service.ProctoringService;
-import fpt.org.inblue.service.PythonApiClient;
+import fpt.org.inblue.service.LLMApiClient;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpMethod;
@@ -24,11 +24,11 @@ import java.util.Map;
 public class ProctoringServiceImpl implements ProctoringService {
 
     private final InterviewBehaviorRedisRepository behaviorRedisRepo;
-    private final PythonApiClient pythonApiClient;
+    private final LLMApiClient LLMApiClient;
 
     @Override
     public void trackSnapshot(FaceSnapshotRequest request) {
-        FaceSnapshotResponse response = pythonApiClient.callApi(
+        FaceSnapshotResponse response = LLMApiClient.callApi(
                 PythonService.VISION,
                 ApiPath.PROCTORING_SNAPSHOT_API,
                 HttpMethod.POST,

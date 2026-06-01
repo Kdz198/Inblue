@@ -3,7 +3,7 @@ package fpt.org.inblue.controller;
 import fpt.org.inblue.constants.ApiPath;
 import fpt.org.inblue.model.dto.response.CVParserResponse;
 import fpt.org.inblue.enums.PythonService;
-import fpt.org.inblue.service.PythonApiClient;
+import fpt.org.inblue.service.LLMApiClient;
 import fpt.org.inblue.service.RedisTestService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -21,7 +21,7 @@ import org.springframework.web.multipart.MultipartFile;
 public class TestController {
 
     private final RedisTestService redisTestService;
-    private final PythonApiClient pythonApiClient;
+    private final LLMApiClient LLMApiClient;
 
     @GetMapping("/hello")
     public String hello() {
@@ -82,7 +82,7 @@ public class TestController {
     public CVParserResponse testPythonApi(@RequestParam("file") MultipartFile file) {
 
         CVParserResponse response =
-                pythonApiClient.callApi(
+                LLMApiClient.callApi(
                         PythonService.LLM,
                         ApiPath.CV_API,
                         HttpMethod.POST,

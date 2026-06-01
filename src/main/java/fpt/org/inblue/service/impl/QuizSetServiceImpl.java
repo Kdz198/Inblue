@@ -6,19 +6,16 @@ import fpt.org.inblue.model.PracticeQuestion;
 import fpt.org.inblue.model.PracticeSet;
 import fpt.org.inblue.model.QuizItem;
 import fpt.org.inblue.model.QuizSet;
-import fpt.org.inblue.model.dto.FeatureUsageLogDto;
 import fpt.org.inblue.model.dto.request.QuizItemCreateAIRequest;
 import fpt.org.inblue.model.dto.request.QuizItemCreateRequest;
 import fpt.org.inblue.model.dto.response.QuizItemResponse;
 import fpt.org.inblue.model.dto.response.QuizResponse;
-import fpt.org.inblue.enums.Feature;
-import fpt.org.inblue.enums.FeatureName;
 import fpt.org.inblue.enums.Major;
 import fpt.org.inblue.enums.PythonService;
 import fpt.org.inblue.repository.PracticeSetRepository;
 import fpt.org.inblue.repository.QuizSetRepository;
 import fpt.org.inblue.security.JwtUtils;
-import fpt.org.inblue.service.PythonApiClient;
+import fpt.org.inblue.service.LLMApiClient;
 import fpt.org.inblue.service.QuizItemService;
 import fpt.org.inblue.service.QuizSetService;
 import fpt.org.inblue.service.UserService;
@@ -46,7 +43,7 @@ public class QuizSetServiceImpl implements QuizSetService {
     @Autowired
     private QuizItemService quizItemService;
     @Autowired
-    private PythonApiClient pythonApiClient;
+    private LLMApiClient LLMApiClient;
 
     @Autowired
     private ObjectMapper objectMapper;
@@ -157,7 +154,7 @@ public class QuizSetServiceImpl implements QuizSetService {
                 .majorName(majorName)
                 .build();
 
-        QuizItemCreateRequest[] response = pythonApiClient.callApi(
+        QuizItemCreateRequest[] response = LLMApiClient.callApi(
                 PythonService.LLM,
                 ApiPath.GENERATE_QUIZ_ITEM_API,
                 HttpMethod.POST,
