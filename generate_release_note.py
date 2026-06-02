@@ -37,8 +37,7 @@ if not api_key:
     raise ValueError("Thiếu GEMINI_API_KEY trong biến môi trường!")
 
 genai.configure(api_key=api_key)
-# Bạn có thể đổi sang 'gemini-3.1-flash-lite' nếu tài khoản của bạn đang dùng tên model đó
-model = genai.GenerativeModel('gemini-1.5-flash')
+model = genai.GenerativeModel('gemini-3.1-flash-lite')
 
 prompt = f"""
 Bạn là một Technical Product Manager chuyên nghiệp. Dưới đây là danh sách các commit trong đợt phát hành phần mềm mới nhất của chúng tôi:
