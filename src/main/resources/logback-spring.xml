@@ -16,6 +16,10 @@
                     <message>
                         <fieldName>message</fieldName>
                     </message>
+
+                    <stackTrace>
+                        <fieldName>stack_trace</fieldName>
+                    </stackTrace>
                     <mdc>
                         <includeMdcKeyName>traceId</includeMdcKeyName>
                         <includeMdcKeyName>spanId</includeMdcKeyName>
