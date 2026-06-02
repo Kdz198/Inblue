@@ -12,7 +12,7 @@ public interface LLMApiClient {
 
     <T> T sendChatToAnythingLlm(
             AnythingLlmWorkspace workspace,
-            String message,
+            Object payload, // Đổi từ String sang Object
             String sessionId,
             boolean reset,
             List<MultipartFile> files,

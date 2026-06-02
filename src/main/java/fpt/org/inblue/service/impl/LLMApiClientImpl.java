@@ -3,6 +3,7 @@ package fpt.org.inblue.service.impl;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.SerializationFeature;
 import fpt.org.inblue.enums.AnythingLlmWorkspace;
 import fpt.org.inblue.enums.PythonService;
 import fpt.org.inblue.service.LLMApiClient;
@@ -46,12 +47,10 @@ public class LLMApiClientImpl implements LLMApiClient {
     }
 
 
-    // =========================================================================
-    // HÀM MỚI: GỌI CHAT CÓ ĐÍNH KÈM FILE (DIRECT CONTEXT INJECTION)
-    // =========================================================================
+    @Override
     public <T> T sendChatToAnythingLlm(
             AnythingLlmWorkspace workspace,
-            String message,
+            Object payload,
             String sessionId,
             boolean reset,
             List<MultipartFile> files,
@@ -59,18 +58,29 @@ public class LLMApiClientImpl implements LLMApiClient {
 
         String endpoint = "/workspace/" + workspace.getSlug() + "/chat";
 
-        HttpHeaders headers = new HttpHeaders();
-        headers.setContentType(MediaType.APPLICATION_JSON);
-        headers.setBearerAuth(ANYTHING_LLM_API_KEY);
+        // 1. XỬ LÝ PAYLOAD (Ép kiểu thông minh)
+        String message;
+        try {
+            if (payload instanceof String) {
+                message = (String) payload;
+            } else {
+                ObjectMapper payloadMapper = new ObjectMapper();
+                // Tắt pretty print để ép JSON thành 1 dòng, tiết kiệm Token
+                payloadMapper.configure(SerializationFeature.INDENT_OUTPUT, false);
+                message = payloadMapper.writeValueAsString(payload);
+            }
+        } catch (Exception e) {
+            throw new RuntimeException("Lỗi parse payload thành JSON String: " + e.getMessage(), e);
+        }
 
-        // Build Payload JSON
+        // 2. BUILD BODY REQUEST
         Map<String, Object> requestBody = new HashMap<>();
         requestBody.put("message", message);
         requestBody.put("mode", "chat");
         requestBody.put("sessionId", sessionId);
         requestBody.put("reset", reset);
 
-        // Xử lý động mảng file (nếu có)
+        // 3. XỬ LÝ ĐÍNH KÈM FILE (DIRECT CONTEXT INJECTION)
         if (files != null && !files.isEmpty()) {
             List<Map<String, String>> attachments = new ArrayList<>();
 
@@ -82,18 +92,14 @@ public class LLMApiClientImpl implements LLMApiClient {
                         realMimeType = "application/octet-stream";
                     }
 
-                    // LÕI XỬ LÝ MIME THEO LUẬT CỦA ANYTHING LLM:
-                    // - Ảnh: Giữ nguyên MIME thật (VD: image/png).
-                    // - Document (PDF, Word, Txt): Bắt buộc gán payloadMimeType là "application/anythingllm-document".
+                    // Luật MIME type của AnythingLLM
                     String payloadMimeType = realMimeType.startsWith("image/")
                             ? realMimeType
                             : "application/anythingllm-document";
 
                     // Chuyển file sang Base64
                     byte[] fileBytes = file.getBytes();
-                    String base64String = Base64.getEncoder().encodeToString(fileBytes);
-
-                    // Nối Data URI Prefix (luôn dùng realMimeType ở prefix)
+                    String base64String = java.util.Base64.getEncoder().encodeToString(fileBytes);
                     String contentString = "data:" + realMimeType + ";base64," + base64String;
 
                     Map<String, String> attachment = new HashMap<>();
@@ -109,8 +115,13 @@ public class LLMApiClientImpl implements LLMApiClient {
             requestBody.put("attachments", attachments);
         }
 
+        // 4. CONFIG HEADERS & HTTP ENTITY
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_JSON);
+        headers.setBearerAuth(ANYTHING_LLM_API_KEY);
         HttpEntity<Map<String, Object>> requestEntity = new HttpEntity<>(requestBody, headers);
 
+        // 5. GỌI API & BÓC TÁCH RESPONSE
         try {
             ResponseEntity<String> response = restTemplate.exchange(
                     ANYTHING_LLM_URL + endpoint,
@@ -124,27 +135,25 @@ public class LLMApiClientImpl implements LLMApiClient {
             ObjectMapper objectMapper = new ObjectMapper();
             objectMapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
 
-            // 1. Đọc toàn bộ JSON Response
             JsonNode rootNode = objectMapper.readTree(response.getBody());
             String textResponse = rootNode.path("textResponse").asText();
 
-            // 2. Bóc tách Metrics để lấy thông tin Token
+            // Lấy thông tin Metrics (Tokens)
             JsonNode metricsNode = rootNode.path("metrics");
             Integer promptTokens = metricsNode.path("prompt_tokens").asInt(0);
             Integer completionTokens = metricsNode.path("completion_tokens").asInt(0);
 
-            // 3. Lấy TraceID (Nếu bạn đang dùng MDC trong Filter, lấy ra bằng cách này.
-            // Nếu chưa dùng MDC, có thể tạm gán là UUID hoặc pass từ tham số hàm vào)
+            // Lấy TraceID từ Context của Filter
             String traceId = org.slf4j.MDC.get("traceId");
             if (traceId == null) {
                 traceId = "no-trace-id";
             }
 
-            // 4. GỌI HÀM LƯU LOG (Nó sẽ chạy ngầm không làm chậm API)
+            // Ghi Log bất đồng bộ xuống DB
             chatLogService.saveLog(
                     traceId,
                     sessionId,
-                    workspace.name(), // Lấy tên Enum làm String
+                    workspace.name(), // Lưu tên Enum (VD: QUIZ_GRADER)
                     message,
                     textResponse,
                     promptTokens,
@@ -155,15 +164,18 @@ public class LLMApiClientImpl implements LLMApiClient {
                 return null;
             }
 
-            // 5. Trả về kết quả cho Controller như bình thường
+            // [CHỐT CHẶN AN TOÀN] Nếu backend chỉ cần trả về String thuần
+            if (responseType.equals(String.class)) {
+                return (T) textResponse;
+            }
+
+            // Nếu backend cần Object, map JSON từ textResponse về Object đó
             return objectMapper.readValue(textResponse, responseType);
 
         } catch (Exception e) {
             throw new RuntimeException("Lỗi gọi Chat AnythingLLM [" + endpoint + "]: " + e.getMessage(), e);
         }
-
     }
-
     @Override
     public <T> T callApi(PythonService targetService, String endpoint, HttpMethod method, Object requestBody, Class<T> responseType) {
         HttpHeaders headers = new HttpHeaders();
