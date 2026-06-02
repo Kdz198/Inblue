@@ -103,8 +103,13 @@ jobs:
         with:
           python-version: "3.12"
 
+      - name: Install Dependencies
+        run: pip install google-generativeai
+
       - name: Generate Release Note
         run: python generate_release_note.py
+        env:
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
 
       - name: Configure Git
         run: |
@@ -114,8 +119,5 @@ jobs:
       - name: Commit Release Note
         run: |
           git add docs/releases/
-
-          git diff --cached --quiet || \
-          git commit -m "docs: auto generate release note [skip ci]"
-
+          git diff --cached --quiet || git commit -m "docs: auto generate release note [skip ci]"
           git push
