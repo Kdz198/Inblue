@@ -19,6 +19,19 @@
 
                     <stackTrace>
                         <fieldName>stack_trace</fieldName>
+                        <throwableConverter class="net.logstash.logback.stacktrace.ShortenedThrowableConverter">
+                            <rootCauseFirst>true</rootCauseFirst>
+
+                            <maxDepthPerThrowable>15</maxDepthPerThrowable>
+
+                            <exclude>org\.springframework\..*</exclude>
+                            <exclude>org\.apache\.tomcat\..*</exclude>
+                            <exclude>org\.apache\.catalina\..*</exclude>
+                            <exclude>java\.lang\.reflect\..*</exclude>
+                            <exclude>jdk\.internal\.reflect\..*</exclude>
+                            <exclude>org\.hibernate\..*</exclude>
+                            <exclude>\$\$SpringCGLIB\$\$.*</exclude>
+                        </throwableConverter>
                     </stackTrace>
                     <mdc>
                         <includeMdcKeyName>traceId</includeMdcKeyName>
