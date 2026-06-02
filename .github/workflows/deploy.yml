@@ -14,6 +14,7 @@ env:
 
 jobs:
   build-and-test-then-push:
+    if: "!contains(github.event.head_commit.message, '[skip ci]')"
     runs-on: ubuntu-latest
 
     # Service Container: Tạo DB ảo để Spring Boot test kết nối lúc khởi động
@@ -94,3 +95,25 @@ jobs:
           context: .
           push: true
           tags: ${{ env.IMAGE_NAME }}:latest
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Generate Release Note
+        run: python generate_release_note.py
+
+      - name: Configure Git
+        run: |
+          git config user.name "HoangTuGio"
+          git config user.email "khangdeptrai198@gmail.com"
+
+      - name: Commit Release Note
+        run: |
+          git add docs/releases/
+
+          git diff --cached --quiet || \
+          git commit -m "docs: auto generate release note [skip ci]"
+
+          git push
