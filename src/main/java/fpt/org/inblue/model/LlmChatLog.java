@@ -25,9 +25,10 @@ public class LlmChatLog {
 
     private String workspace;
 
-
+    @Column(columnDefinition = "TEXT")
     private String userMessage;
 
+    @Column(columnDefinition = "TEXT")
     private String aiResponse;
 
     private Integer promptTokens;

@@ -121,8 +121,8 @@ public class TestController {
         return LLMApiClient.sendChatToAnythingLlm(
                 AnythingLlmWorkspace.CV_ANALYSIS,
                 cvEvaluationRequest,
-                "test-session-id",
-                false,
+                "Java - Backend",
+                true,
                 fileList,
                 CvEvaluationResponse.class
         );
