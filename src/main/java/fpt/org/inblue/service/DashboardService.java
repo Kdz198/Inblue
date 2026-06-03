@@ -1,7 +1,6 @@
 package fpt.org.inblue.service;
 
 import fpt.org.inblue.model.Payment;
-import fpt.org.inblue.model.Transaction;
 
 import java.util.List;
 
@@ -11,5 +10,5 @@ public interface DashboardService
     int getUserTotal();
     int getSessionTotal();
     List<Payment> getPayments();
-    List<Transaction> getTransactionOut();
+
 }

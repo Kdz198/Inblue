@@ -74,7 +74,6 @@ public class UserServiceImpl implements UserService {
                     .isActive(true)
                     .university(user.getUniversity())
                     .major(Major.valueOf(user.getMajor()))
-                    .walletBalance(0L)
                     .build();
 
             User savedUser = userRepository.save(userBuilder);

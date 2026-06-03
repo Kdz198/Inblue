@@ -1,7 +1,6 @@
 package fpt.org.inblue.service.impl;
 
 import fpt.org.inblue.model.Payment;
-import fpt.org.inblue.model.Transaction;
 import fpt.org.inblue.enums.PaymentStatus;
 import fpt.org.inblue.enums.Role;
 import fpt.org.inblue.repository.*;
@@ -20,8 +19,7 @@ public class DashboardServiceImpl implements DashboardService {
     private SessionRepository sessionRepository;
     @Autowired
     private PaymentRepository paymentRepository;
-    @Autowired
-    private TransactionRepository transactionRepository;
+
 
     @Override
     public int getMentorTotal() {
@@ -44,8 +42,4 @@ public class DashboardServiceImpl implements DashboardService {
         return paymentRepository.findAllByStatus(PaymentStatus.COMPLETED);
     }
 
-    @Override
-    public List<Transaction> getTransactionOut() {
-        return transactionRepository.findAllByTransactionType(true);
-    }
 }

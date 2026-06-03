@@ -20,11 +20,7 @@ public class ProcessDto {
      Round round;
     // Dành cho vòng tự luận, Email, SQL Script (Frontend gửi text lên)
     private String textContent;
-
-    // Dành cho vòng upload CV hoặc file kiến trúc (Frontend gửi link file sau khi upload S3)
     private MultipartFile file;
-
-    // Dành riêng cho vòng QUIZ
     private List<String> quizAnswers;
 
 }

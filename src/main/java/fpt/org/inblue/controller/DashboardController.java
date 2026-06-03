@@ -1,7 +1,6 @@
 package fpt.org.inblue.controller;
 
 import fpt.org.inblue.model.Payment;
-import fpt.org.inblue.model.Transaction;
 import fpt.org.inblue.service.DashboardService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
@@ -27,10 +26,6 @@ public class DashboardController {
     public ResponseEntity<Integer> getTotalUser() {
         return ResponseEntity.ok(dashboardService.getUserTotal());
     }
-     @GetMapping("/total-transaction")
-    public ResponseEntity<List<Transaction>> getTotalTransaction() {
-         return ResponseEntity.ok(dashboardService.getTransactionOut());
-     }
 
      @GetMapping("total-income")
         public ResponseEntity<List<Payment>> getTotalIncome() {

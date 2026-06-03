@@ -20,7 +20,7 @@ public class CVRoundProcessor implements RoundSubmissionProcessor {
 
     @Override
     public SubmissionResult process(ProcessDto detail) {
-
+        //bỏ vào cvEvaluationRequest rồi gọi qua python service sau đó nhận response và lưu vào application detail
         return null;
     }
 }

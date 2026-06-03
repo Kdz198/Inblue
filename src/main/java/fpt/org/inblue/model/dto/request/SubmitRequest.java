@@ -18,8 +18,6 @@ public class SubmitRequest {
     private Long applicationId;
     private String textContent;
 
-    // Dành cho vòng upload CV hoặc file kiến trúc (Frontend gửi link file sau khi upload S3)
-
     @Nullable
     private MultipartFile file;
 

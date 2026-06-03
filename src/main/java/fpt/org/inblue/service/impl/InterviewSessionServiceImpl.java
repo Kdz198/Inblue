@@ -35,9 +35,6 @@ public class InterviewSessionServiceImpl implements InterviewSessionService {
     private final LLMApiClient LLMApiClient;
     private final InterviewSessionRepository sessionRepository;
     private final InterviewSessionRedisRepository sessionRedisRepository;
-    private final UserService userService;
-    private final JwtUtils jwtUtils;
-    private final ApplicationEventPublisher applicationEventPublisher;
 
     private record jobDescription (String jd_text) {}
 
@@ -173,10 +170,6 @@ public class InterviewSessionServiceImpl implements InterviewSessionService {
                 session.setBlueprint( null);
             }
         }
-
-
-
-
         return  sessionRepository.saveAll(sessions);
     }
 

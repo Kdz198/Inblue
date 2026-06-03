@@ -30,7 +30,4 @@ public class User {
     private Major major;
     private String cvUrl;
     private String cv_public_id;
-
-    @Column(name ="wallet_balance")
-    private Long walletBalance;
 }

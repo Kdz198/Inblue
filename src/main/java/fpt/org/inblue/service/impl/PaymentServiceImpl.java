@@ -3,14 +3,12 @@ package fpt.org.inblue.service.impl;
 import fpt.org.inblue.exception.CustomException;
 import fpt.org.inblue.model.Payment;
 import fpt.org.inblue.model.Session;
-import fpt.org.inblue.model.Transaction;
 import fpt.org.inblue.model.User;
 import fpt.org.inblue.enums.PaymentStatus;
 import fpt.org.inblue.enums.PaymentPurpose;
 import fpt.org.inblue.enums.SessionStatus;
 import fpt.org.inblue.repository.PaymentRepository;
 import fpt.org.inblue.repository.SessionRepository;
-import fpt.org.inblue.repository.TransactionRepository;
 import fpt.org.inblue.repository.UserRepository;
 import fpt.org.inblue.service.PaymentService;
 import fpt.org.inblue.utils.HelperUtil;
@@ -40,8 +38,6 @@ public class PaymentServiceImpl implements PaymentService {
     private String cancelUrl;
     @Autowired
     private UserRepository userRepository;
-    @Autowired
-    private TransactionRepository transactionRepository;
     @Autowired
     private SessionRepository sessionRepository;
 
@@ -95,8 +91,10 @@ public class PaymentServiceImpl implements PaymentService {
             String type = HelperUtil.getPrefix(transactionCode);
             System.out.println("Received PayOS webhook for transaction code: " + transactionCode + ", type: " + type + ", status: " );
             if(type.equals("100")){
+                //xử lí payment cho từng vòng hoặc toàn bộ quy trình phỏng vấn
                 Payment payment = paymentRepository.findByTransactionCode(transactionCode);
                 if (webhookData.getDesc().equals("success")) {
+
                     payment.setStatus(PaymentStatus.COMPLETED);
                 }
                 if(payment.getPaymentPurpose().equals(PaymentPurpose.MENTOR_INTERVIEW)){
@@ -105,17 +103,7 @@ public class PaymentServiceImpl implements PaymentService {
                 }
                 paymentRepository.save(payment);
             }
-            else{
-                Transaction transaction = transactionRepository.findByTransactionCode(transactionCode);
-                User user = transaction.getUser();
-                transaction.setDescription("Nạp tiền vào ví Inblue");
-                long currentBalance = transaction.getUser().getWalletBalance();
-                currentBalance += transaction.getAmount();
-                transaction.setCurrentBalance(currentBalance);
-                user.setWalletBalance(currentBalance);
-                transactionRepository.save(transaction);
-                userRepository.save(user);
-            }
+
 
         } catch (Exception e) {
             System.err.println("Error processing PayOS webhook: " + e.getMessage());

@@ -32,6 +32,9 @@ public class ApplicationServiceImpl implements ApplicationService {
         Application application = new Application();
         application.setUserId(userId);
         application.setJdId(jdId);
+        JobDescription jd = jobDescriptionRepository.findById(jdId).orElseThrow(() -> new CustomException("Job Description not found", HttpStatus.NOT_FOUND));
+        jd.setAppliedCount(jd.getAppliedCount() + 1);
+        jobDescriptionRepository.save(jd);
         return applicationRepository.save(application);
     }
 
