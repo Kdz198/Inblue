@@ -13,6 +13,8 @@ import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.io.IOException;
+
 @RestController
 @RequestMapping("/api/application-details")
 public class ApplicationDetailController {
@@ -29,7 +31,7 @@ public class ApplicationDetailController {
                     @ApiResponse(responseCode = "400", description = "Dữ liệu đầu vào không hợp lệ")
             }
     )
-    public ResponseEntity<SubmissionResult> submitApplicationDetail(@ModelAttribute SubmitRequest submitRequest) {
+    public ResponseEntity<SubmissionResult> submitApplicationDetail(@ModelAttribute SubmitRequest submitRequest) throws IOException {
         System.out.println("Received submit request: " + submitRequest);
         SubmissionResult result = submissionService.submitRound(submitRequest);
         return ResponseEntity.ok(result);

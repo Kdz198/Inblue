@@ -17,6 +17,8 @@ import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.io.IOException;
+
 @Service
 @RequiredArgsConstructor
 public class SubmissionService {
@@ -26,7 +28,7 @@ public class SubmissionService {
     private final JobDescriptionService jobDescriptionService;
 
     @Transactional
-    public SubmissionResult submitRound(SubmitRequest detail) {
+    public SubmissionResult submitRound(SubmitRequest detail) throws IOException {
         System.out.println("Received submission: " + detail);
         Application currentApplication = applicationService.getApplicationById(detail.getApplicationId());
         Round currentRound = jobDescriptionService.getRoundByOrder( currentApplication.getJdId(), currentApplication.getCurrentRoundOrder());
@@ -38,7 +40,7 @@ public class SubmissionService {
         processDto.setQuizAnswers(detail.getQuizAnswers());
         processDto.setTextContent(detail.getTextContent());
         SubmissionResult submissionResult = processor.process(processDto);
-        if(submissionResult.getRoundResult().equals(RoundResult.PASSED)){
+        if(submissionResult.getStatus().equals(SubmissionResult.Status.COMPLETED)&&submissionResult.getRoundResult().equals(RoundResult.PASSED)){
             applicationService.moveToNextRound(currentApplication);
         }
         return submissionResult;

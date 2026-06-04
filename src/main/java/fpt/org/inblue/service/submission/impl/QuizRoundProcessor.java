@@ -38,7 +38,6 @@ public class QuizRoundProcessor implements RoundSubmissionProcessor {
     @Override
     @Transactional
     public SubmissionResult process(ProcessDto dto) {
-        System.out.println("Processing quiz round for application " + dto.getApplication().getId() + " and round " + dto.getRound().getId());
         //Lấy dữ liệu từ câu hỏi ra và đối chiếu với đáp án của user
         Round round = dto.getRound();
         ApplicationDetail applicationDetail = new ApplicationDetail();

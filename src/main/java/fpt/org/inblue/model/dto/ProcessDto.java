@@ -1,6 +1,7 @@
 package fpt.org.inblue.model.dto;
 
 import fpt.org.inblue.model.Application;
+import fpt.org.inblue.model.JobDescription;
 import fpt.org.inblue.model.Round;
 import fpt.org.inblue.model.dto.request.SubmitRequest;
 import lombok.AllArgsConstructor;

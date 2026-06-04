@@ -8,8 +8,10 @@ import fpt.org.inblue.model.dto.ProcessDto;
 import fpt.org.inblue.model.dto.SubmissionResult;
 import fpt.org.inblue.model.dto.request.SubmitRequest;
 
+import java.io.IOException;
+
 public interface RoundSubmissionProcessor {
 
     RoundType getSupportedType();
-    SubmissionResult process(ProcessDto detail);
+    SubmissionResult process(ProcessDto detail) throws IOException;
 }
