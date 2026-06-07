@@ -138,8 +138,22 @@ public class LLMApiClientImpl implements LLMApiClient {
             JsonNode rootNode = objectMapper.readTree(response.getBody());
             String textResponse = rootNode.path("textResponse").asText();
 
-            // Lấy thông tin Metrics (Tokens)
-            JsonNode metricsNode = rootNode.path("metrics");
+            if (textResponse == null || textResponse.trim().isEmpty()) {
+                return null;
+            }
+
+            // ==========================================================
+            // 🛠 FIX LỖI MARKDOWN TRƯỚC KHI PARSE (JSON SANITIZATION)
+            // ==========================================================
+            String cleanJson = textResponse.trim();
+            // Xóa thẻ ```json hoặc ```JSON hoặc ``` ở đầu chuỗi
+            cleanJson = cleanJson.replaceAll("^```(?i)json\\s*", "").replaceAll("^```\\s*", "");
+            // Xóa thẻ ``` ở cuối chuỗi
+            cleanJson = cleanJson.replaceAll("\\s*```$", "");
+                    // ==========================================================
+
+                    // Lấy thông tin Metrics (Tokens)
+                    JsonNode metricsNode = rootNode.path("metrics");
             Integer promptTokens = metricsNode.path("prompt_tokens").asInt(0);
             Integer completionTokens = metricsNode.path("completion_tokens").asInt(0);
 
@@ -149,28 +163,23 @@ public class LLMApiClientImpl implements LLMApiClient {
                 traceId = "no-trace-id";
             }
 
-            // Ghi Log bất đồng bộ xuống DB
             chatLogService.saveLog(
                     traceId,
                     sessionId,
-                    workspace.name(), // Lưu tên Enum (VD: QUIZ_GRADER)
+                    workspace.name(),
                     message,
-                    textResponse,
+                    cleanJson,
                     promptTokens,
                     completionTokens
             );
 
-            if (textResponse == null || textResponse.trim().isEmpty()) {
-                return null;
-            }
-
             // [CHỐT CHẶN AN TOÀN] Nếu backend chỉ cần trả về String thuần
             if (responseType.equals(String.class)) {
-                return (T) textResponse;
+                return (T) cleanJson;
             }
 
-            // Nếu backend cần Object, map JSON từ textResponse về Object đó
-            return objectMapper.readValue(textResponse, responseType);
+            // Nếu backend cần Object, map JSON từ chuỗi đã dọn dẹp về Object đó
+            return objectMapper.readValue(cleanJson, responseType);
 
         } catch (Exception e) {
             throw new RuntimeException("Lỗi gọi Chat AnythingLLM [" + endpoint + "]: " + e.getMessage(), e);
