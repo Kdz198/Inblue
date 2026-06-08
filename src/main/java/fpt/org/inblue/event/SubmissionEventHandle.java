@@ -68,9 +68,9 @@ public class SubmissionEventHandle {
                 .build();
         //Gọi LLM API để chấm điểm email
         CvEvaluationResponse response = LLMApiClient.sendChatToAnythingLlm(
-                AnythingLlmWorkspace.DOCS_ANALYSIS,
+                AnythingLlmWorkspace.EMAIL,
                 emailEvaluationRequest,
-                "email-session-id",
+                "java-backend",
                 false,
                 null,
                 CvEvaluationResponse.class
@@ -86,7 +86,7 @@ ApplicationDetail applicationDetail = new ApplicationDetail();
         applicationDetail.setSubmissionData(submissionData);
         applicationDetail.setAiScore(response.getScore());
         applicationDetail.setAiFeedback(parseRawMetrics(response.getExtraMetrics()));
-        System.out.println("APPLICATON DETAIL: " + applicationDetail);
+        applicationDetailRepository.save(applicationDetail);
     }
 
     private void processCvSubmission(ProcessDto dto) throws IOException {
@@ -123,7 +123,7 @@ ApplicationDetail applicationDetail = new ApplicationDetail();
         CvEvaluationResponse response = LLMApiClient.sendChatToAnythingLlm(
                 AnythingLlmWorkspace.CV_ANALYSIS,
                 cvEvaluationRequest,
-                "cv-session-id",
+                "java-backend",
                 false,
                 fileList,
                 CvEvaluationResponse.class
