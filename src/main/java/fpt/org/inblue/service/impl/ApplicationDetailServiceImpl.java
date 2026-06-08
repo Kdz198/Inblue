@@ -25,7 +25,12 @@ public class ApplicationDetailServiceImpl implements ApplicationDetailService {
     }
 
     @Override
-    public void hrScore(int applicationId, boolean isPass, String note) {
-
+    public void hrScore(int applicationId, boolean isPass, String note, double score) {
+        ApplicationDetail applicationDetail = getApplicationById(applicationId);
+        applicationDetail.setHrScore(score);
+        applicationDetail.setHrNote(note);
+        applicationDetail.setFinalScore(score);
+        applicationDetail.setFinalResult(isPass? ApplicationDetail.RoundResult.PASSED : ApplicationDetail.RoundResult.FAILED);
+        applicationDetailRepository.save(applicationDetail);
     }
 }

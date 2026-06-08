@@ -3,6 +3,7 @@ package fpt.org.inblue.controller;
 import fpt.org.inblue.model.ApplicationDetail;
 import fpt.org.inblue.model.dto.SubmissionResult;
 import fpt.org.inblue.model.dto.request.SubmitRequest;
+import fpt.org.inblue.service.ApplicationDetailService;
 import fpt.org.inblue.service.submission.SubmissionService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;
@@ -20,6 +21,8 @@ import java.io.IOException;
 public class ApplicationDetailController {
     @Autowired
     private SubmissionService submissionService;
+    @Autowired
+    private ApplicationDetailService applicationDetailService;
 
     @PostMapping(value = "/submit", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     @Operation(
@@ -36,4 +39,24 @@ public class ApplicationDetailController {
         SubmissionResult result = submissionService.submitRound(submitRequest);
         return ResponseEntity.ok(result);
     }
+
+    @PostMapping("hr-score")
+    public ResponseEntity<?> hrScore(@RequestParam int applicationId,
+                             @RequestParam boolean isPass,
+                             @RequestParam String note,
+                             @RequestParam double score){
+        applicationDetailService.hrScore(applicationId, isPass, note, score);
+        return ResponseEntity.ok().build();
+     }
+
+     @GetMapping("/{id}")
+        public ResponseEntity<ApplicationDetail> getApplicationDetailById(@PathVariable long id){
+            ApplicationDetail applicationDetail = applicationDetailService.getApplicationById(id);
+            return ResponseEntity.ok(applicationDetail);
+     }
+
+     @GetMapping("/application/{applicationId}")
+        public ResponseEntity<?> getApplicationDetailsByApplicationId(@PathVariable long applicationId){
+            return ResponseEntity.ok(applicationDetailService.getByApplicationId(applicationId));
+     }
 }
