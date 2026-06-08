@@ -49,7 +49,10 @@ public class QuizRoundProcessor implements RoundSubmissionProcessor {
             quizAnswers.add(new ApplicationDetail.QuizAnswer(round.getConfigData().getQuizQuestions().get(i).getQuestionText(), userAnswer, correctAnswer.equals(userAnswer)));
             score+= correctAnswer.equals(userAnswer) ? round.getConfigData().getQuizQuestions().get(i).getPoints() : 0.0;
         }
-        applicationDetail.setSubmissionData(new ApplicationDetail.SubmissionData(null,null,quizAnswers));
+        applicationDetail.setSubmissionData(ApplicationDetail.SubmissionData
+                .builder()
+                .quizAnswers(quizAnswers)
+                .build());
         applicationDetail.setApplicationId(dto.getApplication().getId());
         applicationDetail.setRoundId(dto.getRound().getId());
         applicationDetail.setFinalScore(score);
