@@ -11,6 +11,6 @@ import org.mapstruct.Mapping;
 public interface PostMapper {
     @Mapping(target = "postId", ignore = true)
     @Mapping(target = "author", ignore = true)
-    @Mapping(target = "major", ignore = true)
+//    @Mapping(target = "major", ignore = true)
     Post toEntity(PostCreateRequest dto);
 }

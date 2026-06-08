@@ -52,6 +52,7 @@ public class ApplicationDetail {
     private RoundResult finalResult;
 
 
+    @CreationTimestamp
     private LocalDateTime startedAt;
     private LocalDateTime completedAt;
 

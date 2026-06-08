@@ -2,7 +2,7 @@ package fpt.org.inblue.service.impl;
 
 import fpt.org.inblue.exception.CustomException;
 import fpt.org.inblue.model.Major;
-import fpt.org.inblue.repository.MajorRepository;
+import fpt.org.inblue.MajorRepository;
 import fpt.org.inblue.service.MajorService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;

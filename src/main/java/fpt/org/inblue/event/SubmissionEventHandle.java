@@ -2,6 +2,7 @@ package fpt.org.inblue.event;
 
 import fpt.org.inblue.cloudinary.CloudinaryService;
 import fpt.org.inblue.constants.CvMetricsConstant;
+import fpt.org.inblue.constants.EmailMetricsConstant;
 import fpt.org.inblue.enums.AnythingLlmWorkspace;
 import fpt.org.inblue.enums.ApplicationDetailStatus;
 import fpt.org.inblue.exception.CustomException;
@@ -10,6 +11,7 @@ import fpt.org.inblue.model.JobDescription;
 import fpt.org.inblue.model.Round;
 import fpt.org.inblue.model.dto.ProcessDto;
 import fpt.org.inblue.model.dto.request.CvEvaluationRequest;
+import fpt.org.inblue.model.dto.request.EmailEvaluationRequest;
 import fpt.org.inblue.model.dto.response.CvEvaluationResponse;
 import fpt.org.inblue.repository.ApplicationDetailRepository;
 import fpt.org.inblue.repository.JobDescriptionRepository;
@@ -35,11 +37,62 @@ public class SubmissionEventHandle {
 
     @Async
     @EventListener
-    public void handleCvSubmission(ProcessDto dto) throws IOException {
+    public void handleEventSubmission(ProcessDto dto) throws IOException {
+       switch(dto.getRoundType()){
+           case CV_SCREENING -> processCvSubmission(dto);
+           case EMAIL_SIMULATOR -> processEmailSubmission(dto);
+              default -> throw new CustomException("Unsupported round type: " + dto.getRoundType(), HttpStatus.BAD_REQUEST);
+       }
+    }
+
+    private void processEmailSubmission(ProcessDto dto){
+        Round round = dto.getRound();
+        Optional<JobDescription> jobDescription = jobDescriptionRepository.findById(dto.getApplication().getJdId());
+        if (jobDescription.isEmpty()) {
+            throw new CustomException("Job Description not found for id: " + dto.getApplication().getJdId(), HttpStatus.NOT_FOUND);
+        }
+        List<String> criteria = new ArrayList<>(List.of(EmailMetricsConstant.CLOSING_AND_SIGNATURE,EmailMetricsConstant.FORMATTING_AND_STRUCTURE,EmailMetricsConstant.CONTENT_AND_CLARITY,EmailMetricsConstant.GRAMMAR_AND_VOCABULARY,EmailMetricsConstant.GENERAL_COMMENT,EmailMetricsConstant.SALUTATION_AND_OPENING,EmailMetricsConstant.STRENGTH,EmailMetricsConstant.SUBJECT_LINE_QUALITY,EmailMetricsConstant.TONE_AND_PROFESSIONALISM,EmailMetricsConstant.WEAKNESS));
+        EmailEvaluationRequest.EvaluationCriteria evaluation = EmailEvaluationRequest.EvaluationCriteria.builder()
+                .maxScore(round.getConfigData().getMaxScore())
+                .aiSystemPrompt(round.getConfigData().getAiSystemPrompt())
+                .extraMetrics(criteria)
+                .build();
+        EmailEvaluationRequest.EmailContext context = EmailEvaluationRequest.EmailContext.builder()
+                .scenario(round.getConfigData().getEvaluationCriteria())
+                .level(String.valueOf(jobDescription.get().getLevel()))
+                .candidateEmail(dto.getTextContent())
+                .build();
+        EmailEvaluationRequest emailEvaluationRequest = EmailEvaluationRequest.builder()
+                .emailContext(context)
+                .evaluationCriteria(evaluation)
+                .build();
+        //Gọi LLM API để chấm điểm email
+        CvEvaluationResponse response = LLMApiClient.sendChatToAnythingLlm(
+                AnythingLlmWorkspace.DOCS_ANALYSIS,
+                emailEvaluationRequest,
+                "email-session-id",
+                false,
+                null,
+                CvEvaluationResponse.class
+        );
+
+ApplicationDetail applicationDetail = new ApplicationDetail();
+        applicationDetail.setApplicationId(dto.getApplication().getId());
+        applicationDetail.setRoundId(dto.getRound().getId());
+        applicationDetail.setStatus(ApplicationDetailStatus.AI_EVALUATED);
+        ApplicationDetail.SubmissionData submissionData = ApplicationDetail.SubmissionData.builder()
+                .textContent(dto.getTextContent())
+                .build();
+        applicationDetail.setSubmissionData(submissionData);
+        applicationDetail.setAiScore(response.getScore());
+        applicationDetail.setAiFeedback(parseRawMetrics(response.getExtraMetrics()));
+        System.out.println("APPLICATON DETAIL: " + applicationDetail);
+    }
+
+    private void processCvSubmission(ProcessDto dto) throws IOException {
         if (dto.getFile() == null || dto.getFile().isEmpty()) {
             System.err.println("File not found");
         }
-        System.out.println(dto.getFile().getOriginalFilename());
         Round round = dto.getRound();
         Optional<JobDescription> jobDescription = jobDescriptionRepository.findById(dto.getApplication().getJdId());
         if (jobDescription.isEmpty()) {
@@ -70,7 +123,7 @@ public class SubmissionEventHandle {
         CvEvaluationResponse response = LLMApiClient.sendChatToAnythingLlm(
                 AnythingLlmWorkspace.CV_ANALYSIS,
                 cvEvaluationRequest,
-                "test-session-id",
+                "cv-session-id",
                 false,
                 fileList,
                 CvEvaluationResponse.class
@@ -89,7 +142,6 @@ public class SubmissionEventHandle {
         applicationDetail.setAiFeedback(parseRawMetrics(response.getExtraMetrics()));
         applicationDetailRepository.save(applicationDetail);
     }
-
     public static ApplicationDetail.AiFeedback parseRawMetrics(Map<String, Object> rawMap) {
         if (rawMap == null) {
             return null;
