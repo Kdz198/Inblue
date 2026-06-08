@@ -59,6 +59,7 @@ public class Round {
 
         // --- CÁC FIELD CHO AI CHẤM ĐIỂM (Dùng cho Tự luận, Email, DB Design, Interview) ---
         private String aiSystemPrompt;
+        // Đề bài / tình huống yêu cầu viết email, tự luận, thiết kế DB, phỏng vấn... (VD: "Viết một đoạn văn giải thích về OOP" hoặc "Thiết kế DB cho hệ thống quản lý thư viện")
         private String evaluationCriteria;
 
         // --- FIELD DÀNH RIÊNG CHO VÒNG QUIZ ---

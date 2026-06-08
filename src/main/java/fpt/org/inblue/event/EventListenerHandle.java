@@ -1,13 +1,10 @@
 package fpt.org.inblue.event;
 
 import fpt.org.inblue.cloudinary.CloudinaryService;
-import fpt.org.inblue.model.FeatureUsageLog;
 import fpt.org.inblue.model.Mentor;
 import fpt.org.inblue.model.User;
-import fpt.org.inblue.model.dto.FeatureUsageLogDto;
 import fpt.org.inblue.model.dto.MentorEventDto;
 import fpt.org.inblue.model.dto.UserEventDto;
-import fpt.org.inblue.repository.FeatureUsageLogRepository;
 import fpt.org.inblue.repository.MentorRepository;
 import fpt.org.inblue.repository.UserRepository;
 import fpt.org.inblue.security.JwtUtils;
@@ -27,14 +24,14 @@ public class EventListenerHandle {
     private final CloudinaryService cloudinaryService;
     private final MentorRepository mentorRepository;
     private final JwtUtils jwtUtils;
-    private final FeatureUsageLogRepository featureUsageLogRepository;
+//    private final FeatureUsageLogRepository featureUsageLogRepository;
 
-    public EventListenerHandle(UserRepository userRepository, CloudinaryService cloudinaryService, MentorRepository mentorRepository, JwtUtils jwtUtils, FeatureUsageLogRepository featureUsageLogRepository) {
+    public EventListenerHandle(UserRepository userRepository, CloudinaryService cloudinaryService, MentorRepository mentorRepository, JwtUtils jwtUtils) {
         this.userRepository = userRepository;
         this.cloudinaryService = cloudinaryService;
         this.mentorRepository = mentorRepository;
         this.jwtUtils = jwtUtils;
-        this.featureUsageLogRepository = featureUsageLogRepository;
+//        this.featureUsageLogRepository = featureUsageLogRepository;
     }
 
     @Async

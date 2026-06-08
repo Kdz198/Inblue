@@ -29,7 +29,6 @@ public class SubmissionService {
 
     @Transactional
     public SubmissionResult submitRound(SubmitRequest detail) throws IOException {
-        System.out.println("Received submission: " + detail);
         Application currentApplication = applicationService.getApplicationById(detail.getApplicationId());
         Round currentRound = jobDescriptionService.getRoundByOrder( currentApplication.getJdId(), currentApplication.getCurrentRoundOrder());
         RoundSubmissionProcessor processor = roundProcessorFactory.getProcessor(currentRound.getRoundType());
@@ -39,6 +38,7 @@ public class SubmissionService {
         processDto.setFile(detail.getFile());
         processDto.setQuizAnswers(detail.getQuizAnswers());
         processDto.setTextContent(detail.getTextContent());
+        processDto.setRoundType(currentRound.getRoundType());
         SubmissionResult submissionResult = processor.process(processDto);
         if(submissionResult.getStatus().equals(SubmissionResult.Status.COMPLETED)&&submissionResult.getRoundResult().equals(RoundResult.PASSED)){
             applicationService.moveToNextRound(currentApplication);

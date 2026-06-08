@@ -15,5 +15,4 @@ import java.util.Map;
 public class CvEvaluationResponse {
     private Double score; // Điểm số cuối cùng sau khi AI chấm điểm
     private Map<String, Object> extraMetrics;
-
 }

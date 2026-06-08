@@ -40,9 +40,9 @@ public class Post {
     Instant creationDate;
     @UpdateTimestamp
     Instant lastModifiedDate;
-    @JoinColumn(name ="major_id")
-    @ManyToOne(fetch = FetchType.LAZY)
-    Major major;
+//    @JoinColumn(name ="major_id")
+//    @ManyToOne(fetch = FetchType.LAZY)
+//    Major major;
     String coverImgUrl;
     String public_id;
     @JdbcTypeCode(SqlTypes.JSON)

@@ -1,8 +1,12 @@
 package fpt.org.inblue.service.impl;
 
 import fpt.org.inblue.cloudinary.CloudinaryService;
+import fpt.org.inblue.enums.PostStatus;
 import fpt.org.inblue.mapper.PostMapper;
-import fpt.org.inblue.model.*;
+import fpt.org.inblue.model.Post;
+import fpt.org.inblue.model.PostComment;
+import fpt.org.inblue.model.PostLike;
+import fpt.org.inblue.model.User;
 import fpt.org.inblue.model.dto.request.PostCommentRequest;
 import fpt.org.inblue.model.dto.request.PostCreateRequest;
 import fpt.org.inblue.model.dto.request.PostLikeRequest;
@@ -10,9 +14,7 @@ import fpt.org.inblue.model.dto.response.PostCommentResponse;
 import fpt.org.inblue.model.dto.response.PostDetailResponse;
 import fpt.org.inblue.model.dto.response.PostLikeResponse;
 import fpt.org.inblue.model.dto.response.PostResponse;
-import fpt.org.inblue.enums.PostStatus;
 import fpt.org.inblue.repository.PostRepository;
-import fpt.org.inblue.service.MajorService;
 import fpt.org.inblue.service.PostService;
 import fpt.org.inblue.service.UserService;
 import lombok.extern.slf4j.Slf4j;
@@ -38,8 +40,8 @@ public class PostServiceImpl implements PostService {
     private PostRepository postRepository;
     @Autowired
     private CloudinaryService cloudinaryService;
-    @Autowired
-    private MajorService majorService;
+//    @Autowired
+//    private MajorService majorService;
     @Autowired
     private UserService userService;
 
@@ -47,7 +49,7 @@ public class PostServiceImpl implements PostService {
 
     @Override
     public Post createPost(PostCreateRequest post) throws IOException {
-        Major major = majorService.getMajorById(post.getMajorId());
+        //Major major = majorService.getMajorById(post.getMajorId());
         User user = userService.getById(post.getAuthorId());
         Map<String,String> uploadResult = cloudinaryService.uploadImg(post.getCoverImg());
         String url = uploadResult.get("secure_url");
@@ -55,7 +57,7 @@ public class PostServiceImpl implements PostService {
         Post saved = postMapper.toEntity(post);
         saved.setPublic_id(public_id);
         saved.setCoverImgUrl(url);
-        saved.setMajor(major);
+        //saved.setMajor(major);
         saved.setAuthor(user);
         return postRepository.save(saved);
     }
@@ -100,7 +102,7 @@ public class PostServiceImpl implements PostService {
                                 .name(post.getAuthor().getName())
                                 .avatar(post.getAuthor().getAvatarUrl())
                                 .build() : null)
-                .majorName(post.getMajor() != null ? post.getMajor().getMajorName() : null)
+                //.majorName(post.getMajor() != null ? post.getMajor().getMajorName() : null)
                 .build();
         response.setPost(detailResponse);
         response.setLikeCount(post.getLikes() != null ? post.getLikes().size() : 0);
@@ -151,7 +153,7 @@ public class PostServiceImpl implements PostService {
                                     .name(post.getAuthor().getName())
                                     .avatar(post.getAuthor().getAvatarUrl())
                                     .build() : null)
-                    .majorName(post.getMajor() != null ? post.getMajor().getMajorName() : null)
+                  //  .majorName(post.getMajor() != null ? post.getMajor().getMajorName() : null)
                     .build();
 
             response.setPost(postDetail);
