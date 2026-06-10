@@ -2,12 +2,14 @@ package fpt.org.inblue.service;
 
 import fpt.org.inblue.enums.AnythingLlmWorkspace;
 import fpt.org.inblue.enums.PythonService;
+import fpt.org.inblue.model.dto.request.CompilerRequestDto;
+import fpt.org.inblue.model.dto.response.CompilerResponseDto;
 import org.springframework.http.HttpMethod;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
 
-public interface LLMApiClient {
+public interface ApiClient {
     <T> T callApi(PythonService targetService, String endpoint, HttpMethod method, Object requestBody, Class<T> responseType);
 
     <T> T sendChatToAnythingLlm(
@@ -17,4 +19,6 @@ public interface LLMApiClient {
             boolean reset,
             List<MultipartFile> files,
             Class<T> responseType);
+
+    CompilerResponseDto executeCode(CompilerRequestDto request);
 }

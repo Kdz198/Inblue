@@ -6,7 +6,9 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import fpt.org.inblue.enums.AnythingLlmWorkspace;
 import fpt.org.inblue.enums.PythonService;
-import fpt.org.inblue.service.LLMApiClient;
+import fpt.org.inblue.model.dto.request.CompilerRequestDto;
+import fpt.org.inblue.model.dto.response.CompilerResponseDto;
+import fpt.org.inblue.service.ApiClient;
 import fpt.org.inblue.service.LlmChatLogService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
@@ -22,7 +24,7 @@ import java.util.*;
 
 @Service
 @RequiredArgsConstructor
-public class LLMApiClientImpl implements LLMApiClient {
+public class ApiClientImpl implements ApiClient {
 
     private final RestTemplate restTemplate;
 
@@ -38,6 +40,10 @@ public class LLMApiClientImpl implements LLMApiClient {
 
     @Value("${ANYTHING_LLM_API_KEY:}")
     private String ANYTHING_LLM_API_KEY;
+
+    // --- CẤU HÌNH COMPILER SERVICE MỚI ---
+    @Value("${COMPILER_SERVICE_URL:}")
+    private String COMPILER_SERVICE_URL;
 
     private final LlmChatLogService chatLogService;
 
@@ -227,6 +233,35 @@ public class LLMApiClientImpl implements LLMApiClient {
 
         } catch (Exception e) {
             throw new RuntimeException("Lỗi gọi Python API [" + endpoint + "]: " + e.getMessage(), e);
+        }
+    }
+
+
+
+
+
+    @Override
+    public CompilerResponseDto executeCode(CompilerRequestDto request) {
+
+
+        try {
+            // 3. THỰC THI CALL SANG FASTAPI SANDBOX
+            ResponseEntity<String> response = restTemplate.postForEntity(
+                    COMPILER_SERVICE_URL,
+                    request,
+                    String.class
+            );
+
+            if (response.getBody() == null) return null;
+
+            // 4. BÓC TÁCH MAPPING KẾT QUẢ VỀ DTO
+            ObjectMapper objectMapper = new ObjectMapper();
+            objectMapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
+
+            return objectMapper.readValue(response.getBody(), CompilerResponseDto.class);
+
+        } catch (Exception e) {
+            throw new RuntimeException("Lỗi gọi Compiler Service: " + e.getMessage(), e);
         }
     }
 }

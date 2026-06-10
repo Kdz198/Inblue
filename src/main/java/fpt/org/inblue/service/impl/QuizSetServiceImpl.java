@@ -15,7 +15,7 @@ import fpt.org.inblue.enums.PythonService;
 import fpt.org.inblue.repository.PracticeSetRepository;
 import fpt.org.inblue.repository.QuizSetRepository;
 import fpt.org.inblue.security.JwtUtils;
-import fpt.org.inblue.service.LLMApiClient;
+import fpt.org.inblue.service.ApiClient;
 import fpt.org.inblue.service.QuizItemService;
 import fpt.org.inblue.service.QuizSetService;
 import fpt.org.inblue.service.UserService;
@@ -43,7 +43,7 @@ public class QuizSetServiceImpl implements QuizSetService {
     @Autowired
     private QuizItemService quizItemService;
     @Autowired
-    private LLMApiClient LLMApiClient;
+    private ApiClient ApiClient;
 
     @Autowired
     private ObjectMapper objectMapper;
@@ -154,7 +154,7 @@ public class QuizSetServiceImpl implements QuizSetService {
                 .majorName(majorName)
                 .build();
 
-        QuizItemCreateRequest[] response = LLMApiClient.callApi(
+        QuizItemCreateRequest[] response = ApiClient.callApi(
                 PythonService.LLM,
                 ApiPath.GENERATE_QUIZ_ITEM_API,
                 HttpMethod.POST,

@@ -15,7 +15,7 @@ import fpt.org.inblue.repository.InterviewSessionRepository;
 import fpt.org.inblue.repository.caching.InterviewSessionRedisRepository;
 import fpt.org.inblue.service.InterviewProcessService;
 import fpt.org.inblue.service.ProctoringService;
-import fpt.org.inblue.service.LLMApiClient;
+import fpt.org.inblue.service.ApiClient;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.RequiredArgsConstructor;
@@ -33,7 +33,7 @@ public class InterviewProcessServiceImpl implements InterviewProcessService {
 
     private final InterviewSessionRedisRepository redisRepository;
     private final InterviewSessionRepository sessionRepository;
-    private final LLMApiClient LLMApiClient;
+    private final ApiClient ApiClient;
     private final ProctoringService proctoringService;
 
     @Override
@@ -89,7 +89,7 @@ public class InterviewProcessServiceImpl implements InterviewProcessService {
         // [FIXED] Truyền session vào đây
         var pythonRequest = buildPythonRequest(currentAnchorInfo, nextAnchorInfo, contextExchanges, session);
 
-        OrchestratorAnalysisResponse aiResponse = LLMApiClient.callApi(
+        OrchestratorAnalysisResponse aiResponse = ApiClient.callApi(
                 PythonService.LLM,
                 ApiPath.ANALYZER_API,
                 HttpMethod.POST,
@@ -301,7 +301,7 @@ public class InterviewProcessServiceImpl implements InterviewProcessService {
         GradingResponse gradingRes;
         try {
             // Gửi cả list (Anchor + Follow-ups) qua Python
-            gradingRes = LLMApiClient.callApi(
+            gradingRes = ApiClient.callApi(
                     PythonService.LLM,
                     ApiPath.GRADING_API,
                     HttpMethod.POST,
@@ -364,7 +364,7 @@ public class InterviewProcessServiceImpl implements InterviewProcessService {
 
     private String genOverviewFeedback(List<InterviewResultDetail.QAResult> gradedHistory) {
 
-        return LLMApiClient.callApi(
+        return ApiClient.callApi(
                 PythonService.LLM,
                 ApiPath.OVERVIEW_FEEDBACK_API,
                 HttpMethod.POST,

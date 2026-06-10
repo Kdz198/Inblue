@@ -6,12 +6,11 @@ import fpt.org.inblue.enums.PythonService;
 import fpt.org.inblue.model.dto.request.CvEvaluationRequest;
 import fpt.org.inblue.model.dto.response.CVParserResponse;
 import fpt.org.inblue.model.dto.response.CvEvaluationResponse;
-import fpt.org.inblue.service.LLMApiClient;
+import fpt.org.inblue.service.ApiClient;
 import fpt.org.inblue.service.RedisTestService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Encoding;
-import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.slf4j.MDC;
@@ -31,7 +30,7 @@ import java.util.List;
 public class TestController {
 
     private final RedisTestService redisTestService;
-    private final LLMApiClient LLMApiClient;
+    private final ApiClient ApiClient;
 
     @GetMapping("/hello")
     public String hello() {
@@ -84,7 +83,7 @@ public class TestController {
     @PostMapping(value = "/python-test", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public CVParserResponse testPythonApi(@RequestParam("file") MultipartFile file) {
 
-        CVParserResponse response = LLMApiClient.callApi(PythonService.LLM, ApiPath.CV_API, HttpMethod.POST, file, CVParserResponse.class);
+        CVParserResponse response = ApiClient.callApi(PythonService.LLM, ApiPath.CV_API, HttpMethod.POST, file, CVParserResponse.class);
 
 
         return response;
@@ -118,7 +117,7 @@ public class TestController {
             fileList.add(cv);
         }
 
-        return LLMApiClient.sendChatToAnythingLlm(
+        return ApiClient.sendChatToAnythingLlm(
                 AnythingLlmWorkspace.CV_ANALYSIS,
                 cvEvaluationRequest,
                 "Java - Backend",

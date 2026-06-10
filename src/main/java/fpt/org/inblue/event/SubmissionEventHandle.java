@@ -15,7 +15,7 @@ import fpt.org.inblue.model.dto.request.EmailEvaluationRequest;
 import fpt.org.inblue.model.dto.response.CvEvaluationResponse;
 import fpt.org.inblue.repository.ApplicationDetailRepository;
 import fpt.org.inblue.repository.JobDescriptionRepository;
-import fpt.org.inblue.service.LLMApiClient;
+import fpt.org.inblue.service.ApiClient;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.event.EventListener;
 import org.springframework.http.HttpStatus;
@@ -31,7 +31,7 @@ import java.util.*;
 public class SubmissionEventHandle {
 
     private final JobDescriptionRepository jobDescriptionRepository;
-    private final LLMApiClient LLMApiClient;
+    private final ApiClient ApiClient;
     private final CloudinaryService cloudinaryService;
     private final ApplicationDetailRepository applicationDetailRepository;
 
@@ -67,7 +67,7 @@ public class SubmissionEventHandle {
                 .evaluationCriteria(evaluation)
                 .build();
         //Gọi LLM API để chấm điểm email
-        CvEvaluationResponse response = LLMApiClient.sendChatToAnythingLlm(
+        CvEvaluationResponse response = ApiClient.sendChatToAnythingLlm(
                 AnythingLlmWorkspace.EMAIL,
                 emailEvaluationRequest,
                 "java-backend",
@@ -120,7 +120,7 @@ ApplicationDetail applicationDetail = new ApplicationDetail();
             fileList.add(dto.getFile());
         }
 
-        CvEvaluationResponse response = LLMApiClient.sendChatToAnythingLlm(
+        CvEvaluationResponse response = ApiClient.sendChatToAnythingLlm(
                 AnythingLlmWorkspace.CV_ANALYSIS,
                 cvEvaluationRequest,
                 "java-backend",

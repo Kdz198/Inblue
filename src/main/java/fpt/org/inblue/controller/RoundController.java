@@ -4,7 +4,7 @@ import fpt.org.inblue.model.Round;
 import fpt.org.inblue.model.dto.WhiteboardQuestionDto;
 import fpt.org.inblue.model.dto.request.SetupJdRoundsRequest;
 import fpt.org.inblue.model.dto.request.UpdateJdRoundRequest;
-import fpt.org.inblue.service.LLMApiClient;
+import fpt.org.inblue.service.ApiClient;
 import fpt.org.inblue.service.RoundService;
 import io.swagger.v3.oas.annotations.Operation;
 import lombok.RequiredArgsConstructor;
@@ -12,7 +12,6 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
-import java.util.UUID;
 
 import static fpt.org.inblue.enums.AnythingLlmWorkspace.CODING_GEN;
 
@@ -23,7 +22,7 @@ public class RoundController {
 
 
     private final RoundService roundService;
-    private final LLMApiClient llmApiClient;
+    private final ApiClient apiClient;
 
     @PutMapping("/jd/{jdId}")
     @Operation(summary = "Thiết lập các vòng phỏng vấn cho một Job Description",
@@ -45,7 +44,7 @@ public class RoundController {
     @PostMapping("/generate-whiteboard-question")
     public WhiteboardQuestionDto generateQuestion(@RequestBody String hrIdea) {
 
-        return llmApiClient.sendChatToAnythingLlm(
+        return apiClient.sendChatToAnythingLlm(
                 CODING_GEN,
                 "Tạo đề bài lập trình với yêu cầu sau: " + hrIdea,
                 "Java - Backend",
