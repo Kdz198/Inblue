@@ -7,5 +7,5 @@ public enum RoundType {
     CODING,     // Thuật toán / Logic
     CODE_REVIEW,           // Đọc hiểu & Bắt lỗi code người khác
     MENTROR_REVIEW,          // phỏng vấn với mentor (có phần đánh giá mentor)
-    AI_INTERVIEW           // Vấn đáp trực tiếp (Tech + Behavioral)
+    AI_INTERVIEW          // Vấn đáp trực tiếp (Tech + Behavioral)
 }

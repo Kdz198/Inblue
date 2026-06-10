@@ -1,10 +1,12 @@
 package fpt.org.inblue.service.impl;
 
 import fpt.org.inblue.exception.CustomException;
+import fpt.org.inblue.model.CodingProblem;
 import fpt.org.inblue.model.JobDescription;
 import fpt.org.inblue.model.Round;
 import fpt.org.inblue.model.dto.request.SetupJdRoundsRequest;
 import fpt.org.inblue.model.dto.request.UpdateJdRoundRequest;
+import fpt.org.inblue.repository.CodingProblemsRepository;
 import fpt.org.inblue.repository.JobDescriptionRepository;
 import fpt.org.inblue.repository.RoundRepository;
 import fpt.org.inblue.service.RoundService;
@@ -19,20 +21,22 @@ import java.util.stream.Collectors;
 public class RoundServiceImpl implements RoundService {
     private final RoundRepository roundRepository;
     private final JobDescriptionRepository jobDescriptionRepository;
+    private final CodingProblemsRepository codingProblemsRepository;
 
-    public RoundServiceImpl(RoundRepository roundRepository, JobDescriptionRepository jobDescriptionRepository) {
+    public RoundServiceImpl(RoundRepository roundRepository, JobDescriptionRepository jobDescriptionRepository, CodingProblemsRepository codingProblemsRepository) {
         this.roundRepository = roundRepository;
         this.jobDescriptionRepository = jobDescriptionRepository;
+        this.codingProblemsRepository = codingProblemsRepository;
     }
 
     @Override
     public List<Round> setUpRoundForJd(Long jdId, SetupJdRoundsRequest request) {
         Optional<JobDescription> jd = jobDescriptionRepository.findById(jdId);
-        if(jd.isEmpty()){
+        if (jd.isEmpty()) {
             throw new CustomException("Job Description không tồn tại", HttpStatus.NOT_FOUND);
         }
         List<Round> rounds = new ArrayList<>();
-        for(SetupJdRoundsRequest.RoundItemDto item : request.getRounds()){
+        for (SetupJdRoundsRequest.RoundItemDto item : request.getRounds()) {
             Round round = new Round();
             round.setName(item.getName());
             round.setRoundOrder(item.getRoundOrder());
@@ -46,8 +50,8 @@ public class RoundServiceImpl implements RoundService {
             roundConfig.setAiSystemPrompt(item.getConfigData().getAiSystemPrompt());
             roundConfig.setEvaluationCriteria(item.getConfigData().getEvaluationCriteria());
             List<Round.QuizQuestion> quizQuestions = new ArrayList<>();
-            if(item.getConfigData().getQuizQuestions() != null){
-                for(int i = 0; i < item.getConfigData().getQuizQuestions().size(); i++){
+            if (item.getConfigData().getQuizQuestions() != null) {
+                for (int i = 0; i < item.getConfigData().getQuizQuestions().size(); i++) {
                     Round.QuizQuestion question = new Round.QuizQuestion();
                     SetupJdRoundsRequest.QuizQuestionDto questionDto = item.getConfigData().getQuizQuestions().get(i);
                     question.setQuestionText(questionDto.getQuestionText());
@@ -57,6 +61,25 @@ public class RoundServiceImpl implements RoundService {
                     quizQuestions.add(question);
                 }
             }
+           if(item.getConfigData().getCodingProblemsId() != null) {
+               List<Round.CodingProblemSnapshot> codingProblems = new ArrayList<>();
+               for (Long codingProblemId : item.getConfigData().getCodingProblemsId()) {
+                   Optional<CodingProblem> cp = codingProblemsRepository.findById(codingProblemId);
+                   Round.CodingProblemSnapshot snapshot = Round.CodingProblemSnapshot.builder()
+                           .title(cp.get().getTitle())
+                           .codeStubs(cp.get().getCodeStubs())
+                           .difficulty(cp.get().getDifficulty())
+                           .executionTimeLimitMs(cp.get().getExecutionTimeLimitMs())
+                           .memoryLimitMb(cp.get().getMemoryLimitMb())
+                           .problemId(codingProblemId)
+                           .problemStatement(cp.get().getProblemStatement())
+                           .rulesAndConstraints(cp.get().getRulesAndConstraints())
+                           .visibleExamples(cp.get().getVisibleExamples())
+                           .build();
+                   codingProblems.add(snapshot);
+               }
+               roundConfig.setCodingProblems(codingProblems);
+           }
             roundConfig.setQuizQuestions(quizQuestions);
             round.setConfigData(roundConfig);
             rounds.add(round);
@@ -112,6 +135,27 @@ public class RoundServiceImpl implements RoundService {
                     quizQuestions.add(question);
                 }
             }
+            List<Round.CodingProblemSnapshot> codingProblems = new ArrayList<>();
+            if (item.getConfigData().getCodingProblemsId() != null) {
+                for (Long codingProblemId : item.getConfigData().getCodingProblemsId()) {
+                    Optional<CodingProblem> cp = codingProblemsRepository.findById(codingProblemId);
+                    if (cp.isEmpty()) {
+                        throw new CustomException("Coding Problem với id " + codingProblemId + " không tồn tại", HttpStatus.BAD_REQUEST);
+                    }
+                    Round.CodingProblemSnapshot snapshot = Round.CodingProblemSnapshot.builder()
+                            .title(cp.get().getTitle())
+                            .codeStubs(cp.get().getCodeStubs())
+                            .difficulty(cp.get().getDifficulty())
+                            .executionTimeLimitMs(cp.get().getExecutionTimeLimitMs())
+                            .memoryLimitMb(cp.get().getMemoryLimitMb())
+                            .problemId(codingProblemId)
+                            .problemStatement(cp.get().getProblemStatement())
+                            .rulesAndConstraints(cp.get().getRulesAndConstraints())
+                            .visibleExamples(cp.get().getVisibleExamples())
+                            .build();
+                    codingProblems.add(snapshot);
+                }
+            }
             roundConfig.setQuizQuestions(quizQuestions);
             round.setConfigData(roundConfig);
             updatedRounds.add(round);
@@ -124,9 +168,9 @@ public class RoundServiceImpl implements RoundService {
     }
 
     @Override
-    public Round getRoundById(Long roundId){
+    public Round getRoundById(Long roundId) {
         Optional<Round> round = roundRepository.findById(roundId);
-        if(round.isEmpty()){
+        if (round.isEmpty()) {
             throw new CustomException("Round không tồn tại", HttpStatus.NOT_FOUND);
         }
         return round.get();

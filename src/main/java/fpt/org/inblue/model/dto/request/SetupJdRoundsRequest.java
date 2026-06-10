@@ -50,6 +50,7 @@ public class SetupJdRoundsRequest {
 
         // Chỉ dùng cho vòng QUIZ
         private List<QuizQuestionDto> quizQuestions;
+        private List<Long> codingProblemsId;
     }
 
     @Data

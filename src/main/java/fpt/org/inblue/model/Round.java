@@ -66,70 +66,24 @@ public class Round {
 
         // --- FIELD CHO VÒNG QUIZ ---
         private List<QuizQuestion> quizQuestions;
+        private List<CodingProblemSnapshot> codingProblems; // Dùng để lưu snapshot của bài coding khi tạo round, tránh bị ảnh hưởng nếu bài gốc bị sửa sau đó
 
-        // --- MỚI: FIELD DÀNH RIÊNG CHO VÒNG CODING (DOCKER SANDBOX) ---
-        private List<CodingChallenge> codingChallenges; // Có thể cho thi 1 lúc nhiều bài
-
-        // --- FIELD DÀNH RIÊNG CHO VÒNG CODE_REVIEW ---
-        private List<CodeReviewFile> codeReviewFiles;
     }
 
     @Data
     @NoArgsConstructor
     @AllArgsConstructor
     @Builder
-    public static class CodeReviewFile {
-        private String fileName;    // VD: "OrderService.java"
-        private String language;    // VD: "java" (Để FE highlight syntax cho chuẩn)
-        private String fileContent; // Nội dung code chứa lỗ hổng
-    }
-
-    // Class con định nghĩa dữ liệu cho Sandbox & UI vòng Coding
-    @Data
-    @NoArgsConstructor
-    @AllArgsConstructor
-    @Builder
-    @JsonIgnoreProperties(ignoreUnknown = true)
-    public static class CodingChallenge {
-        // 1. Phần hiển thị cho ứng viên (Lấy từ DTO của bạn qua)
+    public static class CodingProblemSnapshot {
+        private Long problemId;          // Giữ lại để trace về bài gốc nếu cần
         private String title;
-        private String difficulty;
+        private CodingProblem.Difficulty difficulty;
         private String problemStatement;
         private List<String> rulesAndConstraints;
-        private List<Example> visibleExamples; // Input/Output ứng viên nhìn thấy
-
-        // 2. Phần thiết lập cho Docker Sandbox (Quan trọng)
-        private Integer executionTimeLimitMs; // VD: 2000 (2 giây)
-        private Integer memoryLimitMb;        // VD: 256 (MB)
-        private List<String> allowedLanguages;// VD: ["JAVA", "PYTHON", "CPP"]
-
-        // 3. Khung code mẫu cho từng ngôn ngữ (Tùy chọn)
-        // Key: "JAVA", Value: "class Solution {\n  public int solve(int[] arr) {\n    return 0;\n  }\n}"
+        private List<CodingProblem.Example> visibleExamples;
+        private Integer executionTimeLimitMs;
+        private Integer memoryLimitMb;
         private Map<String, String> codeStubs;
-
-        // 4. Testcase dùng để chấm điểm (Ẩn với ứng viên)
-        private List<TestCase> hiddenTestCases;
-    }
-
-    @Data
-    @NoArgsConstructor
-    @AllArgsConstructor
-    @Builder
-    public static class Example {
-        private String input;
-        private String output;
-        private String explanation;
-    }
-
-    @Data
-    @NoArgsConstructor
-    @AllArgsConstructor
-    @Builder
-    public static class TestCase {
-        private String input;         // Dữ liệu bơm vào stdin của Docker
-        private String expectedOutput;// Dữ liệu hứng từ stdout của Docker để so sánh
-        private Integer weightPoints; // Trọng số điểm của testcase này (VD: 10 điểm)
-        private Boolean isHidden;     // Mặc định true (Không gửi xuống FE)
     }
 
     // Class con định nghĩa cấu trúc 1 câu hỏi trắc nghiệm
