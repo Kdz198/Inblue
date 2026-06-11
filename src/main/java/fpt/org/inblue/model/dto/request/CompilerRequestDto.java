@@ -1,5 +1,6 @@
 package fpt.org.inblue.model.dto.request;
 
+import fpt.org.inblue.enums.CompilerLanguage;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -11,7 +12,7 @@ import java.util.List;
 @NoArgsConstructor
 @AllArgsConstructor
 public class CompilerRequestDto {
-    private String language;
+    private CompilerLanguage language;
     private List<String> sourceCode;
     private int timeLimitMs;
     private int memoryLimitMb;
