@@ -14,7 +14,7 @@ import fpt.org.inblue.model.dto.response.CVParserResponse;
 import fpt.org.inblue.model.dto.response.UserResponse;
 import fpt.org.inblue.repository.UserRepository;
 import fpt.org.inblue.service.CandidateProfileService;
-import fpt.org.inblue.service.LLMApiClient;
+import fpt.org.inblue.service.ApiClient;
 import fpt.org.inblue.service.UserService;
 import fpt.org.inblue.utils.FileUtil;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -44,7 +44,7 @@ public class UserServiceImpl implements UserService {
     @Autowired
     private CloudinaryService cloudinaryService;
     @Autowired
-    private LLMApiClient LLMApiClient;
+    private ApiClient ApiClient;
     @Autowired
     private CandidateProfileService candidateProfileService;
 
@@ -135,7 +135,7 @@ public class UserServiceImpl implements UserService {
             candidateId = candidateProfileService.getProfileByUserId(userId).getId();
         }
         CVParserResponse response =
-                LLMApiClient.callApi(
+                ApiClient.callApi(
                         PythonService.LLM,
                         ApiPath.CV_API,
                         HttpMethod.POST,

@@ -12,12 +12,9 @@ import fpt.org.inblue.model.dto.request.OrchestratorRequest.JobRequirementData;
 import fpt.org.inblue.model.dto.response.InterviewBlueprintResponse;
 import fpt.org.inblue.repository.InterviewSessionRepository;
 import fpt.org.inblue.repository.caching.InterviewSessionRedisRepository;
-import fpt.org.inblue.security.JwtUtils;
 import fpt.org.inblue.service.InterviewSessionService;
-import fpt.org.inblue.service.LLMApiClient;
-import fpt.org.inblue.service.UserService;
+import fpt.org.inblue.service.ApiClient;
 import lombok.RequiredArgsConstructor;
-import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.http.HttpMethod;
 import org.springframework.retry.annotation.Backoff;
 import org.springframework.retry.annotation.Retryable;
@@ -32,7 +29,7 @@ import java.util.stream.Collectors;
 public class InterviewSessionServiceImpl implements InterviewSessionService {
 
 
-    private final LLMApiClient LLMApiClient;
+    private final ApiClient ApiClient;
     private final InterviewSessionRepository sessionRepository;
     private final InterviewSessionRedisRepository sessionRedisRepository;
 
@@ -46,7 +43,7 @@ public class InterviewSessionServiceImpl implements InterviewSessionService {
     )
     public JobRequirementData getJobRequirementFromJD(String description) {
 
-        return LLMApiClient.callApi(
+        return ApiClient.callApi(
                 PythonService.LLM,
                 ApiPath.JD_API,
                 HttpMethod.POST,
@@ -98,7 +95,7 @@ public class InterviewSessionServiceImpl implements InterviewSessionService {
                 .build();
 
 
-        InterviewBlueprintResponse blueprint = LLMApiClient.callApi(
+        InterviewBlueprintResponse blueprint = ApiClient.callApi(
                 PythonService.LLM,
                 ApiPath.ORCHESTRATOR_API,
                 HttpMethod.POST,
