@@ -1,6 +1,8 @@
 package fpt.org.inblue.controller;
 
 import fpt.org.inblue.model.CodingProblem;
+import fpt.org.inblue.model.dto.request.CodingProblemGenerateRequest;
+import fpt.org.inblue.model.dto.response.CodingProblemGenerateResponse;
 import fpt.org.inblue.service.CodingProblemService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
@@ -29,6 +31,12 @@ public class CodingProblemController {
     public ResponseEntity<CodingProblem> createCodingProblem(@RequestBody CodingProblem codingProblem) {
         CodingProblem savedCodingProblem = codingProblemService.save(codingProblem);
         return ResponseEntity.ok(savedCodingProblem);
+    }
+
+    @PostMapping("/generate")
+    public ResponseEntity<CodingProblemGenerateResponse> generateCodingProblem(@RequestBody CodingProblemGenerateRequest request) {
+        CodingProblemGenerateResponse response = codingProblemService.generateCodingProblem(request);
+        return ResponseEntity.ok(response);
     }
 
 }

@@ -1,4 +1,4 @@
-package fpt.org.inblue.model.dto.request;
+package fpt.org.inblue.model.dto.response;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -23,13 +23,14 @@ public class CodingProblemGenerateResponse {
     private Integer memoryLimitMb;
     private Map<String, String> codeStubs;
     private List<TestCase> hiddenTestCases;
-    private List<String> pramTypes;
+    private List<String> paramTypes;
+    private String returnType;
     @Data
     @NoArgsConstructor
     @AllArgsConstructor
     @Builder
     public static class Example {
-        private List<String> input;
+        private List<String> inputs;
         private String output;
         private String explanation;
     }
@@ -39,7 +40,7 @@ public class CodingProblemGenerateResponse {
     @AllArgsConstructor
     @Builder
     public static class TestCase {
-        private List<String> input;
+        private List<String> inputs;
         private String expectedOutput;
         private Integer weightPoints;
     }

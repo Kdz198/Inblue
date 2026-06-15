@@ -2,7 +2,7 @@ package fpt.org.inblue.service;
 
 import fpt.org.inblue.model.CodingProblem;
 import fpt.org.inblue.model.dto.request.CodingProblemGenerateRequest;
-import fpt.org.inblue.model.dto.request.CodingProblemGenerateResponse;
+import fpt.org.inblue.model.dto.response.CodingProblemGenerateResponse;
 
 import java.util.List;
 import java.util.Optional;
