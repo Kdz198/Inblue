@@ -1,6 +1,8 @@
 package fpt.org.inblue.service.impl;
 
 import fpt.org.inblue.model.CodingProblem;
+import fpt.org.inblue.model.dto.request.CodingProblemGenerateRequest;
+import fpt.org.inblue.model.dto.request.CodingProblemGenerateResponse;
 import fpt.org.inblue.repository.CodingProblemsRepository;
 import fpt.org.inblue.service.CodingProblemService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -26,5 +28,11 @@ public class CodingProblemServiceImpl implements CodingProblemService {
     @Override
     public List<CodingProblem> findAllCodingProblems() {
         return codingProblemsRepository.findAll();
+    }
+
+    @Override
+    public CodingProblemGenerateResponse generateCodingProblem(CodingProblemGenerateRequest codingProblemGenerateRequest) {
+
+        return null;
     }
 }
