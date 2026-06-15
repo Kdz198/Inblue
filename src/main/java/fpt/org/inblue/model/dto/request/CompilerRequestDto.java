@@ -7,6 +7,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 import java.util.List;
 
+
 @Data
 @Builder
 @NoArgsConstructor
@@ -16,14 +17,17 @@ public class CompilerRequestDto {
     private List<String> sourceCode;
     private int timeLimitMs;
     private int memoryLimitMb;
-    private List<TestCase> testCases;
+    private List<String> paramTypes;
+    private String returnType;
 
+    private List<TestCase> testCases;
     @Data
     @Builder
     @NoArgsConstructor
     @AllArgsConstructor
     public static class TestCase {
-        private String input;
+        private List<String> inputs;
+
         private String expectedOutput;
     }
 }
