@@ -10,6 +10,7 @@ import org.hibernate.annotations.UpdateTimestamp;
 import org.hibernate.type.SqlTypes;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
@@ -18,6 +19,7 @@ import java.util.Map;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
+@JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
 public class Round {
 
     @Id
@@ -65,8 +67,10 @@ public class Round {
         private String evaluationCriteria;
 
         // --- FIELD CHO VÒNG QUIZ ---
-        private List<QuizQuestion> quizQuestions;
-        private List<CodingProblemSnapshot> codingProblems; // Dùng để lưu snapshot của bài coding khi tạo round, tránh bị ảnh hưởng nếu bài gốc bị sửa sau đó
+        @Builder.Default
+        private List<QuizQuestion> quizQuestions = new ArrayList<>();
+        @Builder.Default
+        private List<CodingProblemSnapshot> codingProblems = new ArrayList<>(); // Dùng để lưu snapshot của bài coding khi tạo round, tránh bị ảnh hưởng nếu bài gốc bị sửa sau đó
 
     }
 

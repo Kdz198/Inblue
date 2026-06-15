@@ -44,6 +44,10 @@ public class CodingProblem {
 
     @JdbcTypeCode(SqlTypes.JSON)
     @Column(columnDefinition = "jsonb")
+    private List<String> returnType;
+
+    @JdbcTypeCode(SqlTypes.JSON)
+    @Column(columnDefinition = "jsonb")
     private List<Example> visibleExamples; // Input/Output cho ứng viên thấy
 
     // Cấu hình sandbox
@@ -75,7 +79,7 @@ public class CodingProblem {
     @AllArgsConstructor
     @Builder
     public static class Example {
-        private List<String> input;
+        private List<String> inputs;
         private String output;
         private String explanation;
     }
@@ -85,7 +89,7 @@ public class CodingProblem {
     @AllArgsConstructor
     @Builder
     public static class TestCase {
-        private List<String> input;
+        private List<String> inputs;
         private String expectedOutput;
         private Integer weightPoints;
     }

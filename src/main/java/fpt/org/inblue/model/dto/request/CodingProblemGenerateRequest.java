@@ -14,8 +14,8 @@ public class CodingProblemGenerateRequest {
      String topic;
      String difficulty; // EASY, MEDIUM, HARD
     String targetLevel;
-    List<Context> context;
-    int numberOfProblems;
+    Context context;
+
 
     @AllArgsConstructor
     @NoArgsConstructor
