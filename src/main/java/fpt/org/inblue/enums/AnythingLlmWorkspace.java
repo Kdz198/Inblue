@@ -10,7 +10,7 @@ public enum AnythingLlmWorkspace {
     DOCS_ANALYSIS("inblue-docs-reader"), // Workspace nhai file lớn (Gemini)
     HR_SUPPORT("inblue-hr-internal"),    // Workspace dùng RAG tài liệu nội bộ
     CV_ANALYSIS("cv-processor"), // Workspace phân tích CV ứng viên (Gemini)
-    CODING_GEN("whiteboard-gen"), // Workspace chuyên về coding (Gemini Pro)
+    CODING_GEN("coding-gen"), // Workspace chuyên về coding (Gemini Pro)
     EMAIL( "email-processor"); // Workspace chuyên về email (Gemini Pro)
 
     private final String slug;
