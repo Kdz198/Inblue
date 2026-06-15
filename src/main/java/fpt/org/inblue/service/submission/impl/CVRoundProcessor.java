@@ -2,7 +2,7 @@ package fpt.org.inblue.service.submission.impl;
 
 import fpt.org.inblue.enums.RoundType;
 import fpt.org.inblue.model.dto.ProcessDto;
-import fpt.org.inblue.model.dto.SubmissionResult;
+import fpt.org.inblue.service.submission.SubmissionResult;
 import fpt.org.inblue.service.submission.RoundSubmissionProcessor;
 import fpt.org.inblue.utils.FileUtil;
 import lombok.RequiredArgsConstructor;
@@ -37,6 +37,7 @@ public class CVRoundProcessor implements RoundSubmissionProcessor {
             dto.setFile(multipartFile);
             applicationEventPublisher.publishEvent(dto);
         }
+
         return SubmissionResult.pending(dto.getApplication().getId());
     }
 }

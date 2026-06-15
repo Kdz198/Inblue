@@ -42,9 +42,7 @@ public class CodingProblem {
     @Column(columnDefinition = "jsonb")
     private List<String> paramTypes;
 
-    @JdbcTypeCode(SqlTypes.JSON)
-    @Column(columnDefinition = "jsonb")
-    private List<String> returnType;
+    private String returnType;
 
     @JdbcTypeCode(SqlTypes.JSON)
     @Column(columnDefinition = "jsonb")

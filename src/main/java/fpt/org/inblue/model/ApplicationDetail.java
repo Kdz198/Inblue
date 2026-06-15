@@ -1,6 +1,7 @@
 package fpt.org.inblue.model;
 
 import fpt.org.inblue.enums.ApplicationDetailStatus;
+import fpt.org.inblue.model.dto.response.CompilerResponseDto;
 import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
@@ -76,30 +77,32 @@ public class ApplicationDetail {
         // Dành cho vòng tự luận, Email, SQL Script (Frontend gửi text lên)
         private String textContent;
 
-        private CodeReviewSubmission codeReviewContent; // Dành riêng cho vòng Code Review (Frontend gửi lên cấu trúc JSON)
+//        private CodeReviewSubmission codeReviewContent; // Dành riêng cho vòng Code Review (Frontend gửi lên cấu trúc JSON)
 
         // Dành cho vòng upload CV hoặc file kiến trúc (Frontend gửi link file sau khi upload S3)
         private String fileUrl;
 
         // Dành riêng cho vòng QUIZ
         private List<QuizAnswer> quizAnswers;
+        private List<CompilerResponseDto.TestCaseResult> testCases;
+
     }
 
 
-    @Data
-    public class CodeReviewSubmission {
-
-        private String generalComment; // Nhận xét tổng quan của ứng viên
-
-        private List<LineComment> lineComments; // Danh sách các comment găm vào từng dòng code
-
-        @Data
-        public static class LineComment {
-            private String fileName;    // File được comment (VD: OrderService.java)
-            private Integer lineNumber; // Dòng số mấy (VD: 45)
-            private String comment;     // Nội dung ứng viên bóc phốt (VD: "Chỗ này bị N+1 query")
-        }
-    }
+//    @Data
+//    public class CodeReviewSubmission {
+//
+//        private String generalComment; // Nhận xét tổng quan của ứng viên
+//
+//        private List<LineComment> lineComments; // Danh sách các comment găm vào từng dòng code
+//
+//        @Data
+//        public static class LineComment {
+//            private String fileName;    // File được comment (VD: OrderService.java)
+//            private Integer lineNumber; // Dòng số mấy (VD: 45)
+//            private String comment;     // Nội dung ứng viên bóc phốt (VD: "Chỗ này bị N+1 query")
+//        }
+//    }
 
     @Data
     @NoArgsConstructor

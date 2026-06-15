@@ -67,9 +67,7 @@ public class Round {
         private String evaluationCriteria;
 
         // --- FIELD CHO VÒNG QUIZ ---
-        @Builder.Default
         private List<QuizQuestion> quizQuestions = new ArrayList<>();
-        @Builder.Default
         private List<CodingProblemSnapshot> codingProblems = new ArrayList<>(); // Dùng để lưu snapshot của bài coding khi tạo round, tránh bị ảnh hưởng nếu bài gốc bị sửa sau đó
 
     }

@@ -7,4 +7,5 @@ import java.util.Optional;
 
 public interface CodingProblemsRepository extends JpaRepository<CodingProblem, Long> {
     Optional<CodingProblem> findById(Long id);
+
 }

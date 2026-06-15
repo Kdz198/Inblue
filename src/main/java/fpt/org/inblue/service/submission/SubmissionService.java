@@ -1,19 +1,13 @@
 package fpt.org.inblue.service.submission;
 
-import fpt.org.inblue.enums.RoundType;
-import fpt.org.inblue.exception.CustomException;
 import fpt.org.inblue.model.Application;
-import fpt.org.inblue.model.ApplicationDetail;
 import fpt.org.inblue.model.ApplicationDetail.*;
 import fpt.org.inblue.model.Round;
 import fpt.org.inblue.model.dto.ProcessDto;
-import fpt.org.inblue.model.dto.SubmissionResult;
 import fpt.org.inblue.model.dto.request.SubmitRequest;
-import fpt.org.inblue.repository.ApplicationDetailRepository;
 import fpt.org.inblue.service.ApplicationService;
 import fpt.org.inblue.service.JobDescriptionService;
 import lombok.RequiredArgsConstructor;
-import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -39,6 +33,7 @@ public class SubmissionService {
         processDto.setQuizAnswers(detail.getQuizAnswers());
         processDto.setTextContent(detail.getTextContent());
         processDto.setRoundType(currentRound.getRoundType());
+        processDto.setCompileRequest(detail.getCompileRequest());
         SubmissionResult submissionResult = processor.process(processDto);
         if(submissionResult.getStatus().equals(SubmissionResult.Status.COMPLETED)&&submissionResult.getRoundResult().equals(RoundResult.PASSED)){
             applicationService.moveToNextRound(currentApplication);

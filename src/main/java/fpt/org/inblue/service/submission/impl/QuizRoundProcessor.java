@@ -1,17 +1,13 @@
 package fpt.org.inblue.service.submission.impl;
 
 import fpt.org.inblue.enums.RoundType;
-import fpt.org.inblue.exception.CustomException;
-import fpt.org.inblue.exception.GlobalExceptionHandler;
 import fpt.org.inblue.model.ApplicationDetail;
 import fpt.org.inblue.model.Round;
 import fpt.org.inblue.model.dto.ProcessDto;
-import fpt.org.inblue.model.dto.SubmissionResult;
-import fpt.org.inblue.model.dto.request.SubmitRequest;
+import fpt.org.inblue.service.submission.SubmissionResult;
 import fpt.org.inblue.repository.ApplicationDetailRepository;
 import fpt.org.inblue.repository.RoundRepository;
 import fpt.org.inblue.service.submission.RoundSubmissionProcessor;
-import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 

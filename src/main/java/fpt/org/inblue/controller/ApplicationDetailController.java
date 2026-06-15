@@ -1,7 +1,7 @@
 package fpt.org.inblue.controller;
 
 import fpt.org.inblue.model.ApplicationDetail;
-import fpt.org.inblue.model.dto.SubmissionResult;
+import fpt.org.inblue.service.submission.SubmissionResult;
 import fpt.org.inblue.model.dto.request.SubmitRequest;
 import fpt.org.inblue.service.ApplicationDetailService;
 import fpt.org.inblue.service.submission.SubmissionService;

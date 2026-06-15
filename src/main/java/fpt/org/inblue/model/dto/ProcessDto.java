@@ -4,6 +4,7 @@ import fpt.org.inblue.enums.RoundType;
 import fpt.org.inblue.model.Application;
 import fpt.org.inblue.model.JobDescription;
 import fpt.org.inblue.model.Round;
+import fpt.org.inblue.model.dto.request.CompileRequest;
 import fpt.org.inblue.model.dto.request.SubmitRequest;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -26,4 +27,5 @@ public class ProcessDto {
     private MultipartFile file;
     private List<String> quizAnswers;
     private RoundType roundType;
+    private CompileRequest compileRequest;
 }
