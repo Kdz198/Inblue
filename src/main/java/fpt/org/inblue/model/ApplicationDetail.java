@@ -84,8 +84,7 @@ public class ApplicationDetail {
 
         // Dành riêng cho vòng QUIZ
         private List<QuizAnswer> quizAnswers;
-        private List<CompilerResponseDto.TestCaseResult> testCases;
-
+        private CompilerResponseDto testCases;
     }
 
 

@@ -30,8 +30,7 @@ public class SubmissionResult {
     }
 
     public static SubmissionResult completed(ApplicationDetail detail) {
-        return new SubmissionResult(Status.COMPLETED, detail.getApplicationId(), detail, "Nộp bài thành công",detail.getFinalResult(),detail
-                .getSubmissionData().getTestCases());
+        return new SubmissionResult(Status.COMPLETED, detail.getApplicationId(), detail, "Nộp bài thành công",detail.getFinalResult(),null);
     }
 
     public static SubmissionResult pending(Long applicationId) {

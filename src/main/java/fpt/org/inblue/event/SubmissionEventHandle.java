@@ -21,7 +21,6 @@ import fpt.org.inblue.repository.ApplicationDetailRepository;
 import fpt.org.inblue.repository.CodingProblemsRepository;
 import fpt.org.inblue.repository.JobDescriptionRepository;
 import fpt.org.inblue.service.ApiClient;
-import fpt.org.inblue.service.submission.SubmissionResult;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.event.EventListener;
@@ -53,15 +52,14 @@ public class SubmissionEventHandle {
         switch (dto.getRoundType()) {
             case CV_SCREENING -> processCvSubmission(dto);
             case EMAIL_SIMULATOR -> processEmailSubmission(dto);
+            case CODING -> processCodeSubmission(dto);
             default ->
                     throw new CustomException("Unsupported round type: " + dto.getRoundType(), HttpStatus.BAD_REQUEST);
         }
     }
 
     private void processCodeSubmission(ProcessDto dto) {
-        if (dto == null) {
-            throw new IllegalArgumentException("Dữ liệu tiến trình xử lý (ProcessDto) không được trống");
-        }
+        Round round = dto.getRound();
 
         CompileRequest compileRequest = dto.getCompileRequest();
         // Ta chủ động bốc chuỗi textJson từ textContent hoặc trường thô nếu có để tự parse trực tiếp tại đây.
@@ -82,16 +80,6 @@ public class SubmissionEventHandle {
 
         //  Nạp toàn bộ các Test Case
         List<CompilerRequestDto.TestCase> testcases = new ArrayList<>();
-        if (problem.getVisibleExamples() != null) {
-            for (CodingProblem.Example example : problem.getVisibleExamples()) {
-                CompilerRequestDto.TestCase testCase = CompilerRequestDto.TestCase.builder()
-                        .expectedOutput(example.getOutput())
-                        .inputs(example.getInputs())
-                        .build();
-                testcases.add(testCase);
-            }
-        }
-
         // Nạp toàn bộ các Test Case Ẩn (Hidden Test Cases) để chấm điểm tuyệt đối
         if (problem.getHiddenTestCases() != null) {
             for (CodingProblem.TestCase testCase : problem.getHiddenTestCases()) {
@@ -115,8 +103,32 @@ public class SubmissionEventHandle {
                 .build();
         // Gọi gọi Client Service thực thi code, nhận kết quả trả về từ Sandbox
         CompilerResponseDto response = apiClient.executeCode(requestDto);
-        //PENDING.............
+        //tính điểm
+        double score = 0.0;
+        for (CompilerResponseDto.TestCaseResult testCaseResult : response.getTestCases()) {
+            if ("PASSED".equals(testCaseResult.getStatus())) {
+                CodingProblem.TestCase testCase = problem.getHiddenTestCases().get(testCaseResult.getIndex());
+                score += testCase.getWeightPoints();
+            }
+        }
+        ApplicationDetail.RoundResult roundResult = score >= round.getPassThreshold()
+                ? ApplicationDetail.RoundResult.PASSED : ApplicationDetail.RoundResult.FAILED;
+        ApplicationDetail.SubmissionData submissionData = ApplicationDetail.SubmissionData
+                .builder()
+                .textContent(String.valueOf(compileRequest.getSourceCode()))
+                .testCases(response)
+                .build();
+        ApplicationDetail applicationDetail = ApplicationDetail
+                .builder()
+                .applicationId(dto.getApplication().getId())
+                .roundId(dto.getRound().getId())
+                .status(ApplicationDetailStatus.COMPLETED)
+                .finalScore(score)
+                .finalResult(roundResult)
+                .submissionData(submissionData)
+                .build();
 
+        applicationDetailRepository.save(applicationDetail);
         // Xử lý nộp bài chính thức tại đây nếu test == false (ví dụ lưu kết quả vào DB và tính điểm)
     }
 

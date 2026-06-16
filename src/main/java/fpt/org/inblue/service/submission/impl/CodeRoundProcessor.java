@@ -89,7 +89,6 @@ public class CodeRoundProcessor implements RoundSubmissionProcessor {
             CompilerResponseDto response = apiClient.executeCode(requestDto);
             return SubmissionResult.compileCode(response);
         } else {
-
              applicationEventPublisher.publishEvent(dto);
              return SubmissionResult.pending(dto.getApplication().getId());
         }
