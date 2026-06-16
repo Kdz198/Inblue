@@ -1,5 +1,6 @@
 package fpt.org.inblue.controller;
 
+import fpt.org.inblue.enums.RoundType;
 import fpt.org.inblue.model.Round;
 import fpt.org.inblue.model.dto.WhiteboardQuestionDto;
 import fpt.org.inblue.model.dto.request.SetupJdRoundsRequest;
@@ -30,6 +31,11 @@ public class RoundController {
     public ResponseEntity<List<Round>> setUpRoundForJd(@PathVariable Long jdId, @RequestBody SetupJdRoundsRequest request) {
         List<Round> rounds = roundService.setUpRoundForJd(jdId, request);
         return ResponseEntity.ok(rounds);
+    }
+
+    @GetMapping
+    public List<RoundType> getAllRoundTypes() {
+        return roundService.getAllRoundTypes();
     }
 
     @PutMapping("/jd/{jdId}/update")

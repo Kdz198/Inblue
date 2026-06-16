@@ -1,5 +1,6 @@
 package fpt.org.inblue.service.impl;
 
+import fpt.org.inblue.enums.RoundType;
 import fpt.org.inblue.exception.CustomException;
 import fpt.org.inblue.model.CodingProblem;
 import fpt.org.inblue.model.JobDescription;
@@ -174,6 +175,11 @@ public class RoundServiceImpl implements RoundService {
             throw new CustomException("Round không tồn tại", HttpStatus.NOT_FOUND);
         }
         return round.get();
+    }
+
+    @Override
+    public List<RoundType> getAllRoundTypes() {
+        return Arrays.asList(RoundType.values());
     }
 
 
