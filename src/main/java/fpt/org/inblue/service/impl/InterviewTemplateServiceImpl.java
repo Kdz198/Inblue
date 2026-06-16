@@ -86,6 +86,7 @@ public class InterviewTemplateServiceImpl implements InterviewTemplateService {
 
         // 2. Clear danh sách vòng cũ (Hibernate sẽ tự động DELETE các record cũ nhờ orphanRemoval=true)
         template.getRounds().clear();
+        templateRepository.saveAndFlush(template);
 
         // 3. Thêm danh sách vòng mới vào
         List<TemplateRound> newRounds = request.getRounds().stream()
