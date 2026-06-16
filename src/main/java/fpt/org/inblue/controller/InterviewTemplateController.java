@@ -41,13 +41,13 @@ public class InterviewTemplateController {
             @PathVariable Long id,
             @Valid @RequestBody UpsertTemplateRequest request) {
         templateService.updateTemplate(id, request);
-        return ResponseEntity.noContent().build();
+        return ResponseEntity.ok().build();
     }
 
     @DeleteMapping("/{id}")
     // @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<Void> deleteTemplate(@PathVariable Long id) {
         templateService.deleteTemplate(id);
-        return ResponseEntity.noContent().build();
+        return ResponseEntity.ok().build();
     }
 }

@@ -30,7 +30,7 @@ public class InterviewTemplate {
     private String description;
 
     // 1 Template có nhiều vòng. Dùng @JoinColumn để tự tạo cột template_id ở bảng con
-    @OneToMany(cascade = CascadeType.ALL, fetch = FetchType.LAZY, orphanRemoval = true)
+    @OneToMany(cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     @JoinColumn(name = "template_id", nullable = false)
     @OrderBy("roundOrder ASC")
     @Builder.Default
