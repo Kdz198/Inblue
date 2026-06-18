@@ -157,6 +157,7 @@ public class RoundServiceImpl implements RoundService {
                     codingProblems.add(snapshot);
                 }
             }
+            roundConfig.setCodingProblems(codingProblems);
             roundConfig.setQuizQuestions(quizQuestions);
             round.setConfigData(roundConfig);
             updatedRounds.add(round);
