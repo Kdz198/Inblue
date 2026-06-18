@@ -11,7 +11,9 @@ public enum AnythingLlmWorkspace {
     HR_SUPPORT("inblue-hr-internal"),    // Workspace dùng RAG tài liệu nội bộ
     CV_ANALYSIS("cv-processor"), // Workspace phân tích CV ứng viên (Gemini)
     CODING_GEN("coding-gen"), // Workspace chuyên về coding (Gemini Pro)
-    EMAIL( "email-processor"); // Workspace chuyên về email (Gemini Pro)
+    EMAIL( "email-processor"), // Workspace chuyên về email (Gemini Pro)
+    CODE_REVIEW("code-review-processor"), // Workspace chuyên chấm Code Review
+    CODE_REVIEW_GEN("code-review-generator"); // Workspace chuyên sinh đề Code Review
 
     private final String slug;
 

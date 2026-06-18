@@ -69,6 +69,7 @@ public class Round {
         // --- FIELD CHO VÒNG QUIZ ---
         private List<QuizQuestion> quizQuestions = new ArrayList<>();
         private List<CodingProblemSnapshot> codingProblems = new ArrayList<>(); // Dùng để lưu snapshot của bài coding khi tạo round, tránh bị ảnh hưởng nếu bài gốc bị sửa sau đó
+        private List<CodeReviewProblemSnapshot> codeReviewProblems = new ArrayList<>();
 
     }
 
@@ -86,6 +87,20 @@ public class Round {
         private Integer executionTimeLimitMs;
         private Integer memoryLimitMb;
         private Map<String, String> codeStubs;
+    }
+
+    @Data
+    @NoArgsConstructor
+    @AllArgsConstructor
+    @Builder
+    public static class CodeReviewProblemSnapshot {
+        private Long problemId;          // Giữ lại để trace về bài gốc nếu cần
+        private String title;
+        private CodingProblem.Difficulty difficulty;
+        private String language;
+        private String problemStatement;
+        private List<CodeReviewProblem.CodeFile> files;
+        private List<CodeReviewProblem.ExpectedIssue> expectedIssues;
     }
 
     // Class con định nghĩa cấu trúc 1 câu hỏi trắc nghiệm
