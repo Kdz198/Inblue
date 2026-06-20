@@ -32,6 +32,7 @@ public class RoundServiceImpl implements RoundService {
 
     @Override
     public List<Round> setUpRoundForJd(Long jdId, SetupJdRoundsRequest request) {
+        System.out.println("Received request to set up rounds for JD ID: " + jdId);
         Optional<JobDescription> jd = jobDescriptionRepository.findById(jdId);
         if (jd.isEmpty()) {
             throw new CustomException("Job Description không tồn tại", HttpStatus.NOT_FOUND);
@@ -61,27 +62,43 @@ public class RoundServiceImpl implements RoundService {
                     question.setPoints(questionDto.getPoints());
                     quizQuestions.add(question);
                 }
+                roundConfig.setQuizQuestions(quizQuestions);
             }
            if(item.getConfigData().getCodingProblemsId() != null) {
                List<Round.CodingProblemSnapshot> codingProblems = new ArrayList<>();
                for (Long codingProblemId : item.getConfigData().getCodingProblemsId()) {
-                   Optional<CodingProblem> cp = codingProblemsRepository.findById(codingProblemId);
+                   CodingProblem cp = codingProblemsRepository.findById(codingProblemId)
+                           .orElseThrow(() -> new CustomException(
+                                   "Coding problem không tồn tại với id: " + codingProblemId,
+                                   HttpStatus.NOT_FOUND
+                           ));
                    Round.CodingProblemSnapshot snapshot = Round.CodingProblemSnapshot.builder()
-                           .title(cp.get().getTitle())
-                           .codeStubs(cp.get().getCodeStubs())
-                           .difficulty(cp.get().getDifficulty())
-                           .executionTimeLimitMs(cp.get().getExecutionTimeLimitMs())
-                           .memoryLimitMb(cp.get().getMemoryLimitMb())
+                           .title(cp.getTitle())
+                           .codeStubs(cp.getCodeStubs())
+                           .difficulty(cp.getDifficulty())
+                           .executionTimeLimitMs(cp.getExecutionTimeLimitMs())
+                           .memoryLimitMb(cp.getMemoryLimitMb())
                            .problemId(codingProblemId)
-                           .problemStatement(cp.get().getProblemStatement())
-                           .rulesAndConstraints(cp.get().getRulesAndConstraints())
-                           .visibleExamples(cp.get().getVisibleExamples())
+                           .problemStatement(cp.getProblemStatement())
+                           .rulesAndConstraints(cp.getRulesAndConstraints())
+                           .visibleExamples(cp.getVisibleExamples())
                            .build();
+
                    codingProblems.add(snapshot);
                }
                roundConfig.setCodingProblems(codingProblems);
            }
-            roundConfig.setQuizQuestions(quizQuestions);
+            if(item.getConfigData().getMentorInterview() != null) {
+                Round.MentorInterviewDto mentorInterviewDto = Round.MentorInterviewDto.builder()
+                        .mentorId(item.getConfigData().getMentorInterview().getMentorId())
+                        .duration(item.getConfigData().getMentorInterview().getDuration())
+                        .totalPrice(item.getConfigData().getMentorInterview().getTotalPrice())
+                        .userId(item.getConfigData().getMentorInterview().getUserId())
+                        .build();
+                roundConfig.setMentorInterview(mentorInterviewDto);
+                System.out.println("MENTOR");
+            }
+            System.out.println("ROUND CONFIG: " + roundConfig);
             round.setConfigData(roundConfig);
             rounds.add(round);
             jd.get().getRounds().add(round);

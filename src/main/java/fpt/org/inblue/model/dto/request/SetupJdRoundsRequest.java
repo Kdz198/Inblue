@@ -2,10 +2,13 @@ package fpt.org.inblue.model.dto.request;
 
 import fpt.org.inblue.enums.RoundType;
 import fpt.org.inblue.model.Round;
+import fpt.org.inblue.model.dto.dailyco.SessionCreationRequest;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.*;
+import lombok.Builder;
 import lombok.Data;
 
+import java.sql.Timestamp;
 import java.util.List;
 
 @Data
@@ -51,7 +54,12 @@ public class SetupJdRoundsRequest {
         // Chỉ dùng cho vòng QUIZ
         private List<QuizQuestionDto> quizQuestions;
         private List<Long> codingProblemsId;
+
+        //Dùng cho vòng interview mentor
+        private Round.MentorInterviewDto mentorInterview;
     }
+
+
 
     @Data
     public static class QuizQuestionDto {

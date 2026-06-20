@@ -70,7 +70,20 @@ public class Round {
         private List<QuizQuestion> quizQuestions = new ArrayList<>();
         private List<CodingProblemSnapshot> codingProblems = new ArrayList<>(); // Dùng để lưu snapshot của bài coding khi tạo round, tránh bị ảnh hưởng nếu bài gốc bị sửa sau đó
         private List<CodeReviewProblemSnapshot> codeReviewProblems = new ArrayList<>();
+        //Dành cho vòng mentor interview
 
+        MentorInterviewDto mentorInterview;
+    }
+
+    @Data
+    @NoArgsConstructor
+    @AllArgsConstructor
+    @Builder
+    public static class MentorInterviewDto{
+        private Integer userId;
+        private Integer mentorId;
+        private Integer duration;
+        private Integer totalPrice;
     }
 
     @Data

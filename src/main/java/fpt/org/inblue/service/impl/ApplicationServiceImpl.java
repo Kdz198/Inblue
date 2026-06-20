@@ -63,7 +63,6 @@ public class ApplicationServiceImpl implements ApplicationService {
             List<Round> rounds = jd.getRounds();
             int currentRoundOrder = currentApplication.getCurrentRoundOrder();
             if (currentRoundOrder < rounds.size()) {
-
                 currentApplication.setCurrentRoundOrder(currentRoundOrder + 1);
                 applicationRepository.save(currentApplication);
                 System.out.println("Application " + currentApplication.getId() + " moved to round order " + currentApplication.getCurrentRoundOrder());
