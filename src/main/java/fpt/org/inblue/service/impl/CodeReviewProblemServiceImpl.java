@@ -7,13 +7,11 @@ import fpt.org.inblue.model.dto.response.CodeReviewProblemGenerateResponse;
 import fpt.org.inblue.repository.CodeReviewProblemsRepository;
 import fpt.org.inblue.service.ApiClient;
 import fpt.org.inblue.service.CodeReviewProblemService;
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
 import java.util.Optional;
-
-import lombok.RequiredArgsConstructor;
 
 @Service
 @RequiredArgsConstructor
