@@ -1,6 +1,7 @@
 package fpt.org.inblue.controller;
 
 import fpt.org.inblue.model.QuestionBank;
+import fpt.org.inblue.model.dto.response.QuestionGenerateResponse;
 import fpt.org.inblue.service.QuestionBankService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
@@ -38,4 +39,10 @@ public class QuestionBankController {
     public ResponseEntity<Void> deleteQuestionBank(@PathVariable Integer id) {
         questionBankService.deleteQuestionBank(id);
         return ResponseEntity.noContent().build();}
+
+    @PostMapping("/generate")
+    public ResponseEntity<QuestionGenerateResponse> generateQuestion(@RequestBody fpt.org.inblue.model.dto.request.QuestionGenerateRequest request) {
+        QuestionGenerateResponse response = questionBankService.generateQuestion(request);
+        return ResponseEntity.ok(response);
+    }
 }

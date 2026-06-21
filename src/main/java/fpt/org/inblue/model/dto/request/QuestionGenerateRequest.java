@@ -11,7 +11,7 @@ import java.util.List;
 @AllArgsConstructor
 @NoArgsConstructor
 @Builder
-public class QuizGenerateRequest {
+public class QuestionGenerateRequest {
     private String categoryName;
     private String difficulty;
     private List<String> topics;          // Chủ đề cụ thể

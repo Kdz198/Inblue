@@ -11,7 +11,7 @@ import java.util.List;
 @AllArgsConstructor
 @NoArgsConstructor
 @Builder
-public class QuizGenerateResponse {
+public class QuestionGenerateResponse {
     private String questionText;
     private List<String> options; // ["A. Spring Boot", "B. Node.js", ...]
     private String correctAnswer; // "A"

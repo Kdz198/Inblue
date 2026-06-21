@@ -1,8 +1,13 @@
 package fpt.org.inblue.service.impl;
 
+import fpt.org.inblue.enums.AnythingLlmWorkspace;
 import fpt.org.inblue.exception.CustomException;
 import fpt.org.inblue.model.QuestionBank;
+import fpt.org.inblue.model.dto.request.QuestionGenerateRequest;
+import fpt.org.inblue.model.dto.response.CodingProblemGenerateResponse;
+import fpt.org.inblue.model.dto.response.QuestionGenerateResponse;
 import fpt.org.inblue.repository.QuestionBankRepository;
+import fpt.org.inblue.service.ApiClient;
 import fpt.org.inblue.service.QuestionBankService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -13,6 +18,8 @@ import java.util.List;
 public class QuestionBankServiceImpl implements QuestionBankService {
     @Autowired
     private QuestionBankRepository questionBankRepository;
+    @Autowired
+    private ApiClient apiClient;
 
     @Override
     public QuestionBank createQuestionBank(QuestionBank questionBank) {
@@ -47,5 +54,18 @@ public class QuestionBankServiceImpl implements QuestionBankService {
     @Override
     public List<QuestionBank> getAllQuestionBanks() {
         return questionBankRepository.findAll();
+    }
+
+    @Override
+    public QuestionGenerateResponse generateQuestion(QuestionGenerateRequest request) {
+
+        return apiClient.sendChatToAnythingLlm(
+                AnythingLlmWorkspace.QUIZ_GEN,
+                request,
+                "java",
+                true,
+                null,
+                QuestionGenerateResponse.class
+        );
     }
 }
