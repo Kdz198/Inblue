@@ -6,6 +6,7 @@ import fpt.org.inblue.mapper.QuestionBankMapper;
 import fpt.org.inblue.model.QuestionBank;
 import fpt.org.inblue.model.QuestionCategory;
 import fpt.org.inblue.model.dto.request.CreateQuestionBankRequest;
+import fpt.org.inblue.model.dto.request.UpdateQuestionBankRequest;
 import fpt.org.inblue.model.dto.request.QuestionGenerateRequest;
 import fpt.org.inblue.model.dto.response.QuestionGenerateResponse;
 import fpt.org.inblue.repository.QuestionBankRepository;
@@ -45,11 +46,18 @@ public class QuestionBankServiceImpl implements QuestionBankService {
     }
 
     @Override
-    public QuestionBank updateQuestionBank(Integer id, QuestionBank questionBank) {
-       if(!questionBankRepository.existsById(id)){
-           throw new CustomException("Question bank not found with id: " + id, HttpStatus.NOT_FOUND);
-       }
-        return questionBankRepository.save(questionBank);
+    public QuestionBank updateQuestionBank(Integer id, UpdateQuestionBankRequest request) {
+        QuestionBank existing = questionBankRepository.findById(id)
+                .orElseThrow(() -> new CustomException("Question bank not found with id: " + id, HttpStatus.NOT_FOUND));
+        questionBankMapper.updateQuestionBankFromRequest(request, existing);
+        if (request.getQuestionCategoryId() != null) {
+            QuestionCategory category = questionCategoryRepository.findById(request.getQuestionCategoryId())
+                    .orElseThrow(() -> new CustomException(
+                            "Question category not found with id: " + request.getQuestionCategoryId(),
+                            HttpStatus.NOT_FOUND));
+            existing.setQuestionCategory(category);
+        }
+        return questionBankRepository.save(existing);
     }
 
     @Override

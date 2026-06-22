@@ -2,6 +2,7 @@ package fpt.org.inblue.controller;
 
 import fpt.org.inblue.model.QuestionBank;
 import fpt.org.inblue.model.dto.request.CreateQuestionBankRequest;
+import fpt.org.inblue.model.dto.request.UpdateQuestionBankRequest;
 import fpt.org.inblue.model.dto.response.QuestionGenerateResponse;
 import fpt.org.inblue.service.QuestionBankService;
 import jakarta.validation.Valid;
@@ -33,8 +34,9 @@ public class QuestionBankController {
     }
 
     @PutMapping("{id}")
-    public ResponseEntity<QuestionBank> updateQuestionBank(@PathVariable Integer id, @RequestBody QuestionBank questionBank) {
-        return ResponseEntity.ok(questionBankService.updateQuestionBank(id, questionBank));
+    public ResponseEntity<QuestionBank> updateQuestionBank(@PathVariable Integer id,
+                                                           @Valid @RequestBody UpdateQuestionBankRequest request) {
+        return ResponseEntity.ok(questionBankService.updateQuestionBank(id, request));
     }
 
     @DeleteMapping("/{id}")
