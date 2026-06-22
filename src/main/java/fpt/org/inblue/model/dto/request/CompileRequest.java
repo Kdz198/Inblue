@@ -15,7 +15,7 @@ import java.util.List;
 public class CompileRequest {
     private Long problemId;
     private CompilerLanguage language;
-   private List<String> sourceCode;
-   private boolean isTest;
-   //nếu true là compile đơn ,nếu false là nộp bài
+    private List<String> sourceCode;
+    private Boolean isTest;
+    // nếu true là compile đơn ,nếu false là nộp bài
 }

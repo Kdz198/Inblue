@@ -1,6 +1,5 @@
 package fpt.org.inblue.service.impl;
 
-
 import fpt.org.inblue.model.QuizItem;
 import fpt.org.inblue.model.dto.request.QuizItemCreateRequest;
 import fpt.org.inblue.repository.QuizItemRepository;
@@ -18,7 +17,6 @@ public class QuizItemServiceImpl implements QuizItemService {
     private QuizItemRepository quizItemRepository;
     @Autowired
     private ObjectMapper objectMapper;
-
 
     @Override
     public List<QuizItem> saveAllItems(List<QuizItemCreateRequest> dtos) {
@@ -39,7 +37,5 @@ public class QuizItemServiceImpl implements QuizItemService {
 
         return quizItemRepository.saveAll(items);
     }
-
-
 
 }

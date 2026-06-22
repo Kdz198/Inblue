@@ -84,6 +84,14 @@ public class ApplicationDetail {
 
         // Dành riêng cho vòng QUIZ
         private List<QuizAnswer> quizAnswers;
+        List<CodeSubmission> codeSubmissions; // Dành riêng cho vòng Coding (Frontend gửi lên cấu trúc JSON gồm source code + kết quả test case)
+    }
+    @Data
+    @NoArgsConstructor
+    @AllArgsConstructor
+    @Builder
+    public static class CodeSubmission{
+        private List<String> sourceCode;
         private CompilerResponseDto testCases;
     }
 

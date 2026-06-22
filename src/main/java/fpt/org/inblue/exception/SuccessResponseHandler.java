@@ -1,6 +1,5 @@
 package fpt.org.inblue.exception;
 
-
 import lombok.RequiredArgsConstructor;
 import org.slf4j.MDC;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -21,12 +20,12 @@ import java.util.Map;
 @RequiredArgsConstructor
 public class SuccessResponseHandler implements ResponseBodyAdvice<Object> {
 
-
     private final ObjectMapper objectMapper;
 
     @Override
     public boolean supports(MethodParameter returnType, Class<? extends HttpMessageConverter<?>> converterType) {
-        // CHỈ ÁP DỤNG cho các controller thuộc package của bạn (tránh can thiệp vào Swagger/v3/api-docs)
+        // CHỈ ÁP DỤNG cho các controller thuộc package của bạn (tránh can thiệp vào
+        // Swagger/v3/api-docs)
         String className = returnType.getDeclaringClass().getName();
         return className.startsWith("fpt.org.inblue.controller");
     }
@@ -34,8 +33,8 @@ public class SuccessResponseHandler implements ResponseBodyAdvice<Object> {
     @SuppressWarnings("unchecked")
     @Override
     public Object beforeBodyWrite(Object body, MethodParameter returnType, MediaType selectedContentType,
-                                  Class<? extends HttpMessageConverter<?>> selectedConverterType,
-                                  ServerHttpRequest request, ServerHttpResponse response) {
+            Class<? extends HttpMessageConverter<?>> selectedConverterType,
+            ServerHttpRequest request, ServerHttpResponse response) {
 
         // 1. Lấy traceId hiện tại từ MDC ra
         String traceId = MDC.get("traceId");
@@ -48,16 +47,19 @@ public class SuccessResponseHandler implements ResponseBodyAdvice<Object> {
             return body;
         }
 
-        // Trường hợp toán tử: Nếu dự án của bạn CÓ DÙNG chung 1 Class BaseResponse (ví dụ: ApiResponse)
+        // Trường hợp toán tử: Nếu dự án của bạn CÓ DÙNG chung 1 Class BaseResponse (ví
+        // dụ: ApiResponse)
         // if (body instanceof ApiResponse) {
-        //     ((ApiResponse<?>) body).setTraceId(traceId);
-        //     return body;
+        // ((ApiResponse<?>) body).setTraceId(traceId);
+        // return body;
         // }
 
-        // Trường hợp toán tử: Codebase cũ đang trả về các Object DTO tự do, chưa có class chung:
+        // Trường hợp toán tử: Codebase cũ đang trả về các Object DTO tự do, chưa có
+        // class chung:
         try {
             // A. Nếu API trả về một Danh sách (List/Set) hoặc Mảng []
-            // Bản chất JSON Array [] không thể tự chứa field "traceId", bắt buộc phải bọc lại thành {}
+            // Bản chất JSON Array [] không thể tự chứa field "traceId", bắt buộc phải bọc
+            // lại thành {}
             if (body instanceof Collection || body.getClass().isArray()) {
                 Map<String, Object> wrappedResponse = new LinkedHashMap<>();
                 wrappedResponse.put("traceId", traceId);
@@ -67,7 +69,8 @@ public class SuccessResponseHandler implements ResponseBodyAdvice<Object> {
             }
 
             // B. Nếu API trả về một Object Single DTO hoặc Map {}
-            // Dùng Jackson để convert Object sang Map tạm thời, nhét traceId vào root JSON luôn mà không đổi cấu trúc cũ
+            // Dùng Jackson để convert Object sang Map tạm thời, nhét traceId vào root JSON
+            // luôn mà không đổi cấu trúc cũ
             Map<String, Object> jsonMap = objectMapper.convertValue(body, LinkedHashMap.class);
             jsonMap.put("traceId", traceId);
             return jsonMap;

@@ -27,5 +27,5 @@ public class ProcessDto {
     private MultipartFile file;
     private List<String> quizAnswers;
     private RoundType roundType;
-    private CompileRequest compileRequest;
+    private List<CompileRequest> compileRequest;
 }

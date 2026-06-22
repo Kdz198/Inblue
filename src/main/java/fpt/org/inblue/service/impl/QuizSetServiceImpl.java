@@ -56,15 +56,14 @@ public class QuizSetServiceImpl implements QuizSetService {
     @Override
     public QuizSet createQuizSet(int practiceSetId, String QuizName) {
         PracticeSet practiceSet = practiceSetRepository.findById(practiceSetId);
-        if(practiceSet != null){
+        if (practiceSet != null) {
             QuizSet quizSet = QuizSet.builder()
                     .quizName(QuizName)
                     .practiceSet(practiceSet)
                     .isSubmitted(false)
                     .build();
             return quizSetRepository.save(quizSet);
-        }
-        else{
+        } else {
             throw new CustomException("Practice Set not found", HttpStatus.NOT_FOUND);
 
         }
@@ -82,6 +81,7 @@ public class QuizSetServiceImpl implements QuizSetService {
 
     /**
      * Nộp bài và tính điểm
+     * 
      * @param quizId
      * @param userAnswers
      * @return
@@ -95,7 +95,7 @@ public class QuizSetServiceImpl implements QuizSetService {
         for (QuizItem item : items) {
             String userAnswer = userAnswers.get(item.getId());
             item.setUserResponse(userAnswer);
-            if(item.getCorrectAnswer().equals(userAnswer)) {
+            if (item.getCorrectAnswer().equals(userAnswer)) {
                 correctCount++;
             }
         }
@@ -112,6 +112,7 @@ public class QuizSetServiceImpl implements QuizSetService {
 
     /**
      * Tạo bộ quiz hoàn chỉnh gồm QuizSet và các QuizItem
+     * 
      * @param practiceSetId
      * @param QuizName
      * @param items
@@ -124,18 +125,19 @@ public class QuizSetServiceImpl implements QuizSetService {
     }
 
     @Override
-    public QuizResponse saveAllItemsByAI(int practiceSetId){
+    public QuizResponse saveAllItemsByAI(int practiceSetId) {
         String token = HelperUtil.getToke();
         int userId = jwtUtils.getUserIdFromToken(token);
 
         PracticeSet practice = practiceSetRepository.findById(practiceSetId);
-        if(practice == null){
+        if (practice == null) {
             throw new CustomException("Practice set not found", HttpStatus.NOT_FOUND);
         }
 
         List<QuizItemCreateAIRequest.PracticeAIQuestion> aiQuestions = new ArrayList<>();
-        for(PracticeQuestion question : practice.getQuestions()){
-            QuizItemCreateAIRequest.PracticeAIQuestion aiQuestion = new QuizItemCreateAIRequest.PracticeAIQuestion(question.getTitle(), question.getContent(), question.getAnswer());
+        for (PracticeQuestion question : practice.getQuestions()) {
+            QuizItemCreateAIRequest.PracticeAIQuestion aiQuestion = new QuizItemCreateAIRequest.PracticeAIQuestion(
+                    question.getTitle(), question.getContent(), question.getAnswer());
             aiQuestions.add(aiQuestion);
         }
 
@@ -151,12 +153,11 @@ public class QuizSetServiceImpl implements QuizSetService {
                 ApiPath.GENERATE_QUIZ_ITEM_API,
                 HttpMethod.POST,
                 request,
-                QuizItemCreateRequest[].class
-        );
+                QuizItemCreateRequest[].class);
         List<QuizItemCreateRequest> quizItemCreateRequests = List.of(response);
         List<QuizItem> quizItems = new ArrayList<>();
 
-        for(QuizItemCreateRequest item : quizItemCreateRequests){
+        for (QuizItemCreateRequest item : quizItemCreateRequests) {
             String optionsJson = objectMapper.writeValueAsString(item.getOptions());
             QuizItem quizItem = new QuizItem();
             quizItem.setQuestion(item.getQuestion());
@@ -167,7 +168,7 @@ public class QuizSetServiceImpl implements QuizSetService {
             quizItems.add(quizItem);
         }
         QuizSet quizSet = new QuizSet();
-        quizSet.setQuizName("Bài kiểm tra: "+practice.getPracticeSetName() );
+        quizSet.setQuizName("Bài kiểm tra: " + practice.getPracticeSetName());
         quizSet.setPracticeSet(practice);
         quizSet.setQuestions(quizItems);
         quizSet.setScore(0);
@@ -177,7 +178,7 @@ public class QuizSetServiceImpl implements QuizSetService {
         return mapToQuizItemResponse(saved.getQuestions(), saved.getQuizId());
     }
 
-    QuizResponse mapToQuizItemResponse(List<QuizItem> requests,int quizId)  {
+    QuizResponse mapToQuizItemResponse(List<QuizItem> requests, int quizId) {
         List<QuizItemResponse> responses = new ArrayList<>();
         for (QuizItem item : requests) {
             String optionsJson = objectMapper.writeValueAsString(item.getOptions());
@@ -194,7 +195,6 @@ public class QuizSetServiceImpl implements QuizSetService {
         return quizResponse;
 
     }
-
 
     @Override
     public List<QuizSet> getAllQuizSet() {

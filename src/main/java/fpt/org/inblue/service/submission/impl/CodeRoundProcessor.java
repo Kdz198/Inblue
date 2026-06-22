@@ -1,6 +1,7 @@
 package fpt.org.inblue.service.submission.impl;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.databind.ObjectMapper;
+import tools.jackson.core.type.TypeReference;
 import fpt.org.inblue.enums.RoundType;
 import fpt.org.inblue.model.CodingProblem;
 import fpt.org.inblue.model.dto.ProcessDto;
@@ -27,7 +28,6 @@ public class CodeRoundProcessor implements RoundSubmissionProcessor {
 
     private final ApiClient apiClient;
     private final CodingProblemsRepository codingProblemsRepository;
-    private final ObjectMapper objectMapper = new ObjectMapper();
     private final ApplicationEventPublisher applicationEventPublisher;
 
     @Override
@@ -41,58 +41,65 @@ public class CodeRoundProcessor implements RoundSubmissionProcessor {
             throw new IllegalArgumentException("Dữ liệu tiến trình xử lý (ProcessDto) không được trống");
         }
 
-        CompileRequest compileRequest = dto.getCompileRequest();
-        // Ta chủ động bốc chuỗi textJson từ textContent hoặc trường thô nếu có để tự parse trực tiếp tại đây.
-        if (compileRequest == null && dto.getTextContent() != null) {
-            try {
-                compileRequest = objectMapper.readValue(dto.getTextContent(), CompileRequest.class);
-                dto.setCompileRequest(compileRequest);
-            } catch (Exception e) {
-                log.error("Không thể giải mã dữ liệu cấu hình Compile từ textContent: {}", e.getMessage());
-                throw new IllegalArgumentException("Cấu trúc JSON bài làm Coding không hợp lệ", e);
+        List<CompileRequest> compileRequests = dto.getCompileRequest();
+        if (compileRequests == null || compileRequests.isEmpty()) {
+            throw new IllegalArgumentException(
+                    "Không tìm thấy thông tin yêu cầu compile bài toán (CompileRequest là null hoặc rỗng)");
+        }
+
+        // Kiểm tra xem có yêu cầu nào là chạy thử (isTest == true) hay không
+        CompileRequest testRequest = null;
+        for (CompileRequest req : compileRequests) {
+
+            if (req.getIsTest()) {
+                System.out.println(
+                        "Phát hiện yêu cầu chạy thử (isTest == true) cho bài toán mã số: " + req.getProblemId());
+                testRequest = req;
+                break;
             }
-        }
-        if (compileRequest == null) {
-            throw new IllegalArgumentException("Không tìm thấy thông tin yêu cầu compile bài toán (CompileRequest là null)");
-        }
-        CodingProblem problem = codingProblemsRepository.findById(compileRequest.getProblemId())
-                .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy bài toán mã số: " + dto.getCompileRequest().getProblemId()));
 
-        //  Nạp toàn bộ các Test Case
-        List<CompilerRequestDto.TestCase> testcases = new ArrayList<>();
-        if (problem.getVisibleExamples() != null) {
-            for (CodingProblem.Example example : problem.getVisibleExamples()) {
-                CompilerRequestDto.TestCase testCase = CompilerRequestDto.TestCase.builder()
-                        .expectedOutput(example.getOutput())
-                        .inputs(example.getInputs())
-                        .build();
-                testcases.add(testCase);
+        }
+
+        if (testRequest != null) {
+            System.out.println(
+                    "Đang xử lý yêu cầu chạy thử (isTest == true) cho bài toán mã số: " + testRequest.getProblemId());
+            final CompileRequest finalTestRequest = testRequest;
+            CodingProblem problem = codingProblemsRepository.findById(finalTestRequest.getProblemId())
+                    .orElseThrow(() -> new IllegalArgumentException(
+                            "Không tìm thấy bài toán mã số: " + finalTestRequest.getProblemId()));
+
+            // Nạp toàn bộ các Test Case
+            List<CompilerRequestDto.TestCase> testcases = new ArrayList<>();
+            if (problem.getVisibleExamples() != null) {
+                for (CodingProblem.Example example : problem.getVisibleExamples()) {
+                    CompilerRequestDto.TestCase testCase = CompilerRequestDto.TestCase.builder()
+                            .expectedOutput(example.getOutput())
+                            .inputs(example.getInputs())
+                            .build();
+                    testcases.add(testCase);
+                }
             }
-        }
 
-        // Nạp toàn bộ các Test Case Ẩn (Hidden Test Cases) để chấm điểm tuyệt đối
+            // Đóng gói Payload gửi sang hệ thống Sandbox Compile Code
+            CompilerRequestDto requestDto = CompilerRequestDto.builder()
+                    .language(testRequest.getLanguage())
+                    .memoryLimitMb(problem.getMemoryLimitMb())
+                    .sourceCode(testRequest.getSourceCode())
+                    .testCases(testcases)
+                    .timeLimitMs(problem.getExecutionTimeLimitMs())
+                    .paramTypes(problem.getParamTypes())
+                    .returnType(problem.getReturnType())
+                    .build();
 
-        // Đóng gói Payload gửi sang hệ thống Sandbox Compile Code
-        CompilerRequestDto requestDto = CompilerRequestDto.builder()
-                .language(compileRequest.getLanguage())
-                .memoryLimitMb(problem.getMemoryLimitMb())
-                .sourceCode(compileRequest.getSourceCode())
-                .testCases(testcases)
-                .timeLimitMs(problem.getExecutionTimeLimitMs())
-                .paramTypes(problem.getParamTypes())
-                .returnType(problem.getReturnType())
-                .build();
-
-        // Phân luồng xử lý: chayj code đơn lẻ
-        if (compileRequest.isTest()) {
             // Gọi gọi Client Service thực thi code, nhận kết quả trả về từ Sandbox
             CompilerResponseDto response = apiClient.executeCode(requestDto);
             return SubmissionResult.compileCode(response);
         } else {
-             applicationEventPublisher.publishEvent(dto);
-             return SubmissionResult.pending(dto.getApplication().getId());
+            applicationEventPublisher.publishEvent(dto);
+            return SubmissionResult.pending(dto.getApplication().getId());
         }
 
-        // Xử lý nộp bài chính thức tại đây nếu test == false (ví dụ lưu kết quả vào DB và tính điểm)
+        // Xử lý nộp bài chính thức tại đây nếu test == false (ví dụ lưu kết quả vào DB
+        // và tính điểm)
     }
 }
