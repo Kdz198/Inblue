@@ -2,7 +2,6 @@ package fpt.org.inblue.service.impl;
 
 import fpt.org.inblue.cloudinary.CloudinaryService;
 import fpt.org.inblue.constants.ApiPath;
-import fpt.org.inblue.enums.Major;
 import fpt.org.inblue.enums.PythonService;
 import fpt.org.inblue.enums.Role;
 import fpt.org.inblue.exception.CustomException;
@@ -13,8 +12,8 @@ import fpt.org.inblue.model.dto.UserInfo;
 import fpt.org.inblue.model.dto.response.CVParserResponse;
 import fpt.org.inblue.model.dto.response.UserResponse;
 import fpt.org.inblue.repository.UserRepository;
-import fpt.org.inblue.service.CandidateProfileService;
 import fpt.org.inblue.service.ApiClient;
+import fpt.org.inblue.service.CandidateProfileService;
 import fpt.org.inblue.service.UserService;
 import fpt.org.inblue.utils.FileUtil;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -73,7 +72,6 @@ public class UserServiceImpl implements UserService {
                     .role(Role.USER)
                     .isActive(true)
                     .university(user.getUniversity())
-                    .major(Major.valueOf(user.getMajor()))
                     .build();
 
             User savedUser = userRepository.save(userBuilder);
@@ -93,7 +91,6 @@ public class UserServiceImpl implements UserService {
             updateUser.setName(user.getName());
             updateUser.setEmail(user.getEmail());
             updateUser.setUniversity(user.getUniversity());
-            updateUser.setMajor(Major.valueOf(user.getMajor()));
             updateUser.setPassword(user.getPassword());
             if (updateUser.getAvatarUrl() != null) {
                 updateUser.setAvatarUrl(updateUser.getAvatarUrl());
@@ -253,7 +250,6 @@ public class UserServiceImpl implements UserService {
                     .avatarUrl(user.getAvatarUrl())
                     .public_id(user.getPublic_id())
                     .university(user.getUniversity())
-                    .major(user.getMajor())
                     .cvUrl(user.getCvUrl())
                     .cv_public_id(user.getCv_public_id())
                     .build();

@@ -1,6 +1,5 @@
 package fpt.org.inblue.model.dto.response;
 
-import fpt.org.inblue.enums.Major;
 import fpt.org.inblue.enums.Role;
 import lombok.Builder;
 import lombok.Data;
@@ -16,7 +15,6 @@ public class UserResponse {
     private String avatarUrl;
     private String public_id;
     private String university;
-    private Major major;
     private String cvUrl;
     private String cv_public_id;
 }

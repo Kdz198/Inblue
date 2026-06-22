@@ -1,8 +1,10 @@
 package fpt.org.inblue.controller;
 
 import fpt.org.inblue.model.QuestionBank;
+import fpt.org.inblue.model.dto.request.CreateQuestionBankRequest;
 import fpt.org.inblue.model.dto.response.QuestionGenerateResponse;
 import fpt.org.inblue.service.QuestionBankService;
+import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -26,8 +28,8 @@ public class QuestionBankController {
     }
 
     @PostMapping
-    public ResponseEntity<QuestionBank> createQuestionBank(@RequestBody QuestionBank questionBank) {
-        return ResponseEntity.ok(questionBankService.createQuestionBank(questionBank));
+    public ResponseEntity<QuestionBank> createQuestionBank(@Valid @RequestBody CreateQuestionBankRequest request) {
+        return ResponseEntity.ok(questionBankService.createQuestionBank(request));
     }
 
     @PutMapping("{id}")

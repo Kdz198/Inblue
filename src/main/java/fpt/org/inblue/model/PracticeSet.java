@@ -1,6 +1,5 @@
 package fpt.org.inblue.model;
 
-import fpt.org.inblue.enums.Major;
 import fpt.org.inblue.enums.TargetLevel;
 import jakarta.persistence.*;
 import lombok.*;
@@ -25,8 +24,6 @@ public class PracticeSet {
     String objective;
     TargetLevel level;
     Date startDate;
-    @Enumerated(EnumType.STRING)
-    Major major;
     @JoinColumn(name = "user_id")
     @ManyToOne
     User user;

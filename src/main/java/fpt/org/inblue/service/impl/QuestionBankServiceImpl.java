@@ -2,11 +2,14 @@ package fpt.org.inblue.service.impl;
 
 import fpt.org.inblue.enums.AnythingLlmWorkspace;
 import fpt.org.inblue.exception.CustomException;
+import fpt.org.inblue.mapper.QuestionBankMapper;
 import fpt.org.inblue.model.QuestionBank;
+import fpt.org.inblue.model.QuestionCategory;
+import fpt.org.inblue.model.dto.request.CreateQuestionBankRequest;
 import fpt.org.inblue.model.dto.request.QuestionGenerateRequest;
-import fpt.org.inblue.model.dto.response.CodingProblemGenerateResponse;
 import fpt.org.inblue.model.dto.response.QuestionGenerateResponse;
 import fpt.org.inblue.repository.QuestionBankRepository;
+import fpt.org.inblue.repository.QuestionCategoryRepository;
 import fpt.org.inblue.service.ApiClient;
 import fpt.org.inblue.service.QuestionBankService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -19,10 +22,20 @@ public class QuestionBankServiceImpl implements QuestionBankService {
     @Autowired
     private QuestionBankRepository questionBankRepository;
     @Autowired
+    private QuestionCategoryRepository questionCategoryRepository;
+    @Autowired
+    private QuestionBankMapper questionBankMapper;
+    @Autowired
     private ApiClient apiClient;
 
     @Override
-    public QuestionBank createQuestionBank(QuestionBank questionBank) {
+    public QuestionBank createQuestionBank(CreateQuestionBankRequest request) {
+        QuestionCategory category = questionCategoryRepository.findById(request.getQuestionCategoryId())
+                .orElseThrow(() -> new CustomException(
+                        "Question category not found with id: " + request.getQuestionCategoryId(),
+                        HttpStatus.NOT_FOUND));
+        QuestionBank questionBank = questionBankMapper.toEntity(request);
+        questionBank.setQuestionCategory(category);
         return questionBankRepository.save(questionBank);
     }
 

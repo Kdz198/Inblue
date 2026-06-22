@@ -104,7 +104,6 @@ public class PracticeSetServiceImpl implements PracticeSetService {
                 .practiceSetName(practiceRequest.getPracticeSetName())
                 .objective(practiceRequest.getObjective())
                 .level(practiceRequest.getTarget())
-                .major(user.getMajor())
                 .startDate(Date.valueOf(LocalDate.now().plusDays(practiceRequest.getDateNumber()))) //ngay bat dau on tap la ngay hien tai + số ngày mà AI đề xuất
                 .build();
         practiceSet = practiceSetRepository.save(practiceSet);
@@ -179,7 +178,6 @@ public class PracticeSetServiceImpl implements PracticeSetService {
                 .practiceSetName(practiceRequest.getPracticeSetName())
                 .objective(practiceRequest.getObjective())
                 .level(practiceRequest.getTarget())
-                .major(user.getMajor())
                 .startDate(Date.valueOf(LocalDate.now().plusDays(practiceRequest.getDateNumber() + 1)))
                 .build();
         practiceSet = practiceSetRepository.save(practiceSet);

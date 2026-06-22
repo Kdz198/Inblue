@@ -10,7 +10,6 @@ import fpt.org.inblue.model.dto.request.QuizItemCreateAIRequest;
 import fpt.org.inblue.model.dto.request.QuizItemCreateRequest;
 import fpt.org.inblue.model.dto.response.QuizItemResponse;
 import fpt.org.inblue.model.dto.response.QuizResponse;
-import fpt.org.inblue.enums.Major;
 import fpt.org.inblue.enums.PythonService;
 import fpt.org.inblue.repository.PracticeSetRepository;
 import fpt.org.inblue.repository.QuizSetRepository;
@@ -139,19 +138,12 @@ public class QuizSetServiceImpl implements QuizSetService {
             QuizItemCreateAIRequest.PracticeAIQuestion aiQuestion = new QuizItemCreateAIRequest.PracticeAIQuestion(question.getTitle(), question.getContent(), question.getAnswer());
             aiQuestions.add(aiQuestion);
         }
-        String majorName ;
-        if(practice.getMajor().equals(Major.CNTT)){
-             majorName = "Công nghệ thông tin";
-        }
-        else{
-             majorName = String.valueOf(Major.Marketing);
-        }
+
         QuizItemCreateAIRequest request = QuizItemCreateAIRequest.builder()
                 .practiceSetName(practice.getPracticeSetName())
                 .level(practice.getLevel())
                 .objective(practice.getObjective())
                 .questions(aiQuestions)
-                .majorName(majorName)
                 .build();
 
         QuizItemCreateRequest[] response = ApiClient.callApi(
