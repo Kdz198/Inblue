@@ -59,4 +59,10 @@ public class RoundController {
                 WhiteboardQuestionDto.class
         );
     }
+
+    @GetMapping("/find-by-application-order/{applicationId}")
+    public ResponseEntity<Round> findByApplicationOrder(@PathVariable Long applicationId) {
+        Round rounds = roundService.getRoundByOrder(applicationId);
+        return ResponseEntity.ok(rounds);
+    }
 }

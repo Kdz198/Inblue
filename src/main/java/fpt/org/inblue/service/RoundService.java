@@ -12,4 +12,5 @@ public interface RoundService {
     List<Round> updateRoundForJd(Long jdId, UpdateJdRoundRequest request);
     Round getRoundById(Long roundId);
     List<RoundType> getAllRoundTypes();
+    Round getRoundByOrder(Long applicationId);
 }

@@ -2,6 +2,7 @@ package fpt.org.inblue.service.impl;
 
 import fpt.org.inblue.enums.RoundType;
 import fpt.org.inblue.exception.CustomException;
+import fpt.org.inblue.model.Application;
 import fpt.org.inblue.model.CodingProblem;
 import fpt.org.inblue.model.JobDescription;
 import fpt.org.inblue.model.Round;
@@ -10,7 +11,10 @@ import fpt.org.inblue.model.dto.request.UpdateJdRoundRequest;
 import fpt.org.inblue.repository.CodingProblemsRepository;
 import fpt.org.inblue.repository.JobDescriptionRepository;
 import fpt.org.inblue.repository.RoundRepository;
+import fpt.org.inblue.service.ApplicationService;
+import fpt.org.inblue.service.JobDescriptionService;
 import fpt.org.inblue.service.RoundService;
+import fpt.org.inblue.service.submission.RoundSubmissionProcessor;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -23,11 +27,15 @@ public class RoundServiceImpl implements RoundService {
     private final RoundRepository roundRepository;
     private final JobDescriptionRepository jobDescriptionRepository;
     private final CodingProblemsRepository codingProblemsRepository;
+    private final ApplicationService applicationService;
+    private final JobDescriptionService jobDescriptionService;
 
-    public RoundServiceImpl(RoundRepository roundRepository, JobDescriptionRepository jobDescriptionRepository, CodingProblemsRepository codingProblemsRepository) {
+    public RoundServiceImpl(RoundRepository roundRepository, JobDescriptionRepository jobDescriptionRepository, CodingProblemsRepository codingProblemsRepository, ApplicationService applicationService, JobDescriptionService jobDescriptionService) {
         this.roundRepository = roundRepository;
         this.jobDescriptionRepository = jobDescriptionRepository;
         this.codingProblemsRepository = codingProblemsRepository;
+        this.applicationService = applicationService;
+        this.jobDescriptionService = jobDescriptionService;
     }
 
     @Override
@@ -198,6 +206,13 @@ public class RoundServiceImpl implements RoundService {
     @Override
     public List<RoundType> getAllRoundTypes() {
         return Arrays.asList(RoundType.values());
+    }
+
+    @Override
+    public Round getRoundByOrder(Long applicationId) {
+        Application currentApplication = applicationService.getApplicationById(applicationId);
+        Round currentRound = jobDescriptionService.getRoundByOrder( currentApplication.getJdId(), currentApplication.getCurrentRoundOrder());
+        return currentRound;
     }
 
 
