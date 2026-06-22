@@ -27,41 +27,6 @@ public class SubmitRequest {
     private List<CompileRequest> compileRequest;
 
     /**
-     * Setter cho trường hợp gửi một JSON string duy nhất (object hoặc array).
-     * Spring MVC gọi setter này khi chỉ có 1 giá trị cho tham số "compileRequest".
-     *
-     * Cách gửi (1 object):
-     * {"problemId":1,"language":"JAVA","sourceCode":"...","test":true}
-     * Cách gửi (array): [{"problemId":1,...},{"problemId":2,...}]
-     */
-    public void setCompileRequest(String compileRequestJson) {
-        if (compileRequestJson == null || compileRequestJson.trim().isEmpty()
-                || compileRequestJson.equals("[object Object]")) {
-            this.compileRequest = null;
-            return;
-        }
-
-        ObjectMapper objectMapper = new ObjectMapper();
-        try {
-            String trimmed = compileRequestJson.trim();
-            if (trimmed.startsWith("[")) {
-                this.compileRequest = objectMapper.readValue(trimmed, new TypeReference<List<CompileRequest>>() {
-                });
-            } else {
-                CompileRequest single = objectMapper.readValue(trimmed, CompileRequest.class);
-                this.compileRequest = new java.util.ArrayList<>();
-                this.compileRequest.add(single);
-            }
-            if (this.compileRequest != null && this.compileRequest.isEmpty()) {
-                this.compileRequest = null;
-            }
-        } catch (Exception e) {
-            System.err.println("Lỗi parse compileRequest (String) trong SubmitRequest: " + e.getMessage());
-            this.compileRequest = null;
-        }
-    }
-
-    /**
      * Setter cho trường hợp gửi nhiều giá trị "compileRequest" trong cùng một
      * request.
      * Spring MVC gọi setter này khi có từ 2 giá trị trở lên cho cùng tham số
