@@ -16,6 +16,4 @@ public class UserInfo {
     @NotNull
     private String email;
     private String password;
-    private String university;
-    private String major;
 }

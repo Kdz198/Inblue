@@ -14,7 +14,6 @@ public class UserResponse {
     private Boolean isActive;
     private String avatarUrl;
     private String public_id;
-    private String university;
     private String cvUrl;
     private String cv_public_id;
 }

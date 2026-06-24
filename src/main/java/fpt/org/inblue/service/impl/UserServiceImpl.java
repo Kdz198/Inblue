@@ -71,7 +71,6 @@ public class UserServiceImpl implements UserService {
                     .password(user.getPassword())
                     .role(Role.USER)
                     .isActive(true)
-                    .university(user.getUniversity())
                     .build();
 
             User savedUser = userRepository.save(userBuilder);
@@ -90,7 +89,6 @@ public class UserServiceImpl implements UserService {
             User updateUser = userRepository.findById(user.getId()).orElseThrow(() -> new RuntimeException("User Not Found"));
             updateUser.setName(user.getName());
             updateUser.setEmail(user.getEmail());
-            updateUser.setUniversity(user.getUniversity());
             updateUser.setPassword(user.getPassword());
             if (updateUser.getAvatarUrl() != null) {
                 updateUser.setAvatarUrl(updateUser.getAvatarUrl());
@@ -249,7 +247,6 @@ public class UserServiceImpl implements UserService {
                     .isActive(user.getIsActive())
                     .avatarUrl(user.getAvatarUrl())
                     .public_id(user.getPublic_id())
-                    .university(user.getUniversity())
                     .cvUrl(user.getCvUrl())
                     .cv_public_id(user.getCv_public_id())
                     .build();
