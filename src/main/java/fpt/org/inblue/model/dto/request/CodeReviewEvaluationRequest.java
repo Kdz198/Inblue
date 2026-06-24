@@ -14,7 +14,7 @@ import java.util.List;
 public class CodeReviewEvaluationRequest {
     EvaluationCriteria evaluationCriteria;
     CodeReviewProblem codeReviewProblem;
-    ApplicationDetail.CodeReviewSubmission submission;
+    List<ApplicationDetail.CodeReviewSubmission> submissions;
 
     @Builder
     @Data

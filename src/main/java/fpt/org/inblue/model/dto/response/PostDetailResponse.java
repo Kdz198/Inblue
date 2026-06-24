@@ -25,7 +25,6 @@ public class PostDetailResponse implements Serializable {
     String coverImgUrl;
     List<String> tags;
     AuthorResponse author;
-    String majorName;
 
     @Data
     @Builder

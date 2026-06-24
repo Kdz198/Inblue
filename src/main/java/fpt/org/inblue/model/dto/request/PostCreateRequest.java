@@ -23,9 +23,6 @@ public class PostCreateRequest {
     @Schema
     private int authorId;
 
-    @Schema
-    private int majorId;
-
     @Schema(type = "string", format = "binary")
     private MultipartFile coverImg;
 

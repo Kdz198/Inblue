@@ -3,6 +3,7 @@ package fpt.org.inblue.controller;
 import fpt.org.inblue.model.ApplicationDetail;
 import fpt.org.inblue.service.submission.SubmissionResult;
 import fpt.org.inblue.model.dto.request.SubmitRequest;
+import fpt.org.inblue.model.dto.request.CodeReviewSubmitRequest;
 import fpt.org.inblue.service.ApplicationDetailService;
 import fpt.org.inblue.service.submission.SubmissionService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -37,6 +38,16 @@ public class ApplicationDetailController {
     public ResponseEntity<SubmissionResult> submitApplicationDetail(@ModelAttribute SubmitRequest submitRequest) throws IOException {
         System.out.println("Received submit request: " + submitRequest);
         SubmissionResult result = submissionService.submitRound(submitRequest);
+        return ResponseEntity.ok(result);
+    }
+
+    @PostMapping("/code-review/evaluate")
+    @Operation(
+            summary = "Chấm bài Code Review",
+            description = "Xử lý chấm điểm trực tiếp bài review code của ứng viên thông qua AnythingLLM với workspace CODE_REVIEW."
+    )
+    public ResponseEntity<ApplicationDetail> evaluateCodeReview(@RequestBody CodeReviewSubmitRequest request) {
+        ApplicationDetail result = submissionService.evaluateCodeReview(request);
         return ResponseEntity.ok(result);
     }
 

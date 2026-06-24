@@ -40,8 +40,6 @@ public class PostServiceImpl implements PostService {
     private PostRepository postRepository;
     @Autowired
     private CloudinaryService cloudinaryService;
-//    @Autowired
-//    private MajorService majorService;
     @Autowired
     private UserService userService;
 
@@ -49,7 +47,6 @@ public class PostServiceImpl implements PostService {
 
     @Override
     public Post createPost(PostCreateRequest post) throws IOException {
-        //Major major = majorService.getMajorById(post.getMajorId());
         User user = userService.getById(post.getAuthorId());
         Map<String,String> uploadResult = cloudinaryService.uploadImg(post.getCoverImg());
         String url = uploadResult.get("secure_url");
@@ -57,7 +54,6 @@ public class PostServiceImpl implements PostService {
         Post saved = postMapper.toEntity(post);
         saved.setPublic_id(public_id);
         saved.setCoverImgUrl(url);
-        //saved.setMajor(major);
         saved.setAuthor(user);
         return postRepository.save(saved);
     }
@@ -102,7 +98,6 @@ public class PostServiceImpl implements PostService {
                                 .name(post.getAuthor().getName())
                                 .avatar(post.getAuthor().getAvatarUrl())
                                 .build() : null)
-                //.majorName(post.getMajor() != null ? post.getMajor().getMajorName() : null)
                 .build();
         response.setPost(detailResponse);
         response.setLikeCount(post.getLikes() != null ? post.getLikes().size() : 0);
@@ -153,7 +148,6 @@ public class PostServiceImpl implements PostService {
                                     .name(post.getAuthor().getName())
                                     .avatar(post.getAuthor().getAvatarUrl())
                                     .build() : null)
-                  //  .majorName(post.getMajor() != null ? post.getMajor().getMajorName() : null)
                     .build();
 
             response.setPost(postDetail);

@@ -13,6 +13,4 @@ public enum AnythingLlmWorkspace {
     CODE_REVIEW_GEN("code-review-generator"), // Workspace chuyên sinh đề Code Review
     QUIZ_GEN("quiz-generator"); // Workspace chuyên sinh đề Quiz
     private final String slug;
-
-
 }
