@@ -12,7 +12,4 @@ import org.springframework.web.multipart.MultipartFile;
 public class CreateMentorRequest {
 MentorInfo data;
     MultipartFile avatar;
-     MultipartFile identityFile;
-    MultipartFile degreeFile;
-     MultipartFile otherFile;
 }

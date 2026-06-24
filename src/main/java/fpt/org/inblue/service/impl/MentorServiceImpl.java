@@ -33,7 +33,7 @@ public class MentorServiceImpl implements MentorService {
     private MentorMapper mentorMapper;
 
     @Override
-    public Mentor createMentor(MentorInfo data, MultipartFile identityFile, MultipartFile degreeFile, MultipartFile otherFile,MultipartFile avatar) throws IOException {
+    public Mentor createMentor(MentorInfo data, MultipartFile avatar) throws IOException {
         Mentor mentor;
        if(data.getId()==null){
            mentor = mentorMapper.toEntity(data);
@@ -44,9 +44,6 @@ public class MentorServiceImpl implements MentorService {
            mentor.setPricePerMinute(data.getPricePerMinute());
            mentor = mentorRepository.save(mentor);
            processAndPublishFileEvent(mentor, avatar, "avatar");
-           processAndPublishFileEvent(mentor, identityFile, "IdentityCard");
-           processAndPublishFileEvent(mentor, degreeFile, "Degree");
-           processAndPublishFileEvent(mentor, otherFile, "Other");
            return mentor;
        }
        else{
@@ -57,39 +54,12 @@ public class MentorServiceImpl implements MentorService {
                 mentor.setAvatarUrl(mentor.getAvatarUrl());
                 mentor.setPublic_id(mentor.getPublic_id());
             }
-            if(mentor.getIdentityImg()!=null) {
-                mentor.setIdentityImg(mentor.getIdentityImg());
-                mentor.setPublic_id_identity(mentor.getPublic_id_identity());
-            }
-            if(mentor.getDegreeImg()!=null) {
-                mentor.setDegreeImg(mentor.getDegreeImg());
-                mentor.setPublic_id_degree(mentor.getPublic_id_degree());
-            }
-            if(mentor.getOtherFile()!=null) {
-                mentor.setOtherFile(mentor.getOtherFile());
-                mentor.setPublic_id_other(mentor.getPublic_id_other());
-            }
            mentor = mentorRepository.save(mentor);
            if (avatar!=null &&!avatar.isEmpty()) {
                if(mentor.getPublic_id()!=null) {
                    cloudinaryService.deleteImage(mentor.getPublic_id());
                }
                processAndPublishFileEvent(mentor, avatar, "avatar");
-           }
-           if (identityFile!=null && !identityFile.isEmpty()) {
-               if(mentor.getPublic_id_identity()!=null) {
-               cloudinaryService.deletePdf(mentor.getPublic_id_identity());}
-               processAndPublishFileEvent(mentor, identityFile, "IdentityCard");
-           }
-           if (degreeFile!=null && !degreeFile.isEmpty()) {
-               if(mentor.getPublic_id_degree()!=null){
-               cloudinaryService.deletePdf(mentor.getPublic_id_degree());}
-               processAndPublishFileEvent(mentor, degreeFile, "Degree");
-           }
-           if (otherFile!=null && !otherFile.isEmpty()) {
-               if(mentor.getPublic_id_other()!=null){
-                cloudinaryService.deletePdf(mentor.getPublic_id_other());}
-              processAndPublishFileEvent(mentor, otherFile, "Other");
            }
            return mentor;
        }

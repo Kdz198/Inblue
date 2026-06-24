@@ -95,22 +95,4 @@ public class EventListenerHandle {
         mentorRepository.updateAvatar(mentor.getId(),map.get("secure_url"),map.get("public_id"));
     }
 
-    @EventListener
-    @Async
-    public void uploadCertificate(MentorEventDto mentorEventDto) throws IOException {
-        Map<String,String> map = cloudinaryService.uploadDocument(mentorEventDto.getFile());
-        String certificateUrl = map.get("secure_url");
-        String certificatePublicId = map.get("public_id");
-        if(mentorEventDto.getMessage().equals("IdentityCard")){
-            mentorRepository.updateIdentityCard(mentorEventDto.getMentor().getId(),certificateUrl,certificatePublicId);
-        }
-        else if(mentorEventDto.getMessage().equals("Degree")){
-            mentorRepository.updateDegree(mentorEventDto.getMentor().getId(),certificateUrl,certificatePublicId);
-        }
-        else if(mentorEventDto.getMessage().equals("Other")){
-            mentorRepository.updateOtherFile(mentorEventDto.getMentor().getId(),certificateUrl,certificatePublicId);
-        }
-    }
-
-
 }

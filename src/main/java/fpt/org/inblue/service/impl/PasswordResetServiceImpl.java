@@ -38,7 +38,7 @@ public class PasswordResetServiceImpl implements PasswordResetService {
         boolean isMentor = mentorRepository.findByEmail(email) != null;
 
         if (!isUser && !isMentor) {
-            throw new CustomException("Email không tồn tại trong hệ thống", HttpStatus.NOT_FOUND);
+            throw new CustomException("Email does not exist in the system", HttpStatus.NOT_FOUND);
         }
 
         String otp = String.format("%06d", new Random().nextInt(1000000));
@@ -46,22 +46,22 @@ public class PasswordResetServiceImpl implements PasswordResetService {
         String redisKey = OTP_KEY_PREFIX + email;
         redisTemplate.opsForValue().set(redisKey, otp, OTP_EXPIRY_MINUTES, TimeUnit.MINUTES);
 
-        String subject = "[Inblue] Mã OTP xác nhận đặt lại mật khẩu";
+        String subject = "[Inblue] OTP Code to Reset Your Password";
         String body = "<div style='font-family: Arial, sans-serif; padding: 20px;'>" +
-                "<h2>Yêu cầu đặt lại mật khẩu</h2>" +
-                "<p>Chúng tôi nhận được yêu cầu đặt lại mật khẩu cho tài khoản của bạn trên hệ thống Inblue.</p>" +
-                "<p>Mã OTP của bạn là: <strong style='font-size: 20px; color: #1a73e8; letter-spacing: 2px;'>" + otp + "</strong></p>" +
-                "<p>Mã này có hiệu lực trong vòng <strong>" + OTP_EXPIRY_MINUTES + " phút</strong>. Vui lòng không chia sẻ mã này cho bất kỳ ai.</p>" +
+                "<h2>Reset Password Request</h2>" +
+                "<p>We received a request to reset the password for your account on the Inblue system.</p>" +
+                "<p>Your OTP code is: <strong style='font-size: 20px; color: #1a73e8; letter-spacing: 2px;'>" + otp + "</strong></p>" +
+                "<p>This code is valid for <strong>" + OTP_EXPIRY_MINUTES + " minutes</strong>. Please do not share this code with anyone.</p>" +
                 "<br/>" +
-                "<p>Trân trọng,<br/>Đội ngũ Inblue</p>" +
+                "<p>Best regards,<br/>The Inblue Team</p>" +
                 "</div>";
 
         try {
             mailService.adminSendMail(email, subject, body);
-            log.info("Đã gửi mã OTP đặt lại mật khẩu thành công đến: {}", email);
+            log.info("Sent password reset OTP successfully to: {}", email);
         } catch (MessagingException e) {
-            log.error("Lỗi khi gửi email đặt lại mật khẩu: {}", e.getMessage());
-            throw new CustomException("Gửi email thất bại, vui lòng thử lại sau.", HttpStatus.INTERNAL_SERVER_ERROR);
+            log.error("Error sending password reset email: {}", e.getMessage());
+            throw new CustomException("Failed to send email, please try again later.", HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
 
@@ -71,11 +71,11 @@ public class PasswordResetServiceImpl implements PasswordResetService {
         String savedOtp = (String) redisTemplate.opsForValue().get(redisKey);
 
         if (savedOtp == null) {
-            throw new CustomException("Mã OTP đã hết hạn hoặc không tồn tại. Vui lòng yêu cầu mã mới.", HttpStatus.BAD_REQUEST);
+            throw new CustomException("OTP code has expired or does not exist. Please request a new one.", HttpStatus.BAD_REQUEST);
         }
 
         if (!savedOtp.equals(otp)) {
-            throw new CustomException("Mã OTP không hợp lệ.", HttpStatus.BAD_REQUEST);
+            throw new CustomException("Invalid OTP code.", HttpStatus.BAD_REQUEST);
         }
 
         User user = userRepository.findByEmail(email);
@@ -88,11 +88,11 @@ public class PasswordResetServiceImpl implements PasswordResetService {
                 mentor.setPassword(passwordEncoder.encode(newPassword));
                 mentorRepository.save(mentor);
             } else {
-                throw new CustomException("Không tìm thấy người dùng sau khi xác thực OTP.", HttpStatus.INTERNAL_SERVER_ERROR);
+                throw new CustomException("User not found after OTP verification.", HttpStatus.INTERNAL_SERVER_ERROR);
             }
         }
 
         redisTemplate.delete(redisKey);
-        log.info("Đặt lại mật khẩu thành công cho email: {}", email);
+        log.info("Successfully reset password for email: {}", email);
     }
 }

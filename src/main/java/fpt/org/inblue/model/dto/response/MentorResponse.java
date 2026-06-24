@@ -15,9 +15,6 @@ public class MentorResponse {
      String linkedInUrl;
      String currentCompany;
      int rate;
-     String identityImg;
-     String degreeImg;
-     String otherFile;
      int totalSession;
      double averageRating;
      int pricePerMinute;
