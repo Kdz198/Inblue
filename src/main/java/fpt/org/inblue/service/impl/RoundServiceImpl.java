@@ -52,6 +52,7 @@ public class RoundServiceImpl implements RoundService {
             round.setRoundOrder(item.getRoundOrder());
             round.setRoundType(item.getRoundType());
             round.setPassThreshold(item.getPassThreshold());
+            round.setReviewerId(item.getReviewerId());
             Round.RoundConfig roundConfig = new Round.RoundConfig();
             roundConfig.setInstruction(item.getConfigData().getInstruction());
             roundConfig.setSubmissionFormat(item.getConfigData().getSubmissionFormat());
@@ -141,6 +142,7 @@ public class RoundServiceImpl implements RoundService {
             round.setRoundOrder(item.getRoundOrder());
             round.setRoundType(item.getRoundType());
             round.setPassThreshold(item.getPassThreshold());
+            round.setReviewerId(item.getReviewerId());
 
             Round.RoundConfig roundConfig = new Round.RoundConfig();
             roundConfig.setInstruction(item.getConfigData().getInstruction());

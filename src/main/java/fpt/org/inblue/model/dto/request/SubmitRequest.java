@@ -18,10 +18,8 @@ import java.util.List;
 public class SubmitRequest {
     private Long applicationId;
     private String textContent;
-
     @Nullable
     private MultipartFile file;
-
     // Dành riêng cho vòng QUIZ
     private List<String> quizAnswers;
     private List<CompileRequest> compileRequest;

@@ -35,6 +35,8 @@ public class SetupJdRoundsRequest {
         @Min(0)
         private Double passThreshold;
 
+        private Integer reviewerId;
+
         @NotNull(message = "Cấu hình vòng không được thiếu")
         @Valid
         private RoundConfigDto configData;

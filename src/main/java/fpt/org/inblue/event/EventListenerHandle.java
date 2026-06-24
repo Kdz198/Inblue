@@ -24,14 +24,12 @@ public class EventListenerHandle {
     private final CloudinaryService cloudinaryService;
     private final MentorRepository mentorRepository;
     private final JwtUtils jwtUtils;
-//    private final FeatureUsageLogRepository featureUsageLogRepository;
 
     public EventListenerHandle(UserRepository userRepository, CloudinaryService cloudinaryService, MentorRepository mentorRepository, JwtUtils jwtUtils) {
         this.userRepository = userRepository;
         this.cloudinaryService = cloudinaryService;
         this.mentorRepository = mentorRepository;
         this.jwtUtils = jwtUtils;
-//        this.featureUsageLogRepository = featureUsageLogRepository;
     }
 
     @Async

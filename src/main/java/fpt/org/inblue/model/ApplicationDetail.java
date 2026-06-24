@@ -85,6 +85,7 @@ public class ApplicationDetail {
         // Dành riêng cho vòng QUIZ
         private List<QuizAnswer> quizAnswers;
         List<CodeSubmission> codeSubmissions; // Dành riêng cho vòng Coding (Frontend gửi lên cấu trúc JSON gồm source code + kết quả test case)
+        private List<CodeReviewSubmission> codeReviewSubmissions; // Dành riêng cho vòng Code Review để lưu lại bài làm
     }
     @Data
     @NoArgsConstructor
@@ -96,20 +97,16 @@ public class ApplicationDetail {
     }
 
 
-//    @Data
-//    public class CodeReviewSubmission {
-//
-//        private String generalComment; // Nhận xét tổng quan của ứng viên
-//
-//        private List<LineComment> lineComments; // Danh sách các comment găm vào từng dòng code
-//
-//        @Data
-//        public static class LineComment {
-//            private String fileName;    // File được comment (VD: OrderService.java)
-//            private Integer lineNumber; // Dòng số mấy (VD: 45)
-//            private String comment;     // Nội dung ứng viên bóc phốt (VD: "Chỗ này bị N+1 query")
-//        }
-//    }
+    @Data
+    @NoArgsConstructor
+    @AllArgsConstructor
+    @Builder
+    public static class CodeReviewSubmission{
+        private String filename;     // Lỗi nằm ở file nào
+        private Integer lineNumber;  // Dòng bị lỗi (1-indexed)
+        private String severity;     // Mức độ nghiêm trọng: CRITICAL, WARNING, INFO
+        private String description;
+    }
 
     @Data
     @NoArgsConstructor

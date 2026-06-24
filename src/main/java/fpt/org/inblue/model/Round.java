@@ -40,6 +40,9 @@ public class Round {
     @Column(columnDefinition = "jsonb")
     private RoundConfig configData;
 
+    @Column(name = "reviewer_id")
+    private Integer reviewerId;
+
     @Builder.Default
     Boolean isDeleted = false;
     private Boolean isAuto = false;
@@ -71,7 +74,6 @@ public class Round {
         private List<CodingProblemSnapshot> codingProblems = new ArrayList<>(); // Dùng để lưu snapshot của bài coding khi tạo round, tránh bị ảnh hưởng nếu bài gốc bị sửa sau đó
         private List<CodeReviewProblemSnapshot> codeReviewProblems = new ArrayList<>();
         //Dành cho vòng mentor interview
-
         MentorInterviewDto mentorInterview;
     }
 
