@@ -43,4 +43,5 @@ jobs:
         run: |
           git add .
           git diff --cached --quiet || git commit -m "style: auto format code with spotless [skip ci]"
+          git pull --rebase origin master
           git push
