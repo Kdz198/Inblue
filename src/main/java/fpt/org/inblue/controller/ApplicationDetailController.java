@@ -52,17 +52,17 @@ public class ApplicationDetailController {
     }
 
     @PostMapping("hr-score")
-    public ResponseEntity<?> hrScore(@RequestParam int applicationId,
+    public ResponseEntity<?> hrScore(@RequestParam int applicationDetailId,
                              @RequestParam boolean isPass,
                              @RequestParam String note,
                              @RequestParam double score){
-        applicationDetailService.hrScore(applicationId, isPass, note, score);
+        applicationDetailService.hrScore(applicationDetailId, isPass, note, score);
         return ResponseEntity.ok().build();
      }
 
      @GetMapping("/{id}")
         public ResponseEntity<ApplicationDetail> getApplicationDetailById(@PathVariable long id){
-            ApplicationDetail applicationDetail = applicationDetailService.getApplicationById(id);
+            ApplicationDetail applicationDetail = applicationDetailService.getApplicationDetailById(id);
             return ResponseEntity.ok(applicationDetail);
      }
 

@@ -18,24 +18,24 @@ public class ApplicationDetailServiceImpl implements ApplicationDetailService {
     private final ApplicationService applicationService;
 
     @Override
-    public ApplicationDetail getApplicationById(long id) {
+    public ApplicationDetail getApplicationDetailById(long id) {
         return applicationDetailRepository.findById(id).orElseThrow(() -> new CustomException("Application Detail not found", HttpStatus.NOT_FOUND));
     }
 
     @Override
-    public List<ApplicationDetail> getByApplicationId(long applicationId) {
-        return applicationDetailRepository.findAllByApplicationId(applicationId);
+    public List<ApplicationDetail> getByApplicationId(long applicationDetailId) {
+        return applicationDetailRepository.findAllByApplicationId(applicationDetailId);
     }
 
     @Override
-    public void hrScore(long applicationId, boolean isPass, String note, double score) {
-        ApplicationDetail applicationDetail = getApplicationById(applicationId);
+    public void hrScore(long applicationDetailId, boolean isPass, String note, double score) {
+        ApplicationDetail applicationDetail = getApplicationDetailById(applicationDetailId);
         applicationDetail.setHrScore(score);
         applicationDetail.setHrNote(note);
         applicationDetail.setFinalScore(score);
         applicationDetail.setFinalResult(isPass? ApplicationDetail.RoundResult.PASSED : ApplicationDetail.RoundResult.FAILED);
         applicationDetailRepository.save(applicationDetail);
-        Application application = applicationService.getApplicationById(applicationId);
+        Application application = applicationService.getApplicationById(applicationDetail.getApplicationId());
         applicationService.moveToNextRound(application);
     }
 }

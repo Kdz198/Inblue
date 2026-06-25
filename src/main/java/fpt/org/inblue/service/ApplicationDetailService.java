@@ -5,7 +5,7 @@ import fpt.org.inblue.model.ApplicationDetail;
 import java.util.List;
 
 public interface ApplicationDetailService {
-    ApplicationDetail getApplicationById(long id);
+    ApplicationDetail getApplicationDetailById(long id);
     List<ApplicationDetail> getByApplicationId(long applicationId);
     void hrScore(long applicationId,boolean isPass, String note,double score);
 }
