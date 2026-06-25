@@ -1,9 +1,11 @@
 package fpt.org.inblue.service.impl;
 
 import fpt.org.inblue.exception.CustomException;
+import fpt.org.inblue.model.Application;
 import fpt.org.inblue.model.ApplicationDetail;
 import fpt.org.inblue.repository.ApplicationDetailRepository;
 import fpt.org.inblue.service.ApplicationDetailService;
+import fpt.org.inblue.service.ApplicationService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
@@ -13,6 +15,7 @@ import java.util.List;
 @RequiredArgsConstructor
 public class ApplicationDetailServiceImpl implements ApplicationDetailService {
     private final ApplicationDetailRepository applicationDetailRepository;
+    private final ApplicationService applicationService;
 
     @Override
     public ApplicationDetail getApplicationById(long id) {
@@ -25,12 +28,14 @@ public class ApplicationDetailServiceImpl implements ApplicationDetailService {
     }
 
     @Override
-    public void hrScore(int applicationId, boolean isPass, String note, double score) {
+    public void hrScore(long applicationId, boolean isPass, String note, double score) {
         ApplicationDetail applicationDetail = getApplicationById(applicationId);
         applicationDetail.setHrScore(score);
         applicationDetail.setHrNote(note);
         applicationDetail.setFinalScore(score);
         applicationDetail.setFinalResult(isPass? ApplicationDetail.RoundResult.PASSED : ApplicationDetail.RoundResult.FAILED);
         applicationDetailRepository.save(applicationDetail);
+        Application application = applicationService.getApplicationById(applicationId);
+        applicationService.moveToNextRound(application);
     }
 }
