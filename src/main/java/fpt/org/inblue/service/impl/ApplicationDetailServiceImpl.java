@@ -8,11 +8,11 @@ import fpt.org.inblue.security.JwtUtils;
 import fpt.org.inblue.service.ApplicationDetailService;
 import fpt.org.inblue.service.ApplicationService;
 import fpt.org.inblue.utils.HelperUtil;
+import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 
-import java.util.List;
 @Service
 @RequiredArgsConstructor
 public class ApplicationDetailServiceImpl implements ApplicationDetailService {
@@ -22,7 +22,9 @@ public class ApplicationDetailServiceImpl implements ApplicationDetailService {
 
     @Override
     public ApplicationDetail getApplicationDetailById(long id) {
-        return applicationDetailRepository.findById(id).orElseThrow(() -> new CustomException("Application Detail not found", HttpStatus.NOT_FOUND));
+        return applicationDetailRepository
+                .findById(id)
+                .orElseThrow(() -> new CustomException("Application Detail not found", HttpStatus.NOT_FOUND));
     }
 
     @Override
@@ -36,7 +38,8 @@ public class ApplicationDetailServiceImpl implements ApplicationDetailService {
         applicationDetail.setHrScore(score);
         applicationDetail.setHrNote(note);
         applicationDetail.setFinalScore(score);
-        applicationDetail.setFinalResult(isPass? ApplicationDetail.RoundResult.PASSED : ApplicationDetail.RoundResult.FAILED);
+        applicationDetail.setFinalResult(
+                isPass ? ApplicationDetail.RoundResult.PASSED : ApplicationDetail.RoundResult.FAILED);
         applicationDetailRepository.save(applicationDetail);
         Application application = applicationService.getApplicationById(applicationDetail.getApplicationId());
         applicationService.moveToNextRound(application);

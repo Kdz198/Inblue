@@ -1,12 +1,10 @@
 package fpt.org.inblue.model.dto;
 
-
 import fpt.org.inblue.enums.RoundType;
 import fpt.org.inblue.model.Round.RoundConfig;
+import java.util.List;
 import lombok.Builder;
 import lombok.Data;
-
-import java.util.List;
 
 public class TemplateDto {
 

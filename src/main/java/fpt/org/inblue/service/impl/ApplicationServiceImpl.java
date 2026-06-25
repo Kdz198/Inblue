@@ -1,23 +1,21 @@
 package fpt.org.inblue.service.impl;
 
-
-import lombok.RequiredArgsConstructor;
 import fpt.org.inblue.enums.ApplicationStatus;
 import fpt.org.inblue.exception.CustomException;
 import fpt.org.inblue.model.Application;
+import fpt.org.inblue.model.ApplicationDetail;
 import fpt.org.inblue.model.JobDescription;
 import fpt.org.inblue.model.Round;
-import fpt.org.inblue.repository.ApplicationRepository;
-import fpt.org.inblue.model.ApplicationDetail;
 import fpt.org.inblue.repository.ApplicationDetailRepository;
+import fpt.org.inblue.repository.ApplicationRepository;
 import fpt.org.inblue.repository.JobDescriptionRepository;
 import fpt.org.inblue.security.JwtUtils;
 import fpt.org.inblue.service.ApplicationService;
 import fpt.org.inblue.utils.HelperUtil;
+import java.util.List;
+import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
-
-import java.util.List;
 
 @Service
 @RequiredArgsConstructor
@@ -34,7 +32,9 @@ public class ApplicationServiceImpl implements ApplicationService {
         Application application = new Application();
         application.setUserId(userId);
         application.setJdId(jdId);
-        JobDescription jd = jobDescriptionRepository.findById(jdId).orElseThrow(() -> new CustomException("Job Description not found", HttpStatus.NOT_FOUND));
+        JobDescription jd = jobDescriptionRepository
+                .findById(jdId)
+                .orElseThrow(() -> new CustomException("Job Description not found", HttpStatus.NOT_FOUND));
         jd.setAppliedCount(jd.getAppliedCount() + 1);
         jobDescriptionRepository.save(jd);
         return applicationRepository.save(application);
@@ -42,7 +42,9 @@ public class ApplicationServiceImpl implements ApplicationService {
 
     @Override
     public Application getApplicationById(Long id) {
-        return applicationRepository.findById(id).orElseThrow(() -> new CustomException("Application not found", HttpStatus.NOT_FOUND));
+        return applicationRepository
+                .findById(id)
+                .orElseThrow(() -> new CustomException("Application not found", HttpStatus.NOT_FOUND));
     }
 
     @Override
@@ -59,18 +61,21 @@ public class ApplicationServiceImpl implements ApplicationService {
 
     @Override
     public void moveToNextRound(Application currentApplication) {
-        JobDescription jd = jobDescriptionRepository.findById(currentApplication.getJdId()).orElse(null);
-        System.out.println("Moving application " + currentApplication.getId() + " to next round. Current round order: " + currentApplication.getCurrentRoundOrder());
-        if(jd != null) {
+        JobDescription jd =
+                jobDescriptionRepository.findById(currentApplication.getJdId()).orElse(null);
+        System.out.println("Moving application " + currentApplication.getId() + " to next round. Current round order: "
+                + currentApplication.getCurrentRoundOrder());
+        if (jd != null) {
             List<Round> rounds = jd.getRounds();
             int currentRoundOrder = currentApplication.getCurrentRoundOrder();
             if (currentRoundOrder < rounds.size()) {
                 currentApplication.setCurrentRoundOrder(currentRoundOrder + 1);
                 applicationRepository.save(currentApplication);
-                System.out.println("Application " + currentApplication.getId() + " moved to round order " + currentApplication.getCurrentRoundOrder());
-            }
-            else{
-                List<ApplicationDetail> details = applicationDetailRepository.findAllByApplicationId(currentApplication.getId());
+                System.out.println("Application " + currentApplication.getId() + " moved to round order "
+                        + currentApplication.getCurrentRoundOrder());
+            } else {
+                List<ApplicationDetail> details =
+                        applicationDetailRepository.findAllByApplicationId(currentApplication.getId());
                 double totalEarnedScore = 0;
                 double totalMaxScore = 0;
                 boolean hasFailedRound = false;
@@ -90,7 +95,9 @@ public class ApplicationServiceImpl implements ApplicationService {
                                 .findFirst()
                                 .orElse(null);
 
-                        if (matchingRound != null && matchingRound.getConfigData() != null && matchingRound.getConfigData().getMaxScore() != null) {
+                        if (matchingRound != null
+                                && matchingRound.getConfigData() != null
+                                && matchingRound.getConfigData().getMaxScore() != null) {
                             totalMaxScore += matchingRound.getConfigData().getMaxScore();
                         } else {
                             totalMaxScore += 100.0;
@@ -110,7 +117,8 @@ public class ApplicationServiceImpl implements ApplicationService {
                     currentApplication.setStatus(ApplicationStatus.PASSED);
                 }
                 applicationRepository.save(currentApplication);
-                System.out.println("Application " + currentApplication.getId() + " finished all rounds. Status: " + currentApplication.getStatus() + ", Overall Score: " + overallScorePercentage + "%");
+                System.out.println("Application " + currentApplication.getId() + " finished all rounds. Status: "
+                        + currentApplication.getStatus() + ", Overall Score: " + overallScorePercentage + "%");
             }
         }
     }

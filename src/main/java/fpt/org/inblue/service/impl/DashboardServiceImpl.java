@@ -1,15 +1,14 @@
 package fpt.org.inblue.service.impl;
 
-
-import lombok.RequiredArgsConstructor;
-import fpt.org.inblue.model.Payment;
 import fpt.org.inblue.enums.PaymentStatus;
 import fpt.org.inblue.enums.Role;
+import fpt.org.inblue.model.Payment;
 import fpt.org.inblue.repository.*;
 import fpt.org.inblue.service.DashboardService;
+import java.util.List;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
-import java.util.List;
 @Service
 @RequiredArgsConstructor
 public class DashboardServiceImpl implements DashboardService {
@@ -17,7 +16,6 @@ public class DashboardServiceImpl implements DashboardService {
     private final UserRepository userRepository;
     private final SessionRepository sessionRepository;
     private final PaymentRepository paymentRepository;
-
 
     @Override
     public int getMentorTotal() {
@@ -39,5 +37,4 @@ public class DashboardServiceImpl implements DashboardService {
 
         return paymentRepository.findAllByStatus(PaymentStatus.COMPLETED);
     }
-
 }

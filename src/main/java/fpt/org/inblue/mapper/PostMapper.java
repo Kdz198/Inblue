@@ -1,8 +1,6 @@
 package fpt.org.inblue.mapper;
 
-import fpt.org.inblue.model.MentorReview;
 import fpt.org.inblue.model.Post;
-import fpt.org.inblue.model.dto.request.CreateMentorReviewRequest;
 import fpt.org.inblue.model.dto.request.PostCreateRequest;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;

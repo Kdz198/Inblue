@@ -12,8 +12,10 @@ import fpt.org.inblue.model.dto.request.OrchestratorRequest.JobRequirementData;
 import fpt.org.inblue.model.dto.response.InterviewBlueprintResponse;
 import fpt.org.inblue.repository.InterviewSessionRepository;
 import fpt.org.inblue.repository.caching.InterviewSessionRedisRepository;
-import fpt.org.inblue.service.InterviewSessionService;
 import fpt.org.inblue.service.ApiClient;
+import fpt.org.inblue.service.InterviewSessionService;
+import java.util.*;
+import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpMethod;
 import org.springframework.retry.annotation.Backoff;
@@ -21,26 +23,21 @@ import org.springframework.retry.annotation.Retryable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.*;
-import java.util.stream.Collectors;
-
 @Service
 @RequiredArgsConstructor
 public class InterviewSessionServiceImpl implements InterviewSessionService {
-
 
     private final ApiClient ApiClient;
     private final InterviewSessionRepository sessionRepository;
     private final InterviewSessionRedisRepository sessionRedisRepository;
 
-    private record jobDescription (String jd_text) {}
+    private record jobDescription(String jd_text) {}
 
     @Override
     @Retryable(
             retryFor = {Exception.class},
             maxAttempts = 3,
-            backoff = @Backoff(delay = 3000)
-    )
+            backoff = @Backoff(delay = 3000))
     public JobRequirementData getJobRequirementFromJD(String description) {
 
         return ApiClient.callApi(
@@ -48,8 +45,7 @@ public class InterviewSessionServiceImpl implements InterviewSessionService {
                 ApiPath.JD_API,
                 HttpMethod.POST,
                 new jobDescription(description),
-                JobRequirementData.class
-        );
+                JobRequirementData.class);
     }
 
     @Override
@@ -57,36 +53,42 @@ public class InterviewSessionServiceImpl implements InterviewSessionService {
         Map<String, Object> options = new HashMap<>();
 
         // 1. Danh sách Interview Mode
-        options.put("interview_modes", Arrays.stream(InterviewEnums.InterviewMode.values())
-                .map(this::convertEnumToMap)
-                .collect(Collectors.toList()));
+        options.put(
+                "interview_modes",
+                Arrays.stream(InterviewEnums.InterviewMode.values())
+                        .map(this::convertEnumToMap)
+                        .collect(Collectors.toList()));
 
         // 2. Danh sách Difficulty
-        options.put("difficulties", Arrays.stream(InterviewEnums.DifficultyLevel.values())
-                .map(this::convertEnumToMap)
-                .collect(Collectors.toList()));
+        options.put(
+                "difficulties",
+                Arrays.stream(InterviewEnums.DifficultyLevel.values())
+                        .map(this::convertEnumToMap)
+                        .collect(Collectors.toList()));
 
         // 3. Danh sách Language
-        options.put("languages", Arrays.stream(InterviewEnums.Language.values())
-                .map(this::convertEnumToMap)
-                .collect(Collectors.toList()));
+        options.put(
+                "languages",
+                Arrays.stream(InterviewEnums.Language.values())
+                        .map(this::convertEnumToMap)
+                        .collect(Collectors.toList()));
 
-        options.put("domains", Arrays.stream(InterviewEnums.JobDomain.values())
-                .map(this::convertEnumToMap)
-                .collect(Collectors.toList()));
+        options.put(
+                "domains",
+                Arrays.stream(InterviewEnums.JobDomain.values())
+                        .map(this::convertEnumToMap)
+                        .collect(Collectors.toList()));
 
         return options;
     }
-
 
     @Transactional
     @Override
     @Retryable(
             retryFor = {Exception.class},
             maxAttempts = 3,
-            backoff = @Backoff(delay = 3000)
-    )
-    public String createSession(InterviewSetupRequest request)  {
+            backoff = @Backoff(delay = 3000))
+    public String createSession(InterviewSetupRequest request) {
 
         OrchestratorRequest pythonPayload = OrchestratorRequest.builder()
                 .candidateProfile(request.getCandidateProfile())
@@ -94,20 +96,20 @@ public class InterviewSessionServiceImpl implements InterviewSessionService {
                 .sessionConfig(request.getSessionConfig())
                 .build();
 
-
         InterviewBlueprintResponse blueprint = ApiClient.callApi(
                 PythonService.LLM,
                 ApiPath.ORCHESTRATOR_API,
                 HttpMethod.POST,
                 pythonPayload,
-                InterviewBlueprintResponse.class
-        );
+                InterviewBlueprintResponse.class);
 
-        if (blueprint == null || blueprint.getBlueprint() == null || blueprint.getBlueprint().isEmpty()) {
+        if (blueprint == null
+                || blueprint.getBlueprint() == null
+                || blueprint.getBlueprint().isEmpty()) {
             throw new RuntimeException("Python Orchestrator trả về Blueprint rỗng!");
         }
 
-        //Todo sau này async khúc save vô DB
+        // Todo sau này async khúc save vô DB
 
         User user = User.builder().id(request.getUserId()).build();
 
@@ -115,7 +117,7 @@ public class InterviewSessionServiceImpl implements InterviewSessionService {
 
         InterviewSession session = InterviewSession.builder()
                 .user(user) // Lấy từ FE
-                .blueprint(blueprint)        // Lưu JSON Blueprint
+                .blueprint(blueprint) // Lưu JSON Blueprint
                 .sessionKey(sessionKey)
 
                 // Lưu Snapshot dữ liệu đầu vào (để sau này đối chứng)
@@ -127,7 +129,6 @@ public class InterviewSessionServiceImpl implements InterviewSessionService {
                 .mode(request.getSessionConfig().getInterviewMode())
                 .domain(request.getSessionConfig().getDomain())
                 .status(InterviewSession.SessionStatus.CREATED)
-
                 .build();
 
         // Save xuống DB (Hibernate tự handle JSONB)
@@ -158,30 +159,31 @@ public class InterviewSessionServiceImpl implements InterviewSessionService {
                     // Nếu Redis đã bị xóa (hết TTL), cập nhật trạng thái session thành CANCELLED
                     session.setStatus(InterviewSession.SessionStatus.CANCELLED);
                     sessionRepository.save(session);
-                    System.out.println( "Session " + session.getId() + " đã bị hủy do không còn trong Redis.");
+                    System.out.println("Session " + session.getId() + " đã bị hủy do không còn trong Redis.");
                 }
             }
 
-            if( session.getStatus() == InterviewSession.SessionStatus.CANCELLED) {
+            if (session.getStatus() == InterviewSession.SessionStatus.CANCELLED) {
                 // Nếu chưa hoàn thành, xóa blueprint để giảm tải dữ liệu trả về cho FE
-                session.setBlueprint( null);
+                session.setBlueprint(null);
             }
         }
-        return  sessionRepository.saveAll(sessions);
+        return sessionRepository.saveAll(sessions);
     }
 
     @Override
     public InterviewSession getSessionById(Integer sessionId) {
-        return sessionRepository.findById(sessionId)
+        return sessionRepository
+                .findById(sessionId)
                 .orElseThrow(() -> new RuntimeException("Session không tồn tại với ID: " + sessionId));
     }
 
     @Override
     public InterviewSessionRedis getSessionFromCache(String sesssionKey) {
-            Optional<InterviewSessionRedis> sessionOpt = sessionRedisRepository.findById(sesssionKey);
-            if (sessionOpt.isPresent()) {
-                return sessionOpt.get();
-            }
+        Optional<InterviewSessionRedis> sessionOpt = sessionRedisRepository.findById(sesssionKey);
+        if (sessionOpt.isPresent()) {
+            return sessionOpt.get();
+        }
         throw new RuntimeException("Session không tồn tại trong cache hoặc đã hết hạn!");
     }
 
@@ -202,8 +204,7 @@ public class InterviewSessionServiceImpl implements InterviewSessionService {
             map.put("key", e.name());
             map.put("label", e.getLabel());
             map.put("description", e.getDescription());
-        }
-        else if (enumVal instanceof InterviewEnums.JobDomain e) {
+        } else if (enumVal instanceof InterviewEnums.JobDomain e) {
             map.put("key", e.name());
             map.put("label", e.getLabel());
             map.put("description", e.getDescription());

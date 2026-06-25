@@ -1,8 +1,7 @@
 package fpt.org.inblue.constants;
 
 public class CodeReviewMetricConstant {
-    private CodeReviewMetricConstant() {
-    }
+    private CodeReviewMetricConstant() {}
 
     public static final String BUG_DETECTION = "Bug Detection";
     // Phát hiện bug

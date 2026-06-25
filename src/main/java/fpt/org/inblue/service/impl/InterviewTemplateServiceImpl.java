@@ -6,18 +6,15 @@ import fpt.org.inblue.model.dto.TemplateDto;
 import fpt.org.inblue.model.dto.request.UpsertTemplateRequest;
 import fpt.org.inblue.repository.InterviewTemplateRepository;
 import fpt.org.inblue.service.InterviewTemplateService;
+import java.util.List;
+import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.List;
-import java.util.stream.Collectors;
-
 @Service
 @RequiredArgsConstructor
 public class InterviewTemplateServiceImpl implements InterviewTemplateService {
-
-
 
     private final InterviewTemplateRepository templateRepository;
 
@@ -35,7 +32,8 @@ public class InterviewTemplateServiceImpl implements InterviewTemplateService {
 
     @Transactional(readOnly = true)
     public TemplateDto.DetailResponse getTemplateById(Long id) {
-        InterviewTemplate template = templateRepository.findById(id)
+        InterviewTemplate template = templateRepository
+                .findById(id)
                 .orElseThrow(() -> new RuntimeException("Không tìm thấy Template với ID: " + id));
 
         List<TemplateDto.RoundItem> roundItems = template.getRounds().stream()
@@ -66,9 +64,8 @@ public class InterviewTemplateServiceImpl implements InterviewTemplateService {
                 .build();
 
         // Map danh sách các vòng
-        List<TemplateRound> rounds = request.getRounds().stream()
-                .map(this::mapToTemplateRound)
-                .collect(Collectors.toList());
+        List<TemplateRound> rounds =
+                request.getRounds().stream().map(this::mapToTemplateRound).collect(Collectors.toList());
 
         template.setRounds(rounds);
         return templateRepository.save(template).getId();
@@ -76,8 +73,8 @@ public class InterviewTemplateServiceImpl implements InterviewTemplateService {
 
     @Transactional
     public void updateTemplate(Long id, UpsertTemplateRequest request) {
-        InterviewTemplate template = templateRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Không tìm thấy Template"));
+        InterviewTemplate template =
+                templateRepository.findById(id).orElseThrow(() -> new RuntimeException("Không tìm thấy Template"));
 
         // 1. Cập nhật thông tin cơ bản
         template.setName(request.getName());
@@ -89,9 +86,8 @@ public class InterviewTemplateServiceImpl implements InterviewTemplateService {
         templateRepository.saveAndFlush(template);
 
         // 3. Thêm danh sách vòng mới vào
-        List<TemplateRound> newRounds = request.getRounds().stream()
-                .map(this::mapToTemplateRound)
-                .toList();
+        List<TemplateRound> newRounds =
+                request.getRounds().stream().map(this::mapToTemplateRound).toList();
         template.getRounds().addAll(newRounds);
 
         templateRepository.save(template);

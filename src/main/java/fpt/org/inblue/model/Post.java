@@ -2,6 +2,9 @@ package fpt.org.inblue.model;
 
 import fpt.org.inblue.enums.PostStatus;
 import jakarta.persistence.*;
+import java.time.Instant;
+import java.util.ArrayList;
+import java.util.List;
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -12,10 +15,6 @@ import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.annotations.UpdateTimestamp;
 import org.hibernate.type.SqlTypes;
 
-import java.time.Instant;
-import java.util.ArrayList;
-import java.util.List;
-
 @FieldDefaults(level = AccessLevel.PRIVATE)
 @Entity
 @AllArgsConstructor
@@ -25,32 +24,41 @@ public class Post {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     int postId;
+
     @Column(columnDefinition = "TEXT")
     String title;
+
     @Column(columnDefinition = "TEXT")
     String content;
+
     @Column(columnDefinition = "TEXT")
     String summary;
+
     @Enumerated(EnumType.STRING)
     PostStatus status;
+
     @JoinColumn(name = "author_id")
     @ManyToOne(fetch = FetchType.LAZY)
     User author;
+
     @CreationTimestamp
     Instant creationDate;
+
     @UpdateTimestamp
     Instant lastModifiedDate;
+
     String coverImgUrl;
     String public_id;
+
     @JdbcTypeCode(SqlTypes.JSON)
     @Column(columnDefinition = "jsonb")
     List<String> tags;
 
-    @OneToMany(cascade = CascadeType.ALL,orphanRemoval = true)
+    @OneToMany(cascade = CascadeType.ALL, orphanRemoval = true)
     @JoinColumn(name = "post_id", referencedColumnName = "postId")
     List<PostLike> likes = new ArrayList<>();
-    @OneToMany(cascade = CascadeType.ALL,orphanRemoval = true)
+
+    @OneToMany(cascade = CascadeType.ALL, orphanRemoval = true)
     @JoinColumn(name = "post_id", referencedColumnName = "postId")
     List<PostComment> comments = new ArrayList<>();
-
 }

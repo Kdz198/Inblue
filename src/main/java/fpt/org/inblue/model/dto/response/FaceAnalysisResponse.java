@@ -9,5 +9,4 @@ import lombok.*;
 public class FaceAnalysisResponse {
     private BehaviorStatus status;
     private boolean isWarning;
-
 }

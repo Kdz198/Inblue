@@ -2,12 +2,11 @@ package fpt.org.inblue.model.dto.response;
 
 import fpt.org.inblue.model.CodeReviewProblem.CodeFile;
 import fpt.org.inblue.model.CodeReviewProblem.ExpectedIssue;
+import java.util.List;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-
-import java.util.List;
 
 @Data
 @NoArgsConstructor

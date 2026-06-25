@@ -1,17 +1,15 @@
 package fpt.org.inblue.model;
 
-
 import com.fasterxml.jackson.annotation.JsonProperty;
 import jakarta.persistence.*;
+import java.io.Serializable;
+import java.time.LocalDateTime;
+import java.util.List;
 import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.annotations.UpdateTimestamp;
 import org.hibernate.type.SqlTypes;
-
-import java.io.Serializable;
-import java.time.LocalDateTime;
-import java.util.List;
 
 @Entity
 @Data
@@ -70,9 +68,9 @@ public class CandidateProfile {
 
     @CreationTimestamp
     private LocalDateTime createdAt;
+
     @UpdateTimestamp
     private LocalDateTime updatedAt;
-
 
     @Data
     @NoArgsConstructor
@@ -95,10 +93,13 @@ public class CandidateProfile {
     public static class WorkExperience {
         private String company;
         private String position;
+
         @JsonProperty("start_date")
         private String startDate;
+
         @JsonProperty("end_date")
         private String endDate;
+
         private String description; // Mô tả task chính đã làm
     }
 
@@ -111,8 +112,10 @@ public class CandidateProfile {
         private String major; // Vd: Software Engineering
         private String degree; // Vd: Bachelor
         private String gpa; // Optional -> AI có thể hỏi về nỗ lực học tập
+
         @JsonProperty("start_date")
         private String startDate;
+
         @JsonProperty("end_date")
         private String endDate;
     }

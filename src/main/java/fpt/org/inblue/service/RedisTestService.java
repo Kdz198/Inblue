@@ -1,7 +1,6 @@
 package fpt.org.inblue.service;
 
 import lombok.RequiredArgsConstructor;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
 
@@ -9,10 +8,9 @@ import org.springframework.stereotype.Service;
 @RequiredArgsConstructor
 public class RedisTestService {
 
-
     private final RedisTemplate<String, Object> redisTemplate;
 
-    public void testLog () {
+    public void testLog() {
         throw new RuntimeException("Đây là lỗi test log");
     }
     // Lưu nguyên con Object vào Hash

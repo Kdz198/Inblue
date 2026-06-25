@@ -1,15 +1,13 @@
 package fpt.org.inblue.controller;
 
-
-import lombok.RequiredArgsConstructor;
 import fpt.org.inblue.model.MentorFeedback;
 import fpt.org.inblue.model.dto.request.CreateMentorFeedbackRequest;
 import fpt.org.inblue.model.dto.request.UpdateMentorFeedbackRequest;
 import fpt.org.inblue.service.MentorFeedbackService;
+import java.util.List;
+import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-
-import java.util.List;
 
 @RestController
 @RequestMapping("api/mentor-feedbacks")
@@ -33,15 +31,20 @@ public class MentorFeedbackController {
     @GetMapping("mentor/{mentorId}")
     public ResponseEntity<List<MentorFeedback>> getAllByMentor(@PathVariable int mentorId) {
         List<MentorFeedback> mentorFeedbacks = mentorFeedbackService.getAllByMentor(mentorId);
-        return ResponseEntity.ok(mentorFeedbacks);}
+        return ResponseEntity.ok(mentorFeedbacks);
+    }
 
     @PostMapping
-    public ResponseEntity<MentorFeedback> createMentorFeedback(@RequestBody CreateMentorFeedbackRequest mentorFeedback) {
+    public ResponseEntity<MentorFeedback> createMentorFeedback(
+            @RequestBody CreateMentorFeedbackRequest mentorFeedback) {
         MentorFeedback createdMentorFeedback = mentorFeedbackService.createMentorFeedback(mentorFeedback);
         return ResponseEntity.ok(createdMentorFeedback);
     }
+
     @PutMapping
-    public ResponseEntity<MentorFeedback> updateMentorFeedback(@RequestBody UpdateMentorFeedbackRequest mentorFeedback) {
+    public ResponseEntity<MentorFeedback> updateMentorFeedback(
+            @RequestBody UpdateMentorFeedbackRequest mentorFeedback) {
         MentorFeedback updatedMentorFeedback = mentorFeedbackService.updateMentorFeedback(mentorFeedback);
-        return ResponseEntity.ok(updatedMentorFeedback);    }
+        return ResponseEntity.ok(updatedMentorFeedback);
+    }
 }

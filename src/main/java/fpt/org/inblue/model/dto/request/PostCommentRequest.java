@@ -16,4 +16,3 @@ public class PostCommentRequest {
     String content;
     Integer parentCommentId; // null nếu là comment gốc, có giá trị nếu là reply
 }
-

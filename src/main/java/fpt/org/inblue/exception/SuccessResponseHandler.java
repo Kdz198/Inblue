@@ -1,8 +1,10 @@
 package fpt.org.inblue.exception;
 
+import java.util.Collection;
+import java.util.LinkedHashMap;
+import java.util.Map;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.MDC;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.MethodParameter;
 import org.springframework.http.MediaType;
 import org.springframework.http.converter.HttpMessageConverter;
@@ -11,10 +13,6 @@ import org.springframework.http.server.ServerHttpResponse;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.servlet.mvc.method.annotation.ResponseBodyAdvice;
 import tools.jackson.databind.ObjectMapper;
-
-import java.util.Collection;
-import java.util.LinkedHashMap;
-import java.util.Map;
 
 @RestControllerAdvice
 @RequiredArgsConstructor
@@ -32,9 +30,13 @@ public class SuccessResponseHandler implements ResponseBodyAdvice<Object> {
 
     @SuppressWarnings("unchecked")
     @Override
-    public Object beforeBodyWrite(Object body, MethodParameter returnType, MediaType selectedContentType,
+    public Object beforeBodyWrite(
+            Object body,
+            MethodParameter returnType,
+            MediaType selectedContentType,
             Class<? extends HttpMessageConverter<?>> selectedConverterType,
-            ServerHttpRequest request, ServerHttpResponse response) {
+            ServerHttpRequest request,
+            ServerHttpResponse response) {
 
         // 1. Lấy traceId hiện tại từ MDC ra
         String traceId = MDC.get("traceId");

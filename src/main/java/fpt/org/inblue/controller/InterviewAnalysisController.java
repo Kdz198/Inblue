@@ -1,11 +1,9 @@
 package fpt.org.inblue.controller;
 
-
 import fpt.org.inblue.model.dto.response.FaceAnalysisResponse;
 import fpt.org.inblue.service.FaceAnalysisService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.MediaType;
-import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -17,10 +15,9 @@ public class InterviewAnalysisController {
 
     private final FaceAnalysisService faceAnalysisService;
 
-
-    @PostMapping(value = "/face-behavior",consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    @PostMapping(value = "/face-behavior", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public FaceAnalysisResponse analyzeFaceBehavior(@RequestPart("image") MultipartFile file) {
-        if (file.isEmpty()) return  null;
+        if (file.isEmpty()) return null;
 
         // Todo implement logic call Python service
         FaceAnalysisResponse response = faceAnalysisService.analyzeFace(file);
@@ -28,5 +25,4 @@ public class InterviewAnalysisController {
 
         return null;
     }
-
 }

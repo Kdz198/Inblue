@@ -1,10 +1,9 @@
 package fpt.org.inblue.model.dto.request;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
+import java.util.List;
 import lombok.Builder;
 import lombok.Data;
-
-import java.util.List;
 
 @Data
 @Builder
@@ -32,7 +31,7 @@ public class OrchestratorConductRequest {
     @Data
     @Builder
     public static class HistoryItem {
-        private String role;    // "AI" hoặc "USER"
+        private String role; // "AI" hoặc "USER"
         private String content;
     }
 }

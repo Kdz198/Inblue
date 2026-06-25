@@ -15,16 +15,20 @@ import lombok.experimental.FieldDefaults;
 public class MentorReview {
     @Id
     int id;
+
     @MapsId
     @JoinColumn(name = "session_id")
     @OneToOne
     Session session;
+
     @JoinColumn(name = "mentor_id")
     @ManyToOne
     Mentor mentor;
+
     @JoinColumn(name = "user_id")
     @ManyToOne
     User user;
+
     int rating;
     String situationNote;
     String taskNote;

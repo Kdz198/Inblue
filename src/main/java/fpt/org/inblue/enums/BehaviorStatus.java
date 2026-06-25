@@ -1,8 +1,5 @@
 package fpt.org.inblue.enums;
 
-
-import com.fasterxml.jackson.annotation.JsonValue;
-
 public enum BehaviorStatus {
     TURNING_LEFT,
     TURNING_RIGHT,
@@ -19,6 +16,4 @@ public enum BehaviorStatus {
 
     NORMAL,
     UNKNOWN;
-
-
 }

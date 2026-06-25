@@ -1,6 +1,6 @@
 package fpt.org.inblue.security;
 
-
+import java.util.Arrays;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
@@ -18,8 +18,6 @@ import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import org.springframework.web.cors.CorsConfiguration;
 
-import java.util.Arrays;
-
 @Configuration
 @EnableWebSecurity
 @RequiredArgsConstructor
@@ -35,11 +33,17 @@ public class SecurityConfig {
 
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
-        http
-                .cors(cors -> cors.configurationSource(request -> {
+        http.cors(cors -> cors.configurationSource(request -> {
                     CorsConfiguration corsConfiguration = new CorsConfiguration();
-                    corsConfiguration.setAllowedOriginPatterns(Arrays.asList("http://localhost:3000", "http://localhost:8080", frontendUrl, "https://api.kdz.asia", "http://localhost:5173","https://inblue-fpt-zeta.vercel.app"));
-                    corsConfiguration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"));
+                    corsConfiguration.setAllowedOriginPatterns(Arrays.asList(
+                            "http://localhost:3000",
+                            "http://localhost:8080",
+                            frontendUrl,
+                            "https://api.kdz.asia",
+                            "http://localhost:5173",
+                            "https://inblue-fpt-zeta.vercel.app"));
+                    corsConfiguration.setAllowedMethods(
+                            Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"));
                     corsConfiguration.setAllowedHeaders(Arrays.asList("*"));
                     corsConfiguration.setAllowCredentials(true);
                     return corsConfiguration;
@@ -47,32 +51,44 @@ public class SecurityConfig {
                 .csrf(csrf -> csrf.disable())
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .httpBasic(httpBasic -> httpBasic.disable())
-                .authorizeHttpRequests(auth -> auth
-                        .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
-                        .requestMatchers("/api/auth/**", "/v3/api-docs/**",
+                .authorizeHttpRequests(auth -> auth.requestMatchers(HttpMethod.OPTIONS, "/**")
+                        .permitAll()
+                        .requestMatchers(
+                                "/api/auth/**",
+                                "/v3/api-docs/**",
                                 "/swagger-ui/**",
                                 "/swagger-ui.html",
                                 "/swagger-resources/**",
-                                "/webjars/**", "/api/test/**","/ws-chat/**","/api/payments/webhook/**","/api/users","/api/mentors","/api/job-descriptions","/api/rounds","/api/companies","/api/posts")
-
+                                "/webjars/**",
+                                "/api/test/**",
+                                "/ws-chat/**",
+                                "/api/payments/webhook/**",
+                                "/api/users",
+                                "/api/mentors",
+                                "/api/job-descriptions",
+                                "/api/rounds",
+                                "/api/companies",
+                                "/api/posts")
                         .permitAll()
-//                        .requestMatchers("/api/users/**").hasRole(Role.USER.name())
-//                        .requestMatchers("/api/mentors/**").hasRole(Role.MENTOR.name())
-//                        .requestMatchers("/api/payments/**").hasAnyRole(Role.ADMIN.name(), Role.STAFF.name())
-//                        .requestMatchers("/api/users/subscribe").authenticated()
-                        .anyRequest().permitAll())
-                .oauth2Login(oauth2 -> oauth2.userInfoEndpoint(userInfo -> userInfo.userService(customOAuth2UserService))
-                        .successHandler(oauth2Handler)
-                )
+                        //                        .requestMatchers("/api/users/**").hasRole(Role.USER.name())
+                        //                        .requestMatchers("/api/mentors/**").hasRole(Role.MENTOR.name())
+                        //                        .requestMatchers("/api/payments/**").hasAnyRole(Role.ADMIN.name(),
+                        // Role.STAFF.name())
+                        //                        .requestMatchers("/api/users/subscribe").authenticated()
+                        .anyRequest()
+                        .permitAll())
+                .oauth2Login(
+                        oauth2 -> oauth2.userInfoEndpoint(userInfo -> userInfo.userService(customOAuth2UserService))
+                                .successHandler(oauth2Handler))
                 .securityContext(context -> context.requireExplicitSave(false));
         http.addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
         return http.build();
     }
+
     @Bean
     public DaoAuthenticationProvider daoAuthenticationProvider() {
 
         DaoAuthenticationProvider authProvider = new DaoAuthenticationProvider(customUserDetailService);
-
 
         authProvider.setHideUserNotFoundExceptions(false);
 
@@ -80,9 +96,9 @@ public class SecurityConfig {
 
         return authProvider;
     }
+
     @Bean
-    public AuthenticationManager authenticationManager(
-            AuthenticationConfiguration configuration) throws Exception {
+    public AuthenticationManager authenticationManager(AuthenticationConfiguration configuration) throws Exception {
         return configuration.getAuthenticationManager();
     }
 
@@ -90,6 +106,4 @@ public class SecurityConfig {
     public PasswordEncoder passwordEncoder() {
         return NoOpPasswordEncoder.getInstance();
     }
-
-
 }

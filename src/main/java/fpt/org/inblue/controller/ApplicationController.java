@@ -1,20 +1,15 @@
 package fpt.org.inblue.controller;
 
-
-import lombok.RequiredArgsConstructor;
 import fpt.org.inblue.model.Application;
 import fpt.org.inblue.service.ApplicationService;
-import org.springframework.http.ResponseEntity;
-import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.web.bind.annotation.*;
-
 import java.util.List;
+import lombok.RequiredArgsConstructor;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequestMapping("/api/applications")
-
 @RequiredArgsConstructor
-
 public class ApplicationController {
     private final ApplicationService applicationService;
 
@@ -27,6 +22,7 @@ public class ApplicationController {
     public ResponseEntity<List<Application>> getAllApplications() {
         return ResponseEntity.ok(applicationService.getAllApplications());
     }
+
     @GetMapping("/{id}")
     public ResponseEntity<Application> getApplicationById(@PathVariable Long id) {
         return ResponseEntity.ok(applicationService.getApplicationById(id));
@@ -36,5 +32,4 @@ public class ApplicationController {
     public ResponseEntity<List<Application>> getAllApplicationsByUserId() {
         return ResponseEntity.ok(applicationService.getAllApplicationsByUserId());
     }
-
 }

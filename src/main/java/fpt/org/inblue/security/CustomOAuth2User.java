@@ -1,12 +1,11 @@
 package fpt.org.inblue.security;
 
-import lombok.Data;
-import org.springframework.security.core.GrantedAuthority;
-import org.springframework.security.oauth2.core.user.OAuth2User;
-
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
+import lombok.Data;
+import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.oauth2.core.user.OAuth2User;
 
 @Data
 public class CustomOAuth2User implements OAuth2User {
@@ -36,5 +35,4 @@ public class CustomOAuth2User implements OAuth2User {
     public String getName() {
         return oauth2User.getAttribute("sub");
     }
-
 }

@@ -1,6 +1,5 @@
 package fpt.org.inblue.controller;
 
-
 import fpt.org.inblue.model.dto.request.FaceSnapshotRequest;
 import fpt.org.inblue.service.ProctoringService;
 import lombok.RequiredArgsConstructor;
@@ -32,8 +31,8 @@ public class ProctoringController {
         } catch (Exception e) {
             // Log lỗi nhưng VẪN TRẢ VỀ 200 OK HOẶC 202 ACCEPTED cho FE
             // Tránh việc FE nhận lỗi 500 liên tục làm hỏng luồng phỏng vấn chính
-            log.error("Lỗi khi xử lý proctoring snapshot cho session [{}]: {}",
-                    request.getSessionKey(), e.getMessage());
+            log.error(
+                    "Lỗi khi xử lý proctoring snapshot cho session [{}]: {}", request.getSessionKey(), e.getMessage());
             return ResponseEntity.accepted().build();
         }
     }

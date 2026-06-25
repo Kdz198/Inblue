@@ -26,6 +26,6 @@ public interface JobDescriptionMapper {
     @Mapping(target = "updatedAt", ignore = true)
     @Mapping(target = "deletedAt", ignore = true)
     @Mapping(target = "isDeleted", ignore = true)
-    void updateJobDescriptionFromRequest(UpdateJobDescriptionRequest request, @MappingTarget JobDescription jobDescription);
+    void updateJobDescriptionFromRequest(
+            UpdateJobDescriptionRequest request, @MappingTarget JobDescription jobDescription);
 }
-

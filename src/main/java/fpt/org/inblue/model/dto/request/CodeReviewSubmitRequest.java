@@ -1,8 +1,8 @@
 package fpt.org.inblue.model.dto.request;
 
 import fpt.org.inblue.model.ApplicationDetail.CodeReviewSubmission;
-import lombok.Data;
 import java.util.List;
+import lombok.Data;
 
 @Data
 public class CodeReviewSubmitRequest {

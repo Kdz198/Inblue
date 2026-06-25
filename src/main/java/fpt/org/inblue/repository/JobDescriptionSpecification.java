@@ -1,8 +1,8 @@
 package fpt.org.inblue.repository;
 
-import fpt.org.inblue.model.JobDescription;
 import fpt.org.inblue.enums.JobDescriptionStatus;
 import fpt.org.inblue.enums.TargetLevel;
+import fpt.org.inblue.model.JobDescription;
 import org.springframework.data.jpa.domain.Specification;
 
 public class JobDescriptionSpecification {
@@ -30,7 +30,7 @@ public class JobDescriptionSpecification {
 
     public static Specification<JobDescription> levelEquals(TargetLevel level) {
         return (root, query, criteriaBuilder) -> {
-            if (level == null ) {
+            if (level == null) {
                 return criteriaBuilder.conjunction();
             }
             return criteriaBuilder.equal(root.get("level"), level);

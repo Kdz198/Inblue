@@ -12,8 +12,11 @@ import lombok.NoArgsConstructor;
 public class UserInfo {
     @Nullable
     private Integer id;
+
     private String name;
+
     @NotNull
     private String email;
+
     private String password;
 }

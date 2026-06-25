@@ -1,17 +1,15 @@
 package fpt.org.inblue.controller;
 
-
-import lombok.RequiredArgsConstructor;
 import fpt.org.inblue.model.QuestionBank;
 import fpt.org.inblue.model.dto.request.CreateQuestionBankRequest;
 import fpt.org.inblue.model.dto.request.UpdateQuestionBankRequest;
 import fpt.org.inblue.model.dto.response.QuestionGenerateResponse;
 import fpt.org.inblue.service.QuestionBankService;
 import jakarta.validation.Valid;
+import java.util.List;
+import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-
-import java.util.List;
 
 @RestController
 @RequestMapping("api/question-banks")
@@ -35,18 +33,20 @@ public class QuestionBankController {
     }
 
     @PutMapping("{id}")
-    public ResponseEntity<QuestionBank> updateQuestionBank(@PathVariable Integer id,
-                                                           @Valid @RequestBody UpdateQuestionBankRequest request) {
+    public ResponseEntity<QuestionBank> updateQuestionBank(
+            @PathVariable Integer id, @Valid @RequestBody UpdateQuestionBankRequest request) {
         return ResponseEntity.ok(questionBankService.updateQuestionBank(id, request));
     }
 
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> deleteQuestionBank(@PathVariable Integer id) {
         questionBankService.deleteQuestionBank(id);
-        return ResponseEntity.noContent().build();}
+        return ResponseEntity.noContent().build();
+    }
 
     @PostMapping("/generate")
-    public ResponseEntity<QuestionGenerateResponse> generateQuestion(@RequestBody fpt.org.inblue.model.dto.request.QuestionGenerateRequest request) {
+    public ResponseEntity<QuestionGenerateResponse> generateQuestion(
+            @RequestBody fpt.org.inblue.model.dto.request.QuestionGenerateRequest request) {
         QuestionGenerateResponse response = questionBankService.generateQuestion(request);
         return ResponseEntity.ok(response);
     }

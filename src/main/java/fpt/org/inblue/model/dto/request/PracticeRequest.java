@@ -1,24 +1,21 @@
 package fpt.org.inblue.model.dto.request;
 
 import fpt.org.inblue.enums.TargetLevel;
+import java.util.List;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-
-import java.util.List;
 
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
 public class PracticeRequest {
-    //có thể null cho trường hợp gửi qua AI service để tạo bộ đề ôn luyện cá nhân hóa
+    // có thể null cho trường hợp gửi qua AI service để tạo bộ đề ôn luyện cá nhân hóa
     int aiInterviewId;
     int userId;
     String practiceSetName;
     String objective;
     TargetLevel target;
     int dateNumber;
-   List<PracticeQuestionRequest> questions;
-
+    List<PracticeQuestionRequest> questions;
 }
-

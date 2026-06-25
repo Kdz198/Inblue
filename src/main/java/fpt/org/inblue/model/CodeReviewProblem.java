@@ -1,6 +1,8 @@
 package fpt.org.inblue.model;
 
 import jakarta.persistence.*;
+import java.time.LocalDateTime;
+import java.util.List;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -9,9 +11,6 @@ import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.annotations.UpdateTimestamp;
 import org.hibernate.type.SqlTypes;
-
-import java.time.LocalDateTime;
-import java.util.List;
 
 @Entity
 @Data
@@ -59,7 +58,7 @@ public class CodeReviewProblem {
     @Builder
     public static class CodeFile {
         private String filename; // Ví dụ: "src/main/java/UserService.java"
-        private String content;  // Nội dung code
+        private String content; // Nội dung code
         private String language; // Ngôn ngữ lập trình (VD: "java", "sql", "xml") để highlight cú pháp
     }
 
@@ -68,9 +67,9 @@ public class CodeReviewProblem {
     @AllArgsConstructor
     @Builder
     public static class ExpectedIssue {
-        private String filename;     // Lỗi nằm ở file nào
-        private Integer lineNumber;  // Dòng bị lỗi (1-indexed)
-        private String severity;     // Mức độ nghiêm trọng: CRITICAL, WARNING, INFO
-        private String description;  // Giải thích chi tiết lỗi mẫu và cách fix
+        private String filename; // Lỗi nằm ở file nào
+        private Integer lineNumber; // Dòng bị lỗi (1-indexed)
+        private String severity; // Mức độ nghiêm trọng: CRITICAL, WARNING, INFO
+        private String description; // Giải thích chi tiết lỗi mẫu và cách fix
     }
 }

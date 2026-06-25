@@ -1,15 +1,13 @@
 package fpt.org.inblue.controller;
 
-
 import fpt.org.inblue.model.dto.TemplateDto;
 import fpt.org.inblue.model.dto.request.UpsertTemplateRequest;
 import fpt.org.inblue.service.InterviewTemplateService;
 import jakarta.validation.Valid;
+import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-
-import java.util.List;
 
 @RestController
 @RequestMapping("/api/templates")
@@ -38,8 +36,7 @@ public class InterviewTemplateController {
     @PutMapping("/{id}")
     // @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<Void> updateTemplate(
-            @PathVariable Long id,
-            @Valid @RequestBody UpsertTemplateRequest request) {
+            @PathVariable Long id, @Valid @RequestBody UpsertTemplateRequest request) {
         templateService.updateTemplate(id, request);
         return ResponseEntity.noContent().build();
     }

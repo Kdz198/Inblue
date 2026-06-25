@@ -15,9 +15,14 @@ public class LlmChatLogService {
     private final LlmChatLogRepository repository;
 
     @Async
-    public void saveLog(String traceId, String sessionId, String workspace,
-                        String userMessage, String aiResponse,
-                        Integer promptTokens, Integer completionTokens) {
+    public void saveLog(
+            String traceId,
+            String sessionId,
+            String workspace,
+            String userMessage,
+            String aiResponse,
+            Integer promptTokens,
+            Integer completionTokens) {
         try {
             LlmChatLog chatLog = LlmChatLog.builder()
                     .traceId(traceId)

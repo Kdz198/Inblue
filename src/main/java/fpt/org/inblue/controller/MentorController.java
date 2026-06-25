@@ -1,21 +1,19 @@
 package fpt.org.inblue.controller;
 
-
-import lombok.RequiredArgsConstructor;
 import fpt.org.inblue.model.Mentor;
 import fpt.org.inblue.model.dto.MentorInfo;
 import fpt.org.inblue.model.dto.response.MentorResponse;
 import fpt.org.inblue.service.MentorService;
-import org.springframework.http.MediaType;
-import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.*;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Encoding;
-import org.springframework.web.multipart.MultipartFile;
-
 import java.io.IOException;
 import java.util.List;
+import lombok.RequiredArgsConstructor;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
 @RestController
 @RequestMapping("/api/mentors")
@@ -36,26 +34,24 @@ public class MentorController {
 
     @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     @Operation(
-            summary = "dùng chung cho create và update mentor, nếu create thì ko có id còn update thì có id gửi kèm trong json data á",
-            requestBody = @io.swagger.v3.oas.annotations.parameters.RequestBody(
-                    content = @Content(
-                            mediaType = MediaType.MULTIPART_FORM_DATA_VALUE,
-                            encoding = {
-                                    @Encoding(name = "data", contentType = "application/json") 
-                            }
-                    )
-            )
-    )
-    public ResponseEntity<Mentor> createMentor(@RequestPart("data") MentorInfo data,
-                                               @RequestPart(value = "avatar", required = false) MultipartFile avatar) throws IOException {
+            summary =
+                    "dùng chung cho create và update mentor, nếu create thì ko có id còn update thì có id gửi kèm trong json data á",
+            requestBody =
+                    @io.swagger.v3.oas.annotations.parameters.RequestBody(
+                            content =
+                                    @Content(
+                                            mediaType = MediaType.MULTIPART_FORM_DATA_VALUE,
+                                            encoding = {@Encoding(name = "data", contentType = "application/json")})))
+    public ResponseEntity<Mentor> createMentor(
+            @RequestPart("data") MentorInfo data, @RequestPart(value = "avatar", required = false) MultipartFile avatar)
+            throws IOException {
         Mentor createdMentor = mentorService.createMentor(data, avatar);
         return ResponseEntity.ok(createdMentor);
     }
-
 
     @GetMapping("/toggle/{id}")
     public ResponseEntity<Void> toggleActive(@PathVariable int id) {
         mentorService.toggleActive(id);
         return ResponseEntity.noContent().build();
-           }
+    }
 }

@@ -1,12 +1,11 @@
 package fpt.org.inblue.model.caching;
 
-import lombok.*;
-import org.springframework.data.annotation.Id;
-import org.springframework.data.redis.core.RedisHash;
-
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import lombok.*;
+import org.springframework.data.annotation.Id;
+import org.springframework.data.redis.core.RedisHash;
 
 @Data
 @Builder
@@ -21,5 +20,4 @@ public class InterviewBehaviorRedis {
     // Map chứa lỗi: Key = globalIndex, Value = Danh sách lỗi
     @Builder.Default
     private Map<Integer, List<String>> behavioralRecord = new HashMap<>();
-
 }

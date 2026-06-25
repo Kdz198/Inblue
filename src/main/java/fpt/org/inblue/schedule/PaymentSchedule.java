@@ -1,12 +1,13 @@
 package fpt.org.inblue.schedule;
 
-
-import lombok.RequiredArgsConstructor;
+import fpt.org.inblue.enums.PaymentStatus;
 import fpt.org.inblue.model.Payment;
 import fpt.org.inblue.model.dto.payos.PaymentStatusResponse;
-import fpt.org.inblue.enums.PaymentStatus;
 import fpt.org.inblue.repository.PaymentRepository;
 import fpt.org.inblue.utils.HelperUtil;
+import java.time.LocalDateTime;
+import java.util.List;
+import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
@@ -14,10 +15,6 @@ import org.springframework.http.HttpMethod;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestTemplate;
-
-
-import java.time.LocalDateTime;
-import java.util.List;
 
 @Component
 @RequiredArgsConstructor
@@ -27,20 +24,20 @@ public class PaymentSchedule {
 
     @Value("${payos.client-id}")
     private String clientId;
+
     @Value("${payos.api-key}")
     private String apiKey;
 
-   public void checkPaymentStatus() {
-//        System.out.println("Checking pending payments at " + LocalDateTime.now());
+    public void checkPaymentStatus() {
+        //        System.out.println("Checking pending payments at " + LocalDateTime.now());
         LocalDateTime times = LocalDateTime.now().minusMinutes(10);
         List<Payment> payments = paymentRepository.findByStatusAndCreatedAtBefore(PaymentStatus.PENDING, times);
 
-        for(Payment payment : payments) {
+        for (Payment payment : payments) {
             try {
                 Thread.sleep(500);
-//                System.out.println("Checking payment: " + payment.getId());
-                String url = "https://api-merchant.payos.vn/v2/payment-requests/"
-                        + payment.getTransactionCode();
+                //                System.out.println("Checking payment: " + payment.getId());
+                String url = "https://api-merchant.payos.vn/v2/payment-requests/" + payment.getTransactionCode();
 
                 HttpHeaders headers = new HttpHeaders();
                 headers.set("x-client-id", clientId);
@@ -48,31 +45,23 @@ public class PaymentSchedule {
 
                 HttpEntity<String> entity = new HttpEntity<>(headers);
 
-                ResponseEntity<PaymentStatusResponse> response = restTemplate.exchange(
-                        url,
-                        HttpMethod.GET,
-                        entity,
-                        PaymentStatusResponse.class
-                );
+                ResponseEntity<PaymentStatusResponse> response =
+                        restTemplate.exchange(url, HttpMethod.GET, entity, PaymentStatusResponse.class);
 
                 if (response.getBody() != null) {
                     String transactionCode = payment.getTransactionCode();
                     String type = HelperUtil.getPrefix(transactionCode);
                     String status = response.getBody().getData().getStatus();
-                    if (type.equals("100") && ("CANCELLED".equals(status) || "EXPIRED".equals(status) || "PENDING".equals(status))) {
+                    if (type.equals("100")
+                            && ("CANCELLED".equals(status) || "EXPIRED".equals(status) || "PENDING".equals(status))) {
                         payment.setStatus(PaymentStatus.FAILED);
                         paymentRepository.save(payment);
                         System.out.println("Auto-cancelled payment: " + payment.getId());
                     }
-
                 }
             } catch (Exception e) {
                 e.printStackTrace();
             }
         }
     }
-
-  
-
 }
-

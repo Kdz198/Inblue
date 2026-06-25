@@ -1,15 +1,11 @@
 package fpt.org.inblue.service.impl;
 
-
-import lombok.RequiredArgsConstructor;
-import fpt.org.inblue.exception.CustomException;
 import fpt.org.inblue.model.CandidateProfile;
 import fpt.org.inblue.repository.CandidateProfileRepository;
 import fpt.org.inblue.service.CandidateProfileService;
-import org.springframework.http.HttpStatus;
-import org.springframework.stereotype.Service;
-
 import java.util.List;
+import lombok.RequiredArgsConstructor;
+import org.springframework.stereotype.Service;
 
 @Service
 @RequiredArgsConstructor
@@ -27,8 +23,7 @@ public class CandidateProfileImpl implements CandidateProfileService {
         CandidateProfile profile = candidateProfileRepository.findByUser_Id(userId);
         if (profile != null) {
             return profile;
-        }
-        else{
+        } else {
             return null;
         }
     }
@@ -48,5 +43,4 @@ public class CandidateProfileImpl implements CandidateProfileService {
     public CandidateProfile updateProfile(CandidateProfile profile) {
         return candidateProfileRepository.save(profile);
     }
-
 }

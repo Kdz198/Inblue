@@ -1,10 +1,9 @@
 package fpt.org.inblue.schedule;
 
-
+import fpt.org.inblue.service.submission.EmailFetcherService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
-import fpt.org.inblue.service.submission.EmailFetcherService;
 
 @Component
 @RequiredArgsConstructor

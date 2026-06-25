@@ -1,9 +1,7 @@
 package fpt.org.inblue.constants;
 
 public class EmailMetricsConstant {
-    private EmailMetricsConstant() {
-    }
-
+    private EmailMetricsConstant() {}
 
     public static final String SUBJECT_LINE_QUALITY = "Subject Line Quality";
     public static final String SALUTATION_AND_OPENING = "Salutation And Opening";

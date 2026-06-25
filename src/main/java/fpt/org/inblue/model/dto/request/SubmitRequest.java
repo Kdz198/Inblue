@@ -1,15 +1,14 @@
 package fpt.org.inblue.model.dto.request;
 
-import tools.jackson.databind.ObjectMapper;
-import tools.jackson.core.type.TypeReference;
 import jakarta.annotation.Nullable;
+import java.util.List;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import org.springframework.web.multipart.MultipartFile;
-
-import java.util.List;
+import tools.jackson.core.type.TypeReference;
+import tools.jackson.databind.ObjectMapper;
 
 @Data
 @Builder
@@ -18,6 +17,7 @@ import java.util.List;
 public class SubmitRequest {
     private Long applicationId;
     private String textContent;
+
     @Nullable
     private MultipartFile file;
     // Dành riêng cho vòng QUIZ
@@ -52,8 +52,7 @@ public class SubmitRequest {
         List<CompileRequest> result = new java.util.ArrayList<>();
         boolean hasParseError = false;
         for (String json : compileRequestJsons) {
-            if (json == null || json.trim().isEmpty() || json.equals("[object Object]"))
-                continue;
+            if (json == null || json.trim().isEmpty() || json.equals("[object Object]")) continue;
             String trimmed = json.trim();
             if (!trimmed.startsWith("{") && !trimmed.startsWith("[")) {
                 // Nếu có phần tử không phải JSON → biết chắc là bị tách bởi Swagger
@@ -62,8 +61,7 @@ public class SubmitRequest {
             }
             try {
                 if (trimmed.startsWith("[")) {
-                    result.addAll(objectMapper.readValue(trimmed, new TypeReference<List<CompileRequest>>() {
-                    }));
+                    result.addAll(objectMapper.readValue(trimmed, new TypeReference<List<CompileRequest>>() {}));
                 } else {
                     result.add(objectMapper.readValue(trimmed, CompileRequest.class));
                 }
@@ -86,13 +84,11 @@ public class SubmitRequest {
         try {
             String joined = String.join(",", compileRequestJsons).trim();
             if (joined.startsWith("[")) {
-                this.compileRequest = objectMapper.readValue(joined, new TypeReference<List<CompileRequest>>() {
-                });
+                this.compileRequest = objectMapper.readValue(joined, new TypeReference<List<CompileRequest>>() {});
             } else if (joined.startsWith("{")) {
                 // Một hoặc nhiều object liền kề: bọc vào array để parse
                 String asArray = "[" + joined + "]";
-                this.compileRequest = objectMapper.readValue(asArray, new TypeReference<List<CompileRequest>>() {
-                });
+                this.compileRequest = objectMapper.readValue(asArray, new TypeReference<List<CompileRequest>>() {});
             } else {
                 System.err.println("compileRequest không phải JSON hợp lệ sau khi reassemble: "
                         + joined.substring(0, Math.min(100, joined.length())));

@@ -1,19 +1,21 @@
 package fpt.org.inblue.service.impl;
 
+import static fpt.org.inblue.utils.HelperUtil.generateUniqueOrderCode;
 
-import lombok.RequiredArgsConstructor;
+import fpt.org.inblue.enums.PaymentPurpose;
+import fpt.org.inblue.enums.PaymentStatus;
+import fpt.org.inblue.enums.SessionStatus;
 import fpt.org.inblue.exception.CustomException;
 import fpt.org.inblue.model.Payment;
 import fpt.org.inblue.model.Session;
 import fpt.org.inblue.model.User;
-import fpt.org.inblue.enums.PaymentStatus;
-import fpt.org.inblue.enums.PaymentPurpose;
-import fpt.org.inblue.enums.SessionStatus;
 import fpt.org.inblue.repository.PaymentRepository;
 import fpt.org.inblue.repository.SessionRepository;
 import fpt.org.inblue.repository.UserRepository;
 import fpt.org.inblue.service.PaymentService;
 import fpt.org.inblue.utils.HelperUtil;
+import java.util.List;
+import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
@@ -23,26 +25,27 @@ import vn.payos.model.v2.paymentRequests.CreatePaymentLinkResponse;
 import vn.payos.model.webhooks.Webhook;
 import vn.payos.model.webhooks.WebhookData;
 
-import java.util.List;
-
-import static fpt.org.inblue.utils.HelperUtil.generateUniqueOrderCode;
-
 @Service
 @RequiredArgsConstructor
 public class PaymentServiceImpl implements PaymentService {
     private final PaymentRepository paymentRepository;
     private final PayOS payOS;
+
     @Value("${payos.return-url}")
     private String returnUrl;
+
     @Value("${payos.cancel-url}")
     private String cancelUrl;
+
     private final UserRepository userRepository;
     private final SessionRepository sessionRepository;
 
     @Override
     public String createPayment(long amount, int userId, PaymentPurpose paymentPurpose) {
-        long transactionCode = Long.parseLong("100"+generateUniqueOrderCode());
-        User user = userRepository.findById(userId).orElseThrow(() -> new CustomException("User not found", HttpStatus.NOT_FOUND));
+        long transactionCode = Long.parseLong("100" + generateUniqueOrderCode());
+        User user = userRepository
+                .findById(userId)
+                .orElseThrow(() -> new CustomException("User not found", HttpStatus.NOT_FOUND));
         Payment payment = new Payment();
         payment.setAmount(amount);
         payment.setUser(user);
@@ -80,28 +83,27 @@ public class PaymentServiceImpl implements PaymentService {
         return paymentLink.getCheckoutUrl();
     }
 
-
     @Override
     public void handlePayOsWebhook(Webhook body) {
         try {
             WebhookData webhookData = payOS.webhooks().verify(body);
             String transactionCode = String.valueOf(webhookData.getOrderCode());
             String type = HelperUtil.getPrefix(transactionCode);
-            System.out.println("Received PayOS webhook for transaction code: " + transactionCode + ", type: " + type + ", status: " );
-            if(type.equals("100")){
-                //xử lí payment cho từng vòng hoặc toàn bộ quy trình phỏng vấn
+            System.out.println("Received PayOS webhook for transaction code: " + transactionCode + ", type: " + type
+                    + ", status: ");
+            if (type.equals("100")) {
+                // xử lí payment cho từng vòng hoặc toàn bộ quy trình phỏng vấn
                 Payment payment = paymentRepository.findByTransactionCode(transactionCode);
                 if (webhookData.getDesc().equals("success")) {
 
                     payment.setStatus(PaymentStatus.COMPLETED);
                 }
-                if(payment.getPaymentPurpose().equals(PaymentPurpose.MENTOR_INTERVIEW)){
+                if (payment.getPaymentPurpose().equals(PaymentPurpose.MENTOR_INTERVIEW)) {
                     Session session = sessionRepository.findByTransactionCode(transactionCode);
                     session.setStatus(SessionStatus.PAID);
                 }
                 paymentRepository.save(payment);
             }
-
 
         } catch (Exception e) {
             System.err.println("Error processing PayOS webhook: " + e.getMessage());
@@ -112,7 +114,8 @@ public class PaymentServiceImpl implements PaymentService {
     public Payment cancelPayment(String transactionCode) {
         Payment payment = paymentRepository.findByTransactionCode(transactionCode);
         if (payment == null) {
-            throw new CustomException("Payment not found with transaction code: " + transactionCode, HttpStatus.NOT_FOUND);
+            throw new CustomException(
+                    "Payment not found with transaction code: " + transactionCode, HttpStatus.NOT_FOUND);
         }
         payment.setStatus(PaymentStatus.FAILED);
         return paymentRepository.save(payment);

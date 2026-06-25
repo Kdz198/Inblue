@@ -1,13 +1,12 @@
 package fpt.org.inblue.controller;
 
-
-import lombok.RequiredArgsConstructor;
 import fpt.org.inblue.model.dto.request.ForgotPasswordRequest;
 import fpt.org.inblue.model.dto.request.LoginRequest;
 import fpt.org.inblue.model.dto.request.ResetPasswordRequest;
 import fpt.org.inblue.security.JwtUtils;
 import fpt.org.inblue.service.PasswordResetService;
 import jakarta.validation.Valid;
+import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -26,13 +25,15 @@ public class AuthController {
     private final PasswordResetService passwordResetService;
 
     @PostMapping("/login")
-    public ResponseEntity<String> login (@RequestBody LoginRequest loginRequest) {
+    public ResponseEntity<String> login(@RequestBody LoginRequest loginRequest) {
         System.out.println("Login attempt for email: " + loginRequest.getEmail());
-        Authentication auth = authenticationManager.authenticate(new UsernamePasswordAuthenticationToken(loginRequest.getEmail(), loginRequest.getPassword()));
+        Authentication auth = authenticationManager.authenticate(
+                new UsernamePasswordAuthenticationToken(loginRequest.getEmail(), loginRequest.getPassword()));
         SecurityContextHolder.getContext().setAuthentication(auth);
         String token = jwtUtils.generateToken(auth);
         return ResponseEntity.ok().header("Authorization", "Bearer " + token).body(token);
     }
+
     @GetMapping("/login-with-google")
     public RedirectView googleLogin() {
         System.out.println("Redirecting to Google for authentication...");

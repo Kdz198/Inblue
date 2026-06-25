@@ -1,22 +1,20 @@
 package fpt.org.inblue.controller;
 
-
-import lombok.RequiredArgsConstructor;
+import fpt.org.inblue.enums.JobDescriptionStatus;
+import fpt.org.inblue.enums.TargetLevel;
 import fpt.org.inblue.model.JobDescription;
 import fpt.org.inblue.model.dto.request.CreateJobDescriptionRequest;
 import fpt.org.inblue.model.dto.request.UpdateJobDescriptionRequest;
-import fpt.org.inblue.enums.JobDescriptionStatus;
-import fpt.org.inblue.enums.TargetLevel;
 import fpt.org.inblue.service.JobDescriptionService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.*;
-
 import java.io.IOException;
 import java.util.List;
 import java.util.Map;
+import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequestMapping("/api/job-descriptions")
@@ -61,12 +59,12 @@ public class JobDescriptionController {
         return ResponseEntity.ok(updatedJobDescription);
     }
 
-//    @DeleteMapping("/{id}")
-//    @Operation(summary = "Permanent delete a job description")
-//    public ResponseEntity<Map<String, String>> delete(@PathVariable Long id) {
-//        jobDescriptionService.delete(id);
-//        return ResponseEntity.ok(Map.of("message", "Xóa mô tả công việc thành công"));
-//    }
+    //    @DeleteMapping("/{id}")
+    //    @Operation(summary = "Permanent delete a job description")
+    //    public ResponseEntity<Map<String, String>> delete(@PathVariable Long id) {
+    //        jobDescriptionService.delete(id);
+    //        return ResponseEntity.ok(Map.of("message", "Xóa mô tả công việc thành công"));
+    //    }
 
     @DeleteMapping("/{id}/soft")
     @Operation(summary = "Soft delete a job description")
@@ -83,7 +81,6 @@ public class JobDescriptionController {
             @RequestParam(required = false) TargetLevel level,
             @RequestParam(required = false) Double salaryMin,
             @RequestParam(required = false) Double salaryMax) {
-        return ResponseEntity.ok(jobDescriptionService.searchJobs(titleKeyword, status,level,salaryMin,salaryMax));
+        return ResponseEntity.ok(jobDescriptionService.searchJobs(titleKeyword, status, level, salaryMin, salaryMax));
     }
 }
-

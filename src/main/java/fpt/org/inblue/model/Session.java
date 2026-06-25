@@ -3,11 +3,10 @@ package fpt.org.inblue.model;
 import com.fasterxml.jackson.annotation.JsonFormat;
 import fpt.org.inblue.enums.SessionStatus;
 import jakarta.persistence.*;
+import java.sql.Timestamp;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-
-import java.sql.Timestamp;
 
 @Entity
 @AllArgsConstructor
@@ -17,6 +16,7 @@ public class Session {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private int id;
+
     private String roomName;
     // Thông tin người dùng 1 ( mentee )
     private int userId;
@@ -33,11 +33,8 @@ public class Session {
     private Long durationSeconds2;
     // URL phòng Daily.co
     private String roomUrl;
-    @JsonFormat(
-            shape = JsonFormat.Shape.STRING,
-            pattern = "yyyy-MM-dd HH:mm:ss.SSS",
-            timezone = "Asia/Ho_Chi_Minh"
-    )
+
+    @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd HH:mm:ss.SSS", timezone = "Asia/Ho_Chi_Minh")
     private Timestamp joinTime;
 
     private String recordUrl;

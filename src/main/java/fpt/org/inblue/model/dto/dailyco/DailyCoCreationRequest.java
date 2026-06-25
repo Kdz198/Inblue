@@ -19,7 +19,8 @@ public class DailyCoCreationRequest {
         boolean start_audio_off;
         boolean enable_screenshare;
         int exp;
-        //thời gian hết hạn này là thời gian hết hạn mà người dùng đc join vào room, sau thời gian này room vẫn tồn tại nhưng ko ai join đc
+        // thời gian hết hạn này là thời gian hết hạn mà người dùng đc join vào room, sau thời gian này room vẫn tồn tại
+        // nhưng ko ai join đc
         private String enable_recording;
     }
 }

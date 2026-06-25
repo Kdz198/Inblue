@@ -7,11 +7,10 @@ import fpt.org.inblue.model.dto.response.CodeReviewProblemGenerateResponse;
 import fpt.org.inblue.repository.CodeReviewProblemsRepository;
 import fpt.org.inblue.service.ApiClient;
 import fpt.org.inblue.service.CodeReviewProblemService;
-import lombok.RequiredArgsConstructor;
-import org.springframework.stereotype.Service;
-
 import java.util.List;
 import java.util.Optional;
+import lombok.RequiredArgsConstructor;
+import org.springframework.stereotype.Service;
 
 @Service
 @RequiredArgsConstructor
@@ -43,8 +42,7 @@ public class CodeReviewProblemServiceImpl implements CodeReviewProblemService {
                 "java-code-review", // sessionId
                 true, // reset session to ensure independent calls
                 null, // no attached files
-                CodeReviewProblemGenerateResponse.class
-        );
+                CodeReviewProblemGenerateResponse.class);
         System.out.println("Received Code Review response from LLM: " + response);
         return response;
     }

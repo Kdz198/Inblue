@@ -5,5 +5,3 @@ public enum JobDescriptionStatus {
     CLOSED,
     DRAFT
 }
-
-

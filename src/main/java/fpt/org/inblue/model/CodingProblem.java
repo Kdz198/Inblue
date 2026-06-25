@@ -1,6 +1,9 @@
 package fpt.org.inblue.model;
 
 import jakarta.persistence.*;
+import java.time.LocalDateTime;
+import java.util.List;
+import java.util.Map;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -9,10 +12,6 @@ import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.annotations.UpdateTimestamp;
 import org.hibernate.type.SqlTypes;
-
-import java.time.LocalDateTime;
-import java.util.List;
-import java.util.Map;
 
 @Entity
 @Data
@@ -36,7 +35,6 @@ public class CodingProblem {
     @JdbcTypeCode(SqlTypes.JSON)
     @Column(columnDefinition = "jsonb")
     private List<String> rulesAndConstraints;
-
 
     @JdbcTypeCode(SqlTypes.JSON)
     @Column(columnDefinition = "jsonb")
@@ -93,6 +91,8 @@ public class CodingProblem {
     }
 
     public enum Difficulty {
-        EASY, MEDIUM, HARD
+        EASY,
+        MEDIUM,
+        HARD
     }
 }

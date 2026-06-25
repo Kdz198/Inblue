@@ -12,8 +12,10 @@ import org.springframework.web.multipart.MultipartFile;
 @NoArgsConstructor
 public class CreateUserRequest {
     UserInfo data;
+
     @Nullable
-    MultipartFile avatar ;
+    MultipartFile avatar;
+
     @Nullable
     MultipartFile cvFile;
 }

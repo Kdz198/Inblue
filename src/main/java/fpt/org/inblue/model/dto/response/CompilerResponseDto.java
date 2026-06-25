@@ -1,7 +1,7 @@
 package fpt.org.inblue.model.dto.response;
 
-import lombok.Data;
 import java.util.List;
+import lombok.Data;
 
 @Data
 public class CompilerResponseDto {

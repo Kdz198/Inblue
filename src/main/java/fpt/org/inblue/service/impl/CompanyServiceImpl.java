@@ -1,7 +1,5 @@
 package fpt.org.inblue.service.impl;
 
-
-import lombok.RequiredArgsConstructor;
 import fpt.org.inblue.cloudinary.CloudinaryService;
 import fpt.org.inblue.exception.CustomException;
 import fpt.org.inblue.mapper.CompanyMapper;
@@ -10,15 +8,14 @@ import fpt.org.inblue.model.dto.request.CreateCompanyRequest;
 import fpt.org.inblue.model.dto.request.UpdateCompanyRequest;
 import fpt.org.inblue.repository.CompanyRepository;
 import fpt.org.inblue.service.CompanyService;
-import org.springframework.http.HttpStatus;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
-import org.springframework.web.multipart.MultipartFile;
-
 import java.io.IOException;
 import java.util.List;
 import java.util.Map;
 import java.util.logging.Logger;
+import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
+import org.springframework.stereotype.Service;
+import org.springframework.web.multipart.MultipartFile;
 
 @Service
 @RequiredArgsConstructor
@@ -34,13 +31,13 @@ public class CompanyServiceImpl implements CompanyService {
 
     @Override
     public Company getById(Long id) {
-        return companyRepository.findById(id)
+        return companyRepository
+                .findById(id)
                 .orElseThrow(() -> new CustomException("Không tìm thấy công ty với ID: " + id, HttpStatus.NOT_FOUND));
     }
 
     @Override
-    public Company create(CreateCompanyRequest request, MultipartFile logo,
-                          MultipartFile banner) throws IOException {
+    public Company create(CreateCompanyRequest request, MultipartFile logo, MultipartFile banner) throws IOException {
         if (request == null) {
             throw new CustomException("CreateCompanyRequest không được để trống", HttpStatus.BAD_REQUEST);
         }
@@ -76,11 +73,12 @@ public class CompanyServiceImpl implements CompanyService {
     }
 
     @Override
-    public Company update(UpdateCompanyRequest request, MultipartFile logo,
-    MultipartFile banner) throws IOException {
+    public Company update(UpdateCompanyRequest request, MultipartFile logo, MultipartFile banner) throws IOException {
         Long companyId = request.getId();
-        Company company = companyRepository.findById(companyId)
-                .orElseThrow(() -> new CustomException("Không tìm thấy công ty với ID: " + companyId, HttpStatus.NOT_FOUND));
+        Company company = companyRepository
+                .findById(companyId)
+                .orElseThrow(
+                        () -> new CustomException("Không tìm thấy công ty với ID: " + companyId, HttpStatus.NOT_FOUND));
         companyMapper.updateCompanyFromRequest(request, company);
 
         if (logo != null && !logo.isEmpty()) {
@@ -111,7 +109,8 @@ public class CompanyServiceImpl implements CompanyService {
         if (banner != null && !banner.isEmpty()) {
             try {
                 if (cloudinaryService.validate(banner)) {
-                    if (company.getBannerUrl() != null && !company.getBannerUrl().isEmpty()) {
+                    if (company.getBannerUrl() != null
+                            && !company.getBannerUrl().isEmpty()) {
                         String oldBannerPublicId = extractPublicIdFromUrl(company.getBannerUrl());
                         if (oldBannerPublicId != null) {
                             try {
@@ -144,7 +143,8 @@ public class CompanyServiceImpl implements CompanyService {
 
     @Override
     public void deleteById(Long id) {
-        Company company = companyRepository.findById(id)
+        Company company = companyRepository
+                .findById(id)
                 .orElseThrow(() -> new CustomException("Không tìm thấy công ty với ID: " + id, HttpStatus.NOT_FOUND));
         company.setIsDeleted(true);
     }

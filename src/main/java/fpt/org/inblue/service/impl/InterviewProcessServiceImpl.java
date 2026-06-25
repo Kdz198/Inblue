@@ -1,7 +1,7 @@
 package fpt.org.inblue.service.impl;
 
-
 import fpt.org.inblue.constants.ApiPath;
+import fpt.org.inblue.enums.PythonService;
 import fpt.org.inblue.model.InterviewResultDetail;
 import fpt.org.inblue.model.InterviewSession;
 import fpt.org.inblue.model.caching.InterviewSessionRedis;
@@ -10,22 +10,20 @@ import fpt.org.inblue.model.dto.request.SubmitAnswerRequest;
 import fpt.org.inblue.model.dto.response.GradingResponse;
 import fpt.org.inblue.model.dto.response.OrchestratorAnalysisResponse;
 import fpt.org.inblue.model.dto.response.QuestionResponse;
-import fpt.org.inblue.enums.PythonService;
 import fpt.org.inblue.repository.InterviewSessionRepository;
 import fpt.org.inblue.repository.caching.InterviewSessionRedisRepository;
+import fpt.org.inblue.service.ApiClient;
 import fpt.org.inblue.service.InterviewProcessService;
 import fpt.org.inblue.service.ProctoringService;
-import fpt.org.inblue.service.ApiClient;
+import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpMethod;
 import org.springframework.stereotype.Service;
-
-import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
 
 @Service
 @RequiredArgsConstructor
@@ -38,17 +36,20 @@ public class InterviewProcessServiceImpl implements InterviewProcessService {
 
     @Override
     public QuestionResponse getCurrentQuestion(String sessionKey) {
-        InterviewSessionRedis session = redisRepository.findById(sessionKey)
+        InterviewSessionRedis session = redisRepository
+                .findById(sessionKey)
                 .orElseThrow(() -> new RuntimeException("Session not found or expired"));
 
-        InterviewSession dbSession = sessionRepository.findById(session.getDbId())
+        InterviewSession dbSession = sessionRepository
+                .findById(session.getDbId())
                 .orElseThrow(() -> new RuntimeException("DB Session not found"));
 
-        dbSession.setStatus( InterviewSession.SessionStatus.IN_PROGRESS);
+        dbSession.setStatus(InterviewSession.SessionStatus.IN_PROGRESS);
         sessionRepository.save(dbSession);
 
         if (session.getCurrentQuestionText() == null) {
-            var firstQ = session.getBlueprint().getBlueprint().get(0).getQuestions().get(0);
+            var firstQ =
+                    session.getBlueprint().getBlueprint().get(0).getQuestions().get(0);
             session.setCurrentQuestionText(firstQ.getQuestionText());
             session.setCurrentQuestionType(InterviewSessionRedis.QuestionType.BLUEPRINT);
             redisRepository.save(session);
@@ -60,15 +61,22 @@ public class InterviewProcessServiceImpl implements InterviewProcessService {
     @Override
     public QuestionResponse submitAnswer(SubmitAnswerRequest request) {
         // 1. Lấy Session
-        InterviewSessionRedis session = redisRepository.findById(request.getSessionKey())
+        InterviewSessionRedis session = redisRepository
+                .findById(request.getSessionKey())
                 .orElseThrow(() -> new RuntimeException("Session not found"));
 
         // --- BƯỚC 1: LƯU CÂU TRẢ LỜI CŨ ---
         var currentPhase = session.getBlueprint().getBlueprint().get(session.getCurrentPhaseIndex());
 
-        var typeToSave = session.getCurrentQuestionType() != null ? session.getCurrentQuestionType() : InterviewSessionRedis.QuestionType.BLUEPRINT;
-        var textToSave = session.getCurrentQuestionText() != null ? session.getCurrentQuestionText() :
-                currentPhase.getQuestions().get(session.getCurrentQuestionIndex()).getQuestionText();
+        var typeToSave = session.getCurrentQuestionType() != null
+                ? session.getCurrentQuestionType()
+                : InterviewSessionRedis.QuestionType.BLUEPRINT;
+        var textToSave = session.getCurrentQuestionText() != null
+                ? session.getCurrentQuestionText()
+                : currentPhase
+                        .getQuestions()
+                        .get(session.getCurrentQuestionIndex())
+                        .getQuestionText();
 
         var exchange = InterviewSessionRedis.InterviewExchange.builder()
                 .phaseName(currentPhase.getPhaseName())
@@ -94,13 +102,11 @@ public class InterviewProcessServiceImpl implements InterviewProcessService {
                 ApiPath.ANALYZER_API,
                 HttpMethod.POST,
                 pythonRequest,
-                OrchestratorAnalysisResponse.class
-        );
-
+                OrchestratorAnalysisResponse.class);
 
         // --- BƯỚC 3: XỬ LÝ RESPONSE AI ---
         if (aiResponse.getAction() == OrchestratorAnalysisResponse.AnalysisAction.DRILL_DOWN
-        || aiResponse.getAction() == OrchestratorAnalysisResponse.AnalysisAction.CLARIFY_AND_SUPPORT) {
+                || aiResponse.getAction() == OrchestratorAnalysisResponse.AnalysisAction.CLARIFY_AND_SUPPORT) {
             session.setCurrentQuestionType(InterviewSessionRedis.QuestionType.FOLLOW_UP);
             session.setCurrentQuestionText(aiResponse.getResponseText());
         } else {
@@ -142,7 +148,8 @@ public class InterviewProcessServiceImpl implements InterviewProcessService {
                 .build();
     }
 
-    private List<InterviewSessionRedis.InterviewExchange> getContextForAI(List<InterviewSessionRedis.InterviewExchange> fullHistory) {
+    private List<InterviewSessionRedis.InterviewExchange> getContextForAI(
+            List<InterviewSessionRedis.InterviewExchange> fullHistory) {
         List<InterviewSessionRedis.InterviewExchange> context = new ArrayList<>();
         for (int i = fullHistory.size() - 1; i >= 0; i--) {
             var item = fullHistory.get(i);
@@ -157,7 +164,11 @@ public class InterviewProcessServiceImpl implements InterviewProcessService {
     private AnchorInfo getCurrentAnchorInfo(InterviewSessionRedis session) {
         var phase = session.getBlueprint().getBlueprint().get(session.getCurrentPhaseIndex());
         var question = phase.getQuestions().get(session.getCurrentQuestionIndex());
-        return new AnchorInfo(session.getCurrentPhaseIndex(), session.getCurrentQuestionIndex(), question.getQuestionText(), phase.getPhaseName());
+        return new AnchorInfo(
+                session.getCurrentPhaseIndex(),
+                session.getCurrentQuestionIndex(),
+                question.getQuestionText(),
+                phase.getPhaseName());
     }
 
     @Data
@@ -174,10 +185,12 @@ public class InterviewProcessServiceImpl implements InterviewProcessService {
         int q = session.getCurrentQuestionIndex();
 
         if (q + 1 < blueprint.get(p).getQuestions().size()) {
-            return new NextAnchorInfo(p, q + 1, blueprint.get(p).getQuestions().get(q + 1).getQuestionText());
+            return new NextAnchorInfo(
+                    p, q + 1, blueprint.get(p).getQuestions().get(q + 1).getQuestionText());
         }
         if (p + 1 < blueprint.size()) {
-            return new NextAnchorInfo(p + 1, 0, blueprint.get(p + 1).getQuestions().get(0).getQuestionText());
+            return new NextAnchorInfo(
+                    p + 1, 0, blueprint.get(p + 1).getQuestions().get(0).getQuestionText());
         }
         return null;
     }
@@ -188,12 +201,18 @@ public class InterviewProcessServiceImpl implements InterviewProcessService {
             NextAnchorInfo next,
             List<InterviewSessionRedis.InterviewExchange> exchanges,
             InterviewSessionRedis session // <--- Thêm cái này
-    ) {
+            ) {
         List<OrchestratorConductRequest.HistoryItem> historyItems = new ArrayList<>();
 
         for (var ex : exchanges) {
-            historyItems.add(OrchestratorConductRequest.HistoryItem.builder().role("AI").content(ex.getQuestionText()).build());
-            historyItems.add(OrchestratorConductRequest.HistoryItem.builder().role("USER").content(ex.getAnswerText()).build());
+            historyItems.add(OrchestratorConductRequest.HistoryItem.builder()
+                    .role("AI")
+                    .content(ex.getQuestionText())
+                    .build());
+            historyItems.add(OrchestratorConductRequest.HistoryItem.builder()
+                    .role("USER")
+                    .content(ex.getAnswerText())
+                    .build());
         }
 
         var reqCurrent = OrchestratorConductRequest.AnchorInfo.builder()
@@ -206,7 +225,10 @@ public class InterviewProcessServiceImpl implements InterviewProcessService {
             // [FIXED] Lấy tên Phase từ Blueprint trong Session (RAM) chứ không query DB
             String nextPhaseName = "";
             try {
-                nextPhaseName = session.getBlueprint().getBlueprint().get(next.phaseIndex).getPhaseName();
+                nextPhaseName = session.getBlueprint()
+                        .getBlueprint()
+                        .get(next.phaseIndex)
+                        .getPhaseName();
             } catch (Exception e) {
                 nextPhaseName = "Next Phase";
             }
@@ -224,9 +246,9 @@ public class InterviewProcessServiceImpl implements InterviewProcessService {
                 .build();
     }
 
-
     private void finishSession(InterviewSessionRedis redisSession, String sessionKey) {
-        InterviewSession dbSession = sessionRepository.findById(redisSession.getDbId())
+        InterviewSession dbSession = sessionRepository
+                .findById(redisSession.getDbId())
                 .orElseThrow(() -> new RuntimeException("DB Session not found"));
 
         // 1. [MỚI] THU HOẠCH BEHAVIOR TỪ PROCTORING SERVICE
@@ -234,13 +256,15 @@ public class InterviewProcessServiceImpl implements InterviewProcessService {
         Map<Integer, List<String>> behaviorMap = proctoringService.getAndClearBehavioralRecord(redisSession.getId());
 
         // 2. [CẬP NHẬT] Truyền behaviorMap vào hàm xử lý
-        List<InterviewResultDetail.QAResult> gradedHistory = gradeAndMapFullHistory(redisSession.getChatHistory(), behaviorMap);
+        List<InterviewResultDetail.QAResult> gradedHistory =
+                gradeAndMapFullHistory(redisSession.getChatHistory(), behaviorMap);
 
         // Tính điểm trung bình (Chỉ tính trên các câu có điểm - tức là câu Anchor)
         double avgScore = gradedHistory.stream()
                 .filter(r -> r.getScore() != null)
                 .mapToDouble(InterviewResultDetail.QAResult::getScore)
-                .average().orElse(0.0);
+                .average()
+                .orElse(0.0);
 
         InterviewResultDetail resultDetail = InterviewResultDetail.builder()
                 .history(gradedHistory)
@@ -257,12 +281,12 @@ public class InterviewProcessServiceImpl implements InterviewProcessService {
         redisRepository.delete(redisSession);
     }
 
-
     // ======================================================================
     // LOGIC GROUPING & CHẤM ĐIỂM (GIỮ LẠI FULL HISTORY)
     // ======================================================================
 
-    private List<InterviewResultDetail.QAResult> gradeAndMapFullHistory(List<InterviewSessionRedis.InterviewExchange> fullHistory, Map<Integer, List<String>> behaviorMap) {
+    private List<InterviewResultDetail.QAResult> gradeAndMapFullHistory(
+            List<InterviewSessionRedis.InterviewExchange> fullHistory, Map<Integer, List<String>> behaviorMap) {
         List<InterviewResultDetail.QAResult> finalResults = new ArrayList<>();
         List<InterviewSessionRedis.InterviewExchange> currentGroup = new ArrayList<>();
 
@@ -296,18 +320,13 @@ public class InterviewProcessServiceImpl implements InterviewProcessService {
             List<InterviewResultDetail.QAResult> finalResults,
             int startOrderIndex,
             Map<Integer, List<String>> behaviorMap // [THÊM MỚI] Map chứa lỗi hành vi từ Redis
-    ) {
+            ) {
         // 1. CHẤM ĐIỂM CẢ GROUP (Lấy điểm cho chủ đề này)
         GradingResponse gradingRes;
         try {
             // Gửi cả list (Anchor + Follow-ups) qua Python
             gradingRes = ApiClient.callApi(
-                    PythonService.LLM,
-                    ApiPath.GRADING_API,
-                    HttpMethod.POST,
-                    group,
-                    GradingResponse.class
-            );
+                    PythonService.LLM, ApiPath.GRADING_API, HttpMethod.POST, group, GradingResponse.class);
         } catch (Exception e) {
             System.err.println("Grading error: " + e.getMessage());
             gradingRes = new GradingResponse(0.0, "Lỗi hệ thống chấm điểm", "");
@@ -330,20 +349,19 @@ public class InterviewProcessServiceImpl implements InterviewProcessService {
                     .questionText(ex.getQuestionText())
                     .answerText(ex.getAnswerText())
                     .questionType(ex.getType().name())
-                    .behavioralWarnings(warnings);     // [GẮN VÀO ĐÂY] Mọi câu hỏi (neo hay bồi) đều có behavior
+                    .behavioralWarnings(warnings); // [GẮN VÀO ĐÂY] Mọi câu hỏi (neo hay bồi) đều có behavior
 
             // 3. GẮN ĐIỂM VÀ FEEDBACK
             // Logic: Chỉ gắn điểm vào câu đầu tiên (Anchor - Mỏ neo)
             // Các câu bồi (i > 0) sẽ để score = null
             if (i == 0) {
-                qaBuilder.score(gradingRes.getScore())
+                qaBuilder
+                        .score(gradingRes.getScore())
                         .feedback(gradingRes.getFeedback())
                         .suggestion(gradingRes.getSuggestion());
             } else {
                 // Câu bồi: Có thể để null hoặc copy feedback nếu muốn (thường là để null cho đỡ rối)
-                qaBuilder.score(null)
-                        .feedback(null)
-                        .suggestion(null);
+                qaBuilder.score(null).feedback(null).suggestion(null);
             }
 
             finalResults.add(qaBuilder.build());
@@ -365,12 +383,7 @@ public class InterviewProcessServiceImpl implements InterviewProcessService {
     private String genOverviewFeedback(List<InterviewResultDetail.QAResult> gradedHistory) {
 
         return ApiClient.callApi(
-                PythonService.LLM,
-                ApiPath.OVERVIEW_FEEDBACK_API,
-                HttpMethod.POST,
-                gradedHistory,
-                String.class
-        );
+                PythonService.LLM, ApiPath.OVERVIEW_FEEDBACK_API, HttpMethod.POST, gradedHistory, String.class);
     }
 
     @Data

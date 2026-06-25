@@ -1,25 +1,22 @@
 package fpt.org.inblue.service.submission.impl;
 
-import tools.jackson.databind.ObjectMapper;
-import tools.jackson.core.type.TypeReference;
 import fpt.org.inblue.enums.RoundType;
 import fpt.org.inblue.model.CodingProblem;
 import fpt.org.inblue.model.dto.ProcessDto;
 import fpt.org.inblue.model.dto.request.CompileRequest;
-import fpt.org.inblue.model.dto.response.CompilerResponseDto;
-import fpt.org.inblue.service.submission.SubmissionResult;
 import fpt.org.inblue.model.dto.request.CompilerRequestDto;
+import fpt.org.inblue.model.dto.response.CompilerResponseDto;
 import fpt.org.inblue.repository.CodingProblemsRepository;
 import fpt.org.inblue.service.ApiClient;
 import fpt.org.inblue.service.submission.RoundSubmissionProcessor;
+import fpt.org.inblue.service.submission.SubmissionResult;
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Component;
-
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
 
 @Component
 @RequiredArgsConstructor
@@ -57,14 +54,14 @@ public class CodeRoundProcessor implements RoundSubmissionProcessor {
                 testRequest = req;
                 break;
             }
-
         }
 
         if (testRequest != null) {
             System.out.println(
                     "Đang xử lý yêu cầu chạy thử (isTest == true) cho bài toán mã số: " + testRequest.getProblemId());
             final CompileRequest finalTestRequest = testRequest;
-            CodingProblem problem = codingProblemsRepository.findById(finalTestRequest.getProblemId())
+            CodingProblem problem = codingProblemsRepository
+                    .findById(finalTestRequest.getProblemId())
                     .orElseThrow(() -> new IllegalArgumentException(
                             "Không tìm thấy bài toán mã số: " + finalTestRequest.getProblemId()));
 

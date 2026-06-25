@@ -5,13 +5,6 @@ import fpt.org.inblue.model.EmailSubmission;
 import fpt.org.inblue.repository.EmailSubmissionRepository;
 import jakarta.mail.*;
 import jakarta.mail.search.FlagTerm;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.stereotype.Service;
-import tools.jackson.databind.ObjectMapper;
-import tools.jackson.core.type.TypeReference;
-
 import java.io.InputStream;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
@@ -21,6 +14,11 @@ import java.util.Map;
 import java.util.Properties;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.stereotype.Service;
+import tools.jackson.databind.ObjectMapper;
 
 @Service
 @RequiredArgsConstructor
@@ -77,9 +75,12 @@ public class EmailFetcherService {
                     }
                     String subject = message.getSubject() != null ? message.getSubject() : "";
                     String sender = message.getFrom()[0].toString();
-                    LocalDateTime receivedAt = message.getReceivedDate() != null ? 
-                            message.getReceivedDate().toInstant().atZone(ZoneId.systemDefault()).toLocalDateTime() : 
-                            LocalDateTime.now();
+                    LocalDateTime receivedAt = message.getReceivedDate() != null
+                            ? message.getReceivedDate()
+                                    .toInstant()
+                                    .atZone(ZoneId.systemDefault())
+                                    .toLocalDateTime()
+                            : LocalDateTime.now();
 
                     Matcher matcher = subjectPattern.matcher(subject);
                     Long applicationId = null;
@@ -97,7 +98,10 @@ public class EmailFetcherService {
                             .senderEmail(sender)
                             .subject(subject)
                             .bodyText(bodyText.toString().trim())
-                            .status(applicationId != null ? EmailSubmission.EmailStatus.PENDING : EmailSubmission.EmailStatus.IGNORED)
+                            .status(
+                                    applicationId != null
+                                            ? EmailSubmission.EmailStatus.PENDING
+                                            : EmailSubmission.EmailStatus.IGNORED)
                             .errorMessage(applicationId == null ? "Missing or invalid application ID in subject" : null)
                             .attachmentUrls(objectMapper.writeValueAsString(attachmentUrls))
                             .receivedAt(receivedAt)

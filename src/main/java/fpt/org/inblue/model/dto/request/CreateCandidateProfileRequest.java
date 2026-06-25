@@ -1,4 +1,3 @@
 package fpt.org.inblue.model.dto.request;
 
-public class CreateCandidateProfileRequest {
-}
+public class CreateCandidateProfileRequest {}

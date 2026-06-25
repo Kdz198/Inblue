@@ -4,14 +4,11 @@ import fpt.org.inblue.model.CodeReviewProblem;
 import fpt.org.inblue.model.dto.request.CodeReviewProblemGenerateRequest;
 import fpt.org.inblue.model.dto.response.CodeReviewProblemGenerateResponse;
 import fpt.org.inblue.service.CodeReviewProblemService;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.*;
-
 import java.util.List;
 import java.util.Optional;
-
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequestMapping("/api/code-review-problems")
@@ -40,7 +37,8 @@ public class CodeReviewProblemController {
     }
 
     @PostMapping("/generate")
-    public ResponseEntity<CodeReviewProblemGenerateResponse> generateCodeReviewProblem(@RequestBody CodeReviewProblemGenerateRequest request) {
+    public ResponseEntity<CodeReviewProblemGenerateResponse> generateCodeReviewProblem(
+            @RequestBody CodeReviewProblemGenerateRequest request) {
         CodeReviewProblemGenerateResponse response = codeReviewProblemService.generateCodeReviewProblem(request);
         return ResponseEntity.ok(response);
     }

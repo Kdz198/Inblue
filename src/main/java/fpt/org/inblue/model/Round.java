@@ -3,16 +3,15 @@ package fpt.org.inblue.model;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import fpt.org.inblue.enums.RoundType;
 import jakarta.persistence.*;
+import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
 import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.annotations.UpdateTimestamp;
 import org.hibernate.type.SqlTypes;
-
-import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
 
 @Entity
 @Data
@@ -45,6 +44,7 @@ public class Round {
 
     @Builder.Default
     Boolean isDeleted = false;
+
     private Boolean isAuto = false;
 
     @CreationTimestamp
@@ -60,24 +60,28 @@ public class Round {
     public static class RoundConfig {
         // --- CÁC FIELD DÙNG CHUNG ---
         /**
-         "Vui lòng gửi email chứa file đính kèm bài làm của bạn đến địa chỉ tuyendung@inblue.org.
-         Lưu ý quan trọng: Tiêu đề email bắt buộc phải chứa cú pháp định danh: [INBLUE-APP-{{applicationId}}] để hệ thống tự động ghi nhận."
+         * "Vui lòng gửi email chứa file đính kèm bài làm của bạn đến địa chỉ tuyendung@inblue.org.
+         * Lưu ý quan trọng: Tiêu đề email bắt buộc phải chứa cú pháp định danh: [INBLUE-APP-{{applicationId}}] để hệ thống tự động ghi nhận."
          */
         private String instruction;
+
         private String submissionFormat;
         private Integer timeLimitMinutes;
         private Integer maxScore;
 
         // --- CÁC FIELD CHO AI CHẤM ĐIỂM ---
         private String aiSystemPrompt;
-        // Đề bài / tình huống yêu cầu viết email, tự luận, thiết kế DB, phỏng vấn... (VD: "Viết một đoạn văn giải thích về OOP" hoặc "Thiết kế DB cho hệ thống quản lý thư viện")
+        // Đề bài / tình huống yêu cầu viết email, tự luận, thiết kế DB, phỏng vấn... (VD: "Viết một đoạn văn giải thích
+        // về OOP" hoặc "Thiết kế DB cho hệ thống quản lý thư viện")
         private String evaluationCriteria;
 
         // --- FIELD CHO VÒNG QUIZ ---
         private List<QuizQuestion> quizQuestions = new ArrayList<>();
-        private List<CodingProblemSnapshot> codingProblems = new ArrayList<>(); // Dùng để lưu snapshot của bài coding khi tạo round, tránh bị ảnh hưởng nếu bài gốc bị sửa sau đó
+        private List<CodingProblemSnapshot> codingProblems =
+                new ArrayList<>(); // Dùng để lưu snapshot của bài coding khi tạo round, tránh bị ảnh hưởng nếu bài gốc
+        // bị sửa sau đó
         private List<CodeReviewProblemSnapshot> codeReviewProblems = new ArrayList<>();
-        //Dành cho vòng mentor interview
+        // Dành cho vòng mentor interview
         MentorInterviewDto mentorInterview;
     }
 
@@ -85,7 +89,7 @@ public class Round {
     @NoArgsConstructor
     @AllArgsConstructor
     @Builder
-    public static class MentorInterviewDto{
+    public static class MentorInterviewDto {
         private Integer userId;
         private Integer mentorId;
         private Integer duration;
@@ -97,7 +101,7 @@ public class Round {
     @AllArgsConstructor
     @Builder
     public static class CodingProblemSnapshot {
-        private Long problemId;          // Giữ lại để trace về bài gốc nếu cần
+        private Long problemId; // Giữ lại để trace về bài gốc nếu cần
         private String title;
         private CodingProblem.Difficulty difficulty;
         private String problemStatement;
@@ -113,7 +117,7 @@ public class Round {
     @AllArgsConstructor
     @Builder
     public static class CodeReviewProblemSnapshot {
-        private Long problemId;          // Giữ lại để trace về bài gốc nếu cần
+        private Long problemId; // Giữ lại để trace về bài gốc nếu cần
         private String title;
         private CodingProblem.Difficulty difficulty;
         private String language;
@@ -128,12 +132,9 @@ public class Round {
     @AllArgsConstructor
     @Builder
     public static class QuizQuestion {
-        private String questionText;    // Nội dung câu hỏi
-        private List<String> options;   // Danh sách đáp án: ["A. Spring Boot", "B. Nodejs", "C. Django"]
-        private String correctAnswer;   // Đáp án đúng (VD: "A")
-        private Integer points;         // Điểm của câu này (VD: 10)
+        private String questionText; // Nội dung câu hỏi
+        private List<String> options; // Danh sách đáp án: ["A. Spring Boot", "B. Nodejs", "C. Django"]
+        private String correctAnswer; // Đáp án đúng (VD: "A")
+        private Integer points; // Điểm của câu này (VD: 10)
     }
-
-
 }
-

@@ -1,7 +1,5 @@
 package fpt.org.inblue.service.impl;
 
-
-import lombok.RequiredArgsConstructor;
 import fpt.org.inblue.cloudinary.CloudinaryService;
 import fpt.org.inblue.enums.PostStatus;
 import fpt.org.inblue.mapper.PostMapper;
@@ -19,6 +17,11 @@ import fpt.org.inblue.model.dto.response.PostResponse;
 import fpt.org.inblue.repository.PostRepository;
 import fpt.org.inblue.service.PostService;
 import fpt.org.inblue.service.UserService;
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
@@ -26,11 +29,6 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
 
 @Service
 @Slf4j
@@ -46,7 +44,7 @@ public class PostServiceImpl implements PostService {
     @Override
     public Post createPost(PostCreateRequest post) throws IOException {
         User user = userService.getById(post.getAuthorId());
-        Map<String,String> uploadResult = cloudinaryService.uploadImg(post.getCoverImg());
+        Map<String, String> uploadResult = cloudinaryService.uploadImg(post.getCoverImg());
         String url = uploadResult.get("secure_url");
         String public_id = uploadResult.get("public_id");
         Post saved = postMapper.toEntity(post);
@@ -91,11 +89,13 @@ public class PostServiceImpl implements PostService {
                 .lastModifiedDate(post.getLastModifiedDate())
                 .coverImgUrl(post.getCoverImgUrl())
                 .tags(post.getTags())
-                .author(post.getAuthor() != null ?
-                        PostDetailResponse.AuthorResponse.builder()
-                                .name(post.getAuthor().getName())
-                                .avatar(post.getAuthor().getAvatarUrl())
-                                .build() : null)
+                .author(
+                        post.getAuthor() != null
+                                ? PostDetailResponse.AuthorResponse.builder()
+                                        .name(post.getAuthor().getName())
+                                        .avatar(post.getAuthor().getAvatarUrl())
+                                        .build()
+                                : null)
                 .build();
         response.setPost(detailResponse);
         response.setLikeCount(post.getLikes() != null ? post.getLikes().size() : 0);
@@ -124,7 +124,6 @@ public class PostServiceImpl implements PostService {
         return response;
     }
 
-
     List<PostResponse> mapPostToResponse(List<Post> posts) {
         List<PostResponse> responses = new ArrayList<>();
         for (Post post : posts) {
@@ -141,18 +140,21 @@ public class PostServiceImpl implements PostService {
                     .lastModifiedDate(post.getLastModifiedDate())
                     .coverImgUrl(post.getCoverImgUrl())
                     .tags(post.getTags())
-                    .author(post.getAuthor() != null ?
-                            PostDetailResponse.AuthorResponse.builder()
-                                    .name(post.getAuthor().getName())
-                                    .avatar(post.getAuthor().getAvatarUrl())
-                                    .build() : null)
+                    .author(
+                            post.getAuthor() != null
+                                    ? PostDetailResponse.AuthorResponse.builder()
+                                            .name(post.getAuthor().getName())
+                                            .avatar(post.getAuthor().getAvatarUrl())
+                                            .build()
+                                    : null)
                     .build();
 
             response.setPost(postDetail);
             response.setLikeCount(post.getLikes() != null ? post.getLikes().size() : 0);
-            response.setCommentCount(post.getComments() != null ? post.getComments().size() : 0);
+            response.setCommentCount(
+                    post.getComments() != null ? post.getComments().size() : 0);
 
-            //map like
+            // map like
             List<PostLikeResponse> likeResponses = new ArrayList<>();
             if (post.getLikes() != null) {
                 for (PostLike like : post.getLikes()) {
@@ -187,7 +189,7 @@ public class PostServiceImpl implements PostService {
     }
 
     @Override
-//    @Cacheable(value = "new_feed", key = "#page + '-' + #size")
+    //    @Cacheable(value = "new_feed", key = "#page + '-' + #size")
     public Page<PostResponse> getNewFeed(int page, int size) {
         log.warn("🔥 CACHE MISS! Đang xuống PostgreSQL để lấy page: {}, size: {}", page, size);
         Pageable pageable = PageRequest.of(page, size);
@@ -217,9 +219,7 @@ public class PostServiceImpl implements PostService {
         if (alreadyLiked) {
             throw new RuntimeException("User đã like bài viết này rồi");
         }
-        PostLike postLike = PostLike.builder()
-                .user(user)
-                .build();
+        PostLike postLike = PostLike.builder().user(user).build();
 
         post.getLikes().add(postLike);
         postRepository.save(post);
@@ -283,7 +283,7 @@ public class PostServiceImpl implements PostService {
             }
             comment.setParentCommentId(request.getParentCommentId());
         } else {
-            comment.setParentCommentId(0); //cmt gốc
+            comment.setParentCommentId(0); // cmt gốc
         }
 
         post.getComments().add(comment);
@@ -329,8 +329,6 @@ public class PostServiceImpl implements PostService {
         }
         throw new RuntimeException("Comment không tồn tại");
     }
-
-
 
     private PostCommentResponse mapCommentToResponse(PostComment comment) {
         PostCommentResponse response = new PostCommentResponse();

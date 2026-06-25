@@ -12,11 +12,10 @@ import org.springframework.stereotype.Component;
 @Slf4j
 public class LoggingAspect {
 
-    @Pointcut("within(fpt.org.inblue.controller..*) || " +
-            "within(fpt.org.inblue.service..*) || " +
-            "within(fpt.org.inblue.repository..*) || " +
-            "within(fpt.org.inblue.utils..*) || " +
-            "within(fpt.org.inblue.event..*)")
+    @Pointcut("within(fpt.org.inblue.controller..*) || " + "within(fpt.org.inblue.service..*) || "
+            + "within(fpt.org.inblue.repository..*) || "
+            + "within(fpt.org.inblue.utils..*) || "
+            + "within(fpt.org.inblue.event..*)")
     public void applicationPackagePointcut() {}
 
     @Around("applicationPackagePointcut()")
@@ -39,7 +38,12 @@ public class LoggingAspect {
         } catch (Throwable e) {
             // Log nếu có lỗi xảy ra và vẫn tính được tổng thời gian đã tiêu tốn
             long elapsedTime = System.currentTimeMillis() - start;
-            log.error("✘ Lỗi tại: {}.{}() - Sau: {} ms - Chi tiết: {}", className, methodName, elapsedTime, e.getMessage());
+            log.error(
+                    "✘ Lỗi tại: {}.{}() - Sau: {} ms - Chi tiết: {}",
+                    className,
+                    methodName,
+                    elapsedTime,
+                    e.getMessage());
             throw e;
         }
     }

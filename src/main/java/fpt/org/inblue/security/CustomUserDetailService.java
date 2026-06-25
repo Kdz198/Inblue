@@ -1,19 +1,17 @@
 package fpt.org.inblue.security;
 
-
-import lombok.RequiredArgsConstructor;
 import fpt.org.inblue.model.Mentor;
 import fpt.org.inblue.model.User;
 import fpt.org.inblue.repository.MentorRepository;
 import fpt.org.inblue.repository.UserRepository;
+import java.util.List;
+import lombok.RequiredArgsConstructor;
 import org.jetbrains.annotations.NotNull;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
-
-import java.util.List;
 
 @Service
 @RequiredArgsConstructor
@@ -27,36 +25,17 @@ public class CustomUserDetailService implements UserDetailsService {
         System.out.println("CustomUserDetailService: Loading user by email: " + email);
         User user = userRepository.findByEmail(email);
         if (user != null && user.getIsActive()) {
-            List<SimpleGrantedAuthority> authorities = List.of(
-                    new SimpleGrantedAuthority("ROLE_" + user.getRole())
-            );
+            List<SimpleGrantedAuthority> authorities = List.of(new SimpleGrantedAuthority("ROLE_" + user.getRole()));
             return new CustomUserDetails(
-                    user.getId(),
-                    user.getEmail(),
-                    user.getPassword(),
-                    authorities,
-                    user.getIsActive()
-            );
+                    user.getId(), user.getEmail(), user.getPassword(), authorities, user.getIsActive());
         }
         Mentor mentor = mentorRepository.findByEmail(email);
 
         if (mentor != null && mentor.isActive()) {
-            List<SimpleGrantedAuthority> authorities = List.of(
-                    new SimpleGrantedAuthority("ROLE_" + mentor.getRole())
-            );
+            List<SimpleGrantedAuthority> authorities = List.of(new SimpleGrantedAuthority("ROLE_" + mentor.getRole()));
             return new CustomUserDetails(
-                    mentor.getId(),
-                    mentor.getEmail(),
-                    mentor.getPassword(),
-                    authorities,
-                    mentor.isActive()
-            );
-
+                    mentor.getId(), mentor.getEmail(), mentor.getPassword(), authorities, mentor.isActive());
         }
         throw new UsernameNotFoundException("User not found with email: " + email);
     }
 }
-
-
-
-

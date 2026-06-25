@@ -1,10 +1,7 @@
 package fpt.org.inblue.service;
 
-
-
 import fpt.org.inblue.model.dto.TemplateDto;
 import fpt.org.inblue.model.dto.request.UpsertTemplateRequest;
-
 import java.util.List;
 
 public interface InterviewTemplateService {

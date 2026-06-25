@@ -3,15 +3,14 @@ package fpt.org.inblue.model;
 import fpt.org.inblue.enums.ApplicationDetailStatus;
 import fpt.org.inblue.model.dto.response.CompilerResponseDto;
 import jakarta.persistence.*;
+import java.time.LocalDateTime;
+import java.util.List;
+import java.util.Map;
 import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.annotations.UpdateTimestamp;
 import org.hibernate.type.SqlTypes;
-
-import java.time.LocalDateTime;
-import java.util.List;
-import java.util.Map;
 
 @Entity
 @Data
@@ -52,9 +51,9 @@ public class ApplicationDetail {
     @Enumerated(EnumType.STRING)
     private RoundResult finalResult;
 
-
     @CreationTimestamp
     private LocalDateTime startedAt;
+
     private LocalDateTime completedAt;
 
     @ManyToOne
@@ -77,34 +76,37 @@ public class ApplicationDetail {
         // Dành cho vòng tự luận, Email, SQL Script (Frontend gửi text lên)
         private String textContent;
 
-//        private CodeReviewSubmission codeReviewContent; // Dành riêng cho vòng Code Review (Frontend gửi lên cấu trúc JSON)
+        //        private CodeReviewSubmission codeReviewContent; // Dành riêng cho vòng Code Review (Frontend gửi lên
+        // cấu trúc JSON)
 
         // Dành cho vòng upload CV hoặc file kiến trúc (Frontend gửi link file sau khi upload S3)
         private String fileUrl;
 
         // Dành riêng cho vòng QUIZ
         private List<QuizAnswer> quizAnswers;
-        List<CodeSubmission> codeSubmissions; // Dành riêng cho vòng Coding (Frontend gửi lên cấu trúc JSON gồm source code + kết quả test case)
+        List<CodeSubmission>
+                codeSubmissions; // Dành riêng cho vòng Coding (Frontend gửi lên cấu trúc JSON gồm source code + kết quả
+        // test case)
         private List<CodeReviewSubmission> codeReviewSubmissions; // Dành riêng cho vòng Code Review để lưu lại bài làm
     }
+
     @Data
     @NoArgsConstructor
     @AllArgsConstructor
     @Builder
-    public static class CodeSubmission{
+    public static class CodeSubmission {
         private List<String> sourceCode;
         private CompilerResponseDto testCases;
     }
 
-
     @Data
     @NoArgsConstructor
     @AllArgsConstructor
     @Builder
-    public static class CodeReviewSubmission{
-        private String filename;     // Lỗi nằm ở file nào
-        private Integer lineNumber;  // Dòng bị lỗi (1-indexed)
-        private String severity;     // Mức độ nghiêm trọng: CRITICAL, WARNING, INFO
+    public static class CodeReviewSubmission {
+        private String filename; // Lỗi nằm ở file nào
+        private Integer lineNumber; // Dòng bị lỗi (1-indexed)
+        private String severity; // Mức độ nghiêm trọng: CRITICAL, WARNING, INFO
         private String description;
     }
 
@@ -114,7 +116,7 @@ public class ApplicationDetail {
     public static class QuizAnswer {
         private String questionText;
         private String selectedAnswer; // VD: "A"
-        private Boolean isCorrect;     // Hệ thống tự check và lưu lại
+        private Boolean isCorrect; // Hệ thống tự check và lưu lại
     }
 
     @Data
@@ -122,9 +124,9 @@ public class ApplicationDetail {
     @AllArgsConstructor
     @Builder
     public static class AiFeedback {
-        private String generalComment;      // Nhận xét chung
-        private List<String> strengths;     // Điểm mạnh
-        private List<String> weaknesses;    // Điểm cần cải thiện
+        private String generalComment; // Nhận xét chung
+        private List<String> strengths; // Điểm mạnh
+        private List<String> weaknesses; // Điểm cần cải thiện
         // Bỏ ngỏ một map để AI trả về các metrics linh hoạt (VD: "độ chuyên nghiệp": 8/10)
         private Map<String, Object> extraMetrics;
     }

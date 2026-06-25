@@ -1,15 +1,13 @@
 package fpt.org.inblue.service.impl;
 
-
-import lombok.RequiredArgsConstructor;
 import fpt.org.inblue.exception.CustomException;
 import fpt.org.inblue.model.QuestionCategory;
 import fpt.org.inblue.repository.QuestionCategoryRepository;
 import fpt.org.inblue.service.QuestionCategoryService;
+import java.util.List;
+import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
-
-import java.util.List;
 
 @Service
 @RequiredArgsConstructor
@@ -33,17 +31,17 @@ public class QuestionCategoryServiceImpl implements QuestionCategoryService {
 
     @Override
     public QuestionCategory updateQuestionCategory(QuestionCategory questionCategory) {
-        if(questionCategoryRepository.existsById(questionCategory.getId())) {
+        if (questionCategoryRepository.existsById(questionCategory.getId())) {
             return questionCategoryRepository.save(questionCategory);
-        }
-        else{
-            throw new CustomException("Question category with id " + questionCategory.getId() + " does not exist.", HttpStatus.NOT_FOUND);
+        } else {
+            throw new CustomException(
+                    "Question category with id " + questionCategory.getId() + " does not exist.", HttpStatus.NOT_FOUND);
         }
     }
 
     @Override
     public void deleteQuestionCategory(int id) {
-        if(!questionCategoryRepository.existsById(id)) {
+        if (!questionCategoryRepository.existsById(id)) {
             throw new CustomException("Question category with id " + id + " does not exist.", HttpStatus.NOT_FOUND);
         }
         questionCategoryRepository.deleteById(id);

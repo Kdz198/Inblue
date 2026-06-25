@@ -8,14 +8,13 @@ import fpt.org.inblue.service.submission.impl.QuizRoundProcessor;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
-
 @Component
 @RequiredArgsConstructor
 public class RoundProcessorFactory {
 
     private final QuizRoundProcessor quizProcessor;
     private final EmailRoundProcessor emailProcessor;
-    private final CVRoundProcessor  cvProcessor;
+    private final CVRoundProcessor cvProcessor;
     private final CodeRoundProcessor codeProcessor;
 
     public RoundSubmissionProcessor getProcessor(RoundType type) {

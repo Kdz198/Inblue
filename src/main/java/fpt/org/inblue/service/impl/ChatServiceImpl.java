@@ -1,16 +1,14 @@
 package fpt.org.inblue.service.impl;
 
-
-import lombok.RequiredArgsConstructor;
+import fpt.org.inblue.enums.Role;
 import fpt.org.inblue.model.ChatMessage;
 import fpt.org.inblue.model.dto.ChatDto;
-import fpt.org.inblue.enums.Role;
 import fpt.org.inblue.repository.ChatMessageRepository;
 import fpt.org.inblue.service.ChatService;
+import java.util.List;
+import lombok.RequiredArgsConstructor;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
-
-import java.util.List;
 
 @Service
 @RequiredArgsConstructor
@@ -33,11 +31,7 @@ public class ChatServiceImpl implements ChatService {
         chatMessage.setRecipientType(recipientType);
         chatMessage.setContent(message.getContent());
         chatMessageRepository.save(chatMessage);
-        messagingTemplate.convertAndSendToUser(
-                message.getRecipientId(),
-                "queue/messages",
-                chatMessage
-        );
+        messagingTemplate.convertAndSendToUser(message.getRecipientId(), "queue/messages", chatMessage);
     }
 
     @Override
@@ -49,15 +43,13 @@ public class ChatServiceImpl implements ChatService {
 
         List<ChatMessage> history = chatMessageRepository.getHistory(
                 sId, sType,
-                rId, rType
-        );
+                rId, rType);
         return history;
-
     }
 
     @Override
     public List<Integer> findAllContact(int myId, Role role) {
-        return chatMessageRepository.findPartnerIds(myId,role.toString());
+        return chatMessageRepository.findPartnerIds(myId, role.toString());
     }
 
     public int parseId(String id) {
@@ -66,6 +58,7 @@ public class ChatServiceImpl implements ChatService {
         String idPart = id.substring(id.indexOf("_") + 1);
         return Integer.parseInt(idPart);
     }
+
     public String getType(String id) {
         if (id == null || !id.contains("_")) return null;
         return id.split("_")[0]; // Trả về "USER" hoặc "STAFF"

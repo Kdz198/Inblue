@@ -1,7 +1,5 @@
 package fpt.org.inblue.service.impl;
 
-
-import lombok.RequiredArgsConstructor;
 import fpt.org.inblue.enums.AnythingLlmWorkspace;
 import fpt.org.inblue.model.CodingProblem;
 import fpt.org.inblue.model.dto.request.CodingProblemGenerateRequest;
@@ -9,10 +7,10 @@ import fpt.org.inblue.model.dto.response.CodingProblemGenerateResponse;
 import fpt.org.inblue.repository.CodingProblemsRepository;
 import fpt.org.inblue.service.ApiClient;
 import fpt.org.inblue.service.CodingProblemService;
-import org.springframework.stereotype.Service;
-
 import java.util.List;
 import java.util.Optional;
+import lombok.RequiredArgsConstructor;
+import org.springframework.stereotype.Service;
 
 @Service
 @RequiredArgsConstructor
@@ -36,16 +34,16 @@ public class CodingProblemServiceImpl implements CodingProblemService {
     }
 
     @Override
-    public CodingProblemGenerateResponse generateCodingProblem(CodingProblemGenerateRequest codingProblemGenerateRequest) {
+    public CodingProblemGenerateResponse generateCodingProblem(
+            CodingProblemGenerateRequest codingProblemGenerateRequest) {
         CodingProblemGenerateResponse response = apiClient.sendChatToAnythingLlm(
                 AnythingLlmWorkspace.CODING_GEN,
                 codingProblemGenerateRequest,
                 "java", // sessionId có thể để null nếu không cần thiết
                 true, // reset session để đảm bảo mỗi yêu cầu là độc lập
                 null, // không có file nào cần gửi kèm
-                CodingProblemGenerateResponse.class
-        );
+                CodingProblemGenerateResponse.class);
         System.out.println("Received response from LLM: " + response);
-        return response ;
+        return response;
     }
 }

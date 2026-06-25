@@ -10,6 +10,6 @@ import org.springframework.web.multipart.MultipartFile;
 @AllArgsConstructor
 @NoArgsConstructor
 public class CreateMentorRequest {
-MentorInfo data;
+    MentorInfo data;
     MultipartFile avatar;
 }

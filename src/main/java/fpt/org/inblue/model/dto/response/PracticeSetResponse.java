@@ -2,13 +2,12 @@ package fpt.org.inblue.model.dto.response;
 
 import fpt.org.inblue.enums.QuestionLevel;
 import fpt.org.inblue.enums.TargetLevel;
+import java.sql.Date;
+import java.util.List;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-
-import java.sql.Date;
-import java.util.List;
 
 @Data
 @Builder
@@ -26,7 +25,7 @@ public class PracticeSetResponse {
 
     @Data
     @Builder
-    public static class PracticeQuestionDto{
+    public static class PracticeQuestionDto {
         int questionId;
         String title;
         String content;
@@ -38,7 +37,7 @@ public class PracticeSetResponse {
 
     @Data
     @Builder
-    public static class Quiz{
+    public static class Quiz {
         int quizId;
         String quizName;
         int index;

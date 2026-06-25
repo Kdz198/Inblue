@@ -22,6 +22,8 @@ import fpt.org.inblue.repository.CodingProblemsRepository;
 import fpt.org.inblue.repository.JobDescriptionRepository;
 import fpt.org.inblue.service.ApiClient;
 import fpt.org.inblue.service.ApplicationService;
+import java.io.IOException;
+import java.util.*;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.event.EventListener;
@@ -30,9 +32,6 @@ import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Component;
 import org.springframework.web.multipart.MultipartFile;
 import tools.jackson.databind.ObjectMapper;
-
-import java.io.IOException;
-import java.util.*;
 
 @Component
 @RequiredArgsConstructor
@@ -55,8 +54,8 @@ public class SubmissionEventHandle {
             case CV_SCREENING -> processCvSubmission(dto);
             case EMAIL_SIMULATOR -> processEmailSubmission(dto);
             case CODING -> processCodeSubmission(dto);
-            default ->
-                throw new CustomException("Unsupported round type: " + dto.getRoundType(), HttpStatus.BAD_REQUEST);
+            default -> throw new CustomException(
+                    "Unsupported round type: " + dto.getRoundType(), HttpStatus.BAD_REQUEST);
         }
     }
 
@@ -78,7 +77,8 @@ public class SubmissionEventHandle {
         StringBuilder sourceCodes = new StringBuilder();
 
         for (CompileRequest compileRequest : compileRequests) {
-            CodingProblem problem = codingProblemsRepository.findById(compileRequest.getProblemId())
+            CodingProblem problem = codingProblemsRepository
+                    .findById(compileRequest.getProblemId())
                     .orElseThrow(() -> new IllegalArgumentException(
                             "Không tìm thấy bài toán mã số: " + compileRequest.getProblemId()));
 
@@ -87,16 +87,23 @@ public class SubmissionEventHandle {
             if (problem.getHiddenTestCases() != null) {
                 for (CodingProblem.TestCase testCase : problem.getHiddenTestCases()) {
                     CompilerRequestDto.TestCase testCaseDto = CompilerRequestDto.TestCase.builder()
-                            .expectedOutput(testCase.getExpectedOutput()).inputs(testCase.getInputs()).build();
+                            .expectedOutput(testCase.getExpectedOutput())
+                            .inputs(testCase.getInputs())
+                            .build();
                     testcases.add(testCaseDto);
                 }
             }
 
             // Đóng gói Payload gửi sang hệ thống Sandbox Compile Code
-            CompilerRequestDto requestDto = CompilerRequestDto.builder().language(compileRequest.getLanguage())
-                    .memoryLimitMb(problem.getMemoryLimitMb()).sourceCode(compileRequest.getSourceCode())
-                    .testCases(testcases).timeLimitMs(problem.getExecutionTimeLimitMs())
-                    .paramTypes(problem.getParamTypes()).returnType(problem.getReturnType()).build();
+            CompilerRequestDto requestDto = CompilerRequestDto.builder()
+                    .language(compileRequest.getLanguage())
+                    .memoryLimitMb(problem.getMemoryLimitMb())
+                    .sourceCode(compileRequest.getSourceCode())
+                    .testCases(testcases)
+                    .timeLimitMs(problem.getExecutionTimeLimitMs())
+                    .paramTypes(problem.getParamTypes())
+                    .returnType(problem.getReturnType())
+                    .build();
 
             // Gọi Client Service thực thi code, nhận kết quả trả về từ Sandbox
             CompilerResponseDto response = apiClient.executeCode(requestDto);
@@ -111,8 +118,10 @@ public class SubmissionEventHandle {
                     if ("PASSED".equals(testCaseResult.getStatus())
                             && problem.getHiddenTestCases() != null
                             && testCaseResult.getIndex() >= 0
-                            && testCaseResult.getIndex() < problem.getHiddenTestCases().size()) {
-                        CodingProblem.TestCase testCase = problem.getHiddenTestCases().get(testCaseResult.getIndex());
+                            && testCaseResult.getIndex()
+                                    < problem.getHiddenTestCases().size()) {
+                        CodingProblem.TestCase testCase =
+                                problem.getHiddenTestCases().get(testCaseResult.getIndex());
                         score += testCase.getWeightPoints();
                     }
                 }
@@ -122,7 +131,8 @@ public class SubmissionEventHandle {
             totalPassed += response.getPassedTestCases();
             totalTests += response.getTotalTestCases();
             totalTime += response.getExecutionTimeMs();
-            if (response.getErrorMessage() != null && !response.getErrorMessage().isEmpty()) {
+            if (response.getErrorMessage() != null
+                    && !response.getErrorMessage().isEmpty()) {
                 combinedError = combinedError == null
                         ? response.getErrorMessage()
                         : combinedError + "; " + response.getErrorMessage();
@@ -136,9 +146,15 @@ public class SubmissionEventHandle {
 
             // Gộp source code thành chuỗi để lưu textContent
             if (sourceCodes.length() > 0) {
-                sourceCodes.append("\n\n// --- Problem ").append(compileRequest.getProblemId()).append(" ---\n");
+                sourceCodes
+                        .append("\n\n// --- Problem ")
+                        .append(compileRequest.getProblemId())
+                        .append(" ---\n");
             } else {
-                sourceCodes.append("// --- Problem ").append(compileRequest.getProblemId()).append(" ---\n");
+                sourceCodes
+                        .append("// --- Problem ")
+                        .append(compileRequest.getProblemId())
+                        .append(" ---\n");
             }
             sourceCodes.append(
                     compileRequest.getSourceCode() != null ? String.join("\n", compileRequest.getSourceCode()) : "");
@@ -151,46 +167,63 @@ public class SubmissionEventHandle {
                 .textContent(sourceCodes.toString())
                 .codeSubmissions(codeSubmissions)
                 .build();
-        ApplicationDetail applicationDetail = ApplicationDetail.builder().applicationId(dto.getApplication().getId())
-                .roundId(dto.getRound().getId()).status(ApplicationDetailStatus.COMPLETED).finalScore(totalScore)
-                .finalResult(roundResult).submissionData(submissionData).build();
+        ApplicationDetail applicationDetail = ApplicationDetail.builder()
+                .applicationId(dto.getApplication().getId())
+                .roundId(dto.getRound().getId())
+                .status(ApplicationDetailStatus.COMPLETED)
+                .finalScore(totalScore)
+                .finalResult(roundResult)
+                .submissionData(submissionData)
+                .build();
 
         applicationDetailRepository.save(applicationDetail);
 
-            applicationService.moveToNextRound(dto.getApplication());
-
+        applicationService.moveToNextRound(dto.getApplication());
     }
 
     private void processEmailSubmission(ProcessDto dto) {
         Round round = dto.getRound();
-        Optional<JobDescription> jobDescription = jobDescriptionRepository.findById(dto.getApplication().getJdId());
+        Optional<JobDescription> jobDescription =
+                jobDescriptionRepository.findById(dto.getApplication().getJdId());
         if (jobDescription.isEmpty()) {
-            throw new CustomException("Job Description not found for id: " + dto.getApplication().getJdId(),
-                    HttpStatus.NOT_FOUND);
+            throw new CustomException(
+                    "Job Description not found for id: " + dto.getApplication().getJdId(), HttpStatus.NOT_FOUND);
         }
-        List<String> criteria = new ArrayList<>(
-                List.of(EmailMetricsConstant.CLOSING_AND_SIGNATURE, EmailMetricsConstant.FORMATTING_AND_STRUCTURE,
-                        EmailMetricsConstant.CONTENT_AND_CLARITY, EmailMetricsConstant.GRAMMAR_AND_VOCABULARY,
-                        EmailMetricsConstant.GENERAL_COMMENT, EmailMetricsConstant.SALUTATION_AND_OPENING,
-                        EmailMetricsConstant.STRENGTH, EmailMetricsConstant.SUBJECT_LINE_QUALITY,
-                        EmailMetricsConstant.TONE_AND_PROFESSIONALISM, EmailMetricsConstant.WEAKNESS));
+        List<String> criteria = new ArrayList<>(List.of(
+                EmailMetricsConstant.CLOSING_AND_SIGNATURE, EmailMetricsConstant.FORMATTING_AND_STRUCTURE,
+                EmailMetricsConstant.CONTENT_AND_CLARITY, EmailMetricsConstant.GRAMMAR_AND_VOCABULARY,
+                EmailMetricsConstant.GENERAL_COMMENT, EmailMetricsConstant.SALUTATION_AND_OPENING,
+                EmailMetricsConstant.STRENGTH, EmailMetricsConstant.SUBJECT_LINE_QUALITY,
+                EmailMetricsConstant.TONE_AND_PROFESSIONALISM, EmailMetricsConstant.WEAKNESS));
         EmailEvaluationRequest.EvaluationCriteria evaluation = EmailEvaluationRequest.EvaluationCriteria.builder()
-                .maxScore(round.getConfigData().getMaxScore()).aiSystemPrompt(round.getConfigData().getAiSystemPrompt())
-                .extraMetrics(criteria).build();
+                .maxScore(round.getConfigData().getMaxScore())
+                .aiSystemPrompt(round.getConfigData().getAiSystemPrompt())
+                .extraMetrics(criteria)
+                .build();
         EmailEvaluationRequest.EmailContext context = EmailEvaluationRequest.EmailContext.builder()
                 .scenario(round.getConfigData().getEvaluationCriteria())
-                .level(String.valueOf(jobDescription.get().getLevel())).candidateEmail(dto.getTextContent()).build();
-        EmailEvaluationRequest emailEvaluationRequest = EmailEvaluationRequest.builder().emailContext(context)
-                .evaluationCriteria(evaluation).build();
+                .level(String.valueOf(jobDescription.get().getLevel()))
+                .candidateEmail(dto.getTextContent())
+                .build();
+        EmailEvaluationRequest emailEvaluationRequest = EmailEvaluationRequest.builder()
+                .emailContext(context)
+                .evaluationCriteria(evaluation)
+                .build();
         // Gọi LLM API để chấm điểm email
-        CvEvaluationResponse response = ApiClient.sendChatToAnythingLlm(AnythingLlmWorkspace.EMAIL,
-                emailEvaluationRequest, "java-backend", false, null, CvEvaluationResponse.class);
+        CvEvaluationResponse response = ApiClient.sendChatToAnythingLlm(
+                AnythingLlmWorkspace.EMAIL,
+                emailEvaluationRequest,
+                "java-backend",
+                false,
+                null,
+                CvEvaluationResponse.class);
 
         ApplicationDetail applicationDetail = new ApplicationDetail();
         applicationDetail.setApplicationId(dto.getApplication().getId());
         applicationDetail.setRoundId(dto.getRound().getId());
         applicationDetail.setStatus(ApplicationDetailStatus.AI_EVALUATED);
-        ApplicationDetail.SubmissionData submissionData = ApplicationDetail.SubmissionData.builder().build();
+        ApplicationDetail.SubmissionData submissionData =
+                ApplicationDetail.SubmissionData.builder().build();
         applicationDetail.setSubmissionData(submissionData);
         applicationDetail.setAiScore(response.getScore());
         applicationDetail.setAiFeedback(parseRawMetrics(response.getExtraMetrics()));
@@ -202,40 +235,60 @@ public class SubmissionEventHandle {
             System.err.println("File not found");
         }
         Round round = dto.getRound();
-        Optional<JobDescription> jobDescription = jobDescriptionRepository.findById(dto.getApplication().getJdId());
+        Optional<JobDescription> jobDescription =
+                jobDescriptionRepository.findById(dto.getApplication().getJdId());
         if (jobDescription.isEmpty()) {
-            throw new CustomException("Job Description not found for id: " + dto.getApplication().getJdId(),
-                    HttpStatus.NOT_FOUND);
+            throw new CustomException(
+                    "Job Description not found for id: " + dto.getApplication().getJdId(), HttpStatus.NOT_FOUND);
         }
-        List<String> criteria = new ArrayList<>(List.of(CvMetricsConstant.CV_READABILITY_SCORE,
-                CvMetricsConstant.EDUCATION_MATCH_SCORE, CvMetricsConstant.EXPERIENCE_MATCH_SCORE,
-                CvMetricsConstant.KEYWORD_DENSITY, CvMetricsConstant.OVERALL_CV_MATCH,
-                CvMetricsConstant.POTENTIAL_RED_FLAGS, CvMetricsConstant.SKILLS_MATCH_SCORE, CvMetricsConstant.STRENGTH,
-                CvMetricsConstant.WEAKNESS, CvMetricsConstant.GENERAL_COMMENT));
+        List<String> criteria = new ArrayList<>(List.of(
+                CvMetricsConstant.CV_READABILITY_SCORE,
+                CvMetricsConstant.EDUCATION_MATCH_SCORE,
+                CvMetricsConstant.EXPERIENCE_MATCH_SCORE,
+                CvMetricsConstant.KEYWORD_DENSITY,
+                CvMetricsConstant.OVERALL_CV_MATCH,
+                CvMetricsConstant.POTENTIAL_RED_FLAGS,
+                CvMetricsConstant.SKILLS_MATCH_SCORE,
+                CvMetricsConstant.STRENGTH,
+                CvMetricsConstant.WEAKNESS,
+                CvMetricsConstant.GENERAL_COMMENT));
         CvEvaluationRequest.EvaluationCriteria evaluation = CvEvaluationRequest.EvaluationCriteria.builder()
-                .maxScore(round.getConfigData().getMaxScore()).aiSystemPrompt(round.getConfigData().getAiSystemPrompt())
-                .extraMetrics(criteria).build();
-        CvEvaluationRequest.JD jd = CvEvaluationRequest.JD.builder().title(jobDescription.get().getTitle())
+                .maxScore(round.getConfigData().getMaxScore())
+                .aiSystemPrompt(round.getConfigData().getAiSystemPrompt())
+                .extraMetrics(criteria)
+                .build();
+        CvEvaluationRequest.JD jd = CvEvaluationRequest.JD
+                .builder()
+                .title(jobDescription.get().getTitle())
                 .description(jobDescription.get().getDescription())
                 .level(String.valueOf(jobDescription.get().getLevel()))
-                .requirements(jobDescription.get().getRequirements()).build();
-        CvEvaluationRequest cvEvaluationRequest = CvEvaluationRequest.builder().cvFile(dto.getFile())
-                .evaluationCriteria(evaluation).jobDescription(jd).build();
+                .requirements(jobDescription.get().getRequirements())
+                .build();
+        CvEvaluationRequest cvEvaluationRequest = CvEvaluationRequest.builder()
+                .cvFile(dto.getFile())
+                .evaluationCriteria(evaluation)
+                .jobDescription(jd)
+                .build();
         List<MultipartFile> fileList = new ArrayList<>();
         if (dto.getFile() != null && !dto.getFile().isEmpty()) {
             fileList.add(dto.getFile());
         }
 
-        CvEvaluationResponse response = ApiClient.sendChatToAnythingLlm(AnythingLlmWorkspace.CV_ANALYSIS,
-                cvEvaluationRequest, "java-backend", false, fileList, CvEvaluationResponse.class);
+        CvEvaluationResponse response = ApiClient.sendChatToAnythingLlm(
+                AnythingLlmWorkspace.CV_ANALYSIS,
+                cvEvaluationRequest,
+                "java-backend",
+                false,
+                fileList,
+                CvEvaluationResponse.class);
         Map<String, String> map = cloudinaryService.uploadDocument(dto.getFile());
         String cvUrl = map.get("secure_url");
         ApplicationDetail applicationDetail = new ApplicationDetail();
         applicationDetail.setApplicationId(dto.getApplication().getId());
         applicationDetail.setRoundId(dto.getRound().getId());
         applicationDetail.setStatus(ApplicationDetailStatus.AI_EVALUATED);
-        ApplicationDetail.SubmissionData submissionData = ApplicationDetail.SubmissionData.builder().fileUrl(cvUrl)
-                .build();
+        ApplicationDetail.SubmissionData submissionData =
+                ApplicationDetail.SubmissionData.builder().fileUrl(cvUrl).build();
         applicationDetail.setSubmissionData(submissionData);
         applicationDetail.setAiScore(response.getScore());
         applicationDetail.setAiFeedback(parseRawMetrics(response.getExtraMetrics()));

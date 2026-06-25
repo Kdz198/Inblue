@@ -1,7 +1,6 @@
 package fpt.org.inblue.controller;
 
-
-import lombok.RequiredArgsConstructor;
+import fpt.org.inblue.enums.PostStatus;
 import fpt.org.inblue.model.Post;
 import fpt.org.inblue.model.PostComment;
 import fpt.org.inblue.model.PostLike;
@@ -9,19 +8,18 @@ import fpt.org.inblue.model.dto.request.PostCommentRequest;
 import fpt.org.inblue.model.dto.request.PostCreateRequest;
 import fpt.org.inblue.model.dto.request.PostLikeRequest;
 import fpt.org.inblue.model.dto.response.PostResponse;
-import fpt.org.inblue.enums.PostStatus;
 import fpt.org.inblue.service.PostService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
+import java.io.IOException;
+import java.util.List;
+import java.util.Map;
+import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-
-import java.io.IOException;
-import java.util.List;
-import java.util.Map;
 
 @RestController
 @RequestMapping("/api/posts")
@@ -33,21 +31,20 @@ public class PostController {
     @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     @Operation(
             summary = "Create post",
-            requestBody = @io.swagger.v3.oas.annotations.parameters.RequestBody(
-                    content = @Content(
-                            mediaType = MediaType.MULTIPART_FORM_DATA_VALUE,
-                            schema = @Schema(implementation = PostCreateRequest.class)
-                    )
-            )
-    )
+            requestBody =
+                    @io.swagger.v3.oas.annotations.parameters.RequestBody(
+                            content =
+                                    @Content(
+                                            mediaType = MediaType.MULTIPART_FORM_DATA_VALUE,
+                                            schema = @Schema(implementation = PostCreateRequest.class))))
     public ResponseEntity<Post> createPost(@ModelAttribute PostCreateRequest postCreateRequest) throws IOException {
         return ResponseEntity.ok().body(postService.createPost(postCreateRequest));
     }
 
-
     @GetMapping("/feed")
     @Operation(summary = "Lấy new feed", description = "Trả về danh sách bài viết mới nhất, có phân trang")
-    public ResponseEntity<Page<PostResponse>> getNewFeed(@RequestParam(defaultValue = "0") int page, @RequestParam(defaultValue = "10") int size) {
+    public ResponseEntity<Page<PostResponse>> getNewFeed(
+            @RequestParam(defaultValue = "0") int page, @RequestParam(defaultValue = "10") int size) {
 
         return ResponseEntity.ok(postService.getNewFeed(page, size));
     }
@@ -55,7 +52,8 @@ public class PostController {
     @GetMapping("/{postId}")
     @Operation(summary = "Lấy chi tiết bài viết theo id")
     public ResponseEntity<PostResponse> getPostById(@PathVariable int postId) {
-        return ResponseEntity.ok(postService.getPostByPostId(postId));}
+        return ResponseEntity.ok(postService.getPostByPostId(postId));
+    }
 
     @PostMapping("/likes")
     @Operation(summary = "Like bài viết", description = "User like một bài viết, truyền postId và userId")
@@ -69,23 +67,26 @@ public class PostController {
         postService.unlikePost(postId, userId);
         return ResponseEntity.ok(Map.of("message", "Unlike thành công"));
     }
+
     @GetMapping("/likes/{postId}/check/{userId}")
     @Operation(summary = "Kiểm tra user đã like bài viết chưa")
     public ResponseEntity<Map<String, String>> checkLiked(@PathVariable int postId, @PathVariable int userId) {
         return ResponseEntity.ok(Map.of("isLiked", postService.isLiked(postId, userId) ? "true" : "false"));
     }
 
-
     @PostMapping("/comments")
-    @Operation(summary = "Tạo comment mới",
-            description = "Tạo comment cho bài viết. Nếu là reply thì truyền parentCommentId, nếu là comment gốc thì parentCommentId = null")
+    @Operation(
+            summary = "Tạo comment mới",
+            description =
+                    "Tạo comment cho bài viết. Nếu là reply thì truyền parentCommentId, nếu là comment gốc thì parentCommentId = null")
     public ResponseEntity<PostComment> createComment(@RequestBody PostCommentRequest request) {
         return ResponseEntity.ok(postService.createComment(request));
     }
 
     @PutMapping("/comments/{commentId}")
     @Operation(summary = "Cập nhật nội dung comment")
-    public ResponseEntity<PostComment> updateComment(@PathVariable int commentId, @RequestBody Map<String, String> body) {
+    public ResponseEntity<PostComment> updateComment(
+            @PathVariable int commentId, @RequestBody Map<String, String> body) {
         String content = body.get("content");
         return ResponseEntity.ok(postService.updateComment(commentId, content));
     }
@@ -97,20 +98,22 @@ public class PostController {
         return ResponseEntity.ok().build();
     }
 
-
     @GetMapping
     @Operation(summary = "Lấy tất cả bài viết")
     public ResponseEntity<List<PostResponse>> getAllPosts() {
-        return ResponseEntity.ok(postService.getAllPost());}
+        return ResponseEntity.ok(postService.getAllPost());
+    }
 
     @GetMapping("/published")
     @Operation(summary = "Lấy tất cả bài viết đã publish")
     public ResponseEntity<List<PostResponse>> getPublishedPosts() {
-        return ResponseEntity.ok(postService.getPublishPost());}
+        return ResponseEntity.ok(postService.getPublishPost());
+    }
 
     @GetMapping("/change-status/{postId}")
     @Operation(summary = "Thay đổi trạng thái bài viết")
     public ResponseEntity<Map<String, String>> changeStatus(@PathVariable int postId, @RequestParam PostStatus status) {
         postService.changeStatus(postId, status);
-        return ResponseEntity.ok(Map.of("message", "Thay đổi trạng thái thành công"));}
+        return ResponseEntity.ok(Map.of("message", "Thay đổi trạng thái thành công"));
+    }
 }

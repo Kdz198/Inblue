@@ -1,7 +1,6 @@
 package fpt.org.inblue.service.impl;
 
-
-import lombok.RequiredArgsConstructor;
+import fpt.org.inblue.enums.SessionStatus;
 import fpt.org.inblue.exception.CustomException;
 import fpt.org.inblue.mapper.MentorFeedbackMapper;
 import fpt.org.inblue.model.Mentor;
@@ -10,16 +9,15 @@ import fpt.org.inblue.model.Session;
 import fpt.org.inblue.model.User;
 import fpt.org.inblue.model.dto.request.CreateMentorFeedbackRequest;
 import fpt.org.inblue.model.dto.request.UpdateMentorFeedbackRequest;
-import fpt.org.inblue.enums.SessionStatus;
 import fpt.org.inblue.repository.MentorFeedbackRepository;
 import fpt.org.inblue.repository.MentorRepository;
 import fpt.org.inblue.repository.SessionRepository;
 import fpt.org.inblue.service.MentorFeedbackService;
 import fpt.org.inblue.service.UserService;
+import java.util.List;
+import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
-
-import java.util.List;
 
 @Service
 @RequiredArgsConstructor
@@ -35,42 +33,47 @@ public class MentorFeedbackServiceImpl implements MentorFeedbackService {
     public MentorFeedback createMentorFeedback(CreateMentorFeedbackRequest mentorFeedback) {
         Mentor mentor = mentorRepository.getMentorById(mentorFeedback.getMentorId());
         User user = userService.getById(mentorFeedback.getUserId());
-        Session session = sessionRepository.findById(mentorFeedback.getSessionId()).get();
-        if(session!=null && user!=null && mentor!=null && session.getStatus().equals(SessionStatus.COMPLETED)){
+        Session session =
+                sessionRepository.findById(mentorFeedback.getSessionId()).get();
+        if (session != null
+                && user != null
+                && mentor != null
+                && session.getStatus().equals(SessionStatus.COMPLETED)) {
             MentorFeedback feedback = mentorFeedbackMapper.toEntity(mentorFeedback);
             feedback.setSession(session);
             feedback.setMentor(mentor);
             feedback.setUser(user);
-            mentor.setTotalSession(mentor.getTotalSession()+1);
+            mentor.setTotalSession(mentor.getTotalSession() + 1);
             mentor.setAverageRating(caculateAverageRating(mentor.getId()));
             mentorRepository.save(mentor);
             return mentorFeedbackRepository.save(feedback);
-        }
-        else{
-            throw new CustomException("Session| Mentor| User not found or session is not complete !!", HttpStatus.NOT_FOUND);
+        } else {
+            throw new CustomException(
+                    "Session| Mentor| User not found or session is not complete !!", HttpStatus.NOT_FOUND);
         }
     }
 
-    private double caculateAverageRating(int mentorId){
+    private double caculateAverageRating(int mentorId) {
         List<MentorFeedback> feedbacks = mentorFeedbackRepository.findAllByMentor_Id(mentorId);
         double sum = 0;
-        for(MentorFeedback feedback: feedbacks){
-            sum+=feedback.getRating();
+        for (MentorFeedback feedback : feedbacks) {
+            sum += feedback.getRating();
         }
-        return sum/feedbacks.size();
+        return sum / feedbacks.size();
     }
 
     @Override
     public MentorFeedback updateMentorFeedback(UpdateMentorFeedbackRequest mentorFeedback) {
-        if(mentorFeedbackRepository.existsById(mentorFeedback.getId())) {
-            MentorFeedback feedback = mentorFeedbackRepository.findById(mentorFeedback.getId()).get();
+        if (mentorFeedbackRepository.existsById(mentorFeedback.getId())) {
+            MentorFeedback feedback =
+                    mentorFeedbackRepository.findById(mentorFeedback.getId()).get();
             mentorFeedbackMapper.fromUpdateToEntity(mentorFeedback, feedback);
             return mentorFeedbackRepository.save(feedback);
-        }
-        else {
+        } else {
             throw new CustomException("Mentor feedback not found", HttpStatus.NOT_FOUND);
         }
     }
+
     @Override
     public MentorFeedback getMentorFeedbackBySessionId(int sessionId) {
         return mentorFeedbackRepository.findById(sessionId).get();

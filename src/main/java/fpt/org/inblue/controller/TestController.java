@@ -11,6 +11,8 @@ import fpt.org.inblue.service.RedisTestService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Encoding;
+import java.util.ArrayList;
+import java.util.List;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.slf4j.MDC;
@@ -18,9 +20,6 @@ import org.springframework.http.HttpMethod;
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
-
-import java.util.ArrayList;
-import java.util.List;
 
 @RestController
 @CrossOrigin("*")
@@ -68,7 +67,13 @@ public class TestController {
     }
 
     @PostMapping("/food-test-hash")
-    public Object testFoodHash(@RequestParam String id, @RequestParam String name, @RequestParam String cate, @RequestParam String country, @RequestParam String fieldToUpdate, @RequestParam String newValue) {
+    public Object testFoodHash(
+            @RequestParam String id,
+            @RequestParam String name,
+            @RequestParam String cate,
+            @RequestParam String country,
+            @RequestParam String fieldToUpdate,
+            @RequestParam String newValue) {
         RedisTestService.Food food = new RedisTestService.Food(name, cate, country);
 
         redisTestService.saveFoodAsHash(id, food);
@@ -83,8 +88,8 @@ public class TestController {
     @PostMapping(value = "/python-test", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public CVParserResponse testPythonApi(@RequestParam("file") MultipartFile file) {
 
-        CVParserResponse response = ApiClient.callApi(PythonService.LLM, ApiPath.CV_API, HttpMethod.POST, file, CVParserResponse.class);
-
+        CVParserResponse response =
+                ApiClient.callApi(PythonService.LLM, ApiPath.CV_API, HttpMethod.POST, file, CVParserResponse.class);
 
         return response;
     }
@@ -92,21 +97,23 @@ public class TestController {
     @PostMapping(value = "/cv-evaluation-test", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     @Operation(
             summary = "Đánh giá CV dựa trên tiêu chí và mô tả công việc",
-            requestBody = @io.swagger.v3.oas.annotations.parameters.RequestBody(
-                    content = @Content(
-                            mediaType = MediaType.MULTIPART_FORM_DATA_VALUE,
-                            encoding = {
-                                    @Encoding(name = "evaluationCriteria", contentType = MediaType.APPLICATION_JSON_VALUE),
-                                    @Encoding(name = "jobDescription", contentType = MediaType.APPLICATION_JSON_VALUE)
-                            }
-                    )
-            )
-    )
+            requestBody =
+                    @io.swagger.v3.oas.annotations.parameters.RequestBody(
+                            content =
+                                    @Content(
+                                            mediaType = MediaType.MULTIPART_FORM_DATA_VALUE,
+                                            encoding = {
+                                                @Encoding(
+                                                        name = "evaluationCriteria",
+                                                        contentType = MediaType.APPLICATION_JSON_VALUE),
+                                                @Encoding(
+                                                        name = "jobDescription",
+                                                        contentType = MediaType.APPLICATION_JSON_VALUE)
+                                            })))
     public CvEvaluationResponse testCvEvaluation(
             @RequestPart("cvFile") MultipartFile cv,
             @RequestPart("evaluationCriteria") CvEvaluationRequest.EvaluationCriteria criteria,
-            @RequestPart("jobDescription") CvEvaluationRequest.JD jd
-    ) {
+            @RequestPart("jobDescription") CvEvaluationRequest.JD jd) {
         CvEvaluationRequest cvEvaluationRequest = new CvEvaluationRequest();
         cvEvaluationRequest.setCvFile(cv);
         cvEvaluationRequest.setEvaluationCriteria(criteria);
@@ -123,18 +130,6 @@ public class TestController {
                 "Java - Backend",
                 true,
                 fileList,
-                CvEvaluationResponse.class
-        );
+                CvEvaluationResponse.class);
     }
 }
-
-
-
-
-
-
-
-
-
-
-

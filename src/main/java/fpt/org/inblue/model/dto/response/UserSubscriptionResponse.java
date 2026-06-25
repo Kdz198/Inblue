@@ -1,12 +1,11 @@
 package fpt.org.inblue.model.dto.response;
 
 import fpt.org.inblue.enums.PlanName;
+import java.time.LocalDate;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-
-import java.time.LocalDate;
 
 @Data
 @Builder

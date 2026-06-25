@@ -21,8 +21,8 @@ public class OrchestratorAnalysisResponse {
 
     public enum AnalysisAction {
         DRILL_DOWN, // Hỏi bồi
-        MOVE_NEXT,  // Qua câu mới
+        MOVE_NEXT, // Qua câu mới
         CLARIFY_AND_SUPPORT, // Khi ứng viên hỏi ngược lại AI
-        FINISH      // (Optional) Cho nghỉ sớm
+        FINISH // (Optional) Cho nghỉ sớm
     }
 }

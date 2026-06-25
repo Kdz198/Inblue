@@ -7,9 +7,8 @@ import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.NotNull;
-import lombok.Data;
-
 import java.util.List;
+import lombok.Data;
 
 @Data
 public class UpdateJdRoundRequest {
@@ -20,11 +19,14 @@ public class UpdateJdRoundRequest {
     @Data
     public static class RoundItemDto {
         private Long id;
+
         @NotBlank(message = "Tên vòng không được để trống")
         private String name;
+
         @NotNull(message = "Thứ tự vòng là bắt buộc")
         @Min(value = 1, message = "Thứ tự vòng phải bắt đầu từ 1")
         private Integer roundOrder;
+
         @NotNull(message = "Loại vòng là bắt buộc")
         private RoundType roundType;
 
@@ -60,10 +62,13 @@ public class UpdateJdRoundRequest {
     public static class QuizQuestionDto {
         @NotBlank
         private String questionText;
+
         @NotEmpty
         private List<String> options;
+
         @NotBlank
         private String correctAnswer;
+
         @NotNull
         private Integer points;
     }

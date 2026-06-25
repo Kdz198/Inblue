@@ -2,12 +2,11 @@ package fpt.org.inblue.model.dto.request;
 
 import fpt.org.inblue.enums.JobDescriptionStatus;
 import fpt.org.inblue.enums.TargetLevel;
+import java.time.LocalDateTime;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-
-import java.time.LocalDateTime;
 
 @Data
 @NoArgsConstructor
@@ -26,5 +25,3 @@ public class CreateJobDescriptionRequest {
     private LocalDateTime deadlineAt;
     private Long companyId;
 }
-
-

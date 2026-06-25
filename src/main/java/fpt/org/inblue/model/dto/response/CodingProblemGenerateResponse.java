@@ -1,12 +1,11 @@
 package fpt.org.inblue.model.dto.response;
 
+import java.util.List;
+import java.util.Map;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-
-import java.util.List;
-import java.util.Map;
 
 @Data
 @NoArgsConstructor
@@ -25,6 +24,7 @@ public class CodingProblemGenerateResponse {
     private List<TestCase> hiddenTestCases;
     private List<String> paramTypes;
     private String returnType;
+
     @Data
     @NoArgsConstructor
     @AllArgsConstructor

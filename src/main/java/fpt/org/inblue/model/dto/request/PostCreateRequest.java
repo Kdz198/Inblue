@@ -2,10 +2,10 @@ package fpt.org.inblue.model.dto.request;
 
 import fpt.org.inblue.enums.PostStatus;
 import io.swagger.v3.oas.annotations.media.Schema;
+import java.util.List;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import org.springframework.web.multipart.MultipartFile;
-import java.util.List;
 
 @Data
 @NoArgsConstructor

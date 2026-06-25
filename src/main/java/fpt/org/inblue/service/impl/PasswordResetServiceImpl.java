@@ -1,22 +1,21 @@
 package fpt.org.inblue.service.impl;
 
-import fpt.org.inblue.model.User;
+import fpt.org.inblue.exception.CustomException;
 import fpt.org.inblue.model.Mentor;
-import fpt.org.inblue.repository.UserRepository;
+import fpt.org.inblue.model.User;
 import fpt.org.inblue.repository.MentorRepository;
+import fpt.org.inblue.repository.UserRepository;
 import fpt.org.inblue.service.MailService;
 import fpt.org.inblue.service.PasswordResetService;
-import fpt.org.inblue.exception.CustomException;
 import jakarta.mail.MessagingException;
+import java.util.Random;
+import java.util.concurrent.TimeUnit;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
-
-import java.util.Random;
-import java.util.concurrent.TimeUnit;
 
 @Service
 @RequiredArgsConstructor
@@ -47,21 +46,21 @@ public class PasswordResetServiceImpl implements PasswordResetService {
         redisTemplate.opsForValue().set(redisKey, otp, OTP_EXPIRY_MINUTES, TimeUnit.MINUTES);
 
         String subject = "[Inblue] OTP Code to Reset Your Password";
-        String body = "<div style='font-family: Arial, sans-serif; padding: 20px;'>" +
-                "<h2>Reset Password Request</h2>" +
-                "<p>We received a request to reset the password for your account on the Inblue system.</p>" +
-                "<p>Your OTP code is: <strong style='font-size: 20px; color: #1a73e8; letter-spacing: 2px;'>" + otp + "</strong></p>" +
-                "<p>This code is valid for <strong>" + OTP_EXPIRY_MINUTES + " minutes</strong>. Please do not share this code with anyone.</p>" +
-                "<br/>" +
-                "<p>Best regards,<br/>The Inblue Team</p>" +
-                "</div>";
+        String body = "<div style='font-family: Arial, sans-serif; padding: 20px;'>" + "<h2>Reset Password Request</h2>"
+                + "<p>We received a request to reset the password for your account on the Inblue system.</p>"
+                + "<p>Your OTP code is: <strong style='font-size: 20px; color: #1a73e8; letter-spacing: 2px;'>"
+                + otp + "</strong></p>" + "<p>This code is valid for <strong>"
+                + OTP_EXPIRY_MINUTES + " minutes</strong>. Please do not share this code with anyone.</p>" + "<br/>"
+                + "<p>Best regards,<br/>The Inblue Team</p>"
+                + "</div>";
 
         try {
             mailService.adminSendMail(email, subject, body);
             log.info("Sent password reset OTP successfully to: {}", email);
         } catch (MessagingException e) {
             log.error("Error sending password reset email: {}", e.getMessage());
-            throw new CustomException("Failed to send email, please try again later.", HttpStatus.INTERNAL_SERVER_ERROR);
+            throw new CustomException(
+                    "Failed to send email, please try again later.", HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
 
@@ -71,7 +70,8 @@ public class PasswordResetServiceImpl implements PasswordResetService {
         String savedOtp = (String) redisTemplate.opsForValue().get(redisKey);
 
         if (savedOtp == null) {
-            throw new CustomException("OTP code has expired or does not exist. Please request a new one.", HttpStatus.BAD_REQUEST);
+            throw new CustomException(
+                    "OTP code has expired or does not exist. Please request a new one.", HttpStatus.BAD_REQUEST);
         }
 
         if (!savedOtp.equals(otp)) {

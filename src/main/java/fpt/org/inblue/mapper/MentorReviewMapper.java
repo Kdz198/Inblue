@@ -20,5 +20,4 @@ public interface MentorReviewMapper {
     @Mapping(target = "mentor", ignore = true)
     @Mapping(target = "user", ignore = true)
     void fromUpdateToEntity(UpdateMentorReviewRequest dto, @MappingTarget MentorReview entity);
-
 }

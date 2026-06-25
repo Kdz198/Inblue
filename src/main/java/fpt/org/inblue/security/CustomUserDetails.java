@@ -1,12 +1,9 @@
 package fpt.org.inblue.security;
 
+import java.util.Collection;
 import lombok.Data;
-import org.jspecify.annotations.Nullable;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
-
-import java.util.Collection;
-import java.util.List;
 
 @Data
 public class CustomUserDetails implements UserDetails {
@@ -17,7 +14,12 @@ public class CustomUserDetails implements UserDetails {
     private final Collection<? extends GrantedAuthority> authorities;
     private final boolean active;
 
-    public CustomUserDetails(int userId,  String email, String password, Collection<? extends GrantedAuthority> authorities, boolean active) {
+    public CustomUserDetails(
+            int userId,
+            String email,
+            String password,
+            Collection<? extends GrantedAuthority> authorities,
+            boolean active) {
         this.userId = userId;
         this.email = email;
         this.password = password;
@@ -25,15 +27,13 @@ public class CustomUserDetails implements UserDetails {
         this.active = active;
     }
 
-    public CustomUserDetails(int userId,Collection<? extends GrantedAuthority> authorities) {
+    public CustomUserDetails(int userId, Collection<? extends GrantedAuthority> authorities) {
         this.userId = userId;
         this.email = null;
         this.password = null;
         this.authorities = authorities;
         this.active = true;
     }
-
-
 
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {

@@ -1,8 +1,7 @@
 package fpt.org.inblue.constants;
 
 public class CvMetricsConstant {
-    private CvMetricsConstant() {
-    }
+    private CvMetricsConstant() {}
 
     public static final String SKILLS_MATCH_SCORE = "Skills Match Score";
     public static final String EXPERIENCE_MATCH_SCORE = "Experience Match Score";

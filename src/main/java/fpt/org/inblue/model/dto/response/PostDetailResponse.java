@@ -1,14 +1,12 @@
 package fpt.org.inblue.model.dto.response;
 
+import java.io.Serializable;
+import java.time.Instant;
+import java.util.List;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-
-import java.io.Serializable;
-import java.sql.Date;
-import java.time.Instant;
-import java.util.List;
 
 @Data
 @Builder
@@ -30,9 +28,8 @@ public class PostDetailResponse implements Serializable {
     @Builder
     @AllArgsConstructor
     @NoArgsConstructor
-    public static class AuthorResponse implements Serializable{
+    public static class AuthorResponse implements Serializable {
         String name;
         String avatar;
     }
 }
-

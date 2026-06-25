@@ -14,4 +14,3 @@ public class PostLikeRequest {
     int postId;
     int userId;
 }
-

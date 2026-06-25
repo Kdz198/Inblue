@@ -4,8 +4,10 @@ import lombok.Getter;
 
 @Getter
 public enum TargetLevel {
-    INTERN,FRESHER,JUNIOR,MIDDLE;
-
+    INTERN,
+    FRESHER,
+    JUNIOR,
+    MIDDLE;
 
     public static TargetLevel convertFromStringToEnum(String name) {
         for (TargetLevel level : TargetLevel.values()) {
@@ -13,7 +15,6 @@ public enum TargetLevel {
                 return level;
             }
         }
-        throw new IllegalArgumentException("No enum constant with name " + name) {
-        };
+        throw new IllegalArgumentException("No enum constant with name " + name) {};
     }
 }

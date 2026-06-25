@@ -1,26 +1,25 @@
 package fpt.org.inblue.service.impl;
 
+import fpt.org.inblue.enums.FeatureName;
+import fpt.org.inblue.enums.PaymentPurpose;
+import fpt.org.inblue.enums.SessionStatus;
 import fpt.org.inblue.exception.CustomException;
 import fpt.org.inblue.model.Session;
 import fpt.org.inblue.model.dto.FeatureUsageLogDto;
-import fpt.org.inblue.model.dto.request.JoinSessionDtoRequest;
 import fpt.org.inblue.model.dto.dailyco.*;
-import fpt.org.inblue.enums.FeatureName;
-import fpt.org.inblue.enums.SessionStatus;
-import fpt.org.inblue.enums.PaymentPurpose;
+import fpt.org.inblue.model.dto.request.JoinSessionDtoRequest;
 import fpt.org.inblue.repository.SessionRepository;
 import fpt.org.inblue.service.PaymentService;
 import fpt.org.inblue.service.SessionService;
 import fpt.org.inblue.utils.HelperUtil;
+import java.sql.Timestamp;
+import java.util.List;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.http.*;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.RestTemplate;
-
-import java.sql.Timestamp;
-import java.util.List;
 
 @Service
 public class SessionServiceImpl implements SessionService {
@@ -31,10 +30,13 @@ public class SessionServiceImpl implements SessionService {
     private final PaymentService paymentService;
     private final ApplicationEventPublisher applicationEventPublisher;
 
-    public SessionServiceImpl(@Value("${daily.api.url}") String dailyApiUrl,
-                              @Value("${daily.api.key}") String dailyApiKey,
-                              SessionRepository sessionRepository,
-                              RestTemplate restTemplate, PaymentService paymentService, ApplicationEventPublisher applicationEventPublisher) {
+    public SessionServiceImpl(
+            @Value("${daily.api.url}") String dailyApiUrl,
+            @Value("${daily.api.key}") String dailyApiKey,
+            SessionRepository sessionRepository,
+            RestTemplate restTemplate,
+            PaymentService paymentService,
+            ApplicationEventPublisher applicationEventPublisher) {
         this.dailyApiUrl = dailyApiUrl;
         this.dailyApiKey = dailyApiKey;
         this.sessionRepository = sessionRepository;
@@ -43,8 +45,6 @@ public class SessionServiceImpl implements SessionService {
         this.applicationEventPublisher = applicationEventPublisher;
     }
 
-
-
     @Override
     public List<Session> getSessions() {
         return sessionRepository.findAll();
@@ -52,7 +52,7 @@ public class SessionServiceImpl implements SessionService {
 
     @Override
     public Session getSession(int id) {
-        if(!sessionRepository.existsById(id)) {
+        if (!sessionRepository.existsById(id)) {
             throw new CustomException("Session not found", HttpStatus.NOT_FOUND);
         }
         return sessionRepository.findById(id).get();
@@ -65,7 +65,7 @@ public class SessionServiceImpl implements SessionService {
 
     @Override
     public Session updateSession(Session session) {
-        if(!sessionRepository.existsById(session.getId())) {
+        if (!sessionRepository.existsById(session.getId())) {
             throw new CustomException("Session not found", HttpStatus.NOT_FOUND);
         }
         return sessionRepository.save(session);
@@ -95,14 +95,10 @@ public class SessionServiceImpl implements SessionService {
         // Gọi API Daily.co
         String apiUrl = dailyApiUrl + "/rooms"; // Endpoint để tạo Room
         ResponseEntity<SessionResponse> response = restTemplate.exchange(
-                apiUrl,
-                HttpMethod.POST,
-                entity,
-                SessionResponse.class // DTO mà mong muốn nhận về
-        );
-        //Kiểm tra và trả về kết quả
-        if (response.getStatusCode() == HttpStatus.OK
-                || response.getStatusCode() == HttpStatus.CREATED) {
+                apiUrl, HttpMethod.POST, entity, SessionResponse.class // DTO mà mong muốn nhận về
+                );
+        // Kiểm tra và trả về kết quả
+        if (response.getStatusCode() == HttpStatus.OK || response.getStatusCode() == HttpStatus.CREATED) {
             Session session = new Session();
             session.setRoomName(response.getBody().getName());
             session.setRoomUrl(response.getBody().getUrl());
@@ -114,8 +110,7 @@ public class SessionServiceImpl implements SessionService {
             session.setTotalPrice(request.getTotalPrice());
             sessionRepository.save(session);
             return response.getBody();
-        }
-        else{
+        } else {
             throw new RuntimeException("Lỗi khi tạo Session trên Daily.co: " + response.getStatusCode());
         }
     }
@@ -129,9 +124,9 @@ public class SessionServiceImpl implements SessionService {
     @Override
     public void saveJoinRecord(JoinSessionDtoRequest request) {
         Session session = sessionRepository.findByRoomName(request.getSessionName());
-        if(session == null) {
-            throw new CustomException("Không tìm thấy phòng họp !!", HttpStatus.NOT_FOUND);}
-        else if(session.getStatus().equals(SessionStatus.DRAFT)) {
+        if (session == null) {
+            throw new CustomException("Không tìm thấy phòng họp !!", HttpStatus.NOT_FOUND);
+        } else if (session.getStatus().equals(SessionStatus.DRAFT)) {
             throw new CustomException("Phòng họp chưa được duyệt", HttpStatus.CONFLICT);
         }
         if (request.isMentor()) {
@@ -177,14 +172,17 @@ public class SessionServiceImpl implements SessionService {
                 session.setEndTime1(helperConvertToVietNamTime());
                 // Kiểm traStartTime1 khác null trước khi tính
                 if (session.getStartTime1() != null) {
-                    long duration = (session.getEndTime1().getTime() - session.getStartTime1().getTime()) / 1000L;
+                    long duration = (session.getEndTime1().getTime()
+                                    - session.getStartTime1().getTime())
+                            / 1000L;
                     session.setDurationSeconds1(duration);
                 }
-            }
-            else if (participantId.equals(session.getParticipantId2())) {
+            } else if (participantId.equals(session.getParticipantId2())) {
                 session.setEndTime2(helperConvertToVietNamTime());
                 if (session.getStartTime2() != null) {
-                    long duration = (session.getEndTime2().getTime() - session.getStartTime2().getTime()) / 1000L;
+                    long duration = (session.getEndTime2().getTime()
+                                    - session.getStartTime2().getTime())
+                            / 1000L;
                     session.setDurationSeconds2(duration);
                 }
             }
@@ -210,8 +208,7 @@ public class SessionServiceImpl implements SessionService {
         Session session = sessionRepository.findById(sessionId).orElse(null);
         if (session == null) {
             throw new CustomException("Session not found", HttpStatus.NOT_FOUND);
-        }
-        else{
+        } else {
             session.setStatus(status);
             sessionRepository.save(session);
         }
@@ -228,15 +225,9 @@ public class SessionServiceImpl implements SessionService {
         headers.setBearerAuth(dailyApiKey);
         HttpEntity<Void> entity = new HttpEntity<>(headers);
         String apiUrl = dailyApiUrl + "/rooms/" + roomName;
-        try{
-            restTemplate.exchange(
-                    apiUrl,
-                    HttpMethod.DELETE,
-                    entity,
-                    Void.class
-            );
-        }
-        catch (HttpClientErrorException e) {
+        try {
+            restTemplate.exchange(apiUrl, HttpMethod.DELETE, entity, Void.class);
+        } catch (HttpClientErrorException e) {
             // Daily.co trả về 404 nếu phòng đã bị xóa trước đó
             if (e.getStatusCode() == HttpStatus.NOT_FOUND) {
                 System.out.println("Phòng '" + roomName + "' không tồn tại (đã xóa).");
@@ -249,11 +240,14 @@ public class SessionServiceImpl implements SessionService {
 
     @Override
     public String makePayment(int sessionId) {
-        Session session = sessionRepository.findById(sessionId).orElseThrow(() -> new CustomException("Session not found", HttpStatus.NOT_FOUND));
+        Session session = sessionRepository
+                .findById(sessionId)
+                .orElseThrow(() -> new CustomException("Session not found", HttpStatus.NOT_FOUND));
         if (session.getStatus() != SessionStatus.SCHEDULED) {
             throw new CustomException("Session chưa được duyệt hoặc đã bị hủy", HttpStatus.CONFLICT);
         }
-        return paymentService.createPayment(session.getTotalPrice(), session.getUserId(), PaymentPurpose.MENTOR_INTERVIEW);
+        return paymentService.createPayment(
+                session.getTotalPrice(), session.getUserId(), PaymentPurpose.MENTOR_INTERVIEW);
     }
 
     public Timestamp helperConvertToVietNamTime() {
@@ -269,21 +263,15 @@ public class SessionServiceImpl implements SessionService {
         headers.setBearerAuth(dailyApiKey);
         HttpEntity<String> entity = new HttpEntity<>(headers);
         try {
-            ResponseEntity<RecordingResponse> response = restTemplate.exchange(
-                    dailyApiUrl + "/recordings",
-                    HttpMethod.GET,
-                    entity,
-                    RecordingResponse.class
-            );
+            ResponseEntity<RecordingResponse> response =
+                    restTemplate.exchange(dailyApiUrl + "/recordings", HttpMethod.GET, entity, RecordingResponse.class);
             if (response.getStatusCode() == HttpStatus.OK && response.getBody() != null) {
                 return response.getBody().getData();
             } else {
                 throw new RuntimeException("Lỗi khi lấy danh sách recordings: " + response.getStatusCode());
             }
-        }
-        catch (HttpClientErrorException e) {
+        } catch (HttpClientErrorException e) {
             throw new RuntimeException("Lỗi REST API khi lấy danh sách recordings: " + e.getMessage());
         }
     }
-
 }

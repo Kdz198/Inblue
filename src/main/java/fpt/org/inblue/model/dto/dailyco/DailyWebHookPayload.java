@@ -8,6 +8,7 @@ import lombok.Data;
 public class DailyWebHookPayload {
     @JsonProperty("type")
     private String event;
+
     private PayloadData payload;
 
     @Data
@@ -15,8 +16,10 @@ public class DailyWebHookPayload {
     public static class PayloadData {
         @JsonProperty("room")
         private String roomName;
+
         @JsonProperty("session_id")
         private String participantId;
+
         private String recording_id;
     }
 }

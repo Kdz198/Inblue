@@ -1,14 +1,12 @@
 package fpt.org.inblue.controller;
 
-
-import lombok.RequiredArgsConstructor;
 import fpt.org.inblue.model.CandidateProfile;
 import fpt.org.inblue.service.CandidateProfileService;
 import io.swagger.v3.oas.annotations.Operation;
+import java.util.List;
+import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-
-import java.util.List;
 
 @RestController
 @RequestMapping("/api/candidate-profiles")
@@ -18,22 +16,26 @@ public class CandidateProfileController {
     private final CandidateProfileService candidateProfileService;
 
     @GetMapping
-    public ResponseEntity<List<CandidateProfile>> getAllProfile(){
+    public ResponseEntity<List<CandidateProfile>> getAllProfile() {
         return ResponseEntity.ok(candidateProfileService.getAllProfiles());
     }
 
     @GetMapping("{userId}")
-    public ResponseEntity<CandidateProfile> getByUserId(@PathVariable int userId){
+    public ResponseEntity<CandidateProfile> getByUserId(@PathVariable int userId) {
         return ResponseEntity.ok(candidateProfileService.getProfileByUserId(userId));
     }
 
     @PostMapping
-    public ResponseEntity<CandidateProfile> createProfile(@RequestBody CandidateProfile candidateProfile){
+    public ResponseEntity<CandidateProfile> createProfile(@RequestBody CandidateProfile candidateProfile) {
         return ResponseEntity.ok(candidateProfileService.createProfile(candidateProfile));
     }
 
     @PutMapping
-    @Operation(summary = "Cập nhật hồ sơ ứng viên", description = "Sau khi import cv thì trả về candidate profile rồi thì cho người dùng chỉnh sửa tay sau đó gọi hàm này để cập nhật")
-    public ResponseEntity<CandidateProfile> updateProfile(@RequestBody CandidateProfile candidateProfile){
-        return ResponseEntity.ok(candidateProfileService.updateProfile(candidateProfile));}
+    @Operation(
+            summary = "Cập nhật hồ sơ ứng viên",
+            description =
+                    "Sau khi import cv thì trả về candidate profile rồi thì cho người dùng chỉnh sửa tay sau đó gọi hàm này để cập nhật")
+    public ResponseEntity<CandidateProfile> updateProfile(@RequestBody CandidateProfile candidateProfile) {
+        return ResponseEntity.ok(candidateProfileService.updateProfile(candidateProfile));
+    }
 }

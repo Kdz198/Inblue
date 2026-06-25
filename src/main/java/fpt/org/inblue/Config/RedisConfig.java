@@ -1,5 +1,6 @@
 package fpt.org.inblue.Config;
 
+import java.time.Duration;
 import org.springframework.boot.cache.autoconfigure.RedisCacheManagerBuilderCustomizer;
 import org.springframework.cache.annotation.EnableCaching;
 import org.springframework.context.annotation.Bean;
@@ -10,8 +11,6 @@ import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.data.redis.serializer.GenericJackson2JsonRedisSerializer;
 import org.springframework.data.redis.serializer.StringRedisSerializer;
 
-import java.time.Duration;
-
 @Configuration
 @EnableCaching
 public class RedisConfig {
@@ -20,13 +19,12 @@ public class RedisConfig {
     public RedisCacheManagerBuilderCustomizer redisCacheManagerBuilderCustomizer() {
         return (builder) -> builder
                 // Set TTL riêng cho cái cache có tên là "new_feed" là 60 giây
-                .withCacheConfiguration("new_feed",
-                        RedisCacheConfiguration.defaultCacheConfig()
-                                .entryTtl(Duration.ofSeconds(60)));
+                .withCacheConfiguration(
+                "new_feed", RedisCacheConfiguration.defaultCacheConfig().entryTtl(Duration.ofSeconds(60)));
     }
+
     @Bean
     public RedisTemplate<String, Object> redisTemplate(RedisConnectionFactory connectionFactory) {
-
 
         RedisTemplate<String, Object> template = new RedisTemplate<>();
         template.setConnectionFactory(connectionFactory);

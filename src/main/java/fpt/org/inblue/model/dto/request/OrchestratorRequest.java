@@ -1,14 +1,13 @@
 package fpt.org.inblue.model.dto.request;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
-import fpt.org.inblue.model.CandidateProfile;
 import fpt.org.inblue.enums.InterviewEnums;
+import fpt.org.inblue.model.CandidateProfile;
+import java.util.List;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-
-import java.util.List;
 
 @Data
 @Builder
@@ -24,7 +23,6 @@ public class OrchestratorRequest {
 
     @JsonProperty("session_config")
     private SessionConfigData sessionConfig;
-
 
     @Data
     @Builder
@@ -45,7 +43,6 @@ public class OrchestratorRequest {
 
         @JsonProperty("domain")
         private InterviewEnums.JobDomain domain;
-
     }
 
     @Data
@@ -62,7 +59,6 @@ public class OrchestratorRequest {
         @JsonProperty("responsibilities")
         private List<String> responsibilities;
 
-
         // Sub-classes cho JD
         @Data
         @Builder
@@ -71,8 +67,10 @@ public class OrchestratorRequest {
         public static class BasicInfo {
             @JsonProperty("job_title")
             private String jobTitle;
+
             @JsonProperty("industry_domain")
             private String industryDomain;
+
             @JsonProperty("seniority_level")
             private String seniorityLevel;
         }
@@ -84,8 +82,10 @@ public class OrchestratorRequest {
         public static class Competencies {
             @JsonProperty("hard_skills")
             private List<String> hardSkills;
+
             @JsonProperty("tools_and_platforms")
             private List<String> toolsAndPlatforms;
+
             @JsonProperty("soft_skills")
             private List<String> softSkills;
         }

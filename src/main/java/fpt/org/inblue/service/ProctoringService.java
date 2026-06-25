@@ -1,7 +1,6 @@
 package fpt.org.inblue.service;
 
 import fpt.org.inblue.model.dto.request.FaceSnapshotRequest;
-
 import java.util.List;
 import java.util.Map;
 

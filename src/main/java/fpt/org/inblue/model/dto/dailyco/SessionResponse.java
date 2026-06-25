@@ -17,7 +17,7 @@ public class SessionResponse {
 
     @Data
     public static class RoomConfig {
-        private String nbf;//thời điểm soems nhất room có thể đc dùng
+        private String nbf; // thời điểm soems nhất room có thể đc dùng
         private Long exp;
     }
 }

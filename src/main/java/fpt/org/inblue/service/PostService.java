@@ -1,5 +1,6 @@
 package fpt.org.inblue.service;
 
+import fpt.org.inblue.enums.PostStatus;
 import fpt.org.inblue.model.Post;
 import fpt.org.inblue.model.PostComment;
 import fpt.org.inblue.model.PostLike;
@@ -7,27 +8,34 @@ import fpt.org.inblue.model.dto.request.PostCommentRequest;
 import fpt.org.inblue.model.dto.request.PostCreateRequest;
 import fpt.org.inblue.model.dto.request.PostLikeRequest;
 import fpt.org.inblue.model.dto.response.PostResponse;
-import fpt.org.inblue.enums.PostStatus;
-import org.springframework.data.domain.Page;
-
 import java.io.IOException;
 import java.util.List;
+import org.springframework.data.domain.Page;
 
 public interface PostService {
     Post createPost(PostCreateRequest post) throws IOException;
+
     PostResponse getPostByPostId(int postId);
+
     void changeStatus(int postId, PostStatus status);
+
     List<PostResponse> getPublishPost();
+
     List<PostResponse> getAllPost();
+
     Page<PostResponse> getNewFeed(int page, int size);
 
     // Like
     PostLike likePost(PostLikeRequest request);
+
     void unlikePost(int postId, int userId);
+
     boolean isLiked(int postId, int userId);
 
     // Comment
     PostComment createComment(PostCommentRequest request);
+
     PostComment updateComment(int commentId, String content);
+
     void deleteComment(int commentId);
 }

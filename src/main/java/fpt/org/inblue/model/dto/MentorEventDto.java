@@ -7,14 +7,12 @@ import org.springframework.web.multipart.MultipartFile;
 @Data
 public class MentorEventDto {
     Mentor mentor;
-    MultipartFile file ;
+    MultipartFile file;
     String message;
-
 
     public MentorEventDto(Mentor mentor, MultipartFile file, String message) {
         this.mentor = mentor;
         this.file = file;
-        this.message=message;
+        this.message = message;
     }
-
 }

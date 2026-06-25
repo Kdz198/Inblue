@@ -1,10 +1,10 @@
 package fpt.org.inblue.model;
 
-
+import fpt.org.inblue.enums.InterviewEnums;
 import fpt.org.inblue.model.dto.request.OrchestratorRequest;
 import fpt.org.inblue.model.dto.response.InterviewBlueprintResponse;
-import fpt.org.inblue.enums.InterviewEnums;
 import jakarta.persistence.*;
+import java.time.LocalDateTime;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -14,8 +14,6 @@ import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.annotations.UpdateTimestamp;
 import org.hibernate.type.SqlTypes;
 
-import java.time.LocalDateTime;
-
 @Entity
 @Data
 @Builder
@@ -24,7 +22,7 @@ import java.time.LocalDateTime;
 public class InterviewSession {
 
     @Id
-    @GeneratedValue(strategy =  GenerationType.IDENTITY)
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Integer id;
 
     private String sessionKey; // UUID sessionKey để liên kết với Redis
@@ -45,7 +43,7 @@ public class InterviewSession {
     // Lưu CV Snapshot
     @JdbcTypeCode(SqlTypes.JSON)
     @Column(columnDefinition = "jsonb")
-    private  CandidateProfile candidateProfile;
+    private CandidateProfile candidateProfile;
 
     // Lưu JD Snapshot
     @JdbcTypeCode(SqlTypes.JSON)
@@ -84,9 +82,11 @@ public class InterviewSession {
     private LocalDateTime updatedAt;
 
     public enum SessionStatus {
-        CREATED, IN_PROGRESS, COMPLETED, CANCELLED
+        CREATED,
+        IN_PROGRESS,
+        COMPLETED,
+        CANCELLED
     }
-
 
     // ========================================================================
     // KẾT QUẢ BUỔI PHỎNG VẤN (Update sau khi Finish)
@@ -111,8 +111,8 @@ public class InterviewSession {
 
     public enum EvaluationResult {
         STRONG_HIRE, // >= 9.0: Xuất sắc, offer ngay
-        HIRE,        // >= 7.0: Đạt yêu cầu, kiến thức vững
-        CONSIDER,    // >= 5.0: Tạm được, cần phỏng vấn thêm hoặc làm vị trí thấp hơn
-        REJECT       // < 5.0: Trượt thẳng
+        HIRE, // >= 7.0: Đạt yêu cầu, kiến thức vững
+        CONSIDER, // >= 5.0: Tạm được, cần phỏng vấn thêm hoặc làm vị trí thấp hơn
+        REJECT // < 5.0: Trượt thẳng
     }
 }

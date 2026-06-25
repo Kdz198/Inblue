@@ -1,19 +1,17 @@
 package fpt.org.inblue.controller;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import fpt.org.inblue.model.InterviewSession;
 import fpt.org.inblue.model.caching.InterviewSessionRedis;
 import fpt.org.inblue.model.dto.request.InterviewSetupRequest;
 import fpt.org.inblue.model.dto.request.OrchestratorRequest.*;
 import fpt.org.inblue.service.InterviewSessionService;
+import java.util.List;
+import java.util.Map;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.List;
-import java.util.Map;
-
 @RestController
-@RequestMapping ("/api/interview-sessions")
+@RequestMapping("/api/interview-sessions")
 @CrossOrigin(origins = "*")
 @RequiredArgsConstructor
 public class InterviewSessionController {
@@ -31,7 +29,7 @@ public class InterviewSessionController {
     }
 
     @PostMapping("/create-session")
-    public String createInterviewSession(@RequestBody InterviewSetupRequest request)  {
+    public String createInterviewSession(@RequestBody InterviewSetupRequest request) {
         return interviewSessionService.createSession(request);
     }
 

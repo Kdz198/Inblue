@@ -14,13 +14,11 @@ import fpt.org.inblue.repository.RoundRepository;
 import fpt.org.inblue.service.ApplicationService;
 import fpt.org.inblue.service.JobDescriptionService;
 import fpt.org.inblue.service.RoundService;
-import fpt.org.inblue.service.submission.RoundSubmissionProcessor;
+import java.util.*;
+import java.util.stream.Collectors;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-
-import java.util.*;
-import java.util.stream.Collectors;
 
 @Service
 public class RoundServiceImpl implements RoundService {
@@ -30,7 +28,12 @@ public class RoundServiceImpl implements RoundService {
     private final ApplicationService applicationService;
     private final JobDescriptionService jobDescriptionService;
 
-    public RoundServiceImpl(RoundRepository roundRepository, JobDescriptionRepository jobDescriptionRepository, CodingProblemsRepository codingProblemsRepository, ApplicationService applicationService, JobDescriptionService jobDescriptionService) {
+    public RoundServiceImpl(
+            RoundRepository roundRepository,
+            JobDescriptionRepository jobDescriptionRepository,
+            CodingProblemsRepository codingProblemsRepository,
+            ApplicationService applicationService,
+            JobDescriptionService jobDescriptionService) {
         this.roundRepository = roundRepository;
         this.jobDescriptionRepository = jobDescriptionRepository;
         this.codingProblemsRepository = codingProblemsRepository;
@@ -64,7 +67,8 @@ public class RoundServiceImpl implements RoundService {
             if (item.getConfigData().getQuizQuestions() != null) {
                 for (int i = 0; i < item.getConfigData().getQuizQuestions().size(); i++) {
                     Round.QuizQuestion question = new Round.QuizQuestion();
-                    SetupJdRoundsRequest.QuizQuestionDto questionDto = item.getConfigData().getQuizQuestions().get(i);
+                    SetupJdRoundsRequest.QuizQuestionDto questionDto =
+                            item.getConfigData().getQuizQuestions().get(i);
                     question.setQuestionText(questionDto.getQuestionText());
                     question.setOptions(questionDto.getOptions());
                     question.setCorrectAnswer(questionDto.getCorrectAnswer());
@@ -73,31 +77,30 @@ public class RoundServiceImpl implements RoundService {
                 }
                 roundConfig.setQuizQuestions(quizQuestions);
             }
-           if(item.getConfigData().getCodingProblemsId() != null) {
-               List<Round.CodingProblemSnapshot> codingProblems = new ArrayList<>();
-               for (Long codingProblemId : item.getConfigData().getCodingProblemsId()) {
-                   CodingProblem cp = codingProblemsRepository.findById(codingProblemId)
-                           .orElseThrow(() -> new CustomException(
-                                   "Coding problem không tồn tại với id: " + codingProblemId,
-                                   HttpStatus.NOT_FOUND
-                           ));
-                   Round.CodingProblemSnapshot snapshot = Round.CodingProblemSnapshot.builder()
-                           .title(cp.getTitle())
-                           .codeStubs(cp.getCodeStubs())
-                           .difficulty(cp.getDifficulty())
-                           .executionTimeLimitMs(cp.getExecutionTimeLimitMs())
-                           .memoryLimitMb(cp.getMemoryLimitMb())
-                           .problemId(codingProblemId)
-                           .problemStatement(cp.getProblemStatement())
-                           .rulesAndConstraints(cp.getRulesAndConstraints())
-                           .visibleExamples(cp.getVisibleExamples())
-                           .build();
+            if (item.getConfigData().getCodingProblemsId() != null) {
+                List<Round.CodingProblemSnapshot> codingProblems = new ArrayList<>();
+                for (Long codingProblemId : item.getConfigData().getCodingProblemsId()) {
+                    CodingProblem cp = codingProblemsRepository
+                            .findById(codingProblemId)
+                            .orElseThrow(() -> new CustomException(
+                                    "Coding problem không tồn tại với id: " + codingProblemId, HttpStatus.NOT_FOUND));
+                    Round.CodingProblemSnapshot snapshot = Round.CodingProblemSnapshot.builder()
+                            .title(cp.getTitle())
+                            .codeStubs(cp.getCodeStubs())
+                            .difficulty(cp.getDifficulty())
+                            .executionTimeLimitMs(cp.getExecutionTimeLimitMs())
+                            .memoryLimitMb(cp.getMemoryLimitMb())
+                            .problemId(codingProblemId)
+                            .problemStatement(cp.getProblemStatement())
+                            .rulesAndConstraints(cp.getRulesAndConstraints())
+                            .visibleExamples(cp.getVisibleExamples())
+                            .build();
 
-                   codingProblems.add(snapshot);
-               }
-               roundConfig.setCodingProblems(codingProblems);
-           }
-            if(item.getConfigData().getMentorInterview() != null) {
+                    codingProblems.add(snapshot);
+                }
+                roundConfig.setCodingProblems(codingProblems);
+            }
+            if (item.getConfigData().getMentorInterview() != null) {
                 Round.MentorInterviewDto mentorInterviewDto = Round.MentorInterviewDto.builder()
                         .mentorId(item.getConfigData().getMentorInterview().getMentorId())
                         .duration(item.getConfigData().getMentorInterview().getDuration())
@@ -119,12 +122,12 @@ public class RoundServiceImpl implements RoundService {
     @Override
     @Transactional
     public List<Round> updateRoundForJd(Long jdId, UpdateJdRoundRequest request) {
-        JobDescription jd = jobDescriptionRepository.findById(jdId)
+        JobDescription jd = jobDescriptionRepository
+                .findById(jdId)
                 .orElseThrow(() -> new CustomException("Job Description không tồn tại", HttpStatus.NOT_FOUND));
 
-        Map<Long, Round> existingRoundMap = jd.getRounds().stream()
-                .filter(r -> r.getId() != null)
-                .collect(Collectors.toMap(Round::getId, r -> r));
+        Map<Long, Round> existingRoundMap =
+                jd.getRounds().stream().filter(r -> r.getId() != null).collect(Collectors.toMap(Round::getId, r -> r));
 
         List<Round> updatedRounds = new ArrayList<>();
         for (UpdateJdRoundRequest.RoundItemDto item : request.getRounds()) {
@@ -132,7 +135,8 @@ public class RoundServiceImpl implements RoundService {
             if (item.getId() != null) {
                 round = existingRoundMap.get(item.getId());
                 if (round == null) {
-                    throw new CustomException("Round với id " + item.getId() + " không tồn tại", HttpStatus.BAD_REQUEST);
+                    throw new CustomException(
+                            "Round với id " + item.getId() + " không tồn tại", HttpStatus.BAD_REQUEST);
                 }
             } else {
                 round = new Round();
@@ -154,7 +158,8 @@ public class RoundServiceImpl implements RoundService {
 
             List<Round.QuizQuestion> quizQuestions = new ArrayList<>();
             if (item.getConfigData().getQuizQuestions() != null) {
-                for (UpdateJdRoundRequest.QuizQuestionDto dto : item.getConfigData().getQuizQuestions()) {
+                for (UpdateJdRoundRequest.QuizQuestionDto dto :
+                        item.getConfigData().getQuizQuestions()) {
                     Round.QuizQuestion question = new Round.QuizQuestion();
                     question.setQuestionText(dto.getQuestionText());
                     question.setOptions(dto.getOptions());
@@ -168,7 +173,8 @@ public class RoundServiceImpl implements RoundService {
                 for (Long codingProblemId : item.getConfigData().getCodingProblemsId()) {
                     Optional<CodingProblem> cp = codingProblemsRepository.findById(codingProblemId);
                     if (cp.isEmpty()) {
-                        throw new CustomException("Coding Problem với id " + codingProblemId + " không tồn tại", HttpStatus.BAD_REQUEST);
+                        throw new CustomException(
+                                "Coding Problem với id " + codingProblemId + " không tồn tại", HttpStatus.BAD_REQUEST);
                     }
                     Round.CodingProblemSnapshot snapshot = Round.CodingProblemSnapshot.builder()
                             .title(cp.get().getTitle())
@@ -213,9 +219,8 @@ public class RoundServiceImpl implements RoundService {
     @Override
     public Round getRoundByOrder(Long applicationId) {
         Application currentApplication = applicationService.getApplicationById(applicationId);
-        Round currentRound = jobDescriptionService.getRoundByOrder( currentApplication.getJdId(), currentApplication.getCurrentRoundOrder());
+        Round currentRound = jobDescriptionService.getRoundByOrder(
+                currentApplication.getJdId(), currentApplication.getCurrentRoundOrder());
         return currentRound;
     }
-
-
 }

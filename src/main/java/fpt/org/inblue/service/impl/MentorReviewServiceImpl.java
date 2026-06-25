@@ -1,7 +1,6 @@
 package fpt.org.inblue.service.impl;
 
-
-import lombok.RequiredArgsConstructor;
+import fpt.org.inblue.enums.SessionStatus;
 import fpt.org.inblue.exception.CustomException;
 import fpt.org.inblue.mapper.MentorReviewMapper;
 import fpt.org.inblue.model.Mentor;
@@ -10,16 +9,15 @@ import fpt.org.inblue.model.Session;
 import fpt.org.inblue.model.User;
 import fpt.org.inblue.model.dto.request.CreateMentorReviewRequest;
 import fpt.org.inblue.model.dto.request.UpdateMentorReviewRequest;
-import fpt.org.inblue.enums.SessionStatus;
 import fpt.org.inblue.repository.MentorRepository;
 import fpt.org.inblue.repository.MentorReviewRepository;
 import fpt.org.inblue.repository.SessionRepository;
 import fpt.org.inblue.service.MentorReviewService;
 import fpt.org.inblue.service.UserService;
+import java.util.List;
+import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
-
-import java.util.List;
 
 @Service
 @RequiredArgsConstructor
@@ -36,37 +34,35 @@ public class MentorReviewServiceImpl implements MentorReviewService {
         Mentor mentor = mentorRepo.getMentorById(mentorReview.getMentorId());
         User user = userService.getById(mentorReview.getUserId());
         Session session = sessionRepo.findById(mentorReview.getSessionId()).orElse(null);
-        if(session==null || user==null || mentor==null){
+        if (session == null || user == null || mentor == null) {
             throw new CustomException("Session| Mentor| User not found", HttpStatus.NOT_FOUND);
         }
-        if(session.getStatus().equals(SessionStatus.COMPLETED)) {
+        if (session.getStatus().equals(SessionStatus.COMPLETED)) {
             MentorReview review = mentorReviewMapper.toEntity(mentorReview);
             review.setSession(session);
             return repo.save(review);
-        }
-        else{
-            throw new CustomException("Cannot review mentor for a session that is not completed", HttpStatus.BAD_REQUEST);
+        } else {
+            throw new CustomException(
+                    "Cannot review mentor for a session that is not completed", HttpStatus.BAD_REQUEST);
         }
     }
 
     @Override
     public MentorReview updateMentorReview(UpdateMentorReviewRequest mentorReview) {
-        if(repo.existsById(mentorReview.getId())) {
+        if (repo.existsById(mentorReview.getId())) {
             MentorReview review = repo.findById(mentorReview.getId()).orElse(null);
             mentorReviewMapper.fromUpdateToEntity(mentorReview, review);
             return repo.save(review);
-        }
-        else {
+        } else {
             throw new CustomException("Mentor review not found", HttpStatus.NOT_FOUND);
         }
     }
 
     @Override
     public MentorReview getMentorReviewById(int id) {
-        if(sessionRepo.existsById(id)) {
+        if (sessionRepo.existsById(id)) {
             return repo.findBySession_Id(id);
-        }
-        else {
+        } else {
             throw new CustomException("Mentor review not found", HttpStatus.NOT_FOUND);
         }
     }

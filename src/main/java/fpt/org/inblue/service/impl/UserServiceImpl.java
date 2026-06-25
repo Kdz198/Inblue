@@ -1,7 +1,5 @@
 package fpt.org.inblue.service.impl;
 
-
-import lombok.RequiredArgsConstructor;
 import fpt.org.inblue.cloudinary.CloudinaryService;
 import fpt.org.inblue.constants.ApiPath;
 import fpt.org.inblue.enums.PythonService;
@@ -18,6 +16,12 @@ import fpt.org.inblue.service.ApiClient;
 import fpt.org.inblue.service.CandidateProfileService;
 import fpt.org.inblue.service.UserService;
 import fpt.org.inblue.utils.FileUtil;
+import java.io.File;
+import java.io.IOException;
+import java.time.LocalDateTime;
+import java.util.List;
+import java.util.stream.Collectors;
+import lombok.RequiredArgsConstructor;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
@@ -28,12 +32,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
-import java.io.File;
-import java.io.IOException;
-import java.time.LocalDateTime;
-import java.util.List;
-import java.util.stream.Collectors;
-
 @Service
 @RequiredArgsConstructor
 public class UserServiceImpl implements UserService {
@@ -43,7 +41,6 @@ public class UserServiceImpl implements UserService {
     private final CloudinaryService cloudinaryService;
     private final ApiClient ApiClient;
     private final CandidateProfileService candidateProfileService;
-
 
     @Override
     public List<User> getAll() {
@@ -59,7 +56,7 @@ public class UserServiceImpl implements UserService {
     @Transactional
     public User createUser(UserInfo user, MultipartFile avatar) throws IOException {
         if (user.getId() == null) {
-            if(userRepository.existsByEmail(user.getEmail())){
+            if (userRepository.existsByEmail(user.getEmail())) {
                 throw new CustomException("Email đã tồn tại", HttpStatus.BAD_REQUEST);
             }
             User userBuilder = User.builder()
@@ -80,10 +77,11 @@ public class UserServiceImpl implements UserService {
             }
             return savedUser;
         } else {
-            if(userRepository.existsByEmailAndIdNot(user.getEmail(), user.getId())){
+            if (userRepository.existsByEmailAndIdNot(user.getEmail(), user.getId())) {
                 throw new CustomException("Email đã tồn tại", HttpStatus.BAD_REQUEST);
             }
-            User updateUser = userRepository.findById(user.getId()).orElseThrow(() -> new RuntimeException("User Not Found"));
+            User updateUser =
+                    userRepository.findById(user.getId()).orElseThrow(() -> new RuntimeException("User Not Found"));
             updateUser.setName(user.getName());
             updateUser.setEmail(user.getEmail());
             updateUser.setPassword(user.getPassword());
@@ -113,9 +111,9 @@ public class UserServiceImpl implements UserService {
     @Override
     @Retryable(
             value = {Exception.class}, // Thử lại khi gặp bất kỳ ngoại lệ nào (hoặc cụ thể hơn như RestClientException)
-            maxAttempts = 3,             // Tối đa 3 lần thử (1 lần chính + 2 lần retry)
+            maxAttempts = 3, // Tối đa 3 lần thử (1 lần chính + 2 lần retry)
             backoff = @Backoff(delay = 2000) // Mỗi lần thử lại cách nhau 2 giây
-    )
+            )
     @Transactional
     public CandidateProfile upCv(int userId, MultipartFile cvFile) throws IOException {
         User user = userRepository.findById(userId).orElseThrow(() -> new RuntimeException("User Not Found 123"));
@@ -127,12 +125,7 @@ public class UserServiceImpl implements UserService {
             candidateId = candidateProfileService.getProfileByUserId(userId).getId();
         }
         CVParserResponse response =
-                ApiClient.callApi(
-                        PythonService.LLM,
-                        ApiPath.CV_API,
-                        HttpMethod.POST,
-                        cvFile,
-                        CVParserResponse.class);
+                ApiClient.callApi(PythonService.LLM, ApiPath.CV_API, HttpMethod.POST, cvFile, CVParserResponse.class);
         CandidateProfile candidateProfile = CandidateProfile.builder()
                 .id(candidateId)
                 .user(user)
@@ -149,13 +142,13 @@ public class UserServiceImpl implements UserService {
                 .achievements(response.getAchievements())
                 .createdAt(LocalDateTime.now())
                 .build();
-        //publish event
+        // publish event
         String absolutePath = FileUtil.saveFile(cvFile);
         File file = FileUtil.getFileByPath(absolutePath);
         MultipartFile multipartFile = FileUtil.convertFileToMultipart(file);
         file.delete();
 
-        //event
+        // event
         var profile = candidateProfileService.createProfile(candidateProfile);
         applicationEventPublisher.publishEvent(new UserEventDto(user, multipartFile, "cv"));
         return profile;
@@ -196,7 +189,8 @@ public class UserServiceImpl implements UserService {
 
     private List<CandidateProfile.ProjectDetail> mapProjects(List<CVParserResponse.ProjectDTO> dtos) {
         if (dtos == null) return null;
-        return dtos.stream().map(dto -> CandidateProfile.ProjectDetail.builder()
+        return dtos.stream()
+                .map(dto -> CandidateProfile.ProjectDetail.builder()
                         .name(dto.getName())
                         .description(dto.getDescription())
                         .role(dto.getRole())
@@ -209,7 +203,8 @@ public class UserServiceImpl implements UserService {
 
     private List<CandidateProfile.WorkExperience> mapWorkExperiences(List<CVParserResponse.WorkExperienceDTO> dtos) {
         if (dtos == null) return null;
-        return dtos.stream().map(dto -> CandidateProfile.WorkExperience.builder()
+        return dtos.stream()
+                .map(dto -> CandidateProfile.WorkExperience.builder()
                         .company(dto.getCompany())
                         .position(dto.getPosition())
                         .description(dto.getDescription())
@@ -221,7 +216,8 @@ public class UserServiceImpl implements UserService {
 
     private List<CandidateProfile.EducationEntry> mapEducations(List<CVParserResponse.EducationDTO> dtos) {
         if (dtos == null) return null;
-        return dtos.stream().map(dto -> CandidateProfile.EducationEntry.builder()
+        return dtos.stream()
+                .map(dto -> CandidateProfile.EducationEntry.builder()
                         .school(dto.getSchool())
                         .major(dto.getMajor())
                         .degree(dto.getDegree())
@@ -232,22 +228,19 @@ public class UserServiceImpl implements UserService {
                 .collect(Collectors.toList());
     }
 
-
     @Override
     public UserResponse getUserResponseById(int userId) {
         User user = userRepository.findById(userId).orElseThrow(() -> new RuntimeException("User Not Found"));
-            return UserResponse.builder()
-                    .id(user.getId())
-                    .name(user.getName())
-                    .email(user.getEmail())
-                    .role(user.getRole())
-                    .isActive(user.getIsActive())
-                    .avatarUrl(user.getAvatarUrl())
-                    .public_id(user.getPublic_id())
-                    .cvUrl(user.getCvUrl())
-                    .cv_public_id(user.getCv_public_id())
-                    .build();
+        return UserResponse.builder()
+                .id(user.getId())
+                .name(user.getName())
+                .email(user.getEmail())
+                .role(user.getRole())
+                .isActive(user.getIsActive())
+                .avatarUrl(user.getAvatarUrl())
+                .public_id(user.getPublic_id())
+                .cvUrl(user.getCvUrl())
+                .cv_public_id(user.getCv_public_id())
+                .build();
     }
-
-
 }

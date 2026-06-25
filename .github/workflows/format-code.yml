@@ -1,0 +1,46 @@
+name: Auto Format Code
+
+on:
+  push:
+    branches: [ "master" ]
+  pull_request:
+    branches: [ "master" ]
+
+jobs:
+  format:
+    # Bỏ qua nếu commit đó đã có tag [skip ci] để tránh loop vĩnh viễn
+    if: "!contains(github.event.head_commit.message, '[skip ci]')"
+    runs-on: ubuntu-latest
+
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          # Cần fetch-depth: 0 để git có đủ history thao tác commit
+          fetch-depth: 0
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@v4
+        with:
+          java-version: '21'
+          distribution: 'temurin'
+          cache: maven
+
+      - name: Apply Spotless Formatting
+        run: |
+          chmod +x mvnw
+          ./mvnw spotless:apply
+
+      - name: Configure Git
+        run: |
+          git config user.name "HoangTuGio"
+          git config user.email "khangdeptrai198@gmail.com"
+
+      - name: Commit and Push changes
+        run: |
+          git add .
+          git diff --cached --quiet || git commit -m "style: auto format code with spotless [skip ci]"
+          git push
