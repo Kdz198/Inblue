@@ -1,17 +1,17 @@
 package fpt.org.inblue.schedule;
 
+
+import lombok.RequiredArgsConstructor;
 import fpt.org.inblue.model.Payment;
 import fpt.org.inblue.model.dto.payos.PaymentStatusResponse;
 import fpt.org.inblue.enums.PaymentStatus;
 import fpt.org.inblue.repository.PaymentRepository;
 import fpt.org.inblue.utils.HelperUtil;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.ResponseEntity;
-import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestTemplate;
 
@@ -20,18 +20,16 @@ import java.time.LocalDateTime;
 import java.util.List;
 
 @Component
+@RequiredArgsConstructor
 public class PaymentSchedule {
-    @Autowired
-    private PaymentRepository paymentRepository;
-    @Autowired
-    private RestTemplate restTemplate;
+    private final PaymentRepository paymentRepository;
+    private final RestTemplate restTemplate;
 
     @Value("${payos.client-id}")
     private String clientId;
     @Value("${payos.api-key}")
     private String apiKey;
 
-    @Scheduled(fixedDelay = 300000)
    public void checkPaymentStatus() {
 //        System.out.println("Checking pending payments at " + LocalDateTime.now());
         LocalDateTime times = LocalDateTime.now().minusMinutes(10);

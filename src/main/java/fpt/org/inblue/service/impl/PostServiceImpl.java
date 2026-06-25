@@ -1,5 +1,7 @@
 package fpt.org.inblue.service.impl;
 
+
+import lombok.RequiredArgsConstructor;
 import fpt.org.inblue.cloudinary.CloudinaryService;
 import fpt.org.inblue.enums.PostStatus;
 import fpt.org.inblue.mapper.PostMapper;
@@ -18,7 +20,6 @@ import fpt.org.inblue.repository.PostRepository;
 import fpt.org.inblue.service.PostService;
 import fpt.org.inblue.service.UserService;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
@@ -33,15 +34,12 @@ import java.util.Map;
 
 @Service
 @Slf4j
+@RequiredArgsConstructor
 public class PostServiceImpl implements PostService {
-    @Autowired
-    private PostMapper postMapper;
-    @Autowired
-    private PostRepository postRepository;
-    @Autowired
-    private CloudinaryService cloudinaryService;
-    @Autowired
-    private UserService userService;
+    private final PostMapper postMapper;
+    private final PostRepository postRepository;
+    private final CloudinaryService cloudinaryService;
+    private final UserService userService;
 
     // TODO OPTIMIZE - tránh n+1 query khi lấy post, like, comment SẼ LÀM SAU NÀY
 

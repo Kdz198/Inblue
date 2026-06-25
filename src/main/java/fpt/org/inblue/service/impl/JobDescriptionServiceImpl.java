@@ -1,5 +1,7 @@
 package fpt.org.inblue.service.impl;
 
+
+import lombok.RequiredArgsConstructor;
 import fpt.org.inblue.enums.RoundType;
 import fpt.org.inblue.exception.CustomException;
 import fpt.org.inblue.mapper.JobDescriptionMapper;
@@ -14,7 +16,6 @@ import fpt.org.inblue.repository.CompanyRepository;
 import fpt.org.inblue.repository.JobDescriptionRepository;
 import fpt.org.inblue.repository.JobDescriptionSpecification;
 import fpt.org.inblue.service.JobDescriptionService;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
@@ -25,16 +26,14 @@ import java.time.LocalDateTime;
 import java.util.List;
 
 @Service
+@RequiredArgsConstructor
 public class JobDescriptionServiceImpl implements JobDescriptionService {
 
-    @Autowired
-    private JobDescriptionRepository jobDescriptionRepository;
+    private final JobDescriptionRepository jobDescriptionRepository;
 
-    @Autowired
-    private CompanyRepository companyRepository;
+    private final CompanyRepository companyRepository;
 
-    @Autowired
-    private JobDescriptionMapper jobDescriptionMapper;
+    private final JobDescriptionMapper jobDescriptionMapper;
 
     @Override
     public JobDescription getById(Long id) {

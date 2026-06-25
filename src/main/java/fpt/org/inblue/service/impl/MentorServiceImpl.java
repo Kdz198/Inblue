@@ -1,5 +1,7 @@
 package fpt.org.inblue.service.impl;
 
+
+import lombok.RequiredArgsConstructor;
 import fpt.org.inblue.cloudinary.CloudinaryService;
 import fpt.org.inblue.exception.CustomException;
 import fpt.org.inblue.mapper.MentorMapper;
@@ -11,7 +13,6 @@ import fpt.org.inblue.enums.Role;
 import fpt.org.inblue.repository.MentorRepository;
 import fpt.org.inblue.service.MentorService;
 import fpt.org.inblue.utils.FileUtil;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
@@ -22,15 +23,12 @@ import java.io.IOException;
 import java.util.List;
 
 @Service
+@RequiredArgsConstructor
 public class MentorServiceImpl implements MentorService {
-    @Autowired
-    private MentorRepository mentorRepository;
-    @Autowired
-    private ApplicationEventPublisher applicationEventPublisher;
-    @Autowired
-    private CloudinaryService cloudinaryService;
-    @Autowired
-    private MentorMapper mentorMapper;
+    private final MentorRepository mentorRepository;
+    private final ApplicationEventPublisher applicationEventPublisher;
+    private final CloudinaryService cloudinaryService;
+    private final MentorMapper mentorMapper;
 
     @Override
     public Mentor createMentor(MentorInfo data, MultipartFile avatar) throws IOException {

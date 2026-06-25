@@ -1,11 +1,12 @@
 package fpt.org.inblue.security;
 
+
+import lombok.RequiredArgsConstructor;
 import fpt.org.inblue.model.Mentor;
 import fpt.org.inblue.model.User;
 import fpt.org.inblue.repository.MentorRepository;
 import fpt.org.inblue.repository.UserRepository;
 import org.jetbrains.annotations.NotNull;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
@@ -15,11 +16,10 @@ import org.springframework.stereotype.Service;
 import java.util.List;
 
 @Service
+@RequiredArgsConstructor
 public class CustomUserDetailService implements UserDetailsService {
-    @Autowired
-    private UserRepository userRepository;
-    @Autowired
-    private MentorRepository mentorRepository;
+    private final UserRepository userRepository;
+    private final MentorRepository mentorRepository;
 
     @NotNull
     @Override

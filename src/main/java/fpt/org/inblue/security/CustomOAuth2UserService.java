@@ -1,11 +1,12 @@
 package fpt.org.inblue.security;
 
+
+import lombok.RequiredArgsConstructor;
 import fpt.org.inblue.model.Mentor;
 import fpt.org.inblue.model.User;
 import fpt.org.inblue.enums.Role;
 import fpt.org.inblue.repository.MentorRepository;
 import fpt.org.inblue.repository.UserRepository;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.oauth2.client.userinfo.DefaultOAuth2UserService;
@@ -20,11 +21,10 @@ import java.util.List;
 import java.util.Map;
 
 @Service
+@RequiredArgsConstructor
 public class CustomOAuth2UserService implements OAuth2UserService<OAuth2UserRequest, OAuth2User> {
-    @Autowired
-    private UserRepository userRepository;
-    @Autowired
-    private MentorRepository mentorRepository;
+    private final UserRepository userRepository;
+    private final MentorRepository mentorRepository;
 
     private User linkUserAccount(String email, String name) {
         User user = userRepository.findByEmail(email);

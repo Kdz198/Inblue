@@ -1,9 +1,10 @@
 package fpt.org.inblue.controller;
 
+
+import lombok.RequiredArgsConstructor;
 import fpt.org.inblue.model.Notification;
 import fpt.org.inblue.service.NotificationService;
 import io.swagger.v3.oas.annotations.Operation;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -12,9 +13,9 @@ import java.util.List;
 @RestController
 @RequestMapping("/api/notifications")
 @CrossOrigin(origins = "*")
+@RequiredArgsConstructor
 public class NotificationController {
-    @Autowired
-    private NotificationService notificationService;
+    private final NotificationService notificationService;
 
     @GetMapping("/{id}")
     public ResponseEntity<List<Notification>> getAllNotifications(@PathVariable int id) {

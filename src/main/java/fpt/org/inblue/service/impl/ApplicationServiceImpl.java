@@ -1,5 +1,7 @@
 package fpt.org.inblue.service.impl;
 
+
+import lombok.RequiredArgsConstructor;
 import fpt.org.inblue.enums.ApplicationStatus;
 import fpt.org.inblue.exception.CustomException;
 import fpt.org.inblue.model.Application;
@@ -12,22 +14,18 @@ import fpt.org.inblue.repository.JobDescriptionRepository;
 import fpt.org.inblue.security.JwtUtils;
 import fpt.org.inblue.service.ApplicationService;
 import fpt.org.inblue.utils.HelperUtil;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
 
 @Service
+@RequiredArgsConstructor
 public class ApplicationServiceImpl implements ApplicationService {
-    @Autowired
-    private JwtUtils jwtUtils;
-    @Autowired
-    private ApplicationRepository applicationRepository;
-    @Autowired
-    private JobDescriptionRepository jobDescriptionRepository;
-    @Autowired
-    private ApplicationDetailRepository applicationDetailRepository;
+    private final JwtUtils jwtUtils;
+    private final ApplicationRepository applicationRepository;
+    private final JobDescriptionRepository jobDescriptionRepository;
+    private final ApplicationDetailRepository applicationDetailRepository;
 
     @Override
     public Application applyForJob(Long jdId) {

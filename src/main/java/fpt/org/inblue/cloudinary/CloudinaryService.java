@@ -1,8 +1,9 @@
 package fpt.org.inblue.cloudinary;
 
+
+import lombok.RequiredArgsConstructor;
 import com.cloudinary.Cloudinary;
 import com.cloudinary.utils.ObjectUtils;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 import org.springframework.web.multipart.MultipartFile;
@@ -14,9 +15,9 @@ import java.util.Map;
 import java.util.UUID;
 
 @Service
+@RequiredArgsConstructor
 public class CloudinaryService {
-    @Autowired
-    private Cloudinary cloudinary;
+    private final Cloudinary cloudinary;
 
     public Map<String,String> uploadImg(MultipartFile file) throws IOException {
         Map uploadResult = cloudinary.uploader().upload(file.getBytes(), ObjectUtils.asMap("folder", "my_app/images",
@@ -39,6 +40,25 @@ public class CloudinaryService {
                         "resource_type", "auto",
                         "access_mode", "public",
                         "overwrite", true
+                )
+        );
+
+        Map<String, String> result = new HashMap<>();
+        result.put("public_id", (String) uploadResult.get("public_id"));
+        result.put("secure_url", (String) uploadResult.get("secure_url"));
+        return result;
+    }
+
+    public Map<String, String> uploadDocument(byte[] bytes, String fileName) throws IOException {
+        String publicId = "my_app/docs/" + UUID.randomUUID().toString();
+        Map uploadResult = cloudinary.uploader().upload(
+                bytes,
+                ObjectUtils.asMap(
+                        "public_id", publicId,
+                        "resource_type", "auto",
+                        "access_mode", "public",
+                        "overwrite", true,
+                        "filename", fileName
                 )
         );
 

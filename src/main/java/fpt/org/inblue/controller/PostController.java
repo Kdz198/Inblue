@@ -1,5 +1,7 @@
 package fpt.org.inblue.controller;
 
+
+import lombok.RequiredArgsConstructor;
 import fpt.org.inblue.model.Post;
 import fpt.org.inblue.model.PostComment;
 import fpt.org.inblue.model.PostLike;
@@ -12,7 +14,6 @@ import fpt.org.inblue.service.PostService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -25,9 +26,9 @@ import java.util.Map;
 @RestController
 @RequestMapping("/api/posts")
 @CrossOrigin("*")
+@RequiredArgsConstructor
 public class PostController {
-    @Autowired
-    private PostService postService;
+    private final PostService postService;
 
     @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     @Operation(

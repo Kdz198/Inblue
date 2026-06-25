@@ -1,5 +1,7 @@
 package fpt.org.inblue.service.impl;
 
+
+import lombok.RequiredArgsConstructor;
 import fpt.org.inblue.cloudinary.CloudinaryService;
 import fpt.org.inblue.exception.CustomException;
 import fpt.org.inblue.mapper.CompanyMapper;
@@ -8,7 +10,6 @@ import fpt.org.inblue.model.dto.request.CreateCompanyRequest;
 import fpt.org.inblue.model.dto.request.UpdateCompanyRequest;
 import fpt.org.inblue.repository.CompanyRepository;
 import fpt.org.inblue.service.CompanyService;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -20,18 +21,16 @@ import java.util.Map;
 import java.util.logging.Logger;
 
 @Service
+@RequiredArgsConstructor
 public class CompanyServiceImpl implements CompanyService {
 
     private static final Logger logger = Logger.getLogger(CompanyServiceImpl.class.getName());
 
-    @Autowired
-    private CompanyRepository companyRepository;
+    private final CompanyRepository companyRepository;
 
-    @Autowired
-    private CompanyMapper companyMapper;
+    private final CompanyMapper companyMapper;
 
-    @Autowired
-    private CloudinaryService cloudinaryService;
+    private final CloudinaryService cloudinaryService;
 
     @Override
     public Company getById(Long id) {

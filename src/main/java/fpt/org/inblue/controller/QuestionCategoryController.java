@@ -1,9 +1,10 @@
 package fpt.org.inblue.controller;
 
+
+import lombok.RequiredArgsConstructor;
 import fpt.org.inblue.model.QuestionCategory;
 import fpt.org.inblue.service.QuestionCategoryService;
 import io.swagger.v3.oas.annotations.Operation;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -11,9 +12,9 @@ import java.util.List;
 
 @RestController
 @RequestMapping("api/question-categories")
+@RequiredArgsConstructor
 public class QuestionCategoryController {
-    @Autowired
-    private QuestionCategoryService questionCategoryService;
+    private final QuestionCategoryService questionCategoryService;
 
     @GetMapping
     public ResponseEntity<List<QuestionCategory>> getAllQuestionCategories() {

@@ -1,9 +1,10 @@
 package fpt.org.inblue.controller;
 
+
+import lombok.RequiredArgsConstructor;
 import fpt.org.inblue.model.CandidateProfile;
 import fpt.org.inblue.service.CandidateProfileService;
 import io.swagger.v3.oas.annotations.Operation;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -12,9 +13,9 @@ import java.util.List;
 @RestController
 @RequestMapping("/api/candidate-profiles")
 @CrossOrigin(origins = "*")
+@RequiredArgsConstructor
 public class CandidateProfileController {
-    @Autowired
-    private CandidateProfileService candidateProfileService;
+    private final CandidateProfileService candidateProfileService;
 
     @GetMapping
     public ResponseEntity<List<CandidateProfile>> getAllProfile(){

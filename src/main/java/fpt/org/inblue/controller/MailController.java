@@ -1,15 +1,16 @@
 package fpt.org.inblue.controller;
 
+
+import lombok.RequiredArgsConstructor;
 import fpt.org.inblue.service.MailService;
 import jakarta.mail.MessagingException;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequestMapping("/api/mails")
+@RequiredArgsConstructor
 public class MailController {
-    @Autowired
-    private MailService mailService;
+    private final MailService mailService;
 
     @GetMapping("/send")
     public void adminSendMail(@RequestParam String toEmail,

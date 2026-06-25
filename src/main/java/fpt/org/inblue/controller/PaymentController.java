@@ -1,9 +1,10 @@
 package fpt.org.inblue.controller;
 
+
+import lombok.RequiredArgsConstructor;
 import fpt.org.inblue.model.Payment;
 import fpt.org.inblue.enums.PaymentPurpose;
 import fpt.org.inblue.service.PaymentService;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import vn.payos.model.webhooks.Webhook;
@@ -12,9 +13,9 @@ import java.util.List;
 @RestController
 @RequestMapping("/api/payments")
 @CrossOrigin(origins = "*")
+@RequiredArgsConstructor
 public class PaymentController {
-    @Autowired
-    private PaymentService paymentService;
+    private final PaymentService paymentService;
 
 
     @PostMapping("/pay")

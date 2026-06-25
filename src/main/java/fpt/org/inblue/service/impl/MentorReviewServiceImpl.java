@@ -1,5 +1,7 @@
 package fpt.org.inblue.service.impl;
 
+
+import lombok.RequiredArgsConstructor;
 import fpt.org.inblue.exception.CustomException;
 import fpt.org.inblue.mapper.MentorReviewMapper;
 import fpt.org.inblue.model.Mentor;
@@ -14,25 +16,20 @@ import fpt.org.inblue.repository.MentorReviewRepository;
 import fpt.org.inblue.repository.SessionRepository;
 import fpt.org.inblue.service.MentorReviewService;
 import fpt.org.inblue.service.UserService;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
 
 @Service
+@RequiredArgsConstructor
 public class MentorReviewServiceImpl implements MentorReviewService {
-    @Autowired
-    private MentorReviewRepository repo;
+    private final MentorReviewRepository repo;
 
-    @Autowired
-    private SessionRepository sessionRepo;
-    @Autowired
-    private MentorReviewMapper mentorReviewMapper;
-    @Autowired
-    private MentorRepository mentorRepo;
-    @Autowired
-    private UserService userService;
+    private final SessionRepository sessionRepo;
+    private final MentorReviewMapper mentorReviewMapper;
+    private final MentorRepository mentorRepo;
+    private final UserService userService;
 
     @Override
     public MentorReview mentorReview(CreateMentorReviewRequest mentorReview) {

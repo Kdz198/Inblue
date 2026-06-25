@@ -1,23 +1,23 @@
 package fpt.org.inblue.service.impl;
 
+
+import lombok.RequiredArgsConstructor;
 import fpt.org.inblue.model.ChatMessage;
 import fpt.org.inblue.model.dto.ChatDto;
 import fpt.org.inblue.enums.Role;
 import fpt.org.inblue.repository.ChatMessageRepository;
 import fpt.org.inblue.service.ChatService;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
 
 @Service
+@RequiredArgsConstructor
 public class ChatServiceImpl implements ChatService {
 
-    @Autowired
-    private ChatMessageRepository chatMessageRepository;
-    @Autowired
-    private SimpMessagingTemplate messagingTemplate;
+    private final ChatMessageRepository chatMessageRepository;
+    private final SimpMessagingTemplate messagingTemplate;
 
     @Override
     public void processMessage(ChatDto message) {

@@ -1,5 +1,7 @@
 package fpt.org.inblue.service.impl;
 
+
+import lombok.RequiredArgsConstructor;
 import fpt.org.inblue.exception.CustomException;
 import fpt.org.inblue.mapper.MentorFeedbackMapper;
 import fpt.org.inblue.model.Mentor;
@@ -14,25 +16,20 @@ import fpt.org.inblue.repository.MentorRepository;
 import fpt.org.inblue.repository.SessionRepository;
 import fpt.org.inblue.service.MentorFeedbackService;
 import fpt.org.inblue.service.UserService;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
 
 @Service
+@RequiredArgsConstructor
 public class MentorFeedbackServiceImpl implements MentorFeedbackService {
 
-    @Autowired
-    private MentorFeedbackRepository mentorFeedbackRepository;
-    @Autowired
-    private SessionRepository sessionRepository;
-    @Autowired
-    private MentorFeedbackMapper mentorFeedbackMapper;
-    @Autowired
-   private MentorRepository mentorRepository;
-    @Autowired
-    private UserService userService;
+    private final MentorFeedbackRepository mentorFeedbackRepository;
+    private final SessionRepository sessionRepository;
+    private final MentorFeedbackMapper mentorFeedbackMapper;
+    private final MentorRepository mentorRepository;
+    private final UserService userService;
 
     @Override
     public MentorFeedback createMentorFeedback(CreateMentorFeedbackRequest mentorFeedback) {

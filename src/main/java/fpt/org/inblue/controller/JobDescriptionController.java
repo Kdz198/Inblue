@@ -1,5 +1,7 @@
 package fpt.org.inblue.controller;
 
+
+import lombok.RequiredArgsConstructor;
 import fpt.org.inblue.model.JobDescription;
 import fpt.org.inblue.model.dto.request.CreateJobDescriptionRequest;
 import fpt.org.inblue.model.dto.request.UpdateJobDescriptionRequest;
@@ -8,7 +10,6 @@ import fpt.org.inblue.enums.TargetLevel;
 import fpt.org.inblue.service.JobDescriptionService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -20,10 +21,10 @@ import java.util.Map;
 @RestController
 @RequestMapping("/api/job-descriptions")
 @Tag(name = "Job Description", description = "API for Job Description Management")
+@RequiredArgsConstructor
 public class JobDescriptionController {
 
-    @Autowired
-    private JobDescriptionService jobDescriptionService;
+    private final JobDescriptionService jobDescriptionService;
 
     @GetMapping
     @Operation(summary = "Get all job descriptions")

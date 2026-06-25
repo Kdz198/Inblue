@@ -1,8 +1,9 @@
 package fpt.org.inblue.controller;
 
+
+import lombok.RequiredArgsConstructor;
 import fpt.org.inblue.model.Application;
 import fpt.org.inblue.service.ApplicationService;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
@@ -12,9 +13,10 @@ import java.util.List;
 @RestController
 @RequestMapping("/api/applications")
 
+@RequiredArgsConstructor
+
 public class ApplicationController {
-    @Autowired
-    private ApplicationService applicationService;
+    private final ApplicationService applicationService;
 
     @PostMapping
     public ResponseEntity<Application> applyJd(@RequestParam Long jdId) {

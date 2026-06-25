@@ -1,10 +1,11 @@
 package fpt.org.inblue.controller;
 
+
+import lombok.RequiredArgsConstructor;
 import fpt.org.inblue.model.MentorFeedback;
 import fpt.org.inblue.model.dto.request.CreateMentorFeedbackRequest;
 import fpt.org.inblue.model.dto.request.UpdateMentorFeedbackRequest;
 import fpt.org.inblue.service.MentorFeedbackService;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -13,9 +14,9 @@ import java.util.List;
 @RestController
 @RequestMapping("api/mentor-feedbacks")
 @CrossOrigin(origins = "*")
+@RequiredArgsConstructor
 public class MentorFeedbackController {
-    @Autowired
-    private MentorFeedbackService mentorFeedbackService;
+    private final MentorFeedbackService mentorFeedbackService;
 
     @GetMapping("{id}")
     public ResponseEntity<MentorFeedback> getMentorFeedbackBySessionId(@PathVariable int id) {

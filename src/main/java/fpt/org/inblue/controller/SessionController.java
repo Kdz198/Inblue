@@ -1,5 +1,7 @@
 package fpt.org.inblue.controller;
 
+
+import lombok.RequiredArgsConstructor;
 import fpt.org.inblue.model.Session;
 import fpt.org.inblue.model.dto.request.JoinSessionDtoRequest;
 import fpt.org.inblue.model.dto.dailyco.DailyWebHookPayload;
@@ -7,7 +9,6 @@ import fpt.org.inblue.model.dto.dailyco.SessionCreationRequest;
 import fpt.org.inblue.model.dto.dailyco.SessionResponse;
 import fpt.org.inblue.service.SessionService;
 import io.swagger.v3.oas.annotations.Operation;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -16,9 +17,9 @@ import java.util.List;
 @RestController
 @RequestMapping("api/sessions")
 @CrossOrigin(origins = "*")
+@RequiredArgsConstructor
 public class SessionController {
-    @Autowired
-    private SessionService sessionService;
+    private final SessionService sessionService;
 
     @GetMapping
     public ResponseEntity<List<Session>> getSessions() {

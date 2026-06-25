@@ -1,9 +1,10 @@
 package fpt.org.inblue.controller;
 
+
+import lombok.RequiredArgsConstructor;
 import fpt.org.inblue.model.ChatMessage;
 import fpt.org.inblue.enums.Role;
 import fpt.org.inblue.service.ChatService;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -13,9 +14,10 @@ import java.util.List;
 @RequestMapping("/api/messages")
 @CrossOrigin(origins = "*")
 
+@RequiredArgsConstructor
+
 public class ChatMessageController {
-    @Autowired
-    private ChatService chatService;
+    private final ChatService chatService;
 
     @GetMapping("/{currentFullId}/{recipientFullId}")
     public ResponseEntity<List<ChatMessage>> getChatHistory(

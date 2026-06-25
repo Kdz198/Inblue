@@ -1,5 +1,7 @@
 package fpt.org.inblue.service.impl;
 
+
+import lombok.RequiredArgsConstructor;
 import fpt.org.inblue.enums.AnythingLlmWorkspace;
 import fpt.org.inblue.exception.CustomException;
 import fpt.org.inblue.mapper.QuestionBankMapper;
@@ -13,21 +15,17 @@ import fpt.org.inblue.repository.QuestionBankRepository;
 import fpt.org.inblue.repository.QuestionCategoryRepository;
 import fpt.org.inblue.service.ApiClient;
 import fpt.org.inblue.service.QuestionBankService;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
 @Service
+@RequiredArgsConstructor
 public class QuestionBankServiceImpl implements QuestionBankService {
-    @Autowired
-    private QuestionBankRepository questionBankRepository;
-    @Autowired
-    private QuestionCategoryRepository questionCategoryRepository;
-    @Autowired
-    private QuestionBankMapper questionBankMapper;
-    @Autowired
-    private ApiClient apiClient;
+    private final QuestionBankRepository questionBankRepository;
+    private final QuestionCategoryRepository questionCategoryRepository;
+    private final QuestionBankMapper questionBankMapper;
+    private final ApiClient apiClient;
 
     @Override
     public QuestionBank createQuestionBank(CreateQuestionBankRequest request) {

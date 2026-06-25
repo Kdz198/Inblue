@@ -1,12 +1,13 @@
 package fpt.org.inblue.controller;
 
+
+import lombok.RequiredArgsConstructor;
 import fpt.org.inblue.model.QuestionBank;
 import fpt.org.inblue.model.dto.request.CreateQuestionBankRequest;
 import fpt.org.inblue.model.dto.request.UpdateQuestionBankRequest;
 import fpt.org.inblue.model.dto.response.QuestionGenerateResponse;
 import fpt.org.inblue.service.QuestionBankService;
 import jakarta.validation.Valid;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -14,9 +15,9 @@ import java.util.List;
 
 @RestController
 @RequestMapping("api/question-banks")
+@RequiredArgsConstructor
 public class QuestionBankController {
-    @Autowired
-    private QuestionBankService questionBankService;
+    private final QuestionBankService questionBankService;
 
     @GetMapping
     public ResponseEntity<List<QuestionBank>> getQuestionBank() {

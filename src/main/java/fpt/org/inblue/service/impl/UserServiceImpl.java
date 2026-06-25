@@ -1,5 +1,7 @@
 package fpt.org.inblue.service.impl;
 
+
+import lombok.RequiredArgsConstructor;
 import fpt.org.inblue.cloudinary.CloudinaryService;
 import fpt.org.inblue.constants.ApiPath;
 import fpt.org.inblue.enums.PythonService;
@@ -16,7 +18,6 @@ import fpt.org.inblue.service.ApiClient;
 import fpt.org.inblue.service.CandidateProfileService;
 import fpt.org.inblue.service.UserService;
 import fpt.org.inblue.utils.FileUtil;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
@@ -34,18 +35,14 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 @Service
+@RequiredArgsConstructor
 public class UserServiceImpl implements UserService {
-    @Autowired
-    private UserRepository userRepository;
+    private final UserRepository userRepository;
 
-    @Autowired
-    private ApplicationEventPublisher applicationEventPublisher;
-    @Autowired
-    private CloudinaryService cloudinaryService;
-    @Autowired
-    private ApiClient ApiClient;
-    @Autowired
-    private CandidateProfileService candidateProfileService;
+    private final ApplicationEventPublisher applicationEventPublisher;
+    private final CloudinaryService cloudinaryService;
+    private final ApiClient ApiClient;
+    private final CandidateProfileService candidateProfileService;
 
 
     @Override

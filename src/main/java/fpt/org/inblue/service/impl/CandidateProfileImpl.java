@@ -1,19 +1,20 @@
 package fpt.org.inblue.service.impl;
 
+
+import lombok.RequiredArgsConstructor;
 import fpt.org.inblue.exception.CustomException;
 import fpt.org.inblue.model.CandidateProfile;
 import fpt.org.inblue.repository.CandidateProfileRepository;
 import fpt.org.inblue.service.CandidateProfileService;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
 
 @Service
+@RequiredArgsConstructor
 public class CandidateProfileImpl implements CandidateProfileService {
-    @Autowired
-    private CandidateProfileRepository candidateProfileRepository;
+    private final CandidateProfileRepository candidateProfileRepository;
 
     @Override
     public CandidateProfile createProfile(CandidateProfile profile) {

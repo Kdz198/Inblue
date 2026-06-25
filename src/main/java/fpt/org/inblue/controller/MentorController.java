@@ -1,10 +1,11 @@
 package fpt.org.inblue.controller;
 
+
+import lombok.RequiredArgsConstructor;
 import fpt.org.inblue.model.Mentor;
 import fpt.org.inblue.model.dto.MentorInfo;
 import fpt.org.inblue.model.dto.response.MentorResponse;
 import fpt.org.inblue.service.MentorService;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -19,9 +20,9 @@ import java.util.List;
 @RestController
 @RequestMapping("/api/mentors")
 @CrossOrigin(origins = "*")
+@RequiredArgsConstructor
 public class MentorController {
-    @Autowired
-    private MentorService mentorService;
+    private final MentorService mentorService;
 
     @GetMapping
     public ResponseEntity<List<MentorResponse>> getAllMentors() {

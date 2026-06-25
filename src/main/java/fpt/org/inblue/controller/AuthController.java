@@ -1,12 +1,13 @@
 package fpt.org.inblue.controller;
 
+
+import lombok.RequiredArgsConstructor;
 import fpt.org.inblue.model.dto.request.ForgotPasswordRequest;
 import fpt.org.inblue.model.dto.request.LoginRequest;
 import fpt.org.inblue.model.dto.request.ResetPasswordRequest;
 import fpt.org.inblue.security.JwtUtils;
 import fpt.org.inblue.service.PasswordResetService;
 import jakarta.validation.Valid;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -18,13 +19,11 @@ import org.springframework.web.servlet.view.RedirectView;
 @RestController
 @RequestMapping("api/auth")
 @CrossOrigin(origins = "*", allowedHeaders = "*")
+@RequiredArgsConstructor
 public class AuthController {
-    @Autowired
-    private AuthenticationManager authenticationManager;
-    @Autowired
-    private JwtUtils jwtUtils;
-    @Autowired
-    private PasswordResetService passwordResetService;
+    private final AuthenticationManager authenticationManager;
+    private final JwtUtils jwtUtils;
+    private final PasswordResetService passwordResetService;
 
     @PostMapping("/login")
     public ResponseEntity<String> login (@RequestBody LoginRequest loginRequest) {

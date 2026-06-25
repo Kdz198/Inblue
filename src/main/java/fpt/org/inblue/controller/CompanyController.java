@@ -1,5 +1,7 @@
 package fpt.org.inblue.controller;
 
+
+import lombok.RequiredArgsConstructor;
 import fpt.org.inblue.model.Company;
 import fpt.org.inblue.model.dto.request.CreateCompanyRequest;
 import fpt.org.inblue.model.dto.request.UpdateCompanyRequest;
@@ -7,7 +9,6 @@ import fpt.org.inblue.service.CompanyService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Encoding;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -17,9 +18,9 @@ import java.io.IOException;
 
 @RestController
 @RequestMapping("/api/companies")
+@RequiredArgsConstructor
 public class CompanyController {
-    @Autowired
-    private CompanyService companyService;
+    private final CompanyService companyService;
 
     @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     @Operation(

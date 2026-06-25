@@ -1,11 +1,12 @@
 package fpt.org.inblue.controller;
 
+
+import lombok.RequiredArgsConstructor;
 import fpt.org.inblue.model.MentorReview;
 import fpt.org.inblue.model.dto.request.CreateMentorReviewRequest;
 import fpt.org.inblue.model.dto.request.UpdateMentorReviewRequest;
 import fpt.org.inblue.service.MentorReviewService;
 import io.swagger.v3.oas.annotations.Operation;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -14,9 +15,9 @@ import java.util.List;
 @RestController
 @RequestMapping("api/mentor-reviews")
 @CrossOrigin(origins = "*")
+@RequiredArgsConstructor
 public class MentorReviewController {
-    @Autowired
-    private MentorReviewService mentorReviewService;
+    private final MentorReviewService mentorReviewService;
 
     @GetMapping
     public ResponseEntity<List<MentorReview>> getAllMentorReviews() {

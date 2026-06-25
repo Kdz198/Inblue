@@ -1,10 +1,11 @@
 package fpt.org.inblue.controller;
 
+
+import lombok.RequiredArgsConstructor;
 import fpt.org.inblue.model.CodingProblem;
 import fpt.org.inblue.model.dto.request.CodingProblemGenerateRequest;
 import fpt.org.inblue.model.dto.response.CodingProblemGenerateResponse;
 import fpt.org.inblue.service.CodingProblemService;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -13,9 +14,9 @@ import java.util.Optional;
 
 @RestController
 @RequestMapping("/api/coding-problems")
+@RequiredArgsConstructor
 public class CodingProblemController {
-    @Autowired
-    private CodingProblemService codingProblemService;
+    private final CodingProblemService codingProblemService;
 
     @GetMapping
     public ResponseEntity<List<CodingProblem>> getAllCodingProblems() {

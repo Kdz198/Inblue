@@ -1,5 +1,7 @@
 package fpt.org.inblue.service.impl;
 
+
+import lombok.RequiredArgsConstructor;
 import fpt.org.inblue.enums.AnythingLlmWorkspace;
 import fpt.org.inblue.model.CodingProblem;
 import fpt.org.inblue.model.dto.request.CodingProblemGenerateRequest;
@@ -7,18 +9,16 @@ import fpt.org.inblue.model.dto.response.CodingProblemGenerateResponse;
 import fpt.org.inblue.repository.CodingProblemsRepository;
 import fpt.org.inblue.service.ApiClient;
 import fpt.org.inblue.service.CodingProblemService;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
 import java.util.Optional;
 
 @Service
+@RequiredArgsConstructor
 public class CodingProblemServiceImpl implements CodingProblemService {
-    @Autowired
-    private CodingProblemsRepository codingProblemsRepository;
-    @Autowired
-    private ApiClient apiClient;
+    private final CodingProblemsRepository codingProblemsRepository;
+    private final ApiClient apiClient;
 
     @Override
     public Optional<CodingProblem> findCodingProblemById(Long id) {

@@ -1,6 +1,7 @@
 package fpt.org.inblue.security;
 
-import org.springframework.beans.factory.annotation.Autowired;
+
+import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -21,19 +22,16 @@ import java.util.Arrays;
 
 @Configuration
 @EnableWebSecurity
+@RequiredArgsConstructor
 public class SecurityConfig {
-    @Autowired
-    private JwtAuthenticationFilter jwtAuthenticationFilter;
+    private final JwtAuthenticationFilter jwtAuthenticationFilter;
 
     @Value("${frontend.url}")
     private String frontendUrl;
 
-    @Autowired
-    private Oauth2Handler oauth2Handler;
-    @Autowired
-    CustomOAuth2UserService customOAuth2UserService;
-    @Autowired
-    private CustomUserDetailService customUserDetailService;
+    private final Oauth2Handler oauth2Handler;
+    private final CustomOAuth2UserService customOAuth2UserService;
+    private final CustomUserDetailService customUserDetailService;
 
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {

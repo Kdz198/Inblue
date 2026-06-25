@@ -1,5 +1,7 @@
 package fpt.org.inblue.service.impl;
 
+
+import lombok.RequiredArgsConstructor;
 import fpt.org.inblue.exception.CustomException;
 import fpt.org.inblue.model.Payment;
 import fpt.org.inblue.model.Session;
@@ -12,7 +14,6 @@ import fpt.org.inblue.repository.SessionRepository;
 import fpt.org.inblue.repository.UserRepository;
 import fpt.org.inblue.service.PaymentService;
 import fpt.org.inblue.utils.HelperUtil;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
@@ -27,19 +28,16 @@ import java.util.List;
 import static fpt.org.inblue.utils.HelperUtil.generateUniqueOrderCode;
 
 @Service
+@RequiredArgsConstructor
 public class PaymentServiceImpl implements PaymentService {
-    @Autowired
-    private PaymentRepository paymentRepository;
-    @Autowired
-    private PayOS payOS;
+    private final PaymentRepository paymentRepository;
+    private final PayOS payOS;
     @Value("${payos.return-url}")
     private String returnUrl;
     @Value("${payos.cancel-url}")
     private String cancelUrl;
-    @Autowired
-    private UserRepository userRepository;
-    @Autowired
-    private SessionRepository sessionRepository;
+    private final UserRepository userRepository;
+    private final SessionRepository sessionRepository;
 
     @Override
     public String createPayment(long amount, int userId, PaymentPurpose paymentPurpose) {
