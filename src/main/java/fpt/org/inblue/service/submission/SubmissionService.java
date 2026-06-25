@@ -145,9 +145,9 @@ public class SubmissionService {
         processDto.setRoundType(currentRound.getRoundType());
         processDto.setCompileRequest(detail.getCompileRequest());
         SubmissionResult submissionResult = processor.process(processDto);
-        if(submissionResult.getStatus().equals(SubmissionResult.Status.COMPLETED)&&submissionResult.getRoundResult().equals(RoundResult.PASSED)){
-            applicationService.moveToNextRound(currentApplication);
-        }
+//        if(submissionResult.getStatus().equals(SubmissionResult.Status.COMPLETED)&&submissionResult.getRoundResult().equals(RoundResult.PASSED)){
+//            applicationService.moveToNextRound(currentApplication);
+//        }
         return submissionResult;
     }
 }

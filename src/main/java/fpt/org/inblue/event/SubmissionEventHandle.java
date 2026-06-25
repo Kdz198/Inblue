@@ -21,6 +21,7 @@ import fpt.org.inblue.repository.ApplicationDetailRepository;
 import fpt.org.inblue.repository.CodingProblemsRepository;
 import fpt.org.inblue.repository.JobDescriptionRepository;
 import fpt.org.inblue.service.ApiClient;
+import fpt.org.inblue.service.ApplicationService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.event.EventListener;
@@ -45,6 +46,7 @@ public class SubmissionEventHandle {
     private final ObjectMapper objectMapper;
     private final CodingProblemsRepository codingProblemsRepository;
     private final ApiClient apiClient;
+    private final ApplicationService applicationService;
 
     @Async
     @EventListener
@@ -154,6 +156,9 @@ public class SubmissionEventHandle {
                 .finalResult(roundResult).submissionData(submissionData).build();
 
         applicationDetailRepository.save(applicationDetail);
+
+            applicationService.moveToNextRound(dto.getApplication());
+
     }
 
     private void processEmailSubmission(ProcessDto dto) {
