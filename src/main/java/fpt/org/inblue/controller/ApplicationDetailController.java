@@ -70,4 +70,13 @@ public class ApplicationDetailController {
         public ResponseEntity<?> getApplicationDetailsByApplicationId(@PathVariable long applicationId){
             return ResponseEntity.ok(applicationDetailService.getByApplicationId(applicationId));
      }
+
+      @GetMapping("/reviewer")
+      @Operation(
+              summary = "Lấy danh sách các vòng được giao cho reviewer hiện tại (STAFF)",
+              description = "Lấy danh sách application details của các vòng thi được gán cho staff hiện tại làm reviewer."
+      )
+      public ResponseEntity<?> getApplicationDetailsForReviewer() {
+          return ResponseEntity.ok(applicationDetailService.getApplicationDetailsForReviewer());
+      }
 }

@@ -8,4 +8,5 @@ public interface ApplicationDetailService {
     ApplicationDetail getApplicationDetailById(long id);
     List<ApplicationDetail> getByApplicationId(long applicationId);
     void hrScore(long applicationId,boolean isPass, String note,double score);
+    List<ApplicationDetail> getApplicationDetailsForReviewer();
 }
