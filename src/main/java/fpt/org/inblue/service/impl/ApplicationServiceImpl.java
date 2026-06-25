@@ -6,6 +6,8 @@ import fpt.org.inblue.model.Application;
 import fpt.org.inblue.model.JobDescription;
 import fpt.org.inblue.model.Round;
 import fpt.org.inblue.repository.ApplicationRepository;
+import fpt.org.inblue.model.ApplicationDetail;
+import fpt.org.inblue.repository.ApplicationDetailRepository;
 import fpt.org.inblue.repository.JobDescriptionRepository;
 import fpt.org.inblue.security.JwtUtils;
 import fpt.org.inblue.service.ApplicationService;
@@ -24,6 +26,8 @@ public class ApplicationServiceImpl implements ApplicationService {
     private ApplicationRepository applicationRepository;
     @Autowired
     private JobDescriptionRepository jobDescriptionRepository;
+    @Autowired
+    private ApplicationDetailRepository applicationDetailRepository;
 
     @Override
     public Application applyForJob(Long jdId) {
@@ -68,10 +72,47 @@ public class ApplicationServiceImpl implements ApplicationService {
                 System.out.println("Application " + currentApplication.getId() + " moved to round order " + currentApplication.getCurrentRoundOrder());
             }
             else{
-                //Đã qua tất cả các vòng, có thể set trạng thái ứng viên ở đây nếu muốn
-                //xử lí sau ( sẽ tính điểm các vòng set vô overall score và trạng thái tương ứng )
-//                currentApplication.setStatus();
-//                applicationRepository.save(currentApplication);
+                List<ApplicationDetail> details = applicationDetailRepository.findAllByApplicationId(currentApplication.getId());
+                double totalEarnedScore = 0;
+                double totalMaxScore = 0;
+                boolean hasFailedRound = false;
+
+                for (ApplicationDetail detail : details) {
+                    if (detail.getFinalScore() != null) {
+                        totalEarnedScore += detail.getFinalScore();
+                    }
+                    if (detail.getFinalResult() == ApplicationDetail.RoundResult.FAILED) {
+                        hasFailedRound = true;
+                    }
+
+                    final Long detailRoundId = detail.getRoundId();
+                    if (detailRoundId != null) {
+                        Round matchingRound = rounds.stream()
+                                .filter(r -> r.getId() != null && r.getId().equals(detailRoundId))
+                                .findFirst()
+                                .orElse(null);
+
+                        if (matchingRound != null && matchingRound.getConfigData() != null && matchingRound.getConfigData().getMaxScore() != null) {
+                            totalMaxScore += matchingRound.getConfigData().getMaxScore();
+                        } else {
+                            totalMaxScore += 100.0;
+                        }
+                    }
+                }
+
+                double overallScorePercentage = 0.0;
+                if (totalMaxScore > 0) {
+                    overallScorePercentage = Math.round((totalEarnedScore / totalMaxScore) * 100.0);
+                }
+                currentApplication.setOverallScore(overallScorePercentage);
+
+                if (hasFailedRound) {
+                    currentApplication.setStatus(ApplicationStatus.FAILED);
+                } else {
+                    currentApplication.setStatus(ApplicationStatus.PASSED);
+                }
+                applicationRepository.save(currentApplication);
+                System.out.println("Application " + currentApplication.getId() + " finished all rounds. Status: " + currentApplication.getStatus() + ", Overall Score: " + overallScorePercentage + "%");
             }
         }
     }
