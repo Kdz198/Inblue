@@ -122,13 +122,3 @@ jobs:
           git diff --cached --quiet || git commit -m "docs: auto generate release note [skip ci]"
           git pull --rebase origin master
           git push
-
-      - name: Send Messenger Notification
-        if: success()
-        run: |
-          curl -X POST -H "Content-Type: application/json" \
-          -d '{
-            "recipient": {"id": "${{ secrets.FB_USER_ID }}"},
-            "message": {"text": "✅ [SUCCESS] CI/CD Pipeline hoàn tất!\nRepository: ${{ github.repository }}\nCommit: ${{ github.event.head_commit.message }}\nNgười chạy: ${{ github.actor }}"}
-          }' \
-          "https://graph.facebook.com/v19.0/me/messages?access_token=${{ secrets.FB_PAGE_TOKEN }}"
