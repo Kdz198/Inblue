@@ -59,6 +59,10 @@ public class Round {
     @Builder
     public static class RoundConfig {
         // --- CÁC FIELD DÙNG CHUNG ---
+        /**
+         "Vui lòng gửi email chứa file đính kèm bài làm của bạn đến địa chỉ tuyendung@inblue.org.
+         Lưu ý quan trọng: Tiêu đề email bắt buộc phải chứa cú pháp định danh: [INBLUE-APP-{{applicationId}}] để hệ thống tự động ghi nhận."
+         */
         private String instruction;
         private String submissionFormat;
         private Integer timeLimitMinutes;
