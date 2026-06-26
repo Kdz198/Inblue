@@ -17,8 +17,10 @@ import fpt.org.inblue.model.dto.request.CvEvaluationRequest;
 import fpt.org.inblue.model.dto.request.EmailEvaluationRequest;
 import fpt.org.inblue.model.dto.response.CompilerResponseDto;
 import fpt.org.inblue.model.dto.response.CvEvaluationResponse;
+import fpt.org.inblue.model.EmailSubmission;
 import fpt.org.inblue.repository.ApplicationDetailRepository;
 import fpt.org.inblue.repository.CodingProblemsRepository;
+import fpt.org.inblue.repository.EmailSubmissionRepository;
 import fpt.org.inblue.repository.JobDescriptionRepository;
 import fpt.org.inblue.service.ApiClient;
 import fpt.org.inblue.service.ApplicationService;
@@ -46,6 +48,7 @@ public class SubmissionEventHandle {
     private final CodingProblemsRepository codingProblemsRepository;
     private final ApiClient apiClient;
     private final ApplicationService applicationService;
+    private final EmailSubmissionRepository emailSubmissionRepository;
 
     @Async
     @EventListener
@@ -182,52 +185,81 @@ public class SubmissionEventHandle {
     }
 
     private void processEmailSubmission(ProcessDto dto) {
-        Round round = dto.getRound();
-        Optional<JobDescription> jobDescription =
-                jobDescriptionRepository.findById(dto.getApplication().getJdId());
-        if (jobDescription.isEmpty()) {
-            throw new CustomException(
-                    "Job Description not found for id: " + dto.getApplication().getJdId(), HttpStatus.NOT_FOUND);
+        Long applicationId = dto.getApplication().getId();
+        List<EmailSubmission> submissions = emailSubmissionRepository.findByStatusAndApplicationIdOrderByIdDesc(
+                EmailSubmission.EmailStatus.PROCESSED, applicationId);
+        if (submissions.isEmpty()) {
+            log.warn("No PROCESSED email submission found for application ID: {}", applicationId);
+            return;
         }
-        List<String> criteria = new ArrayList<>(List.of(
-                EmailMetricsConstant.CLOSING_AND_SIGNATURE, EmailMetricsConstant.FORMATTING_AND_STRUCTURE,
-                EmailMetricsConstant.CONTENT_AND_CLARITY, EmailMetricsConstant.GRAMMAR_AND_VOCABULARY,
-                EmailMetricsConstant.GENERAL_COMMENT, EmailMetricsConstant.SALUTATION_AND_OPENING,
-                EmailMetricsConstant.STRENGTH, EmailMetricsConstant.SUBJECT_LINE_QUALITY,
-                EmailMetricsConstant.TONE_AND_PROFESSIONALISM, EmailMetricsConstant.WEAKNESS));
-        EmailEvaluationRequest.EvaluationCriteria evaluation = EmailEvaluationRequest.EvaluationCriteria.builder()
-                .maxScore(round.getConfigData().getMaxScore())
-                .aiSystemPrompt(round.getConfigData().getAiSystemPrompt())
-                .extraMetrics(criteria)
-                .build();
-        EmailEvaluationRequest.EmailContext context = EmailEvaluationRequest.EmailContext.builder()
-                .scenario(round.getConfigData().getEvaluationCriteria())
-                .level(String.valueOf(jobDescription.get().getLevel()))
-                .candidateEmail(dto.getTextContent())
-                .build();
-        EmailEvaluationRequest emailEvaluationRequest = EmailEvaluationRequest.builder()
-                .emailContext(context)
-                .evaluationCriteria(evaluation)
-                .build();
-        // Gọi LLM API để chấm điểm email
-        CvEvaluationResponse response = ApiClient.sendChatToAnythingLlm(
-                AnythingLlmWorkspace.EMAIL,
-                emailEvaluationRequest,
-                "java-backend",
-                false,
-                null,
-                CvEvaluationResponse.class);
+        EmailSubmission submission = submissions.get(0);
 
-        ApplicationDetail applicationDetail = new ApplicationDetail();
-        applicationDetail.setApplicationId(dto.getApplication().getId());
-        applicationDetail.setRoundId(dto.getRound().getId());
-        applicationDetail.setStatus(ApplicationDetailStatus.AI_EVALUATED);
-        ApplicationDetail.SubmissionData submissionData =
-                ApplicationDetail.SubmissionData.builder().build();
-        applicationDetail.setSubmissionData(submissionData);
-        applicationDetail.setAiScore(response.getScore());
-        applicationDetail.setAiFeedback(parseRawMetrics(response.getExtraMetrics()));
-        applicationDetailRepository.save(applicationDetail);
+        try {
+            Round round = dto.getRound();
+            Optional<JobDescription> jobDescription =
+                    jobDescriptionRepository.findById(dto.getApplication().getJdId());
+            if (jobDescription.isEmpty()) {
+                throw new CustomException(
+                        "Job Description not found for id: " + dto.getApplication().getJdId(), HttpStatus.NOT_FOUND);
+            }
+            List<String> criteria = new ArrayList<>(List.of(
+                    EmailMetricsConstant.CLOSING_AND_SIGNATURE, EmailMetricsConstant.FORMATTING_AND_STRUCTURE,
+                    EmailMetricsConstant.CONTENT_AND_CLARITY, EmailMetricsConstant.GRAMMAR_AND_VOCABULARY,
+                    EmailMetricsConstant.GENERAL_COMMENT, EmailMetricsConstant.SALUTATION_AND_OPENING,
+                    EmailMetricsConstant.STRENGTH, EmailMetricsConstant.SUBJECT_LINE_QUALITY,
+                    EmailMetricsConstant.TONE_AND_PROFESSIONALISM, EmailMetricsConstant.WEAKNESS));
+            EmailEvaluationRequest.EvaluationCriteria evaluation = EmailEvaluationRequest.EvaluationCriteria.builder()
+                    .maxScore(round.getConfigData().getMaxScore())
+                    .aiSystemPrompt(round.getConfigData().getAiSystemPrompt())
+                    .extraMetrics(criteria)
+                    .build();
+            EmailEvaluationRequest.SubmitDto submitDto = EmailEvaluationRequest.SubmitDto.builder()
+                    .senderEmail(submission.getSenderEmail())
+                    .subject(submission.getSubject())
+                    .bodyText(submission.getBodyText())
+                    .attachmentUrls(submission.getAttachmentUrls())
+                    .build();
+
+            EmailEvaluationRequest.EmailContext context = EmailEvaluationRequest.EmailContext.builder()
+                    .scenario(round.getConfigData().getEvaluationCriteria())
+                    .level(String.valueOf(jobDescription.get().getLevel()))
+                    .candidateEmail(submitDto)
+                    .build();
+            EmailEvaluationRequest emailEvaluationRequest = EmailEvaluationRequest.builder()
+                    .emailContext(context)
+                    .evaluationCriteria(evaluation)
+                    .build();
+            // Gọi LLM API để chấm điểm email
+            CvEvaluationResponse response = ApiClient.sendChatToAnythingLlm(
+                    AnythingLlmWorkspace.EMAIL,
+                    emailEvaluationRequest,
+                    "java-backend",
+                    false,
+                    null,
+                    CvEvaluationResponse.class);
+
+            ApplicationDetail applicationDetail = new ApplicationDetail();
+            applicationDetail.setApplicationId(dto.getApplication().getId());
+            applicationDetail.setRoundId(dto.getRound().getId());
+            applicationDetail.setStatus(ApplicationDetailStatus.AI_EVALUATED);
+            ApplicationDetail.SubmissionData submissionData =
+                    ApplicationDetail.SubmissionData.builder()
+                            .emailSubmissionId(submission.getId())
+                            .build();
+            applicationDetail.setSubmissionData(submissionData);
+            applicationDetail.setAiScore(response.getScore());
+            applicationDetail.setAiFeedback(parseRawMetrics(response.getExtraMetrics()));
+            applicationDetailRepository.save(applicationDetail);
+
+            submission.setStatus(EmailSubmission.EmailStatus.PROCESSED);
+            emailSubmissionRepository.save(submission);
+            log.info("Successfully evaluated and saved email submission for applicationId: {}", applicationId);
+        } catch (Exception e) {
+            log.error("Failed to process email submission for application ID: " + applicationId, e);
+            submission.setStatus(EmailSubmission.EmailStatus.ERROR);
+            submission.setErrorMessage(e.getMessage());
+            emailSubmissionRepository.save(submission);
+        }
     }
 
     private void processCvSubmission(ProcessDto dto) throws IOException {
