@@ -16,7 +16,8 @@ public class EmailSubmissionController {
 
     @GetMapping("/{id}")
     public ResponseEntity<EmailSubmission> getById(@PathVariable Long id) {
-        return emailSubmissionService.getById(id)
+        return emailSubmissionService
+                .getById(id)
                 .map(ResponseEntity::ok)
                 .orElse(ResponseEntity.notFound().build());
     }
