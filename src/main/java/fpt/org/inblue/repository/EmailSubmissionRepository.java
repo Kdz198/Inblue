@@ -8,5 +8,7 @@ import org.springframework.stereotype.Repository;
 @Repository
 public interface EmailSubmissionRepository extends JpaRepository<EmailSubmission, Long> {
     List<EmailSubmission> findByStatus(EmailSubmission.EmailStatus status);
-    List<EmailSubmission> findByStatusAndApplicationIdOrderByIdDesc(EmailSubmission.EmailStatus status, Long applicationId);
+
+    List<EmailSubmission> findByStatusAndApplicationIdOrderByIdDesc(
+            EmailSubmission.EmailStatus status, Long applicationId);
 }

@@ -39,7 +39,8 @@ public class BackgroundScheduler {
 
     @Scheduled(fixedDelay = 60000) // Chạy mỗi 30 giây
     public void scheduleProcessPendingEmails() {
-        List<EmailSubmission> pendingEmails = emailSubmissionRepository.findByStatus(EmailSubmission.EmailStatus.PENDING);
+        List<EmailSubmission> pendingEmails =
+                emailSubmissionRepository.findByStatus(EmailSubmission.EmailStatus.PENDING);
         for (EmailSubmission email : pendingEmails) {
             if (email.getApplicationId() != null) {
                 try {
@@ -51,7 +52,10 @@ public class BackgroundScheduler {
                             .applicationId(email.getApplicationId())
                             .build();
                     submissionService.submitRound(submitRequest);
-                    log.info("Successfully triggered email evaluation for email submission ID: {}, applicationId: {}", email.getId(), email.getApplicationId());
+                    log.info(
+                            "Successfully triggered email evaluation for email submission ID: {}, applicationId: {}",
+                            email.getId(),
+                            email.getApplicationId());
                 } catch (Exception e) {
                     log.error("Error triggering email evaluation for email submission ID: " + email.getId(), e);
                     email.setStatus(EmailSubmission.EmailStatus.ERROR);

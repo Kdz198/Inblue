@@ -8,6 +8,7 @@ import fpt.org.inblue.enums.ApplicationDetailStatus;
 import fpt.org.inblue.exception.CustomException;
 import fpt.org.inblue.model.ApplicationDetail;
 import fpt.org.inblue.model.CodingProblem;
+import fpt.org.inblue.model.EmailSubmission;
 import fpt.org.inblue.model.JobDescription;
 import fpt.org.inblue.model.Round;
 import fpt.org.inblue.model.dto.ProcessDto;
@@ -17,7 +18,6 @@ import fpt.org.inblue.model.dto.request.CvEvaluationRequest;
 import fpt.org.inblue.model.dto.request.EmailEvaluationRequest;
 import fpt.org.inblue.model.dto.response.CompilerResponseDto;
 import fpt.org.inblue.model.dto.response.CvEvaluationResponse;
-import fpt.org.inblue.model.EmailSubmission;
 import fpt.org.inblue.repository.ApplicationDetailRepository;
 import fpt.org.inblue.repository.CodingProblemsRepository;
 import fpt.org.inblue.repository.EmailSubmissionRepository;
@@ -200,7 +200,9 @@ public class SubmissionEventHandle {
                     jobDescriptionRepository.findById(dto.getApplication().getJdId());
             if (jobDescription.isEmpty()) {
                 throw new CustomException(
-                        "Job Description not found for id: " + dto.getApplication().getJdId(), HttpStatus.NOT_FOUND);
+                        "Job Description not found for id: "
+                                + dto.getApplication().getJdId(),
+                        HttpStatus.NOT_FOUND);
             }
             List<String> criteria = new ArrayList<>(List.of(
                     EmailMetricsConstant.CLOSING_AND_SIGNATURE, EmailMetricsConstant.FORMATTING_AND_STRUCTURE,
@@ -242,10 +244,9 @@ public class SubmissionEventHandle {
             applicationDetail.setApplicationId(dto.getApplication().getId());
             applicationDetail.setRoundId(dto.getRound().getId());
             applicationDetail.setStatus(ApplicationDetailStatus.AI_EVALUATED);
-            ApplicationDetail.SubmissionData submissionData =
-                    ApplicationDetail.SubmissionData.builder()
-                            .emailSubmissionId(submission.getId())
-                            .build();
+            ApplicationDetail.SubmissionData submissionData = ApplicationDetail.SubmissionData.builder()
+                    .emailSubmissionId(submission.getId())
+                    .build();
             applicationDetail.setSubmissionData(submissionData);
             applicationDetail.setAiScore(response.getScore());
             applicationDetail.setAiFeedback(parseRawMetrics(response.getExtraMetrics()));
