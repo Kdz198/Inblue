@@ -1,17 +1,10 @@
 package fpt.org.inblue.model.dto.request;
 
 import java.util.List;
-
-import fpt.org.inblue.model.EmailSubmission;
-import jakarta.persistence.Column;
-import jakarta.persistence.EnumType;
-import jakarta.persistence.Enumerated;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-import org.hibernate.annotations.JdbcTypeCode;
-import org.hibernate.type.SqlTypes;
 
 @Builder
 @Data
@@ -32,17 +25,17 @@ public class EmailEvaluationRequest {
         // FE render dạng email form như To:, Subject:, Body: để ứng viên điền vào, sau đó gửi lên backend dưới dạng
         // text
     }
+
     @Builder
     @Data
     @AllArgsConstructor
     @NoArgsConstructor
-    public static class SubmitDto{
+    public static class SubmitDto {
         private String senderEmail;
         private String subject;
         private String bodyText;
         private String attachmentUrls;
     }
-
 
     @Builder
     @Data

@@ -1,10 +1,6 @@
 package fpt.org.inblue.controller;
 
-import fpt.org.inblue.enums.RoundType;
-import fpt.org.inblue.exception.CustomException;
-import fpt.org.inblue.model.Application;
 import fpt.org.inblue.model.ApplicationDetail;
-import fpt.org.inblue.model.Round;
 import fpt.org.inblue.model.dto.request.CodeReviewSubmitRequest;
 import fpt.org.inblue.model.dto.request.SubmitRequest;
 import fpt.org.inblue.service.ApplicationDetailService;
@@ -18,7 +14,6 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import java.io.IOException;
 import lombok.RequiredArgsConstructor;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
