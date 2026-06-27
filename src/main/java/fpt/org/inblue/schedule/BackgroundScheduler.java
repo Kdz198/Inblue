@@ -3,7 +3,7 @@ package fpt.org.inblue.schedule;
 import fpt.org.inblue.model.EmailSubmission;
 import fpt.org.inblue.model.dto.request.SubmitRequest;
 import fpt.org.inblue.repository.EmailSubmissionRepository;
-import fpt.org.inblue.service.submission.EmailFetcherService;
+import fpt.org.inblue.service.submission.EmailSubmissionService;
 import fpt.org.inblue.service.submission.SubmissionService;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
@@ -18,7 +18,7 @@ public class BackgroundScheduler {
 
     private final PaymentSchedule paymentSchedule;
     private final SessionSchedule sessionSchedule;
-    private final EmailFetcherService emailFetcherService;
+    private final EmailSubmissionService emailSubmissionService;
     private final EmailSubmissionRepository emailSubmissionRepository;
     private final SubmissionService submissionService;
 
@@ -34,7 +34,7 @@ public class BackgroundScheduler {
 
     @Scheduled(fixedDelay = 300000)
     public void scheduleFetchEmails() {
-        emailFetcherService.fetchEmails();
+        emailSubmissionService.fetchEmails();
     }
 
     @Scheduled(fixedDelay = 60000) // Chạy mỗi 30 giây

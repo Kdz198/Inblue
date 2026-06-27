@@ -8,4 +8,6 @@ public interface EmailSubmissionService {
     Optional<EmailSubmission> getById(Long id);
 
     List<EmailSubmission> getAll();
+
+    void fetchEmails();
 }
