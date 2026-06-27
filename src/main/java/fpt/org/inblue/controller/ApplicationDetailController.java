@@ -24,8 +24,6 @@ import org.springframework.web.bind.annotation.*;
 public class ApplicationDetailController {
     private final SubmissionService submissionService;
     private final ApplicationDetailService applicationDetailService;
-    private final ApplicationService applicationService;
-    private final JobDescriptionService jobDescriptionService;
 
     @PostMapping(value = "/submit", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     @Operation(

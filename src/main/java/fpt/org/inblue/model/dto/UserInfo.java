@@ -1,5 +1,6 @@
 package fpt.org.inblue.model.dto;
 
+import fpt.org.inblue.enums.Role;
 import jakarta.annotation.Nullable;
 import jakarta.validation.constraints.NotNull;
 import lombok.AllArgsConstructor;
@@ -19,4 +20,5 @@ public class UserInfo {
     private String email;
 
     private String password;
+    private Role role;
 }
