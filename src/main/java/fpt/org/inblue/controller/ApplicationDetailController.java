@@ -4,8 +4,6 @@ import fpt.org.inblue.model.ApplicationDetail;
 import fpt.org.inblue.model.dto.request.CodeReviewSubmitRequest;
 import fpt.org.inblue.model.dto.request.SubmitRequest;
 import fpt.org.inblue.service.ApplicationDetailService;
-import fpt.org.inblue.service.ApplicationService;
-import fpt.org.inblue.service.JobDescriptionService;
 import fpt.org.inblue.service.submission.SubmissionResult;
 import fpt.org.inblue.service.submission.SubmissionService;
 import io.swagger.v3.oas.annotations.Operation;

@@ -3,7 +3,6 @@ package fpt.org.inblue.service.impl;
 import fpt.org.inblue.cloudinary.CloudinaryService;
 import fpt.org.inblue.constants.ApiPath;
 import fpt.org.inblue.enums.PythonService;
-import fpt.org.inblue.enums.Role;
 import fpt.org.inblue.exception.CustomException;
 import fpt.org.inblue.model.CandidateProfile;
 import fpt.org.inblue.model.User;
