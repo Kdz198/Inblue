@@ -10,4 +10,6 @@ public interface EmailSubmissionService {
     List<EmailSubmission> getAll();
 
     void fetchEmails();
+
+    void processEmailSchedule();
 }

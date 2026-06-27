@@ -2,8 +2,10 @@ package fpt.org.inblue.service.submission.impl;
 
 import fpt.org.inblue.cloudinary.CloudinaryService;
 import fpt.org.inblue.model.EmailSubmission;
+import fpt.org.inblue.model.dto.request.SubmitRequest;
 import fpt.org.inblue.repository.EmailSubmissionRepository;
 import fpt.org.inblue.service.submission.EmailSubmissionService;
+import fpt.org.inblue.service.submission.SubmissionService;
 import jakarta.mail.Flags;
 import jakarta.mail.Folder;
 import jakarta.mail.Message;
@@ -36,6 +38,7 @@ public class EmailSubmissionServiceImpl implements EmailSubmissionService {
     private final EmailSubmissionRepository emailSubmissionRepository;
     private final CloudinaryService cloudinaryService;
     private final ObjectMapper objectMapper;
+    private final SubmissionService submissionService;
 
     @Value("${spring.mail.host}")
     private String host;
@@ -141,6 +144,35 @@ public class EmailSubmissionServiceImpl implements EmailSubmissionService {
             store.close();
         } catch (Exception e) {
             log.error("Failed to fetch emails via IMAP", e);
+        }
+    }
+
+    @Override
+    public void processEmailSchedule() {
+        List<EmailSubmission> pendingEmails =
+                emailSubmissionRepository.findByStatus(EmailSubmission.EmailStatus.PENDING);
+        for (EmailSubmission email : pendingEmails) {
+            if (email.getApplicationId() != null) {
+                try {
+                    // Đổi trạng thái sang PROCESSED đồng bộ để tránh bị quét trùng lặp ở lần tick sau
+                    email.setStatus(EmailSubmission.EmailStatus.PROCESSED);
+                    emailSubmissionRepository.save(email);
+
+                    SubmitRequest submitRequest = SubmitRequest.builder()
+                            .applicationId(email.getApplicationId())
+                            .build();
+                    submissionService.submitRound(submitRequest);
+                    log.info(
+                            "Successfully triggered email evaluation for email submission ID: {}, applicationId: {}",
+                            email.getId(),
+                            email.getApplicationId());
+                } catch (Exception e) {
+                    log.error("Error triggering email evaluation for email submission ID: " + email.getId(), e);
+                    email.setStatus(EmailSubmission.EmailStatus.ERROR);
+                    email.setErrorMessage(e.getMessage());
+                    emailSubmissionRepository.save(email);
+                }
+            }
         }
     }
 
