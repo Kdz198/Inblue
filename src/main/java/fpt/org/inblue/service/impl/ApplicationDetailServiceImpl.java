@@ -1,5 +1,6 @@
 package fpt.org.inblue.service.impl;
 
+import fpt.org.inblue.enums.ApplicationDetailStatus;
 import fpt.org.inblue.exception.CustomException;
 import fpt.org.inblue.model.Application;
 import fpt.org.inblue.model.ApplicationDetail;
@@ -8,6 +9,8 @@ import fpt.org.inblue.security.JwtUtils;
 import fpt.org.inblue.service.ApplicationDetailService;
 import fpt.org.inblue.service.ApplicationService;
 import fpt.org.inblue.utils.HelperUtil;
+
+import java.time.LocalDateTime;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -40,6 +43,8 @@ public class ApplicationDetailServiceImpl implements ApplicationDetailService {
         applicationDetail.setFinalScore(score);
         applicationDetail.setFinalResult(
                 isPass ? ApplicationDetail.RoundResult.PASSED : ApplicationDetail.RoundResult.FAILED);
+        applicationDetail.setCompletedAt(LocalDateTime.now());
+        applicationDetail.setStatus(ApplicationDetailStatus.COMPLETED);
         applicationDetailRepository.save(applicationDetail);
         Application application = applicationService.getApplicationById(applicationDetail.getApplicationId());
         applicationService.moveToNextRound(application);
