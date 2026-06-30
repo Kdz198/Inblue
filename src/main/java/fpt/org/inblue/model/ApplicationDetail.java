@@ -76,9 +76,6 @@ public class ApplicationDetail {
         // Dành cho vòng tự luận, Email, SQL Script (Frontend gửi text lên)
         private String textContent;
 
-        //        private CodeReviewSubmission codeReviewContent; // Dành riêng cho vòng Code Review (Frontend gửi lên
-        // cấu trúc JSON)
-
         // Dành cho vòng upload CV hoặc file kiến trúc (Frontend gửi link file sau khi upload S3)
         private String fileUrl;
 
