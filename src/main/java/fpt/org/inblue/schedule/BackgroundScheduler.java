@@ -1,11 +1,6 @@
 package fpt.org.inblue.schedule;
 
-import fpt.org.inblue.model.EmailSubmission;
-import fpt.org.inblue.model.dto.request.SubmitRequest;
-import fpt.org.inblue.repository.EmailSubmissionRepository;
 import fpt.org.inblue.service.submission.EmailSubmissionService;
-import fpt.org.inblue.service.submission.SubmissionService;
-import java.util.List;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.scheduling.annotation.Scheduled;
