@@ -9,7 +9,6 @@ import fpt.org.inblue.security.JwtUtils;
 import fpt.org.inblue.service.ApplicationDetailService;
 import fpt.org.inblue.service.ApplicationService;
 import fpt.org.inblue.utils.HelperUtil;
-
 import java.time.LocalDateTime;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
