@@ -24,21 +24,21 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             throws ServletException, IOException {
         //        System.out.println("JwtAuthenticationFilter: Processing request " + request.getRequestURI());
         String path = request.getRequestURI();
-        if (path.startsWith("/api/auth/")
-                || path.startsWith("/swagger-ui/")
-                || path.startsWith("/v3/api-docs")
-                || path.startsWith("/oauth2/")
-                || path.startsWith("/ws-chat/")
-                || path.startsWith("/api/payments/webhook")
-                || path.startsWith("/api/users")
-                || path.startsWith("/api/mentors")
-                || path.startsWith("/api/job-descriptions")
-                || path.startsWith("/api/rounds")
-                || path.startsWith("/api/companies")
-                || path.startsWith("/api/posts")) {
-            filterChain.doFilter(request, response);
-            return;
-        }
+//        if (path.startsWith("/api/auth/")
+//                || path.startsWith("/swagger-ui/")
+//                || path.startsWith("/v3/api-docs")
+//                || path.startsWith("/oauth2/")
+//                || path.startsWith("/ws-chat/")
+//                || path.startsWith("/api/payments/webhook")
+//                || path.startsWith("/api/users")
+//                || path.startsWith("/api/mentors")
+//                || path.startsWith("/api/job-descriptions")
+//                || path.startsWith("/api/rounds")
+//                || path.startsWith("/api/companies")
+//                || path.startsWith("/api/posts")) {
+//            filterChain.doFilter(request, response);
+//            return;
+//        }
         String jwt = parseJwtToken(request);
         if (jwt != null && jwtUtils.validateToken(jwt)) {
             int userId = jwtUtils.getUserIdFromToken(jwt);
@@ -50,10 +50,11 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                     new UsernamePasswordAuthenticationToken(userDetails, null, userDetails.getAuthorities());
             auth.setDetails(userDetails);
             SecurityContextHolder.getContext().setAuthentication(auth);
-        } else if (jwt == null || !jwtUtils.validateToken(jwt)) {
-            response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
-            return;
         }
+//        else if (jwt == null || !jwtUtils.validateToken(jwt)) {
+//            response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+//            return;
+//        }
         filterChain.doFilter(request, response);
     }
 
