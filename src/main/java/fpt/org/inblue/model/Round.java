@@ -85,16 +85,7 @@ public class Round {
         MentorInterviewDto mentorInterview;
     }
 
-    @Data
-    @NoArgsConstructor
-    @AllArgsConstructor
-    @Builder
-    public static class MentorInterviewDto {
-        private Integer userId;
-        private Integer mentorId;
-        private Integer duration;
-        private Integer totalPrice;
-    }
+
 
     @Data
     @NoArgsConstructor

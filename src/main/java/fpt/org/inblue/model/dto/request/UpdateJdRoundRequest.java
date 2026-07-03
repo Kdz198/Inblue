@@ -55,7 +55,7 @@ public class UpdateJdRoundRequest {
         // Chỉ dùng cho vòng QUIZ
         private List<UpdateJdRoundRequest.QuizQuestionDto> quizQuestions;
         private List<Long> codingProblemsId;
-        Round.MentorInterviewDto mentorInterview;
+        private List<Long> codeReviewIds;
     }
 
     @Data

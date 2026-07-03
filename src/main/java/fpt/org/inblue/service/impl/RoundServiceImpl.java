@@ -2,12 +2,10 @@ package fpt.org.inblue.service.impl;
 
 import fpt.org.inblue.enums.RoundType;
 import fpt.org.inblue.exception.CustomException;
-import fpt.org.inblue.model.Application;
-import fpt.org.inblue.model.CodingProblem;
-import fpt.org.inblue.model.JobDescription;
-import fpt.org.inblue.model.Round;
+import fpt.org.inblue.model.*;
 import fpt.org.inblue.model.dto.request.SetupJdRoundsRequest;
 import fpt.org.inblue.model.dto.request.UpdateJdRoundRequest;
+import fpt.org.inblue.repository.CodeReviewProblemsRepository;
 import fpt.org.inblue.repository.CodingProblemsRepository;
 import fpt.org.inblue.repository.JobDescriptionRepository;
 import fpt.org.inblue.repository.RoundRepository;
@@ -27,18 +25,20 @@ public class RoundServiceImpl implements RoundService {
     private final CodingProblemsRepository codingProblemsRepository;
     private final ApplicationService applicationService;
     private final JobDescriptionService jobDescriptionService;
+    private final CodeReviewProblemsRepository codeReviewProblemsRepository;
 
     public RoundServiceImpl(
             RoundRepository roundRepository,
             JobDescriptionRepository jobDescriptionRepository,
             CodingProblemsRepository codingProblemsRepository,
             ApplicationService applicationService,
-            JobDescriptionService jobDescriptionService) {
+            JobDescriptionService jobDescriptionService, CodeReviewProblemsRepository codeReviewProblemsRepository) {
         this.roundRepository = roundRepository;
         this.jobDescriptionRepository = jobDescriptionRepository;
         this.codingProblemsRepository = codingProblemsRepository;
         this.applicationService = applicationService;
         this.jobDescriptionService = jobDescriptionService;
+        this.codeReviewProblemsRepository = codeReviewProblemsRepository;
     }
 
     @Override
@@ -100,16 +100,26 @@ public class RoundServiceImpl implements RoundService {
                 }
                 roundConfig.setCodingProblems(codingProblems);
             }
-            if (item.getConfigData().getMentorInterview() != null) {
-                Round.MentorInterviewDto mentorInterviewDto = Round.MentorInterviewDto.builder()
-                        .mentorId(item.getConfigData().getMentorInterview().getMentorId())
-                        .duration(item.getConfigData().getMentorInterview().getDuration())
-                        .totalPrice(item.getConfigData().getMentorInterview().getTotalPrice())
-                        .userId(item.getConfigData().getMentorInterview().getUserId())
-                        .build();
-                roundConfig.setMentorInterview(mentorInterviewDto);
-                System.out.println("MENTOR");
+            if(item.getConfigData().getCodeReviewIds() !=null){
+                List<Round.CodeReviewProblemSnapshot> codeReviewProblems = new ArrayList<>();
+                for (Long codeReviewId : item.getConfigData().getCodeReviewIds()) {
+                    CodeReviewProblem problem = codeReviewProblemsRepository.findById(codeReviewId)
+                            .orElseThrow(() -> new CustomException(
+                                    "Code review problem không tồn tại với id: " + codeReviewId, HttpStatus.NOT_FOUND));
+                    Round.CodeReviewProblemSnapshot snapshot = Round.CodeReviewProblemSnapshot.builder()
+                            .title(problem.getTitle())
+                            .files(problem.getFiles())
+                            .language(problem.getLanguage())
+                            .expectedIssues(problem.getExpectedIssues())
+                            .problemStatement(problem.getProblemStatement())
+                            .problemId(problem.getId())
+                            .difficulty(problem.getDifficulty())
+                            .build();
+                    codeReviewProblems.add(snapshot);
+                }
+                roundConfig.setCodeReviewProblems(codeReviewProblems);
             }
+
             System.out.println("ROUND CONFIG: " + roundConfig);
             round.setConfigData(roundConfig);
             rounds.add(round);
@@ -168,6 +178,7 @@ public class RoundServiceImpl implements RoundService {
                     quizQuestions.add(question);
                 }
             }
+
             List<Round.CodingProblemSnapshot> codingProblems = new ArrayList<>();
             if (item.getConfigData().getCodingProblemsId() != null) {
                 for (Long codingProblemId : item.getConfigData().getCodingProblemsId()) {
@@ -190,8 +201,31 @@ public class RoundServiceImpl implements RoundService {
                     codingProblems.add(snapshot);
                 }
             }
+
+            List<Round.CodeReviewProblemSnapshot> codeReviewProblems = new ArrayList<>();
+            if (item.getConfigData().getCodeReviewIds() != null) {
+                for (Long codeReviewId : item.getConfigData().getCodeReviewIds()) {
+                    CodeReviewProblem problem = codeReviewProblemsRepository
+                            .findById(codeReviewId)
+                            .orElseThrow(() -> new CustomException(
+                                    "Code review problem với id " + codeReviewId + " không tồn tại",
+                                    HttpStatus.BAD_REQUEST));
+                    Round.CodeReviewProblemSnapshot snapshot = Round.CodeReviewProblemSnapshot.builder()
+                            .title(problem.getTitle())
+                            .files(problem.getFiles())
+                            .language(problem.getLanguage())
+                            .expectedIssues(problem.getExpectedIssues())
+                            .problemStatement(problem.getProblemStatement())
+                            .problemId(problem.getId())
+                            .difficulty(problem.getDifficulty())
+                            .build();
+                    codeReviewProblems.add(snapshot);
+                }
+            }
+
             roundConfig.setCodingProblems(codingProblems);
             roundConfig.setQuizQuestions(quizQuestions);
+            roundConfig.setCodeReviewProblems(codeReviewProblems);
             round.setConfigData(roundConfig);
             updatedRounds.add(round);
         }
