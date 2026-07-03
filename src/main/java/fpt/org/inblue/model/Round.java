@@ -85,8 +85,6 @@ public class Round {
         MentorInterviewDto mentorInterview;
     }
 
-
-
     @Data
     @NoArgsConstructor
     @AllArgsConstructor

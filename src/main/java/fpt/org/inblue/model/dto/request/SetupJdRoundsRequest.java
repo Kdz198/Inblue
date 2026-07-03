@@ -1,7 +1,6 @@
 package fpt.org.inblue.model.dto.request;
 
 import fpt.org.inblue.enums.RoundType;
-import fpt.org.inblue.model.Round;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.*;
 import java.util.List;
@@ -53,7 +52,6 @@ public class SetupJdRoundsRequest {
         private List<QuizQuestionDto> quizQuestions;
         private List<Long> codingProblemsId;
         private List<Long> codeReviewIds;
-
     }
 
     @Data

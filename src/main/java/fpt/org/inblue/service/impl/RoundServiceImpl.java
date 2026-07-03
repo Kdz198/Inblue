@@ -32,7 +32,8 @@ public class RoundServiceImpl implements RoundService {
             JobDescriptionRepository jobDescriptionRepository,
             CodingProblemsRepository codingProblemsRepository,
             ApplicationService applicationService,
-            JobDescriptionService jobDescriptionService, CodeReviewProblemsRepository codeReviewProblemsRepository) {
+            JobDescriptionService jobDescriptionService,
+            CodeReviewProblemsRepository codeReviewProblemsRepository) {
         this.roundRepository = roundRepository;
         this.jobDescriptionRepository = jobDescriptionRepository;
         this.codingProblemsRepository = codingProblemsRepository;
@@ -100,10 +101,11 @@ public class RoundServiceImpl implements RoundService {
                 }
                 roundConfig.setCodingProblems(codingProblems);
             }
-            if(item.getConfigData().getCodeReviewIds() !=null){
+            if (item.getConfigData().getCodeReviewIds() != null) {
                 List<Round.CodeReviewProblemSnapshot> codeReviewProblems = new ArrayList<>();
                 for (Long codeReviewId : item.getConfigData().getCodeReviewIds()) {
-                    CodeReviewProblem problem = codeReviewProblemsRepository.findById(codeReviewId)
+                    CodeReviewProblem problem = codeReviewProblemsRepository
+                            .findById(codeReviewId)
                             .orElseThrow(() -> new CustomException(
                                     "Code review problem không tồn tại với id: " + codeReviewId, HttpStatus.NOT_FOUND));
                     Round.CodeReviewProblemSnapshot snapshot = Round.CodeReviewProblemSnapshot.builder()
