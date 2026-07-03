@@ -53,9 +53,8 @@ public class SecurityConfig {
                 .csrf(csrf -> csrf.disable())
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .httpBasic(httpBasic -> httpBasic.disable())
-                .exceptionHandling(exception -> exception
-                        .authenticationEntryPoint(new HttpStatusEntryPoint(HttpStatus.UNAUTHORIZED))
-                )
+                .exceptionHandling(exception ->
+                        exception.authenticationEntryPoint(new HttpStatusEntryPoint(HttpStatus.UNAUTHORIZED)))
                 .authorizeHttpRequests(auth -> auth.requestMatchers(HttpMethod.OPTIONS, "/**")
                         .permitAll()
                         .requestMatchers(
@@ -75,8 +74,9 @@ public class SecurityConfig {
                                 "/api/companies",
                                 "/api/posts")
                         .permitAll()
-                    //    .requestMatchers("/api/payments").authenticated()
-                        .requestMatchers("/api/applications/me").hasRole("STAFF")
+                        //    .requestMatchers("/api/payments").authenticated()
+                        .requestMatchers("/api/applications/me")
+                        .hasRole("STAFF")
                         .anyRequest()
                         .permitAll())
                 .oauth2Login(
