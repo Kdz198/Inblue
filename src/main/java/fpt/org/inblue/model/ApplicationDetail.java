@@ -60,6 +60,9 @@ public class ApplicationDetail {
     @JoinColumn(name = "mentor_review_id")
     MentorReview mentorReview; // Nếu vòng này có phần đánh giá của mentor, sẽ liên kết đến bảng MentorReview
 
+    private Long sessionId;
+    private Long bookingId;
+
     @CreationTimestamp
     LocalDateTime createdAt;
 

@@ -43,4 +43,7 @@ public class Session {
     private Integer duration;
     private Integer totalPrice;
     private String transactionCode;
+
+    private String sessionKey;
+    private Long kioskId;
 }

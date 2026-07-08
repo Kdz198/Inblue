@@ -10,4 +10,6 @@ public interface SessionRepository extends JpaRepository<Session, Integer> {
     Session findByRoomName(String roomName);
 
     Session findByTransactionCode(String transactionCode);
+
+    Session findBySessionKey(String sessionKey);
 }
