@@ -35,8 +35,8 @@ public class MailServiceImpl implements MailService {
         } catch (Exception e) {
             System.err.println("Failed to send email to " + toEmail + ": " + e.getMessage());
             throw new fpt.org.inblue.exception.CustomException(
-                    "Failed to send email: " + e.getMessage(), org.springframework.http.HttpStatus.INTERNAL_SERVER_ERROR
-            );
+                    "Failed to send email: " + e.getMessage(),
+                    org.springframework.http.HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
 }
