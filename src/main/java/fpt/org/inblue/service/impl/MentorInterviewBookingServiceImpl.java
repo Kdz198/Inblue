@@ -7,17 +7,17 @@ import fpt.org.inblue.enums.SessionStatus;
 import fpt.org.inblue.exception.CustomException;
 import fpt.org.inblue.model.*;
 import fpt.org.inblue.model.dto.dailyco.DailyCoCreationRequest;
+import fpt.org.inblue.model.dto.dailyco.SessionCreationRequest;
 import fpt.org.inblue.model.dto.dailyco.SessionResponse;
 import fpt.org.inblue.model.dto.request.PickSlotDtoRequest;
 import fpt.org.inblue.model.dto.response.KioskEnterDtoResponse;
 import fpt.org.inblue.repository.*;
 import fpt.org.inblue.service.MentorInterviewBookingService;
 import fpt.org.inblue.service.NotificationService;
+import fpt.org.inblue.service.SessionService;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
@@ -37,6 +37,7 @@ public class MentorInterviewBookingServiceImpl implements MentorInterviewBooking
     private final UserRepository userRepository;
     private final NotificationService notificationService;
     private final RestTemplate restTemplate;
+    private final SessionService sessionService;
 
     @Value("${daily.api.url}")
     private String dailyApiUrl;
@@ -149,9 +150,19 @@ public class MentorInterviewBookingServiceImpl implements MentorInterviewBooking
             throw new CustomException("Mentor has another interview booking at this time", HttpStatus.CONFLICT);
         }
 
-        // 1. Create Daily.co Room
+        // 1. Prepare SessionCreationRequest for SessionService
+        SessionCreationRequest sessionReq = new SessionCreationRequest();
+        sessionReq.setUserId(booking.getApplicantUserId());
+        sessionReq.setMentorId(mentorId);
+        
+        long ms = booking.getScheduledStart().atZone(ZoneId.of("Asia/Ho_Chi_Minh")).toInstant().toEpochMilli();
+        sessionReq.setJoinTime(new java.sql.Timestamp(ms));
+        
+        int duration = (int) java.time.Duration.between(booking.getScheduledStart(), booking.getScheduledEnd()).toMinutes();
+        sessionReq.setDuration(duration);
+        sessionReq.setTotalPrice(0);
+
         DailyCoCreationRequest dailyReq = new DailyCoCreationRequest();
-        dailyReq.setName("booking-" + bookingId + "-" + System.currentTimeMillis());
         dailyReq.setPrivacy("public");
         DailyCoCreationRequest.Properties props = new DailyCoCreationRequest.Properties();
         props.setMax_participants(2);
@@ -164,44 +175,26 @@ public class MentorInterviewBookingServiceImpl implements MentorInterviewBooking
         props.setExp((int) exp);
         props.setEnable_recording("cloud");
         dailyReq.setProperties(props);
+        sessionReq.setDailyCoCreationRequest(dailyReq);
 
-        HttpHeaders headers = new HttpHeaders();
-        headers.setBearerAuth(dailyApiKey);
-        headers.setContentType(MediaType.APPLICATION_JSON);
-        HttpEntity<DailyCoCreationRequest> entity = new HttpEntity<>(dailyReq, headers);
-
-        String roomUrl = "";
-        String roomName = "";
+        // Call SessionService to create the Daily.co room and Session entity
+        SessionResponse sessionResp;
         try {
-            ResponseEntity<SessionResponse> response = restTemplate.exchange(
-                    dailyApiUrl + "/rooms", HttpMethod.POST, entity, SessionResponse.class
-            );
-            if (response.getStatusCode() == HttpStatus.OK || response.getStatusCode() == HttpStatus.CREATED) {
-                roomUrl = response.getBody().getUrl();
-                roomName = response.getBody().getName();
-            } else {
-                throw new CustomException("Failed to create Daily.co room: " + response.getStatusCode(), HttpStatus.INTERNAL_SERVER_ERROR);
-            }
+            sessionResp = sessionService.createSession(sessionReq);
         } catch (Exception e) {
-            throw new CustomException("Error creating Daily.co room: " + e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
+            throw new CustomException("Error creating Daily.co session: " + e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
         }
 
-        // 2. Create Session
-        Session session = new Session();
-        session.setRoomName(roomName);
-        session.setRoomUrl(roomUrl);
-        session.setUserId(booking.getApplicantUserId());
-        session.setUserId2(mentorId);
-        session.setStatus(SessionStatus.SCHEDULED);
-        
-        // Convert to VN timestamp
-        long ms = booking.getScheduledStart().atZone(ZoneId.of("Asia/Ho_Chi_Minh")).toInstant().toEpochMilli();
-        session.setJoinTime(new java.sql.Timestamp(ms));
-        
-        int duration = (int) java.time.Duration.between(booking.getScheduledStart(), booking.getScheduledEnd()).toMinutes();
-        session.setDuration(duration);
+        // Retrieve created Session
+        Session session = sessionRepository.findByRoomName(sessionResp.getName());
+        if (session == null) {
+            throw new CustomException("Failed to find created session", HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+
+        // Update Kiosk-specific fields and set status to SCHEDULED
         session.setSessionKey(UUID.randomUUID().toString());
         session.setKioskId(booking.getKioskId());
+        session.setStatus(SessionStatus.SCHEDULED);
         session = sessionRepository.save(session);
 
         // 3. Update Booking
@@ -260,14 +253,6 @@ public class MentorInterviewBookingServiceImpl implements MentorInterviewBooking
             throw new CustomException("You can only enter the Kiosk within 15 minutes of your scheduled start time (" + start + ")", HttpStatus.BAD_REQUEST);
         }
 
-        String candidateName = "Candidate";
-        User user = userRepository.findById(booking.getApplicantUserId()).orElse(null);
-        if (user != null) {
-            candidateName = user.getName();
-        }
-
-        String meetingToken = mintDailyCoToken(session.getRoomName(), candidateName);
-
         // Update session and booking state
         session.setStatus(SessionStatus.ONGOING);
         session.setStartTime1(new java.sql.Timestamp(System.currentTimeMillis() + (7 * 60 * 60 * 1000))); // VN time
@@ -276,7 +261,7 @@ public class MentorInterviewBookingServiceImpl implements MentorInterviewBooking
         booking.setStatus(BookingStatus.IN_PROGRESS);
         bookingRepository.save(booking);
 
-        return new KioskEnterDtoResponse(meetingToken, session.getRoomUrl());
+        return new KioskEnterDtoResponse(session.getRoomUrl());
     }
 
     private void deleteDailyCoRoom(String roomName) {
@@ -288,37 +273,6 @@ public class MentorInterviewBookingServiceImpl implements MentorInterviewBooking
             restTemplate.exchange(apiUrl, HttpMethod.DELETE, entity, Void.class);
         } catch (Exception e) {
             System.err.println("Failed to delete Daily.co room: " + e.getMessage());
-        }
-    }
-
-    private String mintDailyCoToken(String roomName, String userName) {
-        Map<String, Object> properties = new HashMap<>();
-        properties.put("room_name", roomName);
-        properties.put("is_owner", false);
-        properties.put("user_name", userName);
-
-        Map<String, Object> reqBody = new HashMap<>();
-        reqBody.put("properties", properties);
-
-        HttpHeaders headers = new HttpHeaders();
-        headers.setBearerAuth(dailyApiKey);
-        headers.setContentType(MediaType.APPLICATION_JSON);
-        HttpEntity<Map<String, Object>> entity = new HttpEntity<>(reqBody, headers);
-
-        try {
-            ResponseEntity<Map> response = restTemplate.exchange(
-                    dailyApiUrl + "/meeting-tokens",
-                    HttpMethod.POST,
-                    entity,
-                    Map.class
-            );
-            if (response.getStatusCode() == HttpStatus.OK && response.getBody() != null) {
-                return (String) response.getBody().get("token");
-            } else {
-                throw new CustomException("Failed to mint meeting token from Daily.co", HttpStatus.INTERNAL_SERVER_ERROR);
-            }
-        } catch (Exception e) {
-            throw new CustomException("Error contacting Daily.co for meeting token: " + e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
 }

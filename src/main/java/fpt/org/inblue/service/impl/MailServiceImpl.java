@@ -27,4 +27,16 @@ public class MailServiceImpl implements MailService {
         helper.setText(body, true);
         mailSender.send(mimemessage);
     }
+
+    @Override
+    public void sendEmail(String toEmail, String subject, String body) {
+        try {
+            adminSendMail(toEmail, subject, body);
+        } catch (Exception e) {
+            System.err.println("Failed to send email to " + toEmail + ": " + e.getMessage());
+            throw new fpt.org.inblue.exception.CustomException(
+                    "Failed to send email: " + e.getMessage(), org.springframework.http.HttpStatus.INTERNAL_SERVER_ERROR
+            );
+        }
+    }
 }

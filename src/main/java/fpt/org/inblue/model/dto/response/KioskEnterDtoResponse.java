@@ -8,6 +8,5 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 @NoArgsConstructor
 public class KioskEnterDtoResponse {
-    private String meetingToken;
     private String roomUrl;
 }
