@@ -60,7 +60,8 @@ public class MentorReviewServiceImpl implements MentorReviewService {
 
             if (isKioskBooking) {
                 MentorInterviewBooking booking = bookingOpt.get();
-                ApplicationDetail appDetail = appDetailRepo.findById(booking.getApplicationDetailId()).orElse(null);
+                ApplicationDetail appDetail =
+                        appDetailRepo.findById(booking.getApplicationDetailId()).orElse(null);
                 if (appDetail != null) {
                     appDetail.setMentorReview(review);
                     appDetail.setStatus(ApplicationDetailStatus.COMPLETED);
@@ -69,7 +70,9 @@ public class MentorReviewServiceImpl implements MentorReviewService {
                     // Fetch Round config to calculate scores
                     Round round = roundRepo.findById(appDetail.getRoundId()).orElse(null);
                     double maxScore = 100.0;
-                    if (round != null && round.getConfigData() != null && round.getConfigData().getMaxScore() != null) {
+                    if (round != null
+                            && round.getConfigData() != null
+                            && round.getConfigData().getMaxScore() != null) {
                         maxScore = round.getConfigData().getMaxScore();
                     }
 
@@ -77,9 +80,10 @@ public class MentorReviewServiceImpl implements MentorReviewService {
                     appDetail.setFinalScore(score);
 
                     if (round != null && round.getPassThreshold() != null) {
-                        appDetail.setFinalResult(score >= round.getPassThreshold()
-                                ? ApplicationDetail.RoundResult.PASSED
-                                : ApplicationDetail.RoundResult.FAILED);
+                        appDetail.setFinalResult(
+                                score >= round.getPassThreshold()
+                                        ? ApplicationDetail.RoundResult.PASSED
+                                        : ApplicationDetail.RoundResult.FAILED);
                     } else {
                         appDetail.setFinalResult(ApplicationDetail.RoundResult.PASSED);
                     }

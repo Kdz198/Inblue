@@ -57,9 +57,8 @@ public class KioskServiceImpl implements KioskService {
         }
 
         // 1. Get schedule for the given day of week
-        List<KioskSchedule> schedules = kioskScheduleRepository.findAllByKioskIdAndDayOfWeekAndIsActiveTrue(
-                kioskId, date.getDayOfWeek()
-        );
+        List<KioskSchedule> schedules =
+                kioskScheduleRepository.findAllByKioskIdAndDayOfWeekAndIsActiveTrue(kioskId, date.getDayOfWeek());
 
         List<SlotDto> availableSlots = new ArrayList<>();
         if (schedules.isEmpty()) {
@@ -72,15 +71,15 @@ public class KioskServiceImpl implements KioskService {
         LocalDateTime startOfDay = date.atStartOfDay();
         LocalDateTime endOfDay = date.atTime(LocalTime.MAX);
         List<MentorInterviewBooking> bookings = bookingRepository.findActiveBookingsByKioskAndDateRange(
-                kioskId, startOfDay, endOfDay, BookingStatus.CANCELLED
-        );
+                kioskId, startOfDay, endOfDay, BookingStatus.CANCELLED);
 
         // 3. Generate slots
         LocalTime current = schedule.getOpenTime();
         LocalTime endLimit = schedule.getCloseTime();
         int duration = schedule.getSlotDurationMinutes();
 
-        while (current.plusMinutes(duration).isBefore(endLimit) || current.plusMinutes(duration).equals(endLimit)) {
+        while (current.plusMinutes(duration).isBefore(endLimit)
+                || current.plusMinutes(duration).equals(endLimit)) {
             LocalDateTime slotStart = date.atTime(current);
             LocalDateTime slotEnd = date.atTime(current.plusMinutes(duration));
 
@@ -102,7 +101,8 @@ public class KioskServiceImpl implements KioskService {
 
     @Override
     public Kiosk updateKiosk(Long id, Kiosk kiosk) {
-        Kiosk existing = kioskRepository.findById(id)
+        Kiosk existing = kioskRepository
+                .findById(id)
                 .orElseThrow(() -> new CustomException("Kiosk not found with id: " + id, HttpStatus.NOT_FOUND));
         existing.setName(kiosk.getName());
         existing.setLocation(kiosk.getLocation());
@@ -112,7 +112,8 @@ public class KioskServiceImpl implements KioskService {
 
     @Override
     public KioskSchedule updateSchedule(Long id, KioskSchedule schedule) {
-        KioskSchedule existing = kioskScheduleRepository.findById(id)
+        KioskSchedule existing = kioskScheduleRepository
+                .findById(id)
                 .orElseThrow(() -> new CustomException("KioskSchedule not found with id: " + id, HttpStatus.NOT_FOUND));
 
         if (!kioskRepository.existsById(schedule.getKioskId())) {

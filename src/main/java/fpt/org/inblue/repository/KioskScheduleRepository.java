@@ -7,5 +7,6 @@ import org.springframework.data.jpa.repository.JpaRepository;
 
 public interface KioskScheduleRepository extends JpaRepository<KioskSchedule, Long> {
     List<KioskSchedule> findAllByKioskIdAndIsActiveTrue(Long kioskId);
+
     List<KioskSchedule> findAllByKioskIdAndDayOfWeekAndIsActiveTrue(Long kioskId, DayOfWeek dayOfWeek);
 }
