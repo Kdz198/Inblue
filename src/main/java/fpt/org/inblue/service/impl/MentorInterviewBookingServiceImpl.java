@@ -57,8 +57,7 @@ public class MentorInterviewBookingServiceImpl implements MentorInterviewBooking
 
         // Check if slot is overlapping at the kiosk
         long count = bookingRepository.countOverlappingBookingsForKiosk(
-                dto.getKioskId(), dto.getScheduledStart(), dto.getScheduledEnd(), BookingStatus.CANCELLED
-        );
+                dto.getKioskId(), dto.getScheduledStart(), dto.getScheduledEnd(), BookingStatus.CANCELLED);
         if (count > 0) {
             throw new CustomException("Selected slot is already booked", HttpStatus.CONFLICT);
         }

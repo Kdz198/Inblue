@@ -75,8 +75,6 @@ public class SecurityConfig {
                                 "/api/posts")
                         .permitAll()
                         //    .requestMatchers("/api/payments").authenticated()
-                        .requestMatchers("/api/applications/me")
-                        .hasRole("STAFF")
                         .anyRequest()
                         .permitAll())
                 .oauth2Login(
