@@ -48,7 +48,8 @@ public class MentorInterviewBookingServiceImpl implements MentorInterviewBooking
     @Override
     @Transactional
     public MentorInterviewBooking pickSlot(PickSlotDtoRequest dto, int userId) {
-        ApplicationDetail appDetail = applicationDetailRepository.findById(dto.getApplicationDetailId())
+        ApplicationDetail appDetail = applicationDetailRepository
+                .findById(dto.getApplicationDetailId())
                 .orElseThrow(() -> new CustomException("ApplicationDetail not found", HttpStatus.NOT_FOUND));
 
         if (!kioskRepository.existsById(dto.getKioskId())) {
@@ -57,8 +58,7 @@ public class MentorInterviewBookingServiceImpl implements MentorInterviewBooking
 
         // Check if slot is overlapping at the kiosk
         long count = bookingRepository.countOverlappingBookingsForKiosk(
-                dto.getKioskId(), dto.getScheduledStart(), dto.getScheduledEnd(), BookingStatus.CANCELLED
-        );
+                dto.getKioskId(), dto.getScheduledStart(), dto.getScheduledEnd(), BookingStatus.CANCELLED);
         if (count > 0) {
             throw new CustomException("Selected slot is already booked", HttpStatus.CONFLICT);
         }
@@ -84,12 +84,14 @@ public class MentorInterviewBookingServiceImpl implements MentorInterviewBooking
     @Override
     @Transactional
     public void cancelBooking(Long bookingId, int userId) {
-        MentorInterviewBooking booking = bookingRepository.findById(bookingId)
+        MentorInterviewBooking booking = bookingRepository
+                .findById(bookingId)
                 .orElseThrow(() -> new CustomException("Booking not found", HttpStatus.NOT_FOUND));
 
         // Security check: only allow applicant or admin/staff to cancel
         if (booking.getApplicantUserId() != userId) {
-            User user = userRepository.findById(userId)
+            User user = userRepository
+                    .findById(userId)
                     .orElseThrow(() -> new CustomException("User not found", HttpStatus.NOT_FOUND));
             if (user.getRole() != Role.ADMIN && user.getRole() != Role.STAFF) {
                 throw new CustomException("Unauthorized to cancel this booking", HttpStatus.UNAUTHORIZED);
@@ -118,7 +120,9 @@ public class MentorInterviewBookingServiceImpl implements MentorInterviewBooking
         bookingRepository.save(booking);
 
         // Reset application detail status
-        ApplicationDetail appDetail = applicationDetailRepository.findById(booking.getApplicationDetailId()).orElse(null);
+        ApplicationDetail appDetail = applicationDetailRepository
+                .findById(booking.getApplicationDetailId())
+                .orElse(null);
         if (appDetail != null) {
             appDetail.setStatus(ApplicationDetailStatus.PENDING);
             appDetail.setBookingId(null);
@@ -135,7 +139,8 @@ public class MentorInterviewBookingServiceImpl implements MentorInterviewBooking
     @Override
     @Transactional
     public MentorInterviewBooking assignMentor(Long bookingId, int mentorId, String notes) {
-        MentorInterviewBooking booking = bookingRepository.findById(bookingId)
+        MentorInterviewBooking booking = bookingRepository
+                .findById(bookingId)
                 .orElseThrow(() -> new CustomException("Booking not found", HttpStatus.NOT_FOUND));
 
         if (booking.getStatus() != BookingStatus.AWAITING_MENTOR) {
@@ -144,8 +149,7 @@ public class MentorInterviewBookingServiceImpl implements MentorInterviewBooking
 
         // Check conflict for mentor
         long overlapCount = bookingRepository.countOverlappingBookingsForMentor(
-                mentorId, booking.getScheduledStart(), booking.getScheduledEnd(), BookingStatus.CANCELLED
-        );
+                mentorId, booking.getScheduledStart(), booking.getScheduledEnd(), BookingStatus.CANCELLED);
         if (overlapCount > 0) {
             throw new CustomException("Mentor has another interview booking at this time", HttpStatus.CONFLICT);
         }
@@ -154,11 +158,15 @@ public class MentorInterviewBookingServiceImpl implements MentorInterviewBooking
         SessionCreationRequest sessionReq = new SessionCreationRequest();
         sessionReq.setUserId(booking.getApplicantUserId());
         sessionReq.setMentorId(mentorId);
-        
-        long ms = booking.getScheduledStart().atZone(ZoneId.of("Asia/Ho_Chi_Minh")).toInstant().toEpochMilli();
+
+        long ms = booking.getScheduledStart()
+                .atZone(ZoneId.of("Asia/Ho_Chi_Minh"))
+                .toInstant()
+                .toEpochMilli();
         sessionReq.setJoinTime(new java.sql.Timestamp(ms));
-        
-        int duration = (int) java.time.Duration.between(booking.getScheduledStart(), booking.getScheduledEnd()).toMinutes();
+
+        int duration = (int) java.time.Duration.between(booking.getScheduledStart(), booking.getScheduledEnd())
+                .toMinutes();
         sessionReq.setDuration(duration);
         sessionReq.setTotalPrice(0);
 
@@ -171,7 +179,8 @@ public class MentorInterviewBookingServiceImpl implements MentorInterviewBooking
         props.setEnable_screenshare(true);
 
         // Set exp to 2 hours after scheduled end
-        long exp = booking.getScheduledEnd().atZone(ZoneId.of("Asia/Ho_Chi_Minh")).toEpochSecond() + 7200;
+        long exp =
+                booking.getScheduledEnd().atZone(ZoneId.of("Asia/Ho_Chi_Minh")).toEpochSecond() + 7200;
         props.setExp((int) exp);
         props.setEnable_recording("cloud");
         dailyReq.setProperties(props);
@@ -182,7 +191,8 @@ public class MentorInterviewBookingServiceImpl implements MentorInterviewBooking
         try {
             sessionResp = sessionService.createSession(sessionReq);
         } catch (Exception e) {
-            throw new CustomException("Error creating Daily.co session: " + e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
+            throw new CustomException(
+                    "Error creating Daily.co session: " + e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
         }
 
         // Retrieve created Session
@@ -206,7 +216,8 @@ public class MentorInterviewBookingServiceImpl implements MentorInterviewBooking
         booking = bookingRepository.save(booking);
 
         // 4. Update ApplicationDetail
-        ApplicationDetail appDetail = applicationDetailRepository.findById(booking.getApplicationDetailId())
+        ApplicationDetail appDetail = applicationDetailRepository
+                .findById(booking.getApplicationDetailId())
                 .orElseThrow(() -> new CustomException("ApplicationDetail not found", HttpStatus.NOT_FOUND));
         appDetail.setSessionId((long) session.getId());
         appDetail.setStatus(ApplicationDetailStatus.SLOT_PICKED);
@@ -236,7 +247,8 @@ public class MentorInterviewBookingServiceImpl implements MentorInterviewBooking
             throw new CustomException("Invalid session key", HttpStatus.BAD_REQUEST);
         }
 
-        MentorInterviewBooking booking = bookingRepository.findBySessionKey(sessionKey)
+        MentorInterviewBooking booking = bookingRepository
+                .findBySessionKey(sessionKey)
                 .orElseThrow(() -> new CustomException("Booking not found for this session key", HttpStatus.NOT_FOUND));
 
         if (booking.getStatus() == BookingStatus.CANCELLED) {
@@ -244,13 +256,16 @@ public class MentorInterviewBookingServiceImpl implements MentorInterviewBooking
         }
 
         if (!booking.getKioskId().equals(kioskId)) {
-            throw new CustomException("Session key is registered for Kiosk " + booking.getKioskId(), HttpStatus.BAD_REQUEST);
+            throw new CustomException(
+                    "Session key is registered for Kiosk " + booking.getKioskId(), HttpStatus.BAD_REQUEST);
         }
 
         LocalDateTime now = LocalDateTime.now(ZoneId.of("Asia/Ho_Chi_Minh"));
         LocalDateTime start = booking.getScheduledStart();
         if (now.isBefore(start.minusMinutes(15)) || now.isAfter(start.plusMinutes(15))) {
-            throw new CustomException("You can only enter the Kiosk within 15 minutes of your scheduled start time (" + start + ")", HttpStatus.BAD_REQUEST);
+            throw new CustomException(
+                    "You can only enter the Kiosk within 15 minutes of your scheduled start time (" + start + ")",
+                    HttpStatus.BAD_REQUEST);
         }
 
         // Update session and booking state
