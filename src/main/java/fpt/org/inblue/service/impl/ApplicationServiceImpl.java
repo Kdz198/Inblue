@@ -1,6 +1,8 @@
 package fpt.org.inblue.service.impl;
 
+import fpt.org.inblue.enums.ApplicationDetailStatus;
 import fpt.org.inblue.enums.ApplicationStatus;
+import fpt.org.inblue.enums.RoundType;
 import fpt.org.inblue.exception.CustomException;
 import fpt.org.inblue.model.Application;
 import fpt.org.inblue.model.ApplicationDetail;
@@ -73,6 +75,25 @@ public class ApplicationServiceImpl implements ApplicationService {
                 applicationRepository.save(currentApplication);
                 System.out.println("Application " + currentApplication.getId() + " moved to round order "
                         + currentApplication.getCurrentRoundOrder());
+
+                // Tự động tạo ApplicationDetail với status PENDING cho các vòng
+                // không có luồng nộp bài (MENTROR_REVIEW, AI_INTERVIEW)
+                Round nextRound = rounds.get(currentRoundOrder); // index = currentRoundOrder (0-based) = vòng mới
+                if (nextRound.getRoundType() == RoundType.MENTROR_REVIEW
+                        || nextRound.getRoundType() == RoundType.AI_INTERVIEW) {
+                    boolean alreadyExists = applicationDetailRepository
+                            .findByApplicationIdAndRoundId(currentApplication.getId(), nextRound.getId())
+                            .isPresent();
+                    if (!alreadyExists) {
+                        ApplicationDetail nextDetail = ApplicationDetail.builder()
+                                .applicationId(currentApplication.getId())
+                                .roundId(nextRound.getId())
+                                .status(ApplicationDetailStatus.PENDING)
+                                .build();
+                        applicationDetailRepository.save(nextDetail);
+                    }
+                }
+
             } else {
                 List<ApplicationDetail> details =
                         applicationDetailRepository.findAllByApplicationId(currentApplication.getId());

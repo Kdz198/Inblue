@@ -6,5 +6,4 @@ public enum ApplicationDetailStatus {
     SUBMITTED, // Đã nộp bài, hệ thống đang gọi AI
     AI_EVALUATED, // AI đã chấm điểm xong (Đang chờ HR duyệt)
     COMPLETED, // HR đã chốt kết quả (Đóng vòng thi này)
-    ERROR // Lỗi gọi AI
 }
