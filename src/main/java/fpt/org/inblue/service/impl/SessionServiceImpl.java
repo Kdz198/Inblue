@@ -1,17 +1,14 @@
 package fpt.org.inblue.service.impl;
 
-import fpt.org.inblue.enums.FeatureName;
 import fpt.org.inblue.enums.PaymentPurpose;
 import fpt.org.inblue.enums.SessionStatus;
 import fpt.org.inblue.exception.CustomException;
 import fpt.org.inblue.model.Session;
-import fpt.org.inblue.model.dto.FeatureUsageLogDto;
 import fpt.org.inblue.model.dto.dailyco.*;
 import fpt.org.inblue.model.dto.request.JoinSessionDtoRequest;
 import fpt.org.inblue.repository.SessionRepository;
 import fpt.org.inblue.service.PaymentService;
 import fpt.org.inblue.service.SessionService;
-import fpt.org.inblue.utils.HelperUtil;
 import java.sql.Timestamp;
 import java.util.List;
 import org.springframework.beans.factory.annotation.Value;
@@ -189,7 +186,7 @@ public class SessionServiceImpl implements SessionService {
 
             // 3. Logic kết thúc session
             if (session.getEndTime1() != null && session.getEndTime2() != null) {
-        //
+                //
             }
             sessionRepository.save(session);
         } catch (Exception e) {
