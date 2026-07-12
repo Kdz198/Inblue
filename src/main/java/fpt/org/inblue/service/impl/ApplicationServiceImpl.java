@@ -39,7 +39,24 @@ public class ApplicationServiceImpl implements ApplicationService {
                 .orElseThrow(() -> new CustomException("Job Description not found", HttpStatus.NOT_FOUND));
         jd.setAppliedCount(jd.getAppliedCount() + 1);
         jobDescriptionRepository.save(jd);
-        return applicationRepository.save(application);
+        Application savedApplication = applicationRepository.save(application);
+
+        // Nếu vòng đầu tiên là MENTROR_REVIEW hoặc AI_INTERVIEW (không có luồng nộp bài),
+        // cần tạo ApplicationDetail PENDING ngay lúc apply vì moveToNextRound() chưa bao giờ được gọi trước đó.
+        if (jd.getRounds() != null && !jd.getRounds().isEmpty()) {
+            Round firstRound = jd.getRounds().get(0);
+            if (firstRound.getRoundType() == RoundType.MENTROR_REVIEW
+                    || firstRound.getRoundType() == RoundType.AI_INTERVIEW) {
+                ApplicationDetail firstDetail = ApplicationDetail.builder()
+                        .applicationId(savedApplication.getId())
+                        .roundId(firstRound.getId())
+                        .status(ApplicationDetailStatus.PENDING)
+                        .build();
+                applicationDetailRepository.save(firstDetail);
+            }
+        }
+
+        return savedApplication;
     }
 
     @Override
