@@ -2,6 +2,7 @@ package fpt.org.inblue.model;
 
 import fpt.org.inblue.enums.Role;
 import jakarta.persistence.*;
+import java.time.LocalDateTime;
 import lombok.*;
 
 @Entity
@@ -28,4 +29,7 @@ public class User {
 
     private String cvUrl;
     private String cv_public_id;
+
+    private LocalDateTime createdAt;
+    private LocalDateTime updatedAt;
 }
