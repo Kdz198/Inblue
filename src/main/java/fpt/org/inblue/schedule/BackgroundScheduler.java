@@ -14,6 +14,7 @@ public class BackgroundScheduler {
     private final PaymentSchedule paymentSchedule;
     private final SessionSchedule sessionSchedule;
     private final EmailSubmissionService emailSubmissionService;
+    private final JobDescriptionSchedule jobDescriptionSchedule;
 
     @Scheduled(fixedDelay = 300000)
     public void scheduleCheckPaymentStatus() {
@@ -33,5 +34,11 @@ public class BackgroundScheduler {
     @Scheduled(fixedDelay = 60000) // Chạy mỗi 60 giây
     public void scheduleProcessPendingEmails() {
         emailSubmissionService.processEmailSchedule();
+    }
+
+    // Chạy mỗi ngày lúc 00:00 để đóng các JD đã hết hạn (deadlineAt < now)
+    @Scheduled(cron = "0 0 0 * * ?")
+    public void scheduleCloseExpiredJobDescriptions() {
+        jobDescriptionSchedule.closeExpiredJobDescriptions();
     }
 }
