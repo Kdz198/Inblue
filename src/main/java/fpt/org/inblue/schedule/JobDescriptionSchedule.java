@@ -22,8 +22,8 @@ public class JobDescriptionSchedule {
      */
     public void closeExpiredJobDescriptions() {
         LocalDateTime now = LocalDateTime.now();
-        List<JobDescription> expiredJds = jobDescriptionRepository
-                .findByStatusAndDeadlineAtBefore(JobDescriptionStatus.OPEN, now);
+        List<JobDescription> expiredJds =
+                jobDescriptionRepository.findByStatusAndDeadlineAtBefore(JobDescriptionStatus.OPEN, now);
 
         if (expiredJds.isEmpty()) {
             log.info("[JD Schedule] Không có JD nào hết hạn.");
@@ -32,7 +32,11 @@ public class JobDescriptionSchedule {
 
         for (JobDescription jd : expiredJds) {
             jd.setStatus(JobDescriptionStatus.CLOSED);
-            log.info("[JD Schedule] Đóng JD id={}, title='{}', deadline={}", jd.getId(), jd.getTitle(), jd.getDeadlineAt());
+            log.info(
+                    "[JD Schedule] Đóng JD id={}, title='{}', deadline={}",
+                    jd.getId(),
+                    jd.getTitle(),
+                    jd.getDeadlineAt());
         }
 
         jobDescriptionRepository.saveAll(expiredJds);
