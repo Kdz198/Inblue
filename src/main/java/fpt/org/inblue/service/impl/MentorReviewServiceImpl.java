@@ -12,9 +12,7 @@ import fpt.org.inblue.repository.*;
 import fpt.org.inblue.service.ApplicationService;
 import fpt.org.inblue.service.MentorReviewService;
 import fpt.org.inblue.service.UserService;
-
 import java.util.List;
-
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
@@ -92,7 +90,7 @@ public class MentorReviewServiceImpl implements MentorReviewService {
                         appDetail.setFinalResult(ApplicationDetail.RoundResult.PASSED);
                     }
                     appDetailRepo.save(appDetail);
-                    //move to next round
+                    // move to next round
                     Application application = applicationService.getApplicationById(appDetail.getApplicationId());
                     applicationService.moveToNextRound(application);
                 }
