@@ -186,7 +186,7 @@ public class SessionServiceImpl implements SessionService {
 
             // 3. Logic kết thúc session
             if (session.getEndTime1() != null && session.getEndTime2() != null) {
-                //
+                session.setStatus(SessionStatus.COMPLETED);
             }
             sessionRepository.save(session);
         } catch (Exception e) {
