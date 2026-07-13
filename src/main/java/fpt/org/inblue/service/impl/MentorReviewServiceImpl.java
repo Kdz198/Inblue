@@ -9,9 +9,12 @@ import fpt.org.inblue.model.*;
 import fpt.org.inblue.model.dto.request.CreateMentorReviewRequest;
 import fpt.org.inblue.model.dto.request.UpdateMentorReviewRequest;
 import fpt.org.inblue.repository.*;
+import fpt.org.inblue.service.ApplicationService;
 import fpt.org.inblue.service.MentorReviewService;
 import fpt.org.inblue.service.UserService;
+
 import java.util.List;
+
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
@@ -28,6 +31,7 @@ public class MentorReviewServiceImpl implements MentorReviewService {
     private final MentorInterviewBookingRepository bookingRepo;
     private final ApplicationDetailRepository appDetailRepo;
     private final RoundRepository roundRepo;
+    private final ApplicationService applicationService;
 
     @Override
     @Transactional
@@ -88,6 +92,9 @@ public class MentorReviewServiceImpl implements MentorReviewService {
                         appDetail.setFinalResult(ApplicationDetail.RoundResult.PASSED);
                     }
                     appDetailRepo.save(appDetail);
+                    //move to next round
+                    Application application = applicationService.getApplicationById(appDetail.getApplicationId());
+                    applicationService.moveToNextRound(application);
                 }
             }
 
