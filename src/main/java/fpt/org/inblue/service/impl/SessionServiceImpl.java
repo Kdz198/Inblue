@@ -3,17 +3,17 @@ package fpt.org.inblue.service.impl;
 import fpt.org.inblue.enums.PaymentPurpose;
 import fpt.org.inblue.enums.SessionStatus;
 import fpt.org.inblue.exception.CustomException;
-import fpt.org.inblue.model.Session;
-import fpt.org.inblue.model.MentorReview;
 import fpt.org.inblue.model.MentorFeedback;
+import fpt.org.inblue.model.MentorReview;
+import fpt.org.inblue.model.Session;
 import fpt.org.inblue.model.dto.dailyco.*;
 import fpt.org.inblue.model.dto.request.JoinSessionDtoRequest;
-import fpt.org.inblue.model.dto.response.SessionDetailResponse;
-import fpt.org.inblue.model.dto.response.MentorReviewResponse;
 import fpt.org.inblue.model.dto.response.MentorFeedbackResponse;
-import fpt.org.inblue.repository.SessionRepository;
-import fpt.org.inblue.repository.MentorReviewRepository;
+import fpt.org.inblue.model.dto.response.MentorReviewResponse;
+import fpt.org.inblue.model.dto.response.SessionDetailResponse;
 import fpt.org.inblue.repository.MentorFeedbackRepository;
+import fpt.org.inblue.repository.MentorReviewRepository;
+import fpt.org.inblue.repository.SessionRepository;
 import fpt.org.inblue.service.PaymentService;
 import fpt.org.inblue.service.SessionService;
 import java.sql.Timestamp;
@@ -61,7 +61,8 @@ public class SessionServiceImpl implements SessionService {
             return null;
         }
         MentorReview review = mentorReviewRepository.findBySession_Id(session.getId());
-        MentorFeedback feedback = mentorFeedbackRepository.findById(session.getId()).orElse(null);
+        MentorFeedback feedback =
+                mentorFeedbackRepository.findById(session.getId()).orElse(null);
 
         MentorReviewResponse reviewResponse = null;
         if (review != null) {
@@ -121,7 +122,8 @@ public class SessionServiceImpl implements SessionService {
 
     @Override
     public SessionDetailResponse getSession(int id) {
-        Session session = sessionRepository.findById(id)
+        Session session = sessionRepository
+                .findById(id)
                 .orElseThrow(() -> new CustomException("Session not found", HttpStatus.NOT_FOUND));
         return convertToDetailResponse(session);
     }
