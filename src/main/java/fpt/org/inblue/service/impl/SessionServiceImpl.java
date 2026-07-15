@@ -4,13 +4,21 @@ import fpt.org.inblue.enums.PaymentPurpose;
 import fpt.org.inblue.enums.SessionStatus;
 import fpt.org.inblue.exception.CustomException;
 import fpt.org.inblue.model.Session;
+import fpt.org.inblue.model.MentorReview;
+import fpt.org.inblue.model.MentorFeedback;
 import fpt.org.inblue.model.dto.dailyco.*;
 import fpt.org.inblue.model.dto.request.JoinSessionDtoRequest;
+import fpt.org.inblue.model.dto.response.SessionDetailResponse;
+import fpt.org.inblue.model.dto.response.MentorReviewResponse;
+import fpt.org.inblue.model.dto.response.MentorFeedbackResponse;
 import fpt.org.inblue.repository.SessionRepository;
+import fpt.org.inblue.repository.MentorReviewRepository;
+import fpt.org.inblue.repository.MentorFeedbackRepository;
 import fpt.org.inblue.service.PaymentService;
 import fpt.org.inblue.service.SessionService;
 import java.sql.Timestamp;
 import java.util.List;
+import java.util.stream.Collectors;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.http.*;
@@ -26,6 +34,8 @@ public class SessionServiceImpl implements SessionService {
     public final SessionRepository sessionRepository;
     private final PaymentService paymentService;
     private final ApplicationEventPublisher applicationEventPublisher;
+    private final MentorReviewRepository mentorReviewRepository;
+    private final MentorFeedbackRepository mentorFeedbackRepository;
 
     public SessionServiceImpl(
             @Value("${daily.api.url}") String dailyApiUrl,
@@ -33,31 +43,94 @@ public class SessionServiceImpl implements SessionService {
             SessionRepository sessionRepository,
             RestTemplate restTemplate,
             PaymentService paymentService,
-            ApplicationEventPublisher applicationEventPublisher) {
+            ApplicationEventPublisher applicationEventPublisher,
+            MentorReviewRepository mentorReviewRepository,
+            MentorFeedbackRepository mentorFeedbackRepository) {
         this.dailyApiUrl = dailyApiUrl;
         this.dailyApiKey = dailyApiKey;
         this.sessionRepository = sessionRepository;
         this.restTemplate = restTemplate;
         this.paymentService = paymentService;
         this.applicationEventPublisher = applicationEventPublisher;
+        this.mentorReviewRepository = mentorReviewRepository;
+        this.mentorFeedbackRepository = mentorFeedbackRepository;
     }
 
-    @Override
-    public List<Session> getSessions() {
-        return sessionRepository.findAll();
-    }
-
-    @Override
-    public Session getSession(int id) {
-        if (!sessionRepository.existsById(id)) {
-            throw new CustomException("Session not found", HttpStatus.NOT_FOUND);
+    private SessionDetailResponse convertToDetailResponse(Session session) {
+        if (session == null) {
+            return null;
         }
-        return sessionRepository.findById(id).get();
+        MentorReview review = mentorReviewRepository.findBySession_Id(session.getId());
+        MentorFeedback feedback = mentorFeedbackRepository.findById(session.getId()).orElse(null);
+
+        MentorReviewResponse reviewResponse = null;
+        if (review != null) {
+            reviewResponse = MentorReviewResponse.builder()
+                    .rating(review.getRating())
+                    .situationNote(review.getSituationNote())
+                    .taskNote(review.getTaskNote())
+                    .actionNote(review.getActionNote())
+                    .resultNote(review.getResultNote())
+                    .strength(review.getStrength())
+                    .weakness(review.getWeakness())
+                    .improve(review.getImprove())
+                    .build();
+        }
+
+        MentorFeedbackResponse feedbackResponse = null;
+        if (feedback != null) {
+            feedbackResponse = MentorFeedbackResponse.builder()
+                    .rating(feedback.getRating())
+                    .comment(feedback.getComment())
+                    .build();
+        }
+
+        return SessionDetailResponse.builder()
+                .id(session.getId())
+                .roomName(session.getRoomName())
+                .userId(session.getUserId())
+                .participantId1(session.getParticipantId1())
+                .startTime1(session.getStartTime1())
+                .endTime1(session.getEndTime1())
+                .durationSeconds1(session.getDurationSeconds1())
+                .mentorId(session.getUserId2())
+                .participantId2(session.getParticipantId2())
+                .startTime2(session.getStartTime2())
+                .endTime2(session.getEndTime2())
+                .durationSeconds2(session.getDurationSeconds2())
+                .roomUrl(session.getRoomUrl())
+                .joinTime(session.getJoinTime())
+                .recordUrl(session.getRecordUrl())
+                .status(session.getStatus())
+                .duration(session.getDuration())
+                .totalPrice(session.getTotalPrice())
+                .transactionCode(session.getTransactionCode())
+                .sessionKey(session.getSessionKey())
+                .kioskId(session.getKioskId())
+                .mentorReview(reviewResponse)
+                .mentorFeedback(feedbackResponse)
+                .build();
     }
 
     @Override
-    public List<Session> getSessionsByUserId(int userId) {
-        return sessionRepository.findAllByUserIdOrUserId2(userId, userId);
+    public List<SessionDetailResponse> getSessions() {
+        return sessionRepository.findAll().stream()
+                .map(this::convertToDetailResponse)
+                .collect(Collectors.toList());
+    }
+
+    @Override
+    public SessionDetailResponse getSession(int id) {
+        Session session = sessionRepository.findById(id)
+                .orElseThrow(() -> new CustomException("Session not found", HttpStatus.NOT_FOUND));
+        return convertToDetailResponse(session);
+    }
+
+    @Override
+    public List<SessionDetailResponse> getSessionsByUserId(int userId) {
+        return sessionRepository.findAllByUserIdOrUserId2(userId, userId).stream()
+                .map(this::convertToDetailResponse)
+                .collect(Collectors.toList());
     }
 
     @Override

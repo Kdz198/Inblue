@@ -5,14 +5,15 @@ import fpt.org.inblue.model.dto.dailyco.DailyWebHookPayload;
 import fpt.org.inblue.model.dto.dailyco.SessionCreationRequest;
 import fpt.org.inblue.model.dto.dailyco.SessionResponse;
 import fpt.org.inblue.model.dto.request.JoinSessionDtoRequest;
+import fpt.org.inblue.model.dto.response.SessionDetailResponse;
 import java.util.List;
 
 public interface SessionService {
-    List<Session> getSessions();
+    List<SessionDetailResponse> getSessions();
 
-    Session getSession(int id);
+    SessionDetailResponse getSession(int id);
 
-    List<Session> getSessionsByUserId(int userId);
+    List<SessionDetailResponse> getSessionsByUserId(int userId);
 
     Session updateSession(Session session);
 

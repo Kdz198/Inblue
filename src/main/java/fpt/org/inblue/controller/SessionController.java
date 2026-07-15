@@ -5,6 +5,7 @@ import fpt.org.inblue.model.dto.dailyco.DailyWebHookPayload;
 import fpt.org.inblue.model.dto.dailyco.SessionCreationRequest;
 import fpt.org.inblue.model.dto.dailyco.SessionResponse;
 import fpt.org.inblue.model.dto.request.JoinSessionDtoRequest;
+import fpt.org.inblue.model.dto.response.SessionDetailResponse;
 import fpt.org.inblue.service.SessionService;
 import io.swagger.v3.oas.annotations.Operation;
 import java.util.List;
@@ -20,18 +21,18 @@ public class SessionController {
     private final SessionService sessionService;
 
     @GetMapping
-    public ResponseEntity<List<Session>> getSessions() {
+    public ResponseEntity<List<SessionDetailResponse>> getSessions() {
         return ResponseEntity.ok(sessionService.getSessions());
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<Session> getSession(@PathVariable int id) {
+    public ResponseEntity<SessionDetailResponse> getSession(@PathVariable int id) {
         return ResponseEntity.ok(sessionService.getSession(id));
     }
 
     @Operation(description = "Lấy tất cả session liên quan đến userId", summary = "Lấy tất cả session của user")
     @GetMapping("/{userId}/by-user")
-    public ResponseEntity<List<Session>> getSessionsByUserId(@PathVariable int userId) {
+    public ResponseEntity<List<SessionDetailResponse>> getSessionsByUserId(@PathVariable int userId) {
         return ResponseEntity.ok(sessionService.getSessionsByUserId(userId));
     }
 
