@@ -1,0 +1,50 @@
+Đây là nguyên văn đoạn Code Syntax Mermaid sạch nhất để bạn nhấn Copy và ném thẳng vào ô Insert của Draw.io nhé:
+
+```mermaid
+flowchart TD
+%% Bắt đầu luồng
+START([Bắt đầu: HR truy cập hệ thống])
+Auth[Đăng nhập / Xác thực JWT]
+
+START --> Auth
+Auth --> CheckCompany{Đã có Profile \n Công ty chưa?}
+
+CheckCompany -- Chưa có --> CreateCompany[Tạo Company Profile]
+CreateCompany --> CreateJD
+
+CheckCompany -- Đã có --> CreateJD[Tạo mới Job Description - JD]
+
+CreateJD --> ConfigPipeline[Thiết lập Pipeline Phỏng vấn \n Chọn từ 7 Round Type]
+
+ConfigPipeline --> RoundLoop{Cấu hình chi tiết \n từng Round?}
+
+RoundLoop -- Vòng Quiz / Coding / Code Review --> QuestionBank{Dùng Question Bank?}
+RoundLoop -- Vòng AI / Email / Mentor --> CustomConfig[Nhập Rubrics / Tham số tĩnh]
+
+QuestionBank -- Có --> AI_Gen[AI sinh đề / Random từ Bank]
+QuestionBank -- Tự tạo --> CustomConfig
+
+AI_Gen --> PackJSON[Đóng gói cấu hình vào \n configData JSONB]
+CustomConfig --> PackJSON
+
+PackJSON --> CheckMore{Còn vòng nào \n chưa cấu hình?}
+CheckMore -- Còn --> RoundLoop
+
+CheckMore -- Hết --> SaveDB[(Lưu JD & List Rounds \n vào PostgreSQL)]
+
+SaveDB --> Publish[Publish JD lên \n Nền tảng Tìm việc]
+Publish --> END([Kết thúc: Sẵn sàng \n nhận Candidate])
+
+%% Định nghĩa Style (Màu sắc) để lúc gen ra Draw.io nó có màu ngầu
+classDef startEnd fill:#1A3330,stroke:#1D9E75,stroke-width:2px,color:#80EEC4;
+classDef process fill:#2D2540,stroke:#7B67CC,stroke-width:2px,color:#C9B8FF;
+classDef condition fill:#3D2218,stroke:#D85A30,stroke-width:2px,color:#FFAA88;
+classDef db fill:#252525,stroke:#555555,stroke-width:2px,color:#BBBBBB;
+
+class START,END startEnd;
+class Auth,CreateCompany,CreateJD,ConfigPipeline,CustomConfig,AI_Gen,Publish process;
+class CheckCompany,RoundLoop,QuestionBank,CheckMore condition;
+class PackJSON,SaveDB db;
+```
+
+Bạn cứ copy nguyên khung code này, vào **Draw.io -> Dấu `+` (trên thanh công cụ) -> Advanced -> Mermaid**, paste vào và bấm Insert là nó ra sơ đồ đẹp luôn!

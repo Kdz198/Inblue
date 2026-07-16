@@ -32,7 +32,11 @@ public class Oauth2Handler extends SimpleUrlAuthenticationSuccessHandler {
         int accountId = oAuth2User.getId();
         String role = oAuth2User.getRole();
         List<SimpleGrantedAuthority> authorities = List.of(new SimpleGrantedAuthority("ROLE_" + role));
-        CustomUserDetails userDetail = new CustomUserDetails(accountId, authorities);
+
+        String email = oAuth2User.getAttribute("email");
+        String name = oAuth2User.getAttribute("name");
+
+        CustomUserDetails userDetail = new CustomUserDetails(accountId, email, name, authorities);
 
         Authentication auth = new UsernamePasswordAuthenticationToken(userDetail, null, userDetail.getAuthorities());
         SecurityContextHolder.getContext().setAuthentication(auth);

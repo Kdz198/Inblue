@@ -27,14 +27,19 @@ public class CustomUserDetailService implements UserDetailsService {
         if (user != null && user.getIsActive()) {
             List<SimpleGrantedAuthority> authorities = List.of(new SimpleGrantedAuthority("ROLE_" + user.getRole()));
             return new CustomUserDetails(
-                    user.getId(), user.getEmail(), user.getPassword(), authorities, user.getIsActive());
+                    user.getId(), user.getEmail(), user.getName(), user.getPassword(), authorities, user.getIsActive());
         }
         Mentor mentor = mentorRepository.findByEmail(email);
 
         if (mentor != null && mentor.isActive()) {
             List<SimpleGrantedAuthority> authorities = List.of(new SimpleGrantedAuthority("ROLE_" + mentor.getRole()));
             return new CustomUserDetails(
-                    mentor.getId(), mentor.getEmail(), mentor.getPassword(), authorities, mentor.isActive());
+                    mentor.getId(),
+                    mentor.getEmail(),
+                    mentor.getName(),
+                    mentor.getPassword(),
+                    authorities,
+                    mentor.isActive());
         }
         throw new UsernameNotFoundException("User not found with email: " + email);
     }

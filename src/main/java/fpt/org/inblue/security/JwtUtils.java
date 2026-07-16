@@ -28,6 +28,8 @@ public class JwtUtils {
         return Jwts.builder()
                 .setSubject(String.valueOf(userPrincipal.getUserId()))
                 .claim("roles", roles)
+                .claim("email", userPrincipal.getEmail())
+                .claim("name", userPrincipal.getName())
                 .setIssuedAt(new Date())
                 .setExpiration(new Date((new Date()).getTime() + expiration))
                 .signWith(
@@ -57,6 +59,10 @@ public class JwtUtils {
     }
 
     public String getEmailFromToken(String token) {
+        return getClaimsFromToken(token).get("email", String.class);
+    }
+
+    public String getNameFromToken(String token) {
         return getClaimsFromToken(token).get("name", String.class);
     }
 
