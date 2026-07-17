@@ -34,7 +34,11 @@ public class CustomUserDetails implements UserDetails {
     }
 
     public CustomUserDetails(
-            int userId, String email, String name, String avatarUrl, Collection<? extends GrantedAuthority> authorities) {
+            int userId,
+            String email,
+            String name,
+            String avatarUrl,
+            Collection<? extends GrantedAuthority> authorities) {
         this.userId = userId;
         this.email = email;
         this.name = name;
