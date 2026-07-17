@@ -30,6 +30,7 @@ public class JwtUtils {
                 .claim("roles", roles)
                 .claim("email", userPrincipal.getEmail())
                 .claim("name", userPrincipal.getName())
+                .claim("avatarUrl", userPrincipal.getAvatarUrl() != null ? userPrincipal.getAvatarUrl() : "")
                 .setIssuedAt(new Date())
                 .setExpiration(new Date((new Date()).getTime() + expiration))
                 .signWith(
@@ -64,6 +65,10 @@ public class JwtUtils {
 
     public String getNameFromToken(String token) {
         return getClaimsFromToken(token).get("name", String.class);
+    }
+
+    public String getAvatarUrlFromToken(String token) {
+        return getClaimsFromToken(token).get("avatarUrl", String.class);
     }
 
     public boolean validateToken(String token) {

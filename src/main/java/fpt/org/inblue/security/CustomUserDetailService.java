@@ -27,7 +27,13 @@ public class CustomUserDetailService implements UserDetailsService {
         if (user != null && user.getIsActive()) {
             List<SimpleGrantedAuthority> authorities = List.of(new SimpleGrantedAuthority("ROLE_" + user.getRole()));
             return new CustomUserDetails(
-                    user.getId(), user.getEmail(), user.getName(), user.getPassword(), authorities, user.getIsActive());
+                    user.getId(),
+                    user.getEmail(),
+                    user.getName(),
+                    user.getAvatarUrl(),
+                    user.getPassword(),
+                    authorities,
+                    user.getIsActive());
         }
         Mentor mentor = mentorRepository.findByEmail(email);
 
@@ -37,6 +43,7 @@ public class CustomUserDetailService implements UserDetailsService {
                     mentor.getId(),
                     mentor.getEmail(),
                     mentor.getName(),
+                    mentor.getAvatarUrl(),
                     mentor.getPassword(),
                     authorities,
                     mentor.isActive());

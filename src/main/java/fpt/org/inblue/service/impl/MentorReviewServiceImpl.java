@@ -135,11 +135,13 @@ public class MentorReviewServiceImpl implements MentorReviewService {
     @Transactional
     public void checkAndCompleteRound(int sessionId) {
         MentorReview review = repo.findBySession_Id(sessionId);
-        MentorFeedback feedback = mentorFeedbackRepository.findBySession_Id(sessionId).orElse(null);
+        MentorFeedback feedback =
+                mentorFeedbackRepository.findBySession_Id(sessionId).orElse(null);
 
         // Chỉ khi cả 2 review và feedback đều tồn tại
         if (review != null && feedback != null) {
-            ApplicationDetail appDetail = appDetailRepo.findBySessionId((long) sessionId).orElse(null);
+            ApplicationDetail appDetail =
+                    appDetailRepo.findBySessionId((long) sessionId).orElse(null);
             if (appDetail != null && appDetail.getStatus() != ApplicationDetailStatus.COMPLETED) {
                 appDetail.setMentorReview(review);
                 appDetail.setStatus(ApplicationDetailStatus.COMPLETED);
