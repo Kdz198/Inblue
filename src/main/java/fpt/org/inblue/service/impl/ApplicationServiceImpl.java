@@ -14,6 +14,7 @@ import fpt.org.inblue.repository.JobDescriptionRepository;
 import fpt.org.inblue.security.JwtUtils;
 import fpt.org.inblue.service.ApplicationService;
 import fpt.org.inblue.utils.HelperUtil;
+import java.time.LocalDateTime;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -42,15 +43,28 @@ public class ApplicationServiceImpl implements ApplicationService {
         Application savedApplication = applicationRepository.save(application);
 
         // Nếu vòng đầu tiên là MENTROR_REVIEW hoặc AI_INTERVIEW (không có luồng nộp bài),
-        // cần tạo ApplicationDetail PENDING ngay lúc apply vì moveToNextRound() chưa bao giờ được gọi trước đó.
+        // cần tạo ApplicationDetail ngay lúc apply vì moveToNextRound() chưa bao giờ được gọi trước đó.
         if (jd.getRounds() != null && !jd.getRounds().isEmpty()) {
             Round firstRound = jd.getRounds().get(0);
             if (firstRound.getRoundType() == RoundType.MENTROR_REVIEW
                     || firstRound.getRoundType() == RoundType.AI_INTERVIEW) {
+                ApplicationDetailStatus initialStatus = firstRound.getRoundType() == RoundType.MENTROR_REVIEW
+                        ? ApplicationDetailStatus.AWAITING_MENTOR
+                        : ApplicationDetailStatus.PENDING;
+                java.time.LocalDateTime endTime = null;
+                if (firstRound.getConfigData() != null
+                        && firstRound.getConfigData().getTimeLimitMinutes() != null) {
+                    endTime = java.time.LocalDateTime.now()
+                            .plusMinutes(firstRound.getConfigData().getTimeLimitMinutes());
+                }
                 ApplicationDetail firstDetail = ApplicationDetail.builder()
                         .applicationId(savedApplication.getId())
                         .roundId(firstRound.getId())
-                        .status(ApplicationDetailStatus.PENDING)
+                        .status(initialStatus)
+                        .sessionInfo(ApplicationDetail.RoundSessionInfo.builder()
+                                .startTime(java.sql.Timestamp.valueOf(java.time.LocalDateTime.now()))
+                                .endTime(endTime != null ? java.sql.Timestamp.valueOf(endTime) : null)
+                                .build())
                         .build();
                 applicationDetailRepository.save(firstDetail);
             }
@@ -93,8 +107,8 @@ public class ApplicationServiceImpl implements ApplicationService {
                 System.out.println("Application " + currentApplication.getId() + " moved to round order "
                         + currentApplication.getCurrentRoundOrder());
 
-                // Tự động tạo ApplicationDetail với status PENDING cho các vòng
-                // không có luồng nộp bài (MENTROR_REVIEW, AI_INTERVIEW)
+                // Tự động tạo ApplicationDetail với status AWAITING_MENTOR cho vòng MENTROR_REVIEW
+                // và PENDING cho các vòng khác không có luồng nộp bài (AI_INTERVIEW)
                 Round nextRound = rounds.get(currentRoundOrder); // index = currentRoundOrder (0-based) = vòng mới
                 if (nextRound.getRoundType() == RoundType.MENTROR_REVIEW
                         || nextRound.getRoundType() == RoundType.AI_INTERVIEW) {
@@ -102,10 +116,23 @@ public class ApplicationServiceImpl implements ApplicationService {
                             .findByApplicationIdAndRoundId(currentApplication.getId(), nextRound.getId())
                             .isPresent();
                     if (!alreadyExists) {
+                        ApplicationDetailStatus nextStatus = nextRound.getRoundType() == RoundType.MENTROR_REVIEW
+                                ? ApplicationDetailStatus.AWAITING_MENTOR
+                                : ApplicationDetailStatus.PENDING;
+                        java.time.LocalDateTime endTime = null;
+                        if (nextRound.getConfigData() != null
+                                && nextRound.getConfigData().getTimeLimitMinutes() != null) {
+                            endTime = java.time.LocalDateTime.now()
+                                    .plusMinutes(nextRound.getConfigData().getTimeLimitMinutes());
+                        }
                         ApplicationDetail nextDetail = ApplicationDetail.builder()
                                 .applicationId(currentApplication.getId())
                                 .roundId(nextRound.getId())
-                                .status(ApplicationDetailStatus.PENDING)
+                                .status(nextStatus)
+                                .sessionInfo(ApplicationDetail.RoundSessionInfo.builder()
+                                        .startTime(java.sql.Timestamp.valueOf(java.time.LocalDateTime.now()))
+                                        .endTime(endTime != null ? java.sql.Timestamp.valueOf(endTime) : null)
+                                        .build())
                                 .build();
                         applicationDetailRepository.save(nextDetail);
                     }

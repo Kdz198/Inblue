@@ -13,4 +13,6 @@ public interface MentorReviewService {
     MentorReview getMentorReviewById(int id);
 
     List<MentorReview> getAllMentorReviews();
+
+    void checkAndCompleteRound(int sessionId);
 }

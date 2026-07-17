@@ -5,6 +5,7 @@ import fpt.org.inblue.model.dto.dailyco.DailyWebHookPayload;
 import fpt.org.inblue.model.dto.dailyco.SessionCreationRequest;
 import fpt.org.inblue.model.dto.dailyco.SessionResponse;
 import fpt.org.inblue.model.dto.request.JoinSessionDtoRequest;
+import fpt.org.inblue.model.dto.request.CreateRoundSessionRequest;
 import fpt.org.inblue.model.dto.response.SessionDetailResponse;
 import fpt.org.inblue.service.SessionService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -94,5 +95,14 @@ public class SessionController {
     public ResponseEntity<String> makePayment(@RequestParam int sessionId) {
         String paymentUrl = sessionService.makePayment(sessionId);
         return ResponseEntity.ok(paymentUrl);
+    }
+
+    @PostMapping("create-for-round")
+    @Operation(
+            summary = "Tạo session và phòng họp cho một vòng Mentor Review (Online hoặc Offline)",
+            description = "Ứng viên tự chọn thời gian và hình thức ONLINE/OFFLINE sau khi Admin đã gán mentor.")
+    public ResponseEntity<SessionDetailResponse> createSessionForRound(@RequestBody CreateRoundSessionRequest request) {
+        SessionDetailResponse response = sessionService.createSessionForRound(request);
+        return ResponseEntity.ok(response);
     }
 }

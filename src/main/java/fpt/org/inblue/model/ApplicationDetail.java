@@ -1,6 +1,7 @@
 package fpt.org.inblue.model;
 
 import fpt.org.inblue.enums.ApplicationDetailStatus;
+import fpt.org.inblue.enums.MeetingType;
 import fpt.org.inblue.model.dto.response.CompilerResponseDto;
 import jakarta.persistence.*;
 import java.time.LocalDateTime;
@@ -63,6 +64,12 @@ public class ApplicationDetail {
     private Long sessionId;
     private Long bookingId;
 
+    private Integer mentorId; // ID mentor được Admin gán vào vòng này
+
+    @JdbcTypeCode(SqlTypes.JSON)
+    @Column(columnDefinition = "jsonb")
+    private RoundSessionInfo sessionInfo; // Lưu thông tin session (sessionId, meetingType, startTime, endTime)
+
     @CreationTimestamp
     LocalDateTime createdAt;
 
@@ -70,6 +77,17 @@ public class ApplicationDetail {
     LocalDateTime updatedAt;
 
     // --- INNER CLASSES ĐỂ MAP VỚI JSONB ---
+
+    @Data
+    @NoArgsConstructor
+    @AllArgsConstructor
+    @Builder
+    public static class RoundSessionInfo {
+        private Integer sessionId;
+        private MeetingType meetingType; // ONLINE hoặc OFFLINE
+        private java.sql.Timestamp startTime; // Thời gian bắt đầu hẹn gặp (ứng viên + mentor tự chọn)
+        private java.sql.Timestamp endTime;   // Thời gian kết thúc hẹn gặp
+    }
 
     @Data
     @NoArgsConstructor

@@ -61,4 +61,15 @@ public class ApplicationDetailServiceImpl implements ApplicationDetailService {
 
         return applicationDetailRepository.findAllByReviewerId(reviewerId);
     }
+
+    @Override
+    public ApplicationDetail assignMentor(long applicationDetailId, int mentorId) {
+        ApplicationDetail applicationDetail = getApplicationDetailById(applicationDetailId);
+        if (applicationDetail.getStatus() != ApplicationDetailStatus.AWAITING_MENTOR) {
+            throw new CustomException("Application detail status is not AWAITING_MENTOR", HttpStatus.BAD_REQUEST);
+        }
+        applicationDetail.setMentorId(mentorId);
+        applicationDetail.setStatus(ApplicationDetailStatus.PENDING);
+        return applicationDetailRepository.save(applicationDetail);
+    }
 }

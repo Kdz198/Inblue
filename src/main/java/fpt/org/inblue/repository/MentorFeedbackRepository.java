@@ -6,4 +6,6 @@ import org.springframework.data.jpa.repository.JpaRepository;
 
 public interface MentorFeedbackRepository extends JpaRepository<MentorFeedback, Integer> {
     List<MentorFeedback> findAllByMentor_Id(int mentorId);
+
+    java.util.Optional<MentorFeedback> findBySession_Id(int sessionId);
 }

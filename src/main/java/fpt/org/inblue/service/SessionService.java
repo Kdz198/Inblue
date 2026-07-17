@@ -5,6 +5,7 @@ import fpt.org.inblue.model.dto.dailyco.DailyWebHookPayload;
 import fpt.org.inblue.model.dto.dailyco.SessionCreationRequest;
 import fpt.org.inblue.model.dto.dailyco.SessionResponse;
 import fpt.org.inblue.model.dto.request.JoinSessionDtoRequest;
+import fpt.org.inblue.model.dto.request.CreateRoundSessionRequest;
 import fpt.org.inblue.model.dto.response.SessionDetailResponse;
 import java.util.List;
 
@@ -29,4 +30,6 @@ public interface SessionService {
     void deleteSession(String roomName);
 
     String makePayment(int sessionId);
+
+    SessionDetailResponse createSessionForRound(CreateRoundSessionRequest request);
 }

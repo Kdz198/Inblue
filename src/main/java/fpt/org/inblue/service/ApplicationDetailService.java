@@ -11,4 +11,7 @@ public interface ApplicationDetailService {
     void hrScore(long applicationId, boolean isPass, String note, double score);
 
     List<ApplicationDetail> getApplicationDetailsForReviewer();
+
+    // Dành cho Admin: gán mentor cho vòng Mentor Review
+    ApplicationDetail assignMentor(long applicationDetailId, int mentorId);
 }

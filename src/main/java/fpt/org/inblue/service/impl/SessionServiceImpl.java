@@ -16,8 +16,17 @@ import fpt.org.inblue.repository.MentorReviewRepository;
 import fpt.org.inblue.repository.SessionRepository;
 import fpt.org.inblue.service.PaymentService;
 import fpt.org.inblue.service.SessionService;
+import org.springframework.transaction.annotation.Transactional;
+import fpt.org.inblue.enums.ApplicationDetailStatus;
+import fpt.org.inblue.enums.MeetingType;
+import fpt.org.inblue.model.Application;
+import fpt.org.inblue.model.ApplicationDetail;
+import fpt.org.inblue.model.dto.request.CreateRoundSessionRequest;
+import fpt.org.inblue.repository.ApplicationDetailRepository;
+import fpt.org.inblue.repository.ApplicationRepository;
 import java.sql.Timestamp;
 import java.util.List;
+import java.util.UUID;
 import java.util.stream.Collectors;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.ApplicationEventPublisher;
@@ -36,6 +45,8 @@ public class SessionServiceImpl implements SessionService {
     private final ApplicationEventPublisher applicationEventPublisher;
     private final MentorReviewRepository mentorReviewRepository;
     private final MentorFeedbackRepository mentorFeedbackRepository;
+    private final ApplicationRepository applicationRepository;
+    private final ApplicationDetailRepository applicationDetailRepository;
 
     public SessionServiceImpl(
             @Value("${daily.api.url}") String dailyApiUrl,
@@ -45,7 +56,9 @@ public class SessionServiceImpl implements SessionService {
             PaymentService paymentService,
             ApplicationEventPublisher applicationEventPublisher,
             MentorReviewRepository mentorReviewRepository,
-            MentorFeedbackRepository mentorFeedbackRepository) {
+            MentorFeedbackRepository mentorFeedbackRepository,
+            ApplicationRepository applicationRepository,
+            ApplicationDetailRepository applicationDetailRepository) {
         this.dailyApiUrl = dailyApiUrl;
         this.dailyApiKey = dailyApiKey;
         this.sessionRepository = sessionRepository;
@@ -54,6 +67,8 @@ public class SessionServiceImpl implements SessionService {
         this.applicationEventPublisher = applicationEventPublisher;
         this.mentorReviewRepository = mentorReviewRepository;
         this.mentorFeedbackRepository = mentorFeedbackRepository;
+        this.applicationRepository = applicationRepository;
+        this.applicationDetailRepository = applicationDetailRepository;
     }
 
     private SessionDetailResponse convertToDetailResponse(Session session) {
@@ -340,5 +355,94 @@ public class SessionServiceImpl implements SessionService {
         } catch (HttpClientErrorException e) {
             throw new RuntimeException("Lỗi REST API khi lấy danh sách recordings: " + e.getMessage());
         }
+    }
+
+    @Override
+    @Transactional
+    public SessionDetailResponse createSessionForRound(CreateRoundSessionRequest request) {
+        ApplicationDetail appDetail = applicationDetailRepository.findById(request.getApplicationDetailId())
+                .orElseThrow(() -> new CustomException("Application detail not found", HttpStatus.NOT_FOUND));
+
+        if (appDetail.getStatus() != ApplicationDetailStatus.PENDING) {
+            throw new CustomException("Application detail status is not PENDING", HttpStatus.BAD_REQUEST);
+        }
+
+        if (appDetail.getMentorId() == null || appDetail.getMentorId() != request.getMentorId()) {
+            throw new CustomException("Mentor has not been assigned or mismatch", HttpStatus.BAD_REQUEST);
+        }
+
+        Application application = applicationRepository.findById(appDetail.getApplicationId())
+                .orElseThrow(() -> new CustomException("Application not found", HttpStatus.NOT_FOUND));
+
+        int userId = application.getUserId();
+        int mentorId = request.getMentorId();
+        Timestamp startTime = request.getJoinTime();
+        int duration = request.getDuration() != null ? request.getDuration() : 60;
+
+        Session session;
+        if (request.isOffline()) {
+            // OFFLINE: tạo session offline trong db để lưu trữ và liên kết đánh giá sau này
+            session = new Session();
+            session.setUserId(userId);
+            session.setUserId2(mentorId);
+            session.setRoomUrl("OFFLINE");
+            session.setRoomName("OFFLINE-" + UUID.randomUUID());
+            session.setStatus(SessionStatus.COMPLETED);
+            session.setJoinTime(startTime);
+            session.setDuration(duration);
+            session = sessionRepository.save(session);
+
+            ApplicationDetail.RoundSessionInfo sessionInfo = appDetail.getSessionInfo();
+            if (sessionInfo == null) {
+                sessionInfo = new ApplicationDetail.RoundSessionInfo();
+            }
+            sessionInfo.setSessionId(session.getId());
+            sessionInfo.setMeetingType(MeetingType.OFFLINE);
+            appDetail.setSessionInfo(sessionInfo);
+            appDetail.setSessionId((long) session.getId());
+            // Giữ status là PENDING để chờ mentor review/feedback
+            applicationDetailRepository.save(appDetail);
+        } else {
+            // ONLINE: dùng lại hàm createSession đã viết sẵn trong SessionService
+            SessionCreationRequest sessionReq = new SessionCreationRequest();
+            DailyCoCreationRequest dailyReq = new DailyCoCreationRequest();
+            dailyReq.setPrivacy("public");
+            DailyCoCreationRequest.Properties props = new DailyCoCreationRequest.Properties();
+            props.setMax_participants(2);
+            props.setStart_video_off(true);
+            props.setStart_audio_off(true);
+            props.setEnable_screenshare(true);
+            props.setEnable_recording("cloud");
+            dailyReq.setProperties(props);
+
+            sessionReq.setDailyCoCreationRequest(dailyReq);
+            sessionReq.setUserId(userId);
+            sessionReq.setMentorId(mentorId);
+            sessionReq.setJoinTime(startTime);
+            sessionReq.setDuration(duration);
+            sessionReq.setTotalPrice(0);
+
+            SessionResponse sessionResponse = createSession(sessionReq);
+            session = sessionRepository.findByRoomName(sessionResponse.getName());
+            if (session == null) {
+                throw new CustomException("Failed to retrieve created session", HttpStatus.INTERNAL_SERVER_ERROR);
+            }
+            session.setStatus(SessionStatus.SCHEDULED);
+            sessionRepository.save(session);
+
+            ApplicationDetail.RoundSessionInfo sessionInfo = appDetail.getSessionInfo();
+            if (sessionInfo == null) {
+                sessionInfo = new ApplicationDetail.RoundSessionInfo();
+            }
+            sessionInfo.setSessionId(session.getId());
+            sessionInfo.setMeetingType(MeetingType.ONLINE);
+            appDetail.setSessionInfo(sessionInfo);
+            appDetail.setSessionId((long) session.getId());
+            // Cập nhật status thành SLOT_PICKED
+            appDetail.setStatus(ApplicationDetailStatus.SLOT_PICKED);
+            applicationDetailRepository.save(appDetail);
+        }
+
+        return convertToDetailResponse(session);
     }
 }

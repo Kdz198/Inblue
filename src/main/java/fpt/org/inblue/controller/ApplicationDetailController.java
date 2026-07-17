@@ -80,4 +80,15 @@ public class ApplicationDetailController {
     public ResponseEntity<?> getApplicationDetailsForReviewer() {
         return ResponseEntity.ok(applicationDetailService.getApplicationDetailsForReviewer());
     }
+
+    @PutMapping("/{id}/assign-mentor")
+    @Operation(
+            summary = "Gán mentor cho vòng Mentor Review",
+            description = "Dành cho Admin để gán mentor cho vòng thi của ứng viên.")
+    public ResponseEntity<ApplicationDetail> assignMentor(
+            @PathVariable long id,
+            @RequestParam int mentorId) {
+        ApplicationDetail updated = applicationDetailService.assignMentor(id, mentorId);
+        return ResponseEntity.ok(updated);
+    }
 }

@@ -30,6 +30,7 @@ public class MentorReviewServiceImpl implements MentorReviewService {
     private final ApplicationDetailRepository appDetailRepo;
     private final RoundRepository roundRepo;
     private final ApplicationService applicationService;
+    private final MentorFeedbackRepository mentorFeedbackRepository;
 
     @Override
     @Transactional
@@ -96,6 +97,8 @@ public class MentorReviewServiceImpl implements MentorReviewService {
                 }
             }
 
+            checkAndCompleteRound(session.getId());
+
             return review;
         } else {
             throw new CustomException(
@@ -126,5 +129,50 @@ public class MentorReviewServiceImpl implements MentorReviewService {
     @Override
     public List<MentorReview> getAllMentorReviews() {
         return repo.findAll();
+    }
+
+    @Override
+    @Transactional
+    public void checkAndCompleteRound(int sessionId) {
+        MentorReview review = repo.findBySession_Id(sessionId);
+        MentorFeedback feedback = mentorFeedbackRepository.findBySession_Id(sessionId).orElse(null);
+
+        // Chỉ khi cả 2 review và feedback đều tồn tại
+        if (review != null && feedback != null) {
+            ApplicationDetail appDetail = appDetailRepo.findBySessionId((long) sessionId).orElse(null);
+            if (appDetail != null && appDetail.getStatus() != ApplicationDetailStatus.COMPLETED) {
+                appDetail.setMentorReview(review);
+                appDetail.setStatus(ApplicationDetailStatus.COMPLETED);
+                appDetail.setCompletedAt(java.time.LocalDateTime.now());
+
+                // Fetch Round config to calculate scores
+                Round round = roundRepo.findById(appDetail.getRoundId()).orElse(null);
+                double maxScore = 100.0;
+                if (round != null
+                        && round.getConfigData() != null
+                        && round.getConfigData().getMaxScore() != null) {
+                    maxScore = round.getConfigData().getMaxScore();
+                }
+
+                // Điểm số tính theo rating của MentorReview
+                double score = (review.getRating() / 10.0) * maxScore;
+                appDetail.setFinalScore(score);
+
+                if (round != null && round.getPassThreshold() != null) {
+                    appDetail.setFinalResult(
+                            score >= round.getPassThreshold()
+                                    ? ApplicationDetail.RoundResult.PASSED
+                                    : ApplicationDetail.RoundResult.FAILED);
+                } else {
+                    appDetail.setFinalResult(ApplicationDetail.RoundResult.PASSED);
+                }
+
+                appDetailRepo.save(appDetail);
+
+                // Di chuyển sang vòng tiếp theo
+                Application application = applicationService.getApplicationById(appDetail.getApplicationId());
+                applicationService.moveToNextRound(application);
+            }
+        }
     }
 }

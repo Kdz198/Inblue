@@ -13,6 +13,7 @@ import fpt.org.inblue.repository.MentorFeedbackRepository;
 import fpt.org.inblue.repository.MentorRepository;
 import fpt.org.inblue.repository.SessionRepository;
 import fpt.org.inblue.service.MentorFeedbackService;
+import fpt.org.inblue.service.MentorReviewService;
 import fpt.org.inblue.service.UserService;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
@@ -28,6 +29,7 @@ public class MentorFeedbackServiceImpl implements MentorFeedbackService {
     private final MentorFeedbackMapper mentorFeedbackMapper;
     private final MentorRepository mentorRepository;
     private final UserService userService;
+    private final MentorReviewService mentorReviewService;
 
     @Override
     public MentorFeedback createMentorFeedback(CreateMentorFeedbackRequest mentorFeedback) {
@@ -46,7 +48,9 @@ public class MentorFeedbackServiceImpl implements MentorFeedbackService {
             mentor.setTotalSession(mentor.getTotalSession() + 1);
             mentor.setAverageRating(caculateAverageRating(mentor.getId()));
             mentorRepository.save(mentor);
-            return mentorFeedbackRepository.save(feedback);
+            MentorFeedback savedFeedback = mentorFeedbackRepository.save(feedback);
+            mentorReviewService.checkAndCompleteRound(session.getId());
+            return savedFeedback;
         } else {
             throw new CustomException(
                     "Session| Mentor| User not found or session is not complete !!", HttpStatus.NOT_FOUND);
