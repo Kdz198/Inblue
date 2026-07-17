@@ -35,8 +35,9 @@ public class Oauth2Handler extends SimpleUrlAuthenticationSuccessHandler {
 
         String email = oAuth2User.getAttribute("email");
         String name = oAuth2User.getAttribute("name");
+        String avatarUrl = oAuth2User.getAttribute("picture");
 
-        CustomUserDetails userDetail = new CustomUserDetails(accountId, email, name, authorities);
+        CustomUserDetails userDetail = new CustomUserDetails(accountId, email, name, avatarUrl, authorities);
 
         Authentication auth = new UsernamePasswordAuthenticationToken(userDetail, null, userDetail.getAuthorities());
         SecurityContextHolder.getContext().setAuthentication(auth);

@@ -44,10 +44,11 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             int userId = jwtUtils.getUserIdFromToken(jwt);
             String email = jwtUtils.getEmailFromToken(jwt);
             String name = jwtUtils.getNameFromToken(jwt);
+            String avatarUrl = jwtUtils.getAvatarUrlFromToken(jwt);
             List<String> roles = jwtUtils.getRolesFromToken(jwt);
             List<SimpleGrantedAuthority> authorities =
                     roles.stream().map(role -> new SimpleGrantedAuthority(role)).collect(Collectors.toList());
-            CustomUserDetails userDetails = new CustomUserDetails(userId, email, name, authorities);
+            CustomUserDetails userDetails = new CustomUserDetails(userId, email, name, avatarUrl, authorities);
             UsernamePasswordAuthenticationToken auth =
                     new UsernamePasswordAuthenticationToken(userDetails, null, userDetails.getAuthorities());
             auth.setDetails(userDetails);
