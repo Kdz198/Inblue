@@ -14,7 +14,6 @@ import fpt.org.inblue.repository.JobDescriptionRepository;
 import fpt.org.inblue.security.JwtUtils;
 import fpt.org.inblue.service.ApplicationService;
 import fpt.org.inblue.utils.HelperUtil;
-import java.time.LocalDateTime;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;

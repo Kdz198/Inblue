@@ -1,29 +1,28 @@
 package fpt.org.inblue.service.impl;
 
+import fpt.org.inblue.enums.ApplicationDetailStatus;
+import fpt.org.inblue.enums.MeetingType;
 import fpt.org.inblue.enums.PaymentPurpose;
 import fpt.org.inblue.enums.SessionStatus;
 import fpt.org.inblue.exception.CustomException;
+import fpt.org.inblue.model.Application;
+import fpt.org.inblue.model.ApplicationDetail;
 import fpt.org.inblue.model.MentorFeedback;
 import fpt.org.inblue.model.MentorReview;
 import fpt.org.inblue.model.Session;
 import fpt.org.inblue.model.dto.dailyco.*;
+import fpt.org.inblue.model.dto.request.CreateRoundSessionRequest;
 import fpt.org.inblue.model.dto.request.JoinSessionDtoRequest;
 import fpt.org.inblue.model.dto.response.MentorFeedbackResponse;
 import fpt.org.inblue.model.dto.response.MentorReviewResponse;
 import fpt.org.inblue.model.dto.response.SessionDetailResponse;
+import fpt.org.inblue.repository.ApplicationDetailRepository;
+import fpt.org.inblue.repository.ApplicationRepository;
 import fpt.org.inblue.repository.MentorFeedbackRepository;
 import fpt.org.inblue.repository.MentorReviewRepository;
 import fpt.org.inblue.repository.SessionRepository;
 import fpt.org.inblue.service.PaymentService;
 import fpt.org.inblue.service.SessionService;
-import org.springframework.transaction.annotation.Transactional;
-import fpt.org.inblue.enums.ApplicationDetailStatus;
-import fpt.org.inblue.enums.MeetingType;
-import fpt.org.inblue.model.Application;
-import fpt.org.inblue.model.ApplicationDetail;
-import fpt.org.inblue.model.dto.request.CreateRoundSessionRequest;
-import fpt.org.inblue.repository.ApplicationDetailRepository;
-import fpt.org.inblue.repository.ApplicationRepository;
 import java.sql.Timestamp;
 import java.util.List;
 import java.util.UUID;
@@ -32,6 +31,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.http.*;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.RestTemplate;
 
@@ -360,7 +360,8 @@ public class SessionServiceImpl implements SessionService {
     @Override
     @Transactional
     public SessionDetailResponse createSessionForRound(CreateRoundSessionRequest request) {
-        ApplicationDetail appDetail = applicationDetailRepository.findById(request.getApplicationDetailId())
+        ApplicationDetail appDetail = applicationDetailRepository
+                .findById(request.getApplicationDetailId())
                 .orElseThrow(() -> new CustomException("Application detail not found", HttpStatus.NOT_FOUND));
 
         if (appDetail.getStatus() != ApplicationDetailStatus.PENDING) {
@@ -371,7 +372,8 @@ public class SessionServiceImpl implements SessionService {
             throw new CustomException("Mentor has not been assigned or mismatch", HttpStatus.BAD_REQUEST);
         }
 
-        Application application = applicationRepository.findById(appDetail.getApplicationId())
+        Application application = applicationRepository
+                .findById(appDetail.getApplicationId())
                 .orElseThrow(() -> new CustomException("Application not found", HttpStatus.NOT_FOUND));
 
         int userId = application.getUserId();

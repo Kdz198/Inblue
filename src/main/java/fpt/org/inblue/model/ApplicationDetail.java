@@ -86,7 +86,7 @@ public class ApplicationDetail {
         private Integer sessionId;
         private MeetingType meetingType; // ONLINE hoặc OFFLINE
         private java.sql.Timestamp startTime; // Thời gian bắt đầu hẹn gặp (ứng viên + mentor tự chọn)
-        private java.sql.Timestamp endTime;   // Thời gian kết thúc hẹn gặp
+        private java.sql.Timestamp endTime; // Thời gian kết thúc hẹn gặp
     }
 
     @Data
