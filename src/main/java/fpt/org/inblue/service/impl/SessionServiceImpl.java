@@ -367,15 +367,15 @@ public class SessionServiceImpl implements SessionService {
             throw new CustomException("Application detail status is not PENDING", HttpStatus.BAD_REQUEST);
         }
 
-        if (appDetail.getMentorId() == null || appDetail.getMentorId() != request.getMentorId()) {
-            throw new CustomException("Mentor has not been assigned or mismatch", HttpStatus.BAD_REQUEST);
+        if (appDetail.getMentorId() == null) {
+            throw new CustomException("Mentor has not been assigned to this round", HttpStatus.BAD_REQUEST);
         }
 
         Application application = applicationRepository.findById(appDetail.getApplicationId())
                 .orElseThrow(() -> new CustomException("Application not found", HttpStatus.NOT_FOUND));
 
         int userId = application.getUserId();
-        int mentorId = request.getMentorId();
+        int mentorId = appDetail.getMentorId();
         Timestamp startTime = request.getJoinTime();
         int duration = request.getDuration() != null ? request.getDuration() : 60;
 

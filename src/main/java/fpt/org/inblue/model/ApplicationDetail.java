@@ -3,6 +3,7 @@ package fpt.org.inblue.model;
 import fpt.org.inblue.enums.ApplicationDetailStatus;
 import fpt.org.inblue.enums.MeetingType;
 import fpt.org.inblue.model.dto.response.CompilerResponseDto;
+import com.fasterxml.jackson.annotation.JsonFormat;
 import jakarta.persistence.*;
 import java.time.LocalDateTime;
 import java.util.List;
@@ -85,8 +86,12 @@ public class ApplicationDetail {
     public static class RoundSessionInfo {
         private Integer sessionId;
         private MeetingType meetingType; // ONLINE hoặc OFFLINE
-        private java.sql.Timestamp startTime; // Thời gian bắt đầu hẹn gặp (ứng viên + mentor tự chọn)
-        private java.sql.Timestamp endTime;   // Thời gian kết thúc hẹn gặp
+
+        @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd HH:mm:ss.SSS")
+        private LocalDateTime startTime; // Thời gian bắt đầu vòng thi
+
+        @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd HH:mm:ss.SSS")
+        private LocalDateTime endTime;   // Thời gian kết thúc vòng thi / deadline
     }
 
     @Data

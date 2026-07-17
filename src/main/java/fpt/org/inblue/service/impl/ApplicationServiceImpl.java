@@ -19,9 +19,11 @@ import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 @Service
 @RequiredArgsConstructor
+@Transactional
 public class ApplicationServiceImpl implements ApplicationService {
     private final JwtUtils jwtUtils;
     private final ApplicationRepository applicationRepository;
@@ -51,20 +53,26 @@ public class ApplicationServiceImpl implements ApplicationService {
                 ApplicationDetailStatus initialStatus = firstRound.getRoundType() == RoundType.MENTROR_REVIEW
                         ? ApplicationDetailStatus.AWAITING_MENTOR
                         : ApplicationDetailStatus.PENDING;
-                java.time.LocalDateTime endTime = null;
-                if (firstRound.getConfigData() != null
-                        && firstRound.getConfigData().getTimeLimitMinutes() != null) {
-                    endTime = java.time.LocalDateTime.now()
-                            .plusMinutes(firstRound.getConfigData().getTimeLimitMinutes());
+                ApplicationDetail.RoundSessionInfo sessionInfo = null;
+                if (initialStatus == ApplicationDetailStatus.PENDING) {
+                    java.time.LocalDateTime endTime = null;
+                    if (firstRound.getConfigData() != null
+                            && firstRound.getConfigData().getTimeLimitMinutes() != null) {
+                        endTime = java.time.LocalDateTime.now()
+                                .plusMinutes(firstRound.getConfigData().getTimeLimitMinutes());
+                    }
+                    sessionInfo = ApplicationDetail.RoundSessionInfo.builder()
+                            .startTime(java.time.LocalDateTime.now())
+                            .endTime(endTime)
+                            .build();
+                } else {
+                    sessionInfo = new ApplicationDetail.RoundSessionInfo();
                 }
                 ApplicationDetail firstDetail = ApplicationDetail.builder()
                         .applicationId(savedApplication.getId())
                         .roundId(firstRound.getId())
                         .status(initialStatus)
-                        .sessionInfo(ApplicationDetail.RoundSessionInfo.builder()
-                                .startTime(java.sql.Timestamp.valueOf(java.time.LocalDateTime.now()))
-                                .endTime(endTime != null ? java.sql.Timestamp.valueOf(endTime) : null)
-                                .build())
+                        .sessionInfo(sessionInfo)
                         .build();
                 applicationDetailRepository.save(firstDetail);
             }
@@ -119,20 +127,26 @@ public class ApplicationServiceImpl implements ApplicationService {
                         ApplicationDetailStatus nextStatus = nextRound.getRoundType() == RoundType.MENTROR_REVIEW
                                 ? ApplicationDetailStatus.AWAITING_MENTOR
                                 : ApplicationDetailStatus.PENDING;
-                        java.time.LocalDateTime endTime = null;
-                        if (nextRound.getConfigData() != null
-                                && nextRound.getConfigData().getTimeLimitMinutes() != null) {
-                            endTime = java.time.LocalDateTime.now()
-                                    .plusMinutes(nextRound.getConfigData().getTimeLimitMinutes());
+                        ApplicationDetail.RoundSessionInfo sessionInfo = null;
+                        if (nextStatus == ApplicationDetailStatus.PENDING) {
+                            java.time.LocalDateTime endTime = null;
+                            if (nextRound.getConfigData() != null
+                                    && nextRound.getConfigData().getTimeLimitMinutes() != null) {
+                                endTime = java.time.LocalDateTime.now()
+                                        .plusMinutes(nextRound.getConfigData().getTimeLimitMinutes());
+                            }
+                            sessionInfo = ApplicationDetail.RoundSessionInfo.builder()
+                                    .startTime(java.time.LocalDateTime.now())
+                                    .endTime(endTime)
+                                    .build();
+                        } else {
+                            sessionInfo = new ApplicationDetail.RoundSessionInfo();
                         }
                         ApplicationDetail nextDetail = ApplicationDetail.builder()
                                 .applicationId(currentApplication.getId())
                                 .roundId(nextRound.getId())
                                 .status(nextStatus)
-                                .sessionInfo(ApplicationDetail.RoundSessionInfo.builder()
-                                        .startTime(java.sql.Timestamp.valueOf(java.time.LocalDateTime.now()))
-                                        .endTime(endTime != null ? java.sql.Timestamp.valueOf(endTime) : null)
-                                        .build())
+                                .sessionInfo(sessionInfo)
                                 .build();
                         applicationDetailRepository.save(nextDetail);
                     }

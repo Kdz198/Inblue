@@ -12,6 +12,9 @@ import fpt.org.inblue.utils.HelperUtil;
 import java.time.LocalDateTime;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
+import fpt.org.inblue.repository.RoundRepository;
+import fpt.org.inblue.model.Round;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 
@@ -20,6 +23,7 @@ import org.springframework.stereotype.Service;
 public class ApplicationDetailServiceImpl implements ApplicationDetailService {
     private final ApplicationDetailRepository applicationDetailRepository;
     private final ApplicationService applicationService;
+    private final RoundRepository roundRepository;
     private final JwtUtils jwtUtils;
 
     @Override
@@ -63,11 +67,29 @@ public class ApplicationDetailServiceImpl implements ApplicationDetailService {
     }
 
     @Override
+    @Transactional
     public ApplicationDetail assignMentor(long applicationDetailId, int mentorId) {
         ApplicationDetail applicationDetail = getApplicationDetailById(applicationDetailId);
         if (applicationDetail.getStatus() != ApplicationDetailStatus.AWAITING_MENTOR) {
             throw new CustomException("Application detail status is not AWAITING_MENTOR", HttpStatus.BAD_REQUEST);
         }
+        Round round = roundRepository.findById(applicationDetail.getRoundId())
+                .orElseThrow(() -> new CustomException("Round not found", HttpStatus.NOT_FOUND));
+
+        java.time.LocalDateTime now = java.time.LocalDateTime.now();
+        java.time.LocalDateTime endTime = null;
+        if (round.getConfigData() != null && round.getConfigData().getTimeLimitMinutes() != null) {
+            endTime = now.plusMinutes(round.getConfigData().getTimeLimitMinutes());
+        }
+
+        ApplicationDetail.RoundSessionInfo sessionInfo = applicationDetail.getSessionInfo();
+        if (sessionInfo == null) {
+            sessionInfo = new ApplicationDetail.RoundSessionInfo();
+        }
+        sessionInfo.setStartTime(now);
+        sessionInfo.setEndTime(endTime);
+
+        applicationDetail.setSessionInfo(sessionInfo);
         applicationDetail.setMentorId(mentorId);
         applicationDetail.setStatus(ApplicationDetailStatus.PENDING);
         return applicationDetailRepository.save(applicationDetail);
