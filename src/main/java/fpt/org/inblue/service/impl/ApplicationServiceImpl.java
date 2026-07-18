@@ -109,8 +109,10 @@ public class ApplicationServiceImpl implements ApplicationService {
             List<Round> rounds = jd.getRounds();
             int currentRoundOrder = currentApplication.getCurrentRoundOrder();
             if (currentRoundOrder < rounds.size()) {
-                List<ApplicationDetail> existingDetails = applicationDetailRepository.findAllByApplicationId(currentApplication.getId());
-                boolean hasFailed = existingDetails.stream().anyMatch(d -> d.getFinalResult() == ApplicationDetail.RoundResult.FAILED);
+                List<ApplicationDetail> existingDetails =
+                        applicationDetailRepository.findAllByApplicationId(currentApplication.getId());
+                boolean hasFailed = existingDetails.stream()
+                        .anyMatch(d -> d.getFinalResult() == ApplicationDetail.RoundResult.FAILED);
                 if (hasFailed) {
                     currentApplication.setStatus(ApplicationStatus.SOFT_FAILED);
                 }

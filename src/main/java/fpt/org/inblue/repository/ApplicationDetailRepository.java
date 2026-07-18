@@ -15,6 +15,7 @@ public interface ApplicationDetailRepository extends JpaRepository<ApplicationDe
     Optional<ApplicationDetail> findByApplicationIdAndRoundId(Long applicationId, Long roundId);
 
     Optional<ApplicationDetail> findBySessionId(Integer sessionId);
+
     @Query("SELECT ad FROM ApplicationDetail ad " + "JOIN Round r ON ad.roundId = r.id "
             + "JOIN Application a ON ad.applicationId = a.id "
             + "WHERE r.reviewerId = :reviewerId "
