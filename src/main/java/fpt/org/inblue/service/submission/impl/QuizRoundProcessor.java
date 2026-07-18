@@ -14,7 +14,6 @@ import fpt.org.inblue.service.submission.RoundSubmissionProcessor;
 import fpt.org.inblue.service.submission.SubmissionResult;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Optional;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 

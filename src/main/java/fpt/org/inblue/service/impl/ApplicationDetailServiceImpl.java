@@ -4,7 +4,9 @@ import fpt.org.inblue.enums.ApplicationDetailStatus;
 import fpt.org.inblue.exception.CustomException;
 import fpt.org.inblue.model.Application;
 import fpt.org.inblue.model.ApplicationDetail;
+import fpt.org.inblue.model.Round;
 import fpt.org.inblue.repository.ApplicationDetailRepository;
+import fpt.org.inblue.repository.RoundRepository;
 import fpt.org.inblue.security.JwtUtils;
 import fpt.org.inblue.service.ApplicationDetailService;
 import fpt.org.inblue.service.ApplicationService;
@@ -12,11 +14,9 @@ import fpt.org.inblue.utils.HelperUtil;
 import java.time.LocalDateTime;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
-import fpt.org.inblue.repository.RoundRepository;
-import fpt.org.inblue.model.Round;
-import org.springframework.transaction.annotation.Transactional;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 @Service
 @RequiredArgsConstructor
@@ -73,7 +73,8 @@ public class ApplicationDetailServiceImpl implements ApplicationDetailService {
         if (applicationDetail.getStatus() != ApplicationDetailStatus.AWAITING_MENTOR) {
             throw new CustomException("Application detail status is not AWAITING_MENTOR", HttpStatus.BAD_REQUEST);
         }
-        Round round = roundRepository.findById(applicationDetail.getRoundId())
+        Round round = roundRepository
+                .findById(applicationDetail.getRoundId())
                 .orElseThrow(() -> new CustomException("Round not found", HttpStatus.NOT_FOUND));
 
         java.time.LocalDateTime now = java.time.LocalDateTime.now();

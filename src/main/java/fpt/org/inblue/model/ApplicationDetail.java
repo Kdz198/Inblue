@@ -1,9 +1,9 @@
 package fpt.org.inblue.model;
 
+import com.fasterxml.jackson.annotation.JsonFormat;
 import fpt.org.inblue.enums.ApplicationDetailStatus;
 import fpt.org.inblue.enums.MeetingType;
 import fpt.org.inblue.model.dto.response.CompilerResponseDto;
-import com.fasterxml.jackson.annotation.JsonFormat;
 import jakarta.persistence.*;
 import java.time.LocalDateTime;
 import java.util.List;
@@ -88,7 +88,7 @@ public class ApplicationDetail {
         private LocalDateTime startTime; // Thời gian bắt đầu vòng thi
 
         @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd HH:mm:ss.SSS")
-        private LocalDateTime endTime;   // Thời gian kết thúc vòng thi / deadline
+        private LocalDateTime endTime; // Thời gian kết thúc vòng thi / deadline
     }
 
     @Data
