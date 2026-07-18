@@ -398,6 +398,7 @@ public class SessionServiceImpl implements SessionService {
             }
             sessionInfo.setSessionId(session.getId());
             sessionInfo.setMeetingType(MeetingType.OFFLINE);
+            appDetail.setSessionId(session.getId());
             appDetail.setSessionInfo(sessionInfo);
             // Giữ status là PENDING để chờ mentor review/feedback
             applicationDetailRepository.save(appDetail);
@@ -435,9 +436,10 @@ public class SessionServiceImpl implements SessionService {
             }
             sessionInfo.setSessionId(session.getId());
             sessionInfo.setMeetingType(MeetingType.ONLINE);
+            appDetail.setSessionId(session.getId());
             appDetail.setSessionInfo(sessionInfo);
-            // Cập nhật status thành SLOT_PICKED
-            appDetail.setStatus(ApplicationDetailStatus.SLOT_PICKED);
+            // Cập nhật status thành PENDING (theo yêu cầu của user)
+            appDetail.setStatus(ApplicationDetailStatus.PENDING);
             applicationDetailRepository.save(appDetail);
         }
 

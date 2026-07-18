@@ -64,6 +64,8 @@ public class ApplicationDetail {
 
     private Integer mentorId; // ID mentor được Admin gán vào vòng này
 
+    private Integer sessionId; // ID của session tương ứng
+
     @JdbcTypeCode(SqlTypes.JSON)
     @Column(columnDefinition = "jsonb")
     private RoundSessionInfo sessionInfo; // Lưu thông tin session (sessionId, meetingType, startTime, endTime)
