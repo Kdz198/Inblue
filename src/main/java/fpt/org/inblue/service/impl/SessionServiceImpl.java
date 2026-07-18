@@ -25,6 +25,7 @@ import fpt.org.inblue.service.PaymentService;
 import fpt.org.inblue.service.SessionService;
 import java.sql.Timestamp;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 import java.util.stream.Collectors;
 import org.springframework.beans.factory.annotation.Value;
@@ -42,7 +43,6 @@ public class SessionServiceImpl implements SessionService {
     public final String dailyApiKey;
     public final SessionRepository sessionRepository;
     private final PaymentService paymentService;
-    private final ApplicationEventPublisher applicationEventPublisher;
     private final MentorReviewRepository mentorReviewRepository;
     private final MentorFeedbackRepository mentorFeedbackRepository;
     private final ApplicationRepository applicationRepository;
@@ -54,7 +54,6 @@ public class SessionServiceImpl implements SessionService {
             SessionRepository sessionRepository,
             RestTemplate restTemplate,
             PaymentService paymentService,
-            ApplicationEventPublisher applicationEventPublisher,
             MentorReviewRepository mentorReviewRepository,
             MentorFeedbackRepository mentorFeedbackRepository,
             ApplicationRepository applicationRepository,
@@ -64,7 +63,6 @@ public class SessionServiceImpl implements SessionService {
         this.sessionRepository = sessionRepository;
         this.restTemplate = restTemplate;
         this.paymentService = paymentService;
-        this.applicationEventPublisher = applicationEventPublisher;
         this.mentorReviewRepository = mentorReviewRepository;
         this.mentorFeedbackRepository = mentorFeedbackRepository;
         this.applicationRepository = applicationRepository;
@@ -401,7 +399,6 @@ public class SessionServiceImpl implements SessionService {
             sessionInfo.setSessionId(session.getId());
             sessionInfo.setMeetingType(MeetingType.OFFLINE);
             appDetail.setSessionInfo(sessionInfo);
-            appDetail.setSessionId((long) session.getId());
             // Giữ status là PENDING để chờ mentor review/feedback
             applicationDetailRepository.save(appDetail);
         } else {
@@ -439,12 +436,68 @@ public class SessionServiceImpl implements SessionService {
             sessionInfo.setSessionId(session.getId());
             sessionInfo.setMeetingType(MeetingType.ONLINE);
             appDetail.setSessionInfo(sessionInfo);
-            appDetail.setSessionId((long) session.getId());
             // Cập nhật status thành SLOT_PICKED
             appDetail.setStatus(ApplicationDetailStatus.SLOT_PICKED);
             applicationDetailRepository.save(appDetail);
         }
 
         return convertToDetailResponse(session);
+    }
+
+    @Override
+    public String reactivateWebhook() {
+        String dailycoApiUrl = "https://api.daily.co/v1/webhooks";
+
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_JSON);
+        headers.set("Authorization", "Bearer " + dailyApiKey);
+
+        Map<String, Object> requestBody = Map.of(
+                "url", "https://api.kdz.asia/api/sessions/webhooks/dailyco",
+                "eventTypes", List.of(
+                        "meeting.started",
+                        "meeting.ended",
+                        "participant.joined",
+                        "participant.left",
+                        "recording.ready-to-download"
+                )
+        );
+
+        HttpEntity<Map<String, Object>> entity = new HttpEntity<>(requestBody, headers);
+
+        try {
+            ResponseEntity<String> response = restTemplate.exchange(
+                    dailycoApiUrl,
+                    HttpMethod.POST,
+                    entity,
+                    String.class
+            );
+            return response.getBody();
+
+        } catch (Exception e) {
+            System.err.println("Lỗi khi kích hoạt lại Webhook Daily.co qua RestTemplate: " + e.getMessage());
+            throw new RuntimeException("Không thể kích hoạt Webhook", e);
+        }
+    }
+    @Override
+    public String checkWebhook() {
+        String dailycoApiUrl = "https://api.daily.co/v1/webhooks";
+
+        HttpHeaders headers = new HttpHeaders();
+        headers.set("Authorization", "Bearer " + dailyApiKey);
+
+        HttpEntity<Void> entity = new HttpEntity<>(headers);
+        try{
+            ResponseEntity<String> response = restTemplate.exchange(
+                    dailycoApiUrl,
+                    HttpMethod.GET,
+                    entity,
+                    String.class
+            );
+            return response.getBody();
+        }
+        catch (Exception e){
+            throw new CustomException("Lỗi khi kiểm tra Webhook Daily.co: " + e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
+        }
     }
 }

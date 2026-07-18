@@ -141,7 +141,7 @@ public class MentorReviewServiceImpl implements MentorReviewService {
         // Chỉ khi cả 2 review và feedback đều tồn tại
         if (review != null && feedback != null) {
             ApplicationDetail appDetail =
-                    appDetailRepo.findBySessionId((long) sessionId).orElse(null);
+                    appDetailRepo.findBySessionInfo_SessionId(sessionId).orElse(null);
             if (appDetail != null && appDetail.getStatus() != ApplicationDetailStatus.COMPLETED) {
                 appDetail.setMentorReview(review);
                 appDetail.setStatus(ApplicationDetailStatus.COMPLETED);

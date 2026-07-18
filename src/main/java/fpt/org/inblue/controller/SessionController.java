@@ -105,4 +105,16 @@ public class SessionController {
         SessionDetailResponse response = sessionService.createSessionForRound(request);
         return ResponseEntity.ok(response);
     }
+
+    @GetMapping("check-webhook")
+    public ResponseEntity<String> checkWebhook() {
+        String result = sessionService.checkWebhook();
+        return ResponseEntity.ok(result);
+    }
+
+    @GetMapping("reactivate-webhook")
+    public ResponseEntity<String> reactivateWebhook() {
+        String result = sessionService.reactivateWebhook();
+        return ResponseEntity.ok(result);}
 }
+

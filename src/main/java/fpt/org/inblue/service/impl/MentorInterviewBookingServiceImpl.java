@@ -75,7 +75,6 @@ public class MentorInterviewBookingServiceImpl implements MentorInterviewBooking
         booking = bookingRepository.save(booking);
 
         // Update application detail with booking ID
-        appDetail.setBookingId(booking.getId());
         applicationDetailRepository.save(appDetail);
 
         return booking;
@@ -125,8 +124,6 @@ public class MentorInterviewBookingServiceImpl implements MentorInterviewBooking
                 .orElse(null);
         if (appDetail != null) {
             appDetail.setStatus(ApplicationDetailStatus.PENDING);
-            appDetail.setBookingId(null);
-            appDetail.setSessionId(null);
             applicationDetailRepository.save(appDetail);
         }
     }
@@ -219,7 +216,6 @@ public class MentorInterviewBookingServiceImpl implements MentorInterviewBooking
         ApplicationDetail appDetail = applicationDetailRepository
                 .findById(booking.getApplicationDetailId())
                 .orElseThrow(() -> new CustomException("ApplicationDetail not found", HttpStatus.NOT_FOUND));
-        appDetail.setSessionId((long) session.getId());
         appDetail.setStatus(ApplicationDetailStatus.SLOT_PICKED);
         applicationDetailRepository.save(appDetail);
 

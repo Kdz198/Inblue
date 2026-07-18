@@ -16,10 +16,10 @@ public class BackgroundScheduler {
     private final EmailSubmissionService emailSubmissionService;
     private final JobDescriptionSchedule jobDescriptionSchedule;
 
-    @Scheduled(fixedDelay = 300000)
-    public void scheduleCheckPaymentStatus() {
-        paymentSchedule.checkPaymentStatus();
-    }
+//    @Scheduled(fixedDelay = 300000)
+//    public void scheduleCheckPaymentStatus() {
+//        paymentSchedule.checkPaymentStatus();
+//    }
 
     @Scheduled(cron = "0 0 0 * * ?")
     public void scheduleSendTodayMeetingNotification() {
