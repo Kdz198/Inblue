@@ -29,7 +29,6 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.stream.Collectors;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.http.*;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -453,25 +452,21 @@ public class SessionServiceImpl implements SessionService {
         headers.set("Authorization", "Bearer " + dailyApiKey);
 
         Map<String, Object> requestBody = Map.of(
-                "url", "https://api.kdz.asia/api/sessions/webhooks/dailyco",
-                "eventTypes", List.of(
+                "url",
+                "https://api.kdz.asia/api/sessions/webhooks/dailyco",
+                "eventTypes",
+                List.of(
                         "meeting.started",
                         "meeting.ended",
                         "participant.joined",
                         "participant.left",
-                        "recording.ready-to-download"
-                )
-        );
+                        "recording.ready-to-download"));
 
         HttpEntity<Map<String, Object>> entity = new HttpEntity<>(requestBody, headers);
 
         try {
-            ResponseEntity<String> response = restTemplate.exchange(
-                    dailycoApiUrl,
-                    HttpMethod.POST,
-                    entity,
-                    String.class
-            );
+            ResponseEntity<String> response =
+                    restTemplate.exchange(dailycoApiUrl, HttpMethod.POST, entity, String.class);
             return response.getBody();
 
         } catch (Exception e) {
@@ -479,6 +474,7 @@ public class SessionServiceImpl implements SessionService {
             throw new RuntimeException("Không thể kích hoạt Webhook", e);
         }
     }
+
     @Override
     public String checkWebhook() {
         String dailycoApiUrl = "https://api.daily.co/v1/webhooks";
@@ -487,17 +483,13 @@ public class SessionServiceImpl implements SessionService {
         headers.set("Authorization", "Bearer " + dailyApiKey);
 
         HttpEntity<Void> entity = new HttpEntity<>(headers);
-        try{
-            ResponseEntity<String> response = restTemplate.exchange(
-                    dailycoApiUrl,
-                    HttpMethod.GET,
-                    entity,
-                    String.class
-            );
+        try {
+            ResponseEntity<String> response =
+                    restTemplate.exchange(dailycoApiUrl, HttpMethod.GET, entity, String.class);
             return response.getBody();
-        }
-        catch (Exception e){
-            throw new CustomException("Lỗi khi kiểm tra Webhook Daily.co: " + e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
+        } catch (Exception e) {
+            throw new CustomException(
+                    "Lỗi khi kiểm tra Webhook Daily.co: " + e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
 }

@@ -115,6 +115,6 @@ public class SessionController {
     @GetMapping("reactivate-webhook")
     public ResponseEntity<String> reactivateWebhook() {
         String result = sessionService.reactivateWebhook();
-        return ResponseEntity.ok(result);}
+        return ResponseEntity.ok(result);
+    }
 }
-

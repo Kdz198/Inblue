@@ -32,6 +32,8 @@ public interface SessionService {
     String makePayment(int sessionId);
 
     SessionDetailResponse createSessionForRound(CreateRoundSessionRequest request);
+
     String reactivateWebhook();
+
     String checkWebhook();
 }
