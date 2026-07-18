@@ -2,6 +2,7 @@ package fpt.org.inblue.service.submission.impl;
 
 import static fpt.org.inblue.enums.RoundType.QUIZ;
 
+import fpt.org.inblue.enums.ApplicationDetailStatus;
 import fpt.org.inblue.enums.RoundType;
 import fpt.org.inblue.model.ApplicationDetail;
 import fpt.org.inblue.model.Round;
@@ -13,6 +14,7 @@ import fpt.org.inblue.service.submission.RoundSubmissionProcessor;
 import fpt.org.inblue.service.submission.SubmissionResult;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -75,9 +77,9 @@ public class QuizRoundProcessor implements RoundSubmissionProcessor {
                 scorePercentage >= round.getPassThreshold()
                         ? ApplicationDetail.RoundResult.PASSED
                         : ApplicationDetail.RoundResult.FAILED);
+        applicationDetail.setStatus(ApplicationDetailStatus.COMPLETED);
         applicationDetailRepository.save(applicationDetail);
         applicationService.moveToNextRound(dto.getApplication());
-
         return SubmissionResult.completed(applicationDetail);
     }
 }
