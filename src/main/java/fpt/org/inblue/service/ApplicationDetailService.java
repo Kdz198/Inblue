@@ -14,4 +14,7 @@ public interface ApplicationDetailService {
 
     // Dành cho Admin: gán mentor cho vòng Mentor Review
     ApplicationDetail assignMentor(long applicationDetailId, int mentorId);
+
+    // Bắt đầu vòng AI Interview (gọi từ Kiosk checkin hoặc web)
+    String startAiInterview(long applicationDetailId);
 }
