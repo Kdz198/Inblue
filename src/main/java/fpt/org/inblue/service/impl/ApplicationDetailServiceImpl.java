@@ -159,7 +159,7 @@ public class ApplicationDetailServiceImpl implements ApplicationDetailService {
         if (configData.getDomain() == null) {
             configData.setDomain(fpt.org.inblue.enums.InterviewEnums.JobDomain.IT);
         }
-        
+
         Integer duration = round.getConfigData() != null ? round.getConfigData().getTimeLimitMinutes() : 45;
         if (duration == null) duration = 45;
         configData.setDurationMinutes(duration);
