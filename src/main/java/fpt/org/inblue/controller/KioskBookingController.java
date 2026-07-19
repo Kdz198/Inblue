@@ -32,8 +32,7 @@ public class KioskBookingController {
 
     @Operation(
             summary = "Ứng viên đặt lịch phỏng vấn AI tại Kiosk",
-            description =
-                    "Cho phép ứng viên chọn một trạm Kiosk và slot thời gian còn trống để đặt lịch phỏng vấn AI.")
+            description = "Cho phép ứng viên chọn một trạm Kiosk và slot thời gian còn trống để đặt lịch phỏng vấn AI.")
     @PostMapping("/api/kiosk-bookings/pick-slot")
     public ResponseEntity<KioskBooking> pickSlot(@RequestBody PickSlotDtoRequest dto) {
         int userId = getCurrentUserId();

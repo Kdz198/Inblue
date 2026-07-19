@@ -284,7 +284,9 @@ public class InterviewProcessServiceImpl implements InterviewProcessService {
         redisRepository.delete(redisSession);
 
         if (dbSession.getApplicationDetailId() != null) {
-            ApplicationDetail appDetail = applicationDetailRepository.findById(dbSession.getApplicationDetailId()).orElse(null);
+            ApplicationDetail appDetail = applicationDetailRepository
+                    .findById(dbSession.getApplicationDetailId())
+                    .orElse(null);
             if (appDetail != null) {
                 appDetail.setAiScore(avgScore);
                 ApplicationDetail.AiFeedback aiFeedback = new ApplicationDetail.AiFeedback();

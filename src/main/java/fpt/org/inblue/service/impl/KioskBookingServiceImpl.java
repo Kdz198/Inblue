@@ -49,7 +49,8 @@ public class KioskBookingServiceImpl implements KioskBookingService {
         }
 
         // Create booking
-        Round round = roundRepository.findById(appDetail.getRoundId())
+        Round round = roundRepository
+                .findById(appDetail.getRoundId())
                 .orElseThrow(() -> new CustomException("Round not found", HttpStatus.NOT_FOUND));
 
         if (round.getRoundType() != fpt.org.inblue.enums.RoundType.AI_INTERVIEW) {

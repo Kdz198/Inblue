@@ -6,5 +6,6 @@ import org.springframework.data.jpa.repository.JpaRepository;
 
 public interface InterviewSessionRepository extends JpaRepository<InterviewSession, Integer> {
     List<InterviewSession> findByUserId(Integer userId);
+
     InterviewSession findBySessionKey(String sessionKey);
 }

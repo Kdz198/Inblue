@@ -4,22 +4,22 @@ import fpt.org.inblue.enums.ApplicationDetailStatus;
 import fpt.org.inblue.exception.CustomException;
 import fpt.org.inblue.model.Application;
 import fpt.org.inblue.model.ApplicationDetail;
-import fpt.org.inblue.model.Round;
-import fpt.org.inblue.repository.ApplicationDetailRepository;
-import fpt.org.inblue.repository.RoundRepository;
-import fpt.org.inblue.security.JwtUtils;
-import fpt.org.inblue.service.ApplicationDetailService;
-import fpt.org.inblue.service.ApplicationService;
-import fpt.org.inblue.utils.HelperUtil;
 import fpt.org.inblue.model.CandidateProfile;
 import fpt.org.inblue.model.JobDescription;
+import fpt.org.inblue.model.Round;
 import fpt.org.inblue.model.User;
 import fpt.org.inblue.model.dto.request.InterviewSetupRequest;
 import fpt.org.inblue.model.dto.request.OrchestratorRequest;
+import fpt.org.inblue.repository.ApplicationDetailRepository;
 import fpt.org.inblue.repository.CandidateProfileRepository;
 import fpt.org.inblue.repository.JobDescriptionRepository;
+import fpt.org.inblue.repository.RoundRepository;
 import fpt.org.inblue.repository.UserRepository;
+import fpt.org.inblue.security.JwtUtils;
+import fpt.org.inblue.service.ApplicationDetailService;
+import fpt.org.inblue.service.ApplicationService;
 import fpt.org.inblue.service.InterviewSessionService;
+import fpt.org.inblue.utils.HelperUtil;
 import java.time.LocalDateTime;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
@@ -109,6 +109,7 @@ public class ApplicationDetailServiceImpl implements ApplicationDetailService {
         applicationDetail.setStatus(ApplicationDetailStatus.PENDING);
         return applicationDetailRepository.save(applicationDetail);
     }
+
     @Override
     @Transactional
     public String startAiInterview(long applicationDetailId) {
@@ -118,11 +119,14 @@ public class ApplicationDetailServiceImpl implements ApplicationDetailService {
         }
 
         Application application = applicationService.getApplicationById(appDetail.getApplicationId());
-        User applicant = userRepository.findById(application.getUserId())
+        User applicant = userRepository
+                .findById(application.getUserId())
                 .orElseThrow(() -> new CustomException("Applicant not found", HttpStatus.NOT_FOUND));
-        JobDescription jd = jobDescriptionRepository.findById(application.getJdId())
+        JobDescription jd = jobDescriptionRepository
+                .findById(application.getJdId())
                 .orElseThrow(() -> new CustomException("JobDescription not found", HttpStatus.NOT_FOUND));
-        Round round = roundRepository.findById(appDetail.getRoundId())
+        Round round = roundRepository
+                .findById(appDetail.getRoundId())
                 .orElseThrow(() -> new CustomException("Round not found", HttpStatus.NOT_FOUND));
 
         if (round.getRoundType() != fpt.org.inblue.enums.RoundType.AI_INTERVIEW) {
@@ -130,16 +134,19 @@ public class ApplicationDetailServiceImpl implements ApplicationDetailService {
         }
 
         // Prepare Setup Request
-        OrchestratorRequest.JobRequirementData requirementData = interviewSessionService.getJobRequirementFromJD(jd.getDescription());
-        
+        OrchestratorRequest.JobRequirementData requirementData =
+                interviewSessionService.getJobRequirementFromJD(jd.getDescription());
+
         // Fetch Candidate Profile from DB
         CandidateProfile profile = candidateProfileRepository.findByUser_Id(applicant.getId());
         if (profile == null) {
-            throw new CustomException("Candidate profile not found. Please update your CV/Profile before starting the interview.", HttpStatus.BAD_REQUEST);
+            throw new CustomException(
+                    "Candidate profile not found. Please update your CV/Profile before starting the interview.",
+                    HttpStatus.BAD_REQUEST);
         }
-        
+
         OrchestratorRequest.SessionConfigData configData = new OrchestratorRequest.SessionConfigData();
-        
+
         if (configData.getInterviewMode() == null) {
             configData.setInterviewMode(fpt.org.inblue.enums.InterviewEnums.InterviewMode.STANDARD_MOCK);
         }
@@ -162,8 +169,9 @@ public class ApplicationDetailServiceImpl implements ApplicationDetailService {
                 .build();
 
         String sessionKey = interviewSessionService.createSession(setupRequest);
-        
-        fpt.org.inblue.model.InterviewSession interviewSession = interviewSessionRepository.findBySessionKey(sessionKey);
+
+        fpt.org.inblue.model.InterviewSession interviewSession =
+                interviewSessionRepository.findBySessionKey(sessionKey);
         if (interviewSession != null) {
             appDetail.setAiInterviewSessionId(interviewSession.getId());
             applicationDetailRepository.save(appDetail);

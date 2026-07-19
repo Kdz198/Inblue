@@ -1,7 +1,6 @@
 package fpt.org.inblue.service.impl;
 
 import fpt.org.inblue.enums.ApplicationDetailStatus;
-import fpt.org.inblue.enums.BookingStatus;
 import fpt.org.inblue.enums.SessionStatus;
 import fpt.org.inblue.exception.CustomException;
 import fpt.org.inblue.mapper.MentorReviewMapper;
