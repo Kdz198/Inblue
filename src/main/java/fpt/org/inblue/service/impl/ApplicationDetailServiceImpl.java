@@ -169,8 +169,7 @@ public class ApplicationDetailServiceImpl implements ApplicationDetailService {
 
         String sessionKey = interviewSessionService.createSession(setupRequest);
 
-        InterviewSession interviewSession =
-                interviewSessionRepository.findBySessionKey(sessionKey);
+        InterviewSession interviewSession = interviewSessionRepository.findBySessionKey(sessionKey);
         if (interviewSession != null) {
             appDetail.setAiInterviewSessionId(interviewSession.getId());
             applicationDetailRepository.save(appDetail);

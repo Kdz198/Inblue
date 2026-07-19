@@ -11,8 +11,6 @@ import fpt.org.inblue.repository.*;
 import fpt.org.inblue.service.ApplicationDetailService;
 import fpt.org.inblue.service.KioskBookingService;
 import fpt.org.inblue.service.NotificationService;
-import java.time.LocalDateTime;
-import java.time.ZoneId;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
@@ -137,13 +135,14 @@ public class KioskBookingServiceImpl implements KioskBookingService {
                     "Session key is registered for Kiosk " + booking.getKioskId(), HttpStatus.BAD_REQUEST);
         }
 
-//        LocalDateTime now = LocalDateTime.now(ZoneId.of("Asia/Ho_Chi_Minh"));
-//        LocalDateTime start = booking.getScheduledStart();
-//        if (now.isBefore(start.minusMinutes(15)) || now.isAfter(start.plusMinutes(15))) {
-//            throw new CustomException(
-//                    "You can only enter the Kiosk within 15 minutes of your scheduled start time (" + start + ")",
-//                    HttpStatus.BAD_REQUEST);
-//        }
+        //        LocalDateTime now = LocalDateTime.now(ZoneId.of("Asia/Ho_Chi_Minh"));
+        //        LocalDateTime start = booking.getScheduledStart();
+        //        if (now.isBefore(start.minusMinutes(15)) || now.isAfter(start.plusMinutes(15))) {
+        //            throw new CustomException(
+        //                    "You can only enter the Kiosk within 15 minutes of your scheduled start time (" + start +
+        // ")",
+        //                    HttpStatus.BAD_REQUEST);
+        //        }
 
         ApplicationDetail appDetail = applicationDetailRepository
                 .findById(booking.getApplicationDetailId())
