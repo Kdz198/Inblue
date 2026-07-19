@@ -2,12 +2,7 @@ package fpt.org.inblue.service.impl;
 
 import fpt.org.inblue.enums.ApplicationDetailStatus;
 import fpt.org.inblue.exception.CustomException;
-import fpt.org.inblue.model.Application;
-import fpt.org.inblue.model.ApplicationDetail;
-import fpt.org.inblue.model.CandidateProfile;
-import fpt.org.inblue.model.JobDescription;
-import fpt.org.inblue.model.Round;
-import fpt.org.inblue.model.User;
+import fpt.org.inblue.model.*;
 import fpt.org.inblue.model.dto.request.InterviewSetupRequest;
 import fpt.org.inblue.model.dto.request.OrchestratorRequest;
 import fpt.org.inblue.repository.ApplicationDetailRepository;
@@ -174,7 +169,7 @@ public class ApplicationDetailServiceImpl implements ApplicationDetailService {
 
         String sessionKey = interviewSessionService.createSession(setupRequest);
 
-        fpt.org.inblue.model.InterviewSession interviewSession =
+        InterviewSession interviewSession =
                 interviewSessionRepository.findBySessionKey(sessionKey);
         if (interviewSession != null) {
             appDetail.setAiInterviewSessionId(interviewSession.getId());
