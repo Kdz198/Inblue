@@ -1,5 +1,6 @@
 package fpt.org.inblue.model;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import fpt.org.inblue.enums.Role;
 import jakarta.persistence.*;
 import java.time.LocalDateTime;
@@ -11,6 +12,7 @@ import lombok.*;
 @Data
 @AllArgsConstructor
 @Builder
+@JsonIgnoreProperties(ignoreUnknown = true)
 public class User {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
