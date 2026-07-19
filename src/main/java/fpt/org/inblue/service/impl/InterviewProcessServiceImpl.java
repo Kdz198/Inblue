@@ -3,6 +3,8 @@ package fpt.org.inblue.service.impl;
 import fpt.org.inblue.constants.ApiPath;
 import fpt.org.inblue.enums.PythonService;
 import fpt.org.inblue.model.ApplicationDetail;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletableFuture;
 import fpt.org.inblue.model.InterviewResultDetail;
 import fpt.org.inblue.model.InterviewSession;
 import fpt.org.inblue.model.caching.InterviewSessionRedis;
@@ -114,7 +116,14 @@ public class InterviewProcessServiceImpl implements InterviewProcessService {
             session.setCurrentQuestionText(aiResponse.getResponseText());
         } else {
             if (nextAnchorInfo == null) {
-                finishSession(session, request.getSessionKey());
+                CompletableFuture.runAsync(() -> {
+                    try {
+                        finishSession(session, request.getSessionKey());
+                    } catch (Exception e) {
+                        System.err.println("Error during async finishSession: " + e.getMessage());
+                        e.printStackTrace();
+                    }
+                });
                 return QuestionResponse.builder()
                         .isFinished(true)
                         .sessionKey(session.getId())
