@@ -126,11 +126,7 @@ public class SubmissionService {
                 ? ApplicationDetail.RoundResult.PASSED
                 : ApplicationDetail.RoundResult.FAILED;
         detail.setFinalResult(roundResult);
-
-        if (roundResult == ApplicationDetail.RoundResult.PASSED) {
-            applicationService.moveToNextRound(currentApplication);
-        }
-
+        applicationService.moveToNextRound(currentApplication);
         return applicationDetailRepository.save(detail);
     }
 
