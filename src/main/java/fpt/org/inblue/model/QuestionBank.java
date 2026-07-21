@@ -2,7 +2,6 @@ package fpt.org.inblue.model;
 
 import fpt.org.inblue.enums.QuestionLevel;
 import jakarta.persistence.*;
-
 import java.time.LocalDateTime;
 import java.util.List;
 import lombok.AllArgsConstructor;
@@ -45,8 +44,8 @@ public class QuestionBank {
     private Boolean isDeleted = false;
 
     @CreationTimestamp
-    private LocalDateTime  createdAt;
+    private LocalDateTime createdAt;
 
     @UpdateTimestamp
-    private LocalDateTime  updatedAt;
+    private LocalDateTime updatedAt;
 }
