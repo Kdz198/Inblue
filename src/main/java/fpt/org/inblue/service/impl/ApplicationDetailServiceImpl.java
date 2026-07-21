@@ -2,14 +2,18 @@ package fpt.org.inblue.service.impl;
 
 import fpt.org.inblue.enums.ApplicationDetailStatus;
 import fpt.org.inblue.exception.CustomException;
-import fpt.org.inblue.model.Application;
-import fpt.org.inblue.model.ApplicationDetail;
-import fpt.org.inblue.model.Round;
+import fpt.org.inblue.model.*;
+import fpt.org.inblue.model.dto.request.InterviewSetupRequest;
+import fpt.org.inblue.model.dto.request.OrchestratorRequest;
 import fpt.org.inblue.repository.ApplicationDetailRepository;
+import fpt.org.inblue.repository.CandidateProfileRepository;
+import fpt.org.inblue.repository.JobDescriptionRepository;
 import fpt.org.inblue.repository.RoundRepository;
+import fpt.org.inblue.repository.UserRepository;
 import fpt.org.inblue.security.JwtUtils;
 import fpt.org.inblue.service.ApplicationDetailService;
 import fpt.org.inblue.service.ApplicationService;
+import fpt.org.inblue.service.InterviewSessionService;
 import fpt.org.inblue.utils.HelperUtil;
 import java.time.LocalDateTime;
 import java.util.List;
@@ -24,6 +28,11 @@ public class ApplicationDetailServiceImpl implements ApplicationDetailService {
     private final ApplicationDetailRepository applicationDetailRepository;
     private final ApplicationService applicationService;
     private final RoundRepository roundRepository;
+    private final JobDescriptionRepository jobDescriptionRepository;
+    private final UserRepository userRepository;
+    private final CandidateProfileRepository candidateProfileRepository;
+    private final InterviewSessionService interviewSessionService;
+    private final fpt.org.inblue.repository.InterviewSessionRepository interviewSessionRepository;
     private final JwtUtils jwtUtils;
 
     @Override
@@ -94,5 +103,78 @@ public class ApplicationDetailServiceImpl implements ApplicationDetailService {
         applicationDetail.setMentorId(mentorId);
         applicationDetail.setStatus(ApplicationDetailStatus.PENDING);
         return applicationDetailRepository.save(applicationDetail);
+    }
+
+    @Override
+    @Transactional
+    public String startAiInterview(long applicationDetailId) {
+        ApplicationDetail appDetail = getApplicationDetailById(applicationDetailId);
+        if (appDetail.getStatus() == ApplicationDetailStatus.COMPLETED) {
+            throw new CustomException("This round is already completed", HttpStatus.BAD_REQUEST);
+        }
+
+        Application application = applicationService.getApplicationById(appDetail.getApplicationId());
+        User applicant = userRepository
+                .findById(application.getUserId())
+                .orElseThrow(() -> new CustomException("Applicant not found", HttpStatus.NOT_FOUND));
+        JobDescription jd = jobDescriptionRepository
+                .findById(application.getJdId())
+                .orElseThrow(() -> new CustomException("JobDescription not found", HttpStatus.NOT_FOUND));
+        Round round = roundRepository
+                .findById(appDetail.getRoundId())
+                .orElseThrow(() -> new CustomException("Round not found", HttpStatus.NOT_FOUND));
+
+        if (round.getRoundType() != fpt.org.inblue.enums.RoundType.AI_INTERVIEW) {
+            throw new CustomException("This round is not AI_INTERVIEW", HttpStatus.BAD_REQUEST);
+        }
+
+        // Prepare Setup Request
+        OrchestratorRequest.JobRequirementData requirementData =
+                interviewSessionService.getJobRequirementFromJD(jd.getDescription());
+
+        // Fetch Candidate Profile from DB
+        CandidateProfile profile = candidateProfileRepository.findByUser_Id(applicant.getId());
+        if (profile == null) {
+            throw new CustomException(
+                    "Candidate profile not found. Please update your CV/Profile before starting the interview.",
+                    HttpStatus.BAD_REQUEST);
+        }
+
+        OrchestratorRequest.SessionConfigData configData = new OrchestratorRequest.SessionConfigData();
+
+        if (configData.getInterviewMode() == null) {
+            configData.setInterviewMode(fpt.org.inblue.enums.InterviewEnums.InterviewMode.STANDARD_MOCK);
+        }
+        if (configData.getLanguage() == null) {
+            configData.setLanguage(fpt.org.inblue.enums.InterviewEnums.Language.VI);
+        }
+        if (configData.getDifficulty() == null) {
+            configData.setDifficulty(fpt.org.inblue.enums.InterviewEnums.DifficultyLevel.FRESHER_BASIC);
+        }
+        if (configData.getDomain() == null) {
+            configData.setDomain(fpt.org.inblue.enums.InterviewEnums.JobDomain.IT);
+        }
+
+        Integer duration = round.getConfigData() != null ? round.getConfigData().getTimeLimitMinutes() : 45;
+        if (duration == null) duration = 45;
+        configData.setDurationMinutes(duration);
+
+        InterviewSetupRequest setupRequest = InterviewSetupRequest.builder()
+                .userId(applicant.getId())
+                .applicationDetailId(appDetail.getId())
+                .candidateProfile(profile)
+                .jobRequirement(requirementData)
+                .sessionConfig(configData)
+                .build();
+
+        String sessionKey = interviewSessionService.createSession(setupRequest);
+
+        InterviewSession interviewSession = interviewSessionRepository.findBySessionKey(sessionKey);
+        if (interviewSession != null) {
+            appDetail.setAiInterviewSessionId(interviewSession.getId());
+            applicationDetailRepository.save(appDetail);
+        }
+
+        return sessionKey;
     }
 }

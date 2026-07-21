@@ -64,7 +64,9 @@ public class ApplicationDetail {
 
     private Integer mentorId; // ID mentor được Admin gán vào vòng này
 
-    private Integer sessionId; // ID của session tương ứng
+    private Integer sessionId; // ID của session tương ứng (Mentor Review)
+
+    private Integer aiInterviewSessionId; // ID của session tương ứng (AI Interview)
 
     @JdbcTypeCode(SqlTypes.JSON)
     @Column(columnDefinition = "jsonb")

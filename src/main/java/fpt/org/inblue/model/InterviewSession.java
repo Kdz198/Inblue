@@ -27,6 +27,9 @@ public class InterviewSession {
 
     private String sessionKey; // UUID sessionKey để liên kết với Redis
 
+    @Column(name = "application_detail_id")
+    private Long applicationDetailId; // Liên kết ngược lại về vòng thi của Job Application
+
     // ========================================================================
     // 1. CÁC CỘT LƯU JSONB (Dùng @JdbcTypeCode)
     // ========================================================================

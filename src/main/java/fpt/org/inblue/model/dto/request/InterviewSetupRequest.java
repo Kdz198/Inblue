@@ -18,6 +18,9 @@ public class InterviewSetupRequest {
     @JsonProperty("user_id")
     private int userId;
 
+    @JsonProperty("application_detail_id")
+    private Long applicationDetailId;
+
     // 2. CV Snapshot (Đã parse xong ở bước trước)
     // Lưu ý: Frontend gửi nguyên cục JSON CV đã parse vào đây
     @JsonProperty("candidate_profile")

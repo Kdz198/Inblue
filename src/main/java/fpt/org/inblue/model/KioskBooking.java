@@ -12,7 +12,7 @@ import org.hibernate.annotations.UpdateTimestamp;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class MentorInterviewBooking {
+public class KioskBooking {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
@@ -22,8 +22,6 @@ public class MentorInterviewBooking {
     private int applicantUserId;
     private LocalDateTime scheduledStart;
     private LocalDateTime scheduledEnd;
-    private Integer mentorId;
-    private Integer sessionId;
 
     @Enumerated(EnumType.STRING)
     private BookingStatus status;

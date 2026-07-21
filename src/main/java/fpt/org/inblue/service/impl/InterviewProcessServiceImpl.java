@@ -2,6 +2,7 @@ package fpt.org.inblue.service.impl;
 
 import fpt.org.inblue.constants.ApiPath;
 import fpt.org.inblue.enums.PythonService;
+import fpt.org.inblue.model.ApplicationDetail;
 import fpt.org.inblue.model.InterviewResultDetail;
 import fpt.org.inblue.model.InterviewSession;
 import fpt.org.inblue.model.caching.InterviewSessionRedis;
@@ -10,6 +11,7 @@ import fpt.org.inblue.model.dto.request.SubmitAnswerRequest;
 import fpt.org.inblue.model.dto.response.GradingResponse;
 import fpt.org.inblue.model.dto.response.OrchestratorAnalysisResponse;
 import fpt.org.inblue.model.dto.response.QuestionResponse;
+import fpt.org.inblue.repository.ApplicationDetailRepository;
 import fpt.org.inblue.repository.InterviewSessionRepository;
 import fpt.org.inblue.repository.caching.InterviewSessionRedisRepository;
 import fpt.org.inblue.service.ApiClient;
@@ -19,6 +21,7 @@ import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.CompletableFuture;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.RequiredArgsConstructor;
@@ -33,6 +36,7 @@ public class InterviewProcessServiceImpl implements InterviewProcessService {
     private final InterviewSessionRepository sessionRepository;
     private final ApiClient ApiClient;
     private final ProctoringService proctoringService;
+    private final ApplicationDetailRepository applicationDetailRepository;
 
     @Override
     public QuestionResponse getCurrentQuestion(String sessionKey) {
@@ -111,7 +115,14 @@ public class InterviewProcessServiceImpl implements InterviewProcessService {
             session.setCurrentQuestionText(aiResponse.getResponseText());
         } else {
             if (nextAnchorInfo == null) {
-                finishSession(session, request.getSessionKey());
+                CompletableFuture.runAsync(() -> {
+                    try {
+                        finishSession(session, request.getSessionKey());
+                    } catch (Exception e) {
+                        System.err.println("Error during async finishSession: " + e.getMessage());
+                        e.printStackTrace();
+                    }
+                });
                 return QuestionResponse.builder()
                         .isFinished(true)
                         .sessionKey(session.getId())
@@ -279,6 +290,20 @@ public class InterviewProcessServiceImpl implements InterviewProcessService {
 
         sessionRepository.save(dbSession);
         redisRepository.delete(redisSession);
+
+        if (dbSession.getApplicationDetailId() != null) {
+            ApplicationDetail appDetail = applicationDetailRepository
+                    .findById(dbSession.getApplicationDetailId())
+                    .orElse(null);
+            if (appDetail != null) {
+                appDetail.setAiScore(avgScore);
+                ApplicationDetail.AiFeedback aiFeedback = new ApplicationDetail.AiFeedback();
+                aiFeedback.setGeneralComment("Đã chấm điểm xong. Vui lòng xem chi tiết lịch sử phỏng vấn AI.");
+                appDetail.setAiFeedback(aiFeedback);
+                appDetail.setStatus(fpt.org.inblue.enums.ApplicationDetailStatus.COMPLETED);
+                applicationDetailRepository.save(appDetail);
+            }
+        }
     }
 
     // ======================================================================

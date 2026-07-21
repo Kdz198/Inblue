@@ -128,7 +128,8 @@ public class InterviewSessionServiceImpl implements InterviewSessionService {
                 // Các field indexing
                 .mode(request.getSessionConfig().getInterviewMode())
                 .domain(request.getSessionConfig().getDomain())
-                .status(InterviewSession.SessionStatus.CREATED)
+                .status(InterviewSession.SessionStatus.IN_PROGRESS)
+                .applicationDetailId(request.getApplicationDetailId())
                 .build();
 
         // Save xuống DB (Hibernate tự handle JSONB)

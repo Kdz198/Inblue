@@ -3,12 +3,12 @@ package fpt.org.inblue.service.impl;
 import fpt.org.inblue.enums.BookingStatus;
 import fpt.org.inblue.exception.CustomException;
 import fpt.org.inblue.model.Kiosk;
+import fpt.org.inblue.model.KioskBooking;
 import fpt.org.inblue.model.KioskSchedule;
-import fpt.org.inblue.model.MentorInterviewBooking;
 import fpt.org.inblue.model.dto.SlotDto;
+import fpt.org.inblue.repository.KioskBookingRepository;
 import fpt.org.inblue.repository.KioskRepository;
 import fpt.org.inblue.repository.KioskScheduleRepository;
-import fpt.org.inblue.repository.MentorInterviewBookingRepository;
 import fpt.org.inblue.service.KioskService;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -25,7 +25,7 @@ public class KioskServiceImpl implements KioskService {
 
     private final KioskRepository kioskRepository;
     private final KioskScheduleRepository kioskScheduleRepository;
-    private final MentorInterviewBookingRepository bookingRepository;
+    private final KioskBookingRepository bookingRepository;
 
     @Override
     public List<Kiosk> getActiveKiosks() {
@@ -70,7 +70,7 @@ public class KioskServiceImpl implements KioskService {
         // 2. Fetch active bookings on that day
         LocalDateTime startOfDay = date.atStartOfDay();
         LocalDateTime endOfDay = date.atTime(LocalTime.MAX);
-        List<MentorInterviewBooking> bookings = bookingRepository.findActiveBookingsByKioskAndDateRange(
+        List<KioskBooking> bookings = bookingRepository.findActiveBookingsByKioskAndDateRange(
                 kioskId, startOfDay, endOfDay, BookingStatus.CANCELLED);
 
         // 3. Generate slots
@@ -85,7 +85,7 @@ public class KioskServiceImpl implements KioskService {
 
             // Check overlap
             boolean isOverlapping = false;
-            for (MentorInterviewBooking booking : bookings) {
+            for (KioskBooking booking : bookings) {
                 if (slotStart.isBefore(booking.getScheduledEnd()) && slotEnd.isAfter(booking.getScheduledStart())) {
                     isOverlapping = true;
                     break;
