@@ -1,8 +1,7 @@
 package fpt.org.inblue.model.dto.request;
 
-import java.util.List;
-
 import fpt.org.inblue.model.dto.response.admin.AdminApplicationSummaryDto;
+import java.util.List;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
