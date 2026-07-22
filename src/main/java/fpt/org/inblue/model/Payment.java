@@ -1,6 +1,5 @@
 package fpt.org.inblue.model;
 
-import fpt.org.inblue.enums.PaymentPurpose;
 import fpt.org.inblue.enums.PaymentStatus;
 import jakarta.persistence.*;
 import java.time.LocalDateTime;
@@ -35,6 +34,6 @@ public class Payment {
 
     String transactionCode;
 
-    @Enumerated(EnumType.STRING)
-    PaymentPurpose paymentPurpose;
+    @Column(nullable = true)
+    Long jdId;
 }

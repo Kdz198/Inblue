@@ -2,18 +2,21 @@ package fpt.org.inblue.service.impl;
 
 import fpt.org.inblue.enums.ApplicationDetailStatus;
 import fpt.org.inblue.enums.ApplicationStatus;
+import fpt.org.inblue.enums.JdPurchaseStatus;
 import fpt.org.inblue.enums.RoundType;
 import fpt.org.inblue.exception.CustomException;
 import fpt.org.inblue.model.Application;
 import fpt.org.inblue.model.ApplicationDetail;
+import fpt.org.inblue.model.JdPurchase;
 import fpt.org.inblue.model.JobDescription;
 import fpt.org.inblue.model.Round;
 import fpt.org.inblue.repository.ApplicationDetailRepository;
 import fpt.org.inblue.repository.ApplicationRepository;
+import fpt.org.inblue.repository.JdPurchaseRepository;
 import fpt.org.inblue.repository.JobDescriptionRepository;
-import fpt.org.inblue.security.JwtUtils;
 import fpt.org.inblue.service.ApplicationService;
-import fpt.org.inblue.utils.HelperUtil;
+import fpt.org.inblue.utils.SecurityUtils;
+import java.time.LocalDateTime;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -24,15 +27,21 @@ import org.springframework.transaction.annotation.Transactional;
 @RequiredArgsConstructor
 @Transactional
 public class ApplicationServiceImpl implements ApplicationService {
-    private final JwtUtils jwtUtils;
+    private final SecurityUtils securityUtils;
     private final ApplicationRepository applicationRepository;
     private final JobDescriptionRepository jobDescriptionRepository;
     private final ApplicationDetailRepository applicationDetailRepository;
+    private final JdPurchaseRepository jdPurchaseRepository;
 
     @Override
     public Application applyForJob(Long jdId) {
-        String token = HelperUtil.getToke();
-        int userId = jwtUtils.getUserIdFromToken(token);
+        int userId = securityUtils.getCurrentUserId();
+
+        if (!jdPurchaseRepository.existsByUserIdAndJdIdAndStatus(userId, jdId, JdPurchaseStatus.PURCHASED)) {
+            throw new CustomException(
+                    "Bạn cần mua gói apply cho JD này trước", HttpStatus.PAYMENT_REQUIRED);
+        }
+
         Application application = new Application();
         application.setUserId(userId);
         application.setJdId(jdId);
@@ -42,6 +51,14 @@ public class ApplicationServiceImpl implements ApplicationService {
         jd.setAppliedCount(jd.getAppliedCount() + 1);
         jobDescriptionRepository.save(jd);
         Application savedApplication = applicationRepository.save(application);
+
+        jdPurchaseRepository
+                .findByUserIdAndJdIdAndStatus(userId, jdId, JdPurchaseStatus.PURCHASED)
+                .ifPresent(purchase -> {
+                    purchase.setStatus(JdPurchaseStatus.USED);
+                    purchase.setUsedAt(LocalDateTime.now());
+                    jdPurchaseRepository.save(purchase);
+                });
 
         // Nếu vòng đầu tiên là MENTROR_REVIEW hoặc AI_INTERVIEW (không có luồng nộp bài),
         // cần tạo ApplicationDetail ngay lúc apply vì moveToNextRound() chưa bao giờ được gọi trước đó.
@@ -94,8 +111,7 @@ public class ApplicationServiceImpl implements ApplicationService {
 
     @Override
     public List<Application> getAllApplicationsByUserId() {
-        String token = HelperUtil.getToke();
-        int userId = jwtUtils.getUserIdFromToken(token);
+        int userId = securityUtils.getCurrentUserId();
         return applicationRepository.findAllByUserId(userId);
     }
 

@@ -41,6 +41,10 @@ public class JobDescription {
     private Double salaryMin;
     private Double salaryMax;
 
+    // Giá gói apply JD (đơn vị: VND). Người dùng phải mua gói này trước khi apply.
+    @Column(nullable = true)
+    private Long price;
+
     @OneToMany(cascade = CascadeType.ALL, orphanRemoval = true)
     @JoinColumn(name = "jd_id", nullable = false)
     @Builder.Default

@@ -2,18 +2,19 @@ package fpt.org.inblue.service.impl;
 
 import static fpt.org.inblue.utils.HelperUtil.generateUniqueOrderCode;
 
-import fpt.org.inblue.enums.PaymentPurpose;
+import fpt.org.inblue.enums.JdPurchaseStatus;
 import fpt.org.inblue.enums.PaymentStatus;
-import fpt.org.inblue.enums.SessionStatus;
 import fpt.org.inblue.exception.CustomException;
+import fpt.org.inblue.model.JdPurchase;
+import fpt.org.inblue.model.JobDescription;
 import fpt.org.inblue.model.Payment;
-import fpt.org.inblue.model.Session;
 import fpt.org.inblue.model.User;
+import fpt.org.inblue.repository.JdPurchaseRepository;
+import fpt.org.inblue.repository.JobDescriptionRepository;
 import fpt.org.inblue.repository.PaymentRepository;
-import fpt.org.inblue.repository.SessionRepository;
 import fpt.org.inblue.repository.UserRepository;
 import fpt.org.inblue.service.PaymentService;
-import fpt.org.inblue.utils.HelperUtil;
+import fpt.org.inblue.utils.SecurityUtils;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
@@ -28,8 +29,13 @@ import vn.payos.model.webhooks.WebhookData;
 @Service
 @RequiredArgsConstructor
 public class PaymentServiceImpl implements PaymentService {
+
     private final PaymentRepository paymentRepository;
     private final PayOS payOS;
+    private final UserRepository userRepository;
+    private final JdPurchaseRepository jdPurchaseRepository;
+    private final JobDescriptionRepository jobDescriptionRepository;
+    private final SecurityUtils securityUtils;
 
     @Value("${payos.return-url}")
     private String returnUrl;
@@ -37,22 +43,55 @@ public class PaymentServiceImpl implements PaymentService {
     @Value("${payos.cancel-url}")
     private String cancelUrl;
 
-    private final UserRepository userRepository;
-    private final SessionRepository sessionRepository;
-
     @Override
-    public String createPayment(long amount, int userId, PaymentPurpose paymentPurpose) {
+    public String createPayment(Long jdId) {
+        int userId = securityUtils.getCurrentUserId();
+
+        // Lấy thông tin JD và giá tiền
+        JobDescription jd = jobDescriptionRepository
+                .findById(jdId)
+                .orElseThrow(() -> new CustomException("Job Description not found", HttpStatus.NOT_FOUND));
+
+        if (jd.getPrice() == null || jd.getPrice() <= 0) {
+            throw new CustomException(
+                    "JD này chưa có giá. Vui lòng liên hệ admin.", HttpStatus.BAD_REQUEST);
+        }
+
+        long amount = jd.getPrice();
         long transactionCode = Long.parseLong("100" + generateUniqueOrderCode());
+
         User user = userRepository
                 .findById(userId)
                 .orElseThrow(() -> new CustomException("User not found", HttpStatus.NOT_FOUND));
+
         Payment payment = new Payment();
         payment.setAmount(amount);
         payment.setUser(user);
         payment.setStatus(PaymentStatus.PENDING);
         payment.setTransactionCode(String.valueOf(transactionCode));
-        payment.setPaymentPurpose(paymentPurpose);
+        payment.setJdId(jdId);
         paymentRepository.save(payment);
+
+        return createPayOSPayment(amount, transactionCode);
+    }
+
+    @Override
+    public String createSessionPayment(long amount) {
+        int userId = securityUtils.getCurrentUserId();
+        long transactionCode = Long.parseLong("100" + generateUniqueOrderCode());
+
+        User user = userRepository
+                .findById(userId)
+                .orElseThrow(() -> new CustomException("User not found", HttpStatus.NOT_FOUND));
+
+        Payment payment = new Payment();
+        payment.setAmount(amount);
+        payment.setUser(user);
+        payment.setStatus(PaymentStatus.PENDING);
+        payment.setTransactionCode(String.valueOf(transactionCode));
+        payment.setJdId(null); // Mentor session payment, không liên quan JD
+        paymentRepository.save(payment);
+
         return createPayOSPayment(amount, transactionCode);
     }
 
@@ -60,10 +99,9 @@ public class PaymentServiceImpl implements PaymentService {
     public Payment getPayment(int id) {
         Payment payment = paymentRepository.findById(id);
         if (payment == null) {
-            throw new RuntimeException("Payment not found with id: " + id);
-        } else {
-            return payment;
+            throw new CustomException("Payment not found with id: " + id, HttpStatus.NOT_FOUND);
         }
+        return payment;
     }
 
     @Override
@@ -71,7 +109,7 @@ public class PaymentServiceImpl implements PaymentService {
         return paymentRepository.findAll();
     }
 
-    public String createPayOSPayment(long amount, long transactionCode) {
+    private String createPayOSPayment(long amount, long transactionCode) {
         CreatePaymentLinkRequest request = CreatePaymentLinkRequest.builder()
                 .amount(amount)
                 .orderCode(transactionCode)
@@ -88,23 +126,31 @@ public class PaymentServiceImpl implements PaymentService {
         try {
             WebhookData webhookData = payOS.webhooks().verify(body);
             String transactionCode = String.valueOf(webhookData.getOrderCode());
-            String type = HelperUtil.getPrefix(transactionCode);
-            System.out.println("Received PayOS webhook for transaction code: " + transactionCode + ", type: " + type
-                    + ", status: ");
-            if (type.equals("100")) {
-                // xử lí payment cho từng vòng hoặc toàn bộ quy trình phỏng vấn
-                Payment payment = paymentRepository.findByTransactionCode(transactionCode);
-                if (webhookData.getDesc().equals("success")) {
+            System.out.println("Received PayOS webhook for transaction code: " + transactionCode);
 
-                    payment.setStatus(PaymentStatus.COMPLETED);
-                }
-                if (payment.getPaymentPurpose().equals(PaymentPurpose.MENTOR_INTERVIEW)) {
-                    Session session = sessionRepository.findByTransactionCode(transactionCode);
-                    session.setStatus(SessionStatus.PAID);
-                }
-                paymentRepository.save(payment);
+            Payment payment = paymentRepository.findByTransactionCode(transactionCode);
+            if (payment == null) {
+                System.err.println("Payment not found for transaction code: " + transactionCode);
+                return;
             }
 
+            if (webhookData.getDesc().equals("success")) {
+                payment.setStatus(PaymentStatus.COMPLETED);
+
+                JdPurchase purchase = JdPurchase.builder()
+                        .userId(payment.getUser().getId())
+                        .jdId(payment.getJdId())
+                        .paymentId(payment.getId())
+                        .status(JdPurchaseStatus.PURCHASED)
+                        .build();
+                jdPurchaseRepository.save(purchase);
+                System.out.println("Created JdPurchase for userId=" + payment.getUser().getId()
+                        + ", jdId=" + payment.getJdId());
+            } else {
+                payment.setStatus(PaymentStatus.FAILED);
+            }
+
+            paymentRepository.save(payment);
         } catch (Exception e) {
             System.err.println("Error processing PayOS webhook: " + e.getMessage());
         }

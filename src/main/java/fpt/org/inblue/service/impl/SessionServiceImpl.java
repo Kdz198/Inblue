@@ -2,7 +2,6 @@ package fpt.org.inblue.service.impl;
 
 import fpt.org.inblue.enums.ApplicationDetailStatus;
 import fpt.org.inblue.enums.MeetingType;
-import fpt.org.inblue.enums.PaymentPurpose;
 import fpt.org.inblue.enums.SessionStatus;
 import fpt.org.inblue.exception.CustomException;
 import fpt.org.inblue.model.Application;
@@ -325,8 +324,7 @@ public class SessionServiceImpl implements SessionService {
         if (session.getStatus() != SessionStatus.SCHEDULED) {
             throw new CustomException("Session chưa được duyệt hoặc đã bị hủy", HttpStatus.CONFLICT);
         }
-        return paymentService.createPayment(
-                session.getTotalPrice(), session.getUserId(), PaymentPurpose.MENTOR_INTERVIEW);
+        return paymentService.createSessionPayment(session.getTotalPrice());
     }
 
     public Timestamp helperConvertToVietNamTime() {

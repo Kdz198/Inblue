@@ -1,6 +1,5 @@
 package fpt.org.inblue.controller;
 
-import fpt.org.inblue.enums.PaymentPurpose;
 import fpt.org.inblue.model.Payment;
 import fpt.org.inblue.service.PaymentService;
 import java.util.List;
@@ -14,18 +13,25 @@ import vn.payos.model.webhooks.Webhook;
 @CrossOrigin(origins = "*")
 @RequiredArgsConstructor
 public class PaymentController {
+
     private final PaymentService paymentService;
 
+    /**
+     * Tạo payment để mua gói apply cho một JD.
+     * Giá tiền được lấy tự động từ JD.price.
+     * userId được lấy tự động từ JWT token.
+     *
+     * @param jdId ID của JobDescription cần mua
+     * @return PayOS checkout URL
+     */
     @PostMapping("/pay")
-    public ResponseEntity<String> createPayment(
-            @RequestParam long amount, @RequestParam int userId, @RequestParam PaymentPurpose paymentPurpose) {
-        return ResponseEntity.ok(paymentService.createPayment(amount, userId, paymentPurpose));
+    public ResponseEntity<String> createPayment(@RequestParam Long jdId) {
+        return ResponseEntity.ok(paymentService.createPayment(jdId));
     }
 
     @GetMapping("/{id}")
     public ResponseEntity<Payment> getPayment(@PathVariable int id) {
-        Payment payment = paymentService.getPayment(id);
-        return ResponseEntity.ok(payment);
+        return ResponseEntity.ok(paymentService.getPayment(id));
     }
 
     @GetMapping
