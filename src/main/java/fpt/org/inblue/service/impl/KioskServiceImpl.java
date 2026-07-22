@@ -28,8 +28,8 @@ public class KioskServiceImpl implements KioskService {
     private final KioskBookingRepository bookingRepository;
 
     @Override
-    public List<Kiosk> getActiveKiosks() {
-        return kioskRepository.findAllByIsActiveTrue();
+    public List<Kiosk> getAllKiosk() {
+        return kioskRepository.findAll();
     }
 
     @Override

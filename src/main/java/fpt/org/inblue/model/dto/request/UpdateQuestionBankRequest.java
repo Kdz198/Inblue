@@ -24,4 +24,6 @@ public class UpdateQuestionBankRequest {
 
     @Size(min = 1, message = "Correct answer must not be empty")
     String correctAnswer; // "A"
+
+    Boolean isDeleted;
 }

@@ -24,8 +24,8 @@ public class KioskController {
             summary = "Lấy danh sách các Kiosk đang hoạt động",
             description = "Trả về danh sách tất cả các trạm Kiosk vật lý có trạng thái hoạt động (isActive = true).")
     @GetMapping
-    public ResponseEntity<List<Kiosk>> getActiveKiosks() {
-        return ResponseEntity.ok(kioskService.getActiveKiosks());
+    public ResponseEntity<List<Kiosk>> getAllKiosk() {
+        return ResponseEntity.ok(kioskService.getAllKiosk());
     }
 
     @Operation(

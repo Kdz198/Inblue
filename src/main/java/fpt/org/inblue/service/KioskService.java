@@ -7,7 +7,7 @@ import java.time.LocalDate;
 import java.util.List;
 
 public interface KioskService {
-    List<Kiosk> getActiveKiosks();
+    List<Kiosk> getAllKiosk();
 
     Kiosk createKiosk(Kiosk kiosk);
 
