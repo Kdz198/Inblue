@@ -4,6 +4,8 @@ import fpt.org.inblue.enums.BookingStatus;
 import fpt.org.inblue.exception.CustomException;
 import fpt.org.inblue.model.Application;
 import fpt.org.inblue.model.ApplicationDetail;
+import fpt.org.inblue.model.CandidateProfile;
+import fpt.org.inblue.model.Company;
 import fpt.org.inblue.model.JobDescription;
 import fpt.org.inblue.model.Kiosk;
 import fpt.org.inblue.model.KioskBooking;
@@ -12,12 +14,9 @@ import fpt.org.inblue.model.User;
 import fpt.org.inblue.model.dto.SlotDto;
 import fpt.org.inblue.model.dto.response.KioskHistoryResponseDto;
 import fpt.org.inblue.repository.ApplicationDetailRepository;
-import fpt.org.inblue.model.CandidateProfile;
-import fpt.org.inblue.model.Company;
+import fpt.org.inblue.repository.ApplicationRepository;
 import fpt.org.inblue.repository.CandidateProfileRepository;
 import fpt.org.inblue.repository.CompanyRepository;
-import fpt.org.inblue.repository.ApplicationDetailRepository;
-import fpt.org.inblue.repository.ApplicationRepository;
 import fpt.org.inblue.repository.JobDescriptionRepository;
 import fpt.org.inblue.repository.KioskBookingRepository;
 import fpt.org.inblue.repository.KioskRepository;
@@ -173,16 +172,17 @@ public class KioskServiceImpl implements KioskService {
             String targetLevel = profile != null ? profile.getTargetLevel() : null;
             List<String> technicalSkills = profile != null ? profile.getTechnicalSkills() : null;
 
-            KioskHistoryResponseDto.CandidateInfoDto candidateInfoDto = KioskHistoryResponseDto.CandidateInfoDto.builder()
-                    .userId(booking.getApplicantUserId())
-                    .name(applicantName)
-                    .email(applicantEmail)
-                    .avatarUrl(avatarUrl)
-                    .cvUrl(cvUrl)
-                    .targetRole(targetRole)
-                    .targetLevel(targetLevel)
-                    .technicalSkills(technicalSkills)
-                    .build();
+            KioskHistoryResponseDto.CandidateInfoDto candidateInfoDto =
+                    KioskHistoryResponseDto.CandidateInfoDto.builder()
+                            .userId(booking.getApplicantUserId())
+                            .name(applicantName)
+                            .email(applicantEmail)
+                            .avatarUrl(avatarUrl)
+                            .cvUrl(cvUrl)
+                            .targetRole(targetRole)
+                            .targetLevel(targetLevel)
+                            .technicalSkills(technicalSkills)
+                            .build();
 
             Long applicationId = null;
             Long jdId = null;
@@ -202,7 +202,8 @@ public class KioskServiceImpl implements KioskService {
                                 if (jdOpt.isPresent()) {
                                     JobDescription jd = jdOpt.get();
 
-                                    Optional<Company> companyOpt = companyRepository.findByJobDescriptionsId(jd.getId());
+                                    Optional<Company> companyOpt =
+                                            companyRepository.findByJobDescriptionsId(jd.getId());
 
                                     jdInfoDto = KioskHistoryResponseDto.JobDescriptionInfoDto.builder()
                                             .jdId(jd.getId())
@@ -211,9 +212,15 @@ public class KioskServiceImpl implements KioskService {
                                             .salaryMin(jd.getSalaryMin())
                                             .salaryMax(jd.getSalaryMax())
                                             .currency(jd.getCurrency())
-                                            .companyId(companyOpt.map(Company::getId).orElse(null))
-                                            .companyName(companyOpt.map(Company::getName).orElse("N/A"))
-                                            .companyLogo(companyOpt.map(Company::getLogoUrl).orElse(null))
+                                            .companyId(companyOpt
+                                                    .map(Company::getId)
+                                                    .orElse(null))
+                                            .companyName(companyOpt
+                                                    .map(Company::getName)
+                                                    .orElse("N/A"))
+                                            .companyLogo(companyOpt
+                                                    .map(Company::getLogoUrl)
+                                                    .orElse(null))
                                             .build();
                                 }
                             }
