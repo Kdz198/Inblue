@@ -24,4 +24,5 @@ public class UpdateJobDescriptionRequest {
     private String currency;
     private JobDescriptionStatus status; // OPEN, CLOSED, DRAFT
     private LocalDateTime deadlineAt;
+    private Long price;
 }
