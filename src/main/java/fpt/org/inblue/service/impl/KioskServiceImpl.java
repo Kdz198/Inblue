@@ -6,18 +6,29 @@ import fpt.org.inblue.model.Kiosk;
 import fpt.org.inblue.model.KioskBooking;
 import fpt.org.inblue.model.KioskSchedule;
 import fpt.org.inblue.model.dto.SlotDto;
+import fpt.org.inblue.model.Application;
+import fpt.org.inblue.model.ApplicationDetail;
+import fpt.org.inblue.model.JobDescription;
+import fpt.org.inblue.model.User;
+import fpt.org.inblue.model.dto.response.KioskHistoryResponseDto;
+import fpt.org.inblue.repository.ApplicationDetailRepository;
+import fpt.org.inblue.repository.ApplicationRepository;
+import fpt.org.inblue.repository.JobDescriptionRepository;
 import fpt.org.inblue.repository.KioskBookingRepository;
 import fpt.org.inblue.repository.KioskRepository;
 import fpt.org.inblue.repository.KioskScheduleRepository;
+import fpt.org.inblue.repository.UserRepository;
 import fpt.org.inblue.service.KioskService;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 @Service
 @RequiredArgsConstructor
@@ -26,6 +37,10 @@ public class KioskServiceImpl implements KioskService {
     private final KioskRepository kioskRepository;
     private final KioskScheduleRepository kioskScheduleRepository;
     private final KioskBookingRepository bookingRepository;
+    private final UserRepository userRepository;
+    private final ApplicationDetailRepository applicationDetailRepository;
+    private final ApplicationRepository applicationRepository;
+    private final JobDescriptionRepository jobDescriptionRepository;
 
     @Override
     public List<Kiosk> getAllKiosk() {
@@ -127,5 +142,67 @@ public class KioskServiceImpl implements KioskService {
         existing.setSlotDurationMinutes(schedule.getSlotDurationMinutes());
         existing.setActive(schedule.isActive());
         return kioskScheduleRepository.save(existing);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<KioskHistoryResponseDto> getKioskHistory(Long kioskId) {
+        if (!kioskRepository.existsById(kioskId)) {
+            throw new CustomException("Kiosk not found with id: " + kioskId, HttpStatus.NOT_FOUND);
+        }
+
+        List<KioskBooking> bookings = bookingRepository.findAllByKioskIdOrderByScheduledStartDesc(kioskId);
+        List<KioskHistoryResponseDto> result = new ArrayList<>();
+
+        for (KioskBooking booking : bookings) {
+            Optional<User> userOpt = userRepository.findById(booking.getApplicantUserId());
+            String applicantName = userOpt.map(User::getName).orElse("N/A");
+            String applicantEmail = userOpt.map(User::getEmail).orElse("N/A");
+            String avatarUrl = userOpt.map(User::getAvatarUrl).orElse(null);
+
+            Long applicationId = null;
+            Long jdId = null;
+            String jdTitle = null;
+
+            if (booking.getApplicationDetailId() != null) {
+                Optional<ApplicationDetail> appDetailOpt = applicationDetailRepository.findById(booking.getApplicationDetailId());
+                if (appDetailOpt.isPresent()) {
+                    applicationId = appDetailOpt.get().getApplicationId();
+                    if (applicationId != null) {
+                        Optional<Application> appOpt = applicationRepository.findById(applicationId);
+                        if (appOpt.isPresent()) {
+                            jdId = appOpt.get().getJdId();
+                            if (jdId != null) {
+                                Optional<JobDescription> jdOpt = jobDescriptionRepository.findById(jdId);
+                                jdTitle = jdOpt.map(JobDescription::getTitle).orElse(null);
+                            }
+                        }
+                    }
+                }
+            }
+
+            KioskHistoryResponseDto dto = KioskHistoryResponseDto.builder()
+                    .bookingId(booking.getId())
+                    .kioskId(booking.getKioskId())
+                    .applicationDetailId(booking.getApplicationDetailId())
+                    .applicantUserId(booking.getApplicantUserId())
+                    .applicantName(applicantName)
+                    .applicantEmail(applicantEmail)
+                    .avatarUrl(avatarUrl)
+                    .applicationId(applicationId)
+                    .jdId(jdId)
+                    .jdTitle(jdTitle)
+                    .scheduledStart(booking.getScheduledStart())
+                    .scheduledEnd(booking.getScheduledEnd())
+                    .status(booking.getStatus())
+                    .sessionKey(booking.getSessionKey())
+                    .notes(booking.getNotes())
+                    .createdAt(booking.getCreatedAt())
+                    .build();
+
+            result.add(dto);
+        }
+
+        return result;
     }
 }

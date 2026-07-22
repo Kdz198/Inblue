@@ -16,6 +16,8 @@ public interface KioskBookingRepository extends JpaRepository<KioskBooking, Long
 
     List<KioskBooking> findAllByApplicantUserId(int applicantUserId);
 
+    List<KioskBooking> findAllByKioskIdOrderByScheduledStartDesc(Long kioskId);
+
     @Query(
             "SELECT b FROM KioskBooking b WHERE b.kioskId = :kioskId AND b.status <> :cancelledStatus AND b.scheduledStart >= :start AND b.scheduledEnd <= :end")
     List<KioskBooking> findActiveBookingsByKioskAndDateRange(

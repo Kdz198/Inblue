@@ -3,6 +3,7 @@ package fpt.org.inblue.controller;
 import fpt.org.inblue.model.Kiosk;
 import fpt.org.inblue.model.KioskSchedule;
 import fpt.org.inblue.model.dto.SlotDto;
+import fpt.org.inblue.model.dto.response.KioskHistoryResponseDto;
 import fpt.org.inblue.service.KioskService;
 import io.swagger.v3.oas.annotations.Operation;
 import java.time.LocalDate;
@@ -79,5 +80,14 @@ public class KioskController {
     @PutMapping("/schedule/{id}")
     public ResponseEntity<KioskSchedule> updateSchedule(@PathVariable Long id, @RequestBody KioskSchedule schedule) {
         return ResponseEntity.ok(kioskService.updateSchedule(id, schedule));
+    }
+
+    @Operation(
+            summary = "Lấy lịch sử tham gia/đặt lịch của trạm Kiosk",
+            description = "Trả về toàn bộ danh sách lịch sử đặt lịch và sử dụng phỏng vấn của trạm Kiosk chọn, bao gồm thông tin ứng viên và trạng thái đặt lịch."
+    )
+    @GetMapping("/{kioskId}/history")
+    public ResponseEntity<List<KioskHistoryResponseDto>> getKioskHistory(@PathVariable Long kioskId) {
+        return ResponseEntity.ok(kioskService.getKioskHistory(kioskId));
     }
 }

@@ -11,4 +11,8 @@ public interface JobDescriptionRepository
         extends JpaRepository<JobDescription, Long>, JpaSpecificationExecutor<JobDescription> {
 
     List<JobDescription> findByStatusAndDeadlineAtBefore(JobDescriptionStatus status, LocalDateTime now);
+
+    List<JobDescription> findByStatusAndIsDeletedFalse(JobDescriptionStatus status);
+
+    List<JobDescription> findByIsDeletedFalse();
 }
