@@ -2,14 +2,14 @@ package fpt.org.inblue.service.impl;
 
 import fpt.org.inblue.enums.BookingStatus;
 import fpt.org.inblue.exception.CustomException;
-import fpt.org.inblue.model.Kiosk;
-import fpt.org.inblue.model.KioskBooking;
-import fpt.org.inblue.model.KioskSchedule;
-import fpt.org.inblue.model.dto.SlotDto;
 import fpt.org.inblue.model.Application;
 import fpt.org.inblue.model.ApplicationDetail;
 import fpt.org.inblue.model.JobDescription;
+import fpt.org.inblue.model.Kiosk;
+import fpt.org.inblue.model.KioskBooking;
+import fpt.org.inblue.model.KioskSchedule;
 import fpt.org.inblue.model.User;
+import fpt.org.inblue.model.dto.SlotDto;
 import fpt.org.inblue.model.dto.response.KioskHistoryResponseDto;
 import fpt.org.inblue.repository.ApplicationDetailRepository;
 import fpt.org.inblue.repository.ApplicationRepository;
@@ -165,7 +165,8 @@ public class KioskServiceImpl implements KioskService {
             String jdTitle = null;
 
             if (booking.getApplicationDetailId() != null) {
-                Optional<ApplicationDetail> appDetailOpt = applicationDetailRepository.findById(booking.getApplicationDetailId());
+                Optional<ApplicationDetail> appDetailOpt =
+                        applicationDetailRepository.findById(booking.getApplicationDetailId());
                 if (appDetailOpt.isPresent()) {
                     applicationId = appDetailOpt.get().getApplicationId();
                     if (applicationId != null) {

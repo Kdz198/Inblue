@@ -84,8 +84,8 @@ public class KioskController {
 
     @Operation(
             summary = "Lấy lịch sử tham gia/đặt lịch của trạm Kiosk",
-            description = "Trả về toàn bộ danh sách lịch sử đặt lịch và sử dụng phỏng vấn của trạm Kiosk chọn, bao gồm thông tin ứng viên và trạng thái đặt lịch."
-    )
+            description =
+                    "Trả về toàn bộ danh sách lịch sử đặt lịch và sử dụng phỏng vấn của trạm Kiosk chọn, bao gồm thông tin ứng viên và trạng thái đặt lịch.")
     @GetMapping("/{kioskId}/history")
     public ResponseEntity<List<KioskHistoryResponseDto>> getKioskHistory(@PathVariable Long kioskId) {
         return ResponseEntity.ok(kioskService.getKioskHistory(kioskId));

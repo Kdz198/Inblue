@@ -1,8 +1,8 @@
 package fpt.org.inblue.service;
 
 import fpt.org.inblue.enums.JobDescriptionStatus;
-import fpt.org.inblue.model.dto.response.admin.AdminApplicationFullDetailResponseDto;
 import fpt.org.inblue.model.dto.request.AdminJdApplicationsResponseDto;
+import fpt.org.inblue.model.dto.response.admin.AdminApplicationFullDetailResponseDto;
 import fpt.org.inblue.model.dto.response.admin.AdminOpenJdResponseDto;
 import java.util.List;
 

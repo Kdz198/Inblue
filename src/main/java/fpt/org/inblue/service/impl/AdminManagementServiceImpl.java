@@ -39,13 +39,15 @@ public class AdminManagementServiceImpl implements AdminManagementService {
 
         for (JobDescription jd : jds) {
             Optional<Company> companyOpt = companyRepository.findByJobDescriptionsId(jd.getId());
-            AdminOpenJdResponseDto.CompanySummaryDto companyDto = companyOpt.map(c -> AdminOpenJdResponseDto.CompanySummaryDto.builder()
-                    .id(c.getId())
-                    .name(c.getName())
-                    .logoUrl(c.getLogoUrl())
-                    .bannerUrl(c.getBannerUrl())
-                    .status(c.getStatus())
-                    .build()).orElse(null);
+            AdminOpenJdResponseDto.CompanySummaryDto companyDto = companyOpt
+                    .map(c -> AdminOpenJdResponseDto.CompanySummaryDto.builder()
+                            .id(c.getId())
+                            .name(c.getName())
+                            .logoUrl(c.getLogoUrl())
+                            .bannerUrl(c.getBannerUrl())
+                            .status(c.getStatus())
+                            .build())
+                    .orElse(null);
 
             List<Application> apps = applicationRepository.findByJdIdAndIsDeletedFalse(jd.getId());
 
@@ -58,17 +60,19 @@ public class AdminManagementServiceImpl implements AdminManagementService {
                     inProgress++;
                 } else if (app.getStatus() == ApplicationStatus.PASSED) {
                     passed++;
-                } else if (app.getStatus() == ApplicationStatus.FAILED || app.getStatus() == ApplicationStatus.SOFT_FAILED) {
+                } else if (app.getStatus() == ApplicationStatus.FAILED
+                        || app.getStatus() == ApplicationStatus.SOFT_FAILED) {
                     failed++;
                 }
             }
 
-            AdminOpenJdResponseDto.ApplicationStatisticsDto statsDto = AdminOpenJdResponseDto.ApplicationStatisticsDto.builder()
-                    .totalApplications(apps.size())
-                    .inProgressCount(inProgress)
-                    .passedCount(passed)
-                    .failedCount(failed)
-                    .build();
+            AdminOpenJdResponseDto.ApplicationStatisticsDto statsDto =
+                    AdminOpenJdResponseDto.ApplicationStatisticsDto.builder()
+                            .totalApplications(apps.size())
+                            .inProgressCount(inProgress)
+                            .passedCount(passed)
+                            .failedCount(failed)
+                            .build();
 
             AdminOpenJdResponseDto dto = AdminOpenJdResponseDto.builder()
                     .jdId(jd.getId())
@@ -99,8 +103,10 @@ public class AdminManagementServiceImpl implements AdminManagementService {
     @Override
     @Transactional(readOnly = true)
     public AdminJdApplicationsResponseDto getApplicationsByJdId(Long jdId) {
-        JobDescription jd = jobDescriptionRepository.findById(jdId)
-                .orElseThrow(() -> new CustomException("Không tìm thấy mô tả công việc với ID: " + jdId, HttpStatus.NOT_FOUND));
+        JobDescription jd = jobDescriptionRepository
+                .findById(jdId)
+                .orElseThrow(() ->
+                        new CustomException("Không tìm thấy mô tả công việc với ID: " + jdId, HttpStatus.NOT_FOUND));
 
         Optional<Company> companyOpt = companyRepository.findByJobDescriptionsId(jdId);
         String companyName = companyOpt.map(Company::getName).orElse("N/A");
@@ -120,7 +126,8 @@ public class AdminManagementServiceImpl implements AdminManagementService {
                 inProgress++;
             } else if (app.getStatus() == ApplicationStatus.PASSED) {
                 passed++;
-            } else if (app.getStatus() == ApplicationStatus.FAILED || app.getStatus() == ApplicationStatus.SOFT_FAILED) {
+            } else if (app.getStatus() == ApplicationStatus.FAILED
+                    || app.getStatus() == ApplicationStatus.SOFT_FAILED) {
                 failed++;
             }
 
@@ -141,7 +148,8 @@ public class AdminManagementServiceImpl implements AdminManagementService {
             String currentRoundName = "Unknown Round";
             if (jd.getRounds() != null && app.getCurrentRoundOrder() != null) {
                 currentRoundName = jd.getRounds().stream()
-                        .filter(r -> r.getRoundOrder() != null && r.getRoundOrder().equals(app.getCurrentRoundOrder()))
+                        .filter(r ->
+                                r.getRoundOrder() != null && r.getRoundOrder().equals(app.getCurrentRoundOrder()))
                         .map(Round::getName)
                         .findFirst()
                         .orElse("Vòng " + app.getCurrentRoundOrder());
@@ -174,13 +182,15 @@ public class AdminManagementServiceImpl implements AdminManagementService {
                 .totalRounds(jd.getRounds() != null ? jd.getRounds().size() : 0)
                 .build();
 
-        AdminJdApplicationsResponseDto.SummaryStatisticsDto statsDto = AdminJdApplicationsResponseDto.SummaryStatisticsDto.builder()
-                .totalApplications(apps.size())
-                .inProgressCount(inProgress)
-                .passedCount(passed)
-                .failedCount(failed)
-                .avgOverallScore(validScoreCount > 0 ? Math.round((scoreSum / validScoreCount) * 100.0) / 100.0 : 0.0)
-                .build();
+        AdminJdApplicationsResponseDto.SummaryStatisticsDto statsDto =
+                AdminJdApplicationsResponseDto.SummaryStatisticsDto.builder()
+                        .totalApplications(apps.size())
+                        .inProgressCount(inProgress)
+                        .passedCount(passed)
+                        .failedCount(failed)
+                        .avgOverallScore(
+                                validScoreCount > 0 ? Math.round((scoreSum / validScoreCount) * 100.0) / 100.0 : 0.0)
+                        .build();
 
         return AdminJdApplicationsResponseDto.builder()
                 .jdInfo(jdSummaryDto)
@@ -192,11 +202,15 @@ public class AdminManagementServiceImpl implements AdminManagementService {
     @Override
     @Transactional(readOnly = true)
     public AdminApplicationFullDetailResponseDto getApplicationFullDetail(Long applicationId) {
-        Application application = applicationRepository.findById(applicationId)
-                .orElseThrow(() -> new CustomException("Không tìm thấy đơn ứng tuyển với ID: " + applicationId, HttpStatus.NOT_FOUND));
+        Application application = applicationRepository
+                .findById(applicationId)
+                .orElseThrow(() -> new CustomException(
+                        "Không tìm thấy đơn ứng tuyển với ID: " + applicationId, HttpStatus.NOT_FOUND));
 
-        JobDescription jd = jobDescriptionRepository.findById(application.getJdId())
-                .orElseThrow(() -> new CustomException("Không tìm thấy mô tả công việc của đơn ứng tuyển này", HttpStatus.NOT_FOUND));
+        JobDescription jd = jobDescriptionRepository
+                .findById(application.getJdId())
+                .orElseThrow(() -> new CustomException(
+                        "Không tìm thấy mô tả công việc của đơn ứng tuyển này", HttpStatus.NOT_FOUND));
 
         Optional<Company> companyOpt = companyRepository.findByJobDescriptionsId(jd.getId());
         String companyName = companyOpt.map(Company::getName).orElse("N/A");
@@ -208,43 +222,47 @@ public class AdminManagementServiceImpl implements AdminManagementService {
         String currentRoundName = "Vòng " + application.getCurrentRoundOrder();
         if (jd.getRounds() != null && application.getCurrentRoundOrder() != null) {
             currentRoundName = jd.getRounds().stream()
-                    .filter(r -> r.getRoundOrder() != null && r.getRoundOrder().equals(application.getCurrentRoundOrder()))
+                    .filter(r ->
+                            r.getRoundOrder() != null && r.getRoundOrder().equals(application.getCurrentRoundOrder()))
                     .map(Round::getName)
                     .findFirst()
                     .orElse(currentRoundName);
         }
 
-        AdminApplicationFullDetailResponseDto.ApplicationOverviewDto appOverview = AdminApplicationFullDetailResponseDto.ApplicationOverviewDto.builder()
-                .applicationId(application.getId())
-                .status(application.getStatus())
-                .overallScore(application.getOverallScore())
-                .currentRoundOrder(application.getCurrentRoundOrder())
-                .currentRoundName(currentRoundName)
-                .totalRounds(jd.getRounds() != null ? jd.getRounds().size() : 0)
-                .appliedAt(application.getCreatedAt())
-                .updatedAt(application.getUpdatedAt())
-                .build();
+        AdminApplicationFullDetailResponseDto.ApplicationOverviewDto appOverview =
+                AdminApplicationFullDetailResponseDto.ApplicationOverviewDto.builder()
+                        .applicationId(application.getId())
+                        .status(application.getStatus())
+                        .overallScore(application.getOverallScore())
+                        .currentRoundOrder(application.getCurrentRoundOrder())
+                        .currentRoundName(currentRoundName)
+                        .totalRounds(jd.getRounds() != null ? jd.getRounds().size() : 0)
+                        .appliedAt(application.getCreatedAt())
+                        .updatedAt(application.getUpdatedAt())
+                        .build();
 
-        AdminApplicationFullDetailResponseDto.JobDescriptionInfoDto jdInfo = AdminApplicationFullDetailResponseDto.JobDescriptionInfoDto.builder()
-                .jdId(jd.getId())
-                .title(jd.getTitle())
-                .level(jd.getLevel() != null ? jd.getLevel().name() : null)
-                .salaryMin(jd.getSalaryMin())
-                .salaryMax(jd.getSalaryMax())
-                .currency(jd.getCurrency())
-                .companyId(companyOpt.map(Company::getId).orElse(null))
-                .companyName(companyName)
-                .companyLogo(companyLogo)
-                .build();
+        AdminApplicationFullDetailResponseDto.JobDescriptionInfoDto jdInfo =
+                AdminApplicationFullDetailResponseDto.JobDescriptionInfoDto.builder()
+                        .jdId(jd.getId())
+                        .title(jd.getTitle())
+                        .level(jd.getLevel() != null ? jd.getLevel().name() : null)
+                        .salaryMin(jd.getSalaryMin())
+                        .salaryMax(jd.getSalaryMax())
+                        .currency(jd.getCurrency())
+                        .companyId(companyOpt.map(Company::getId).orElse(null))
+                        .companyName(companyName)
+                        .companyLogo(companyLogo)
+                        .build();
 
-        AdminApplicationFullDetailResponseDto.CandidateInfoDto candidateInfo = AdminApplicationFullDetailResponseDto.CandidateInfoDto.builder()
-                .userId(application.getUserId())
-                .name(userOpt.map(User::getName).orElse("N/A"))
-                .email(userOpt.map(User::getEmail).orElse("N/A"))
-                .avatarUrl(userOpt.map(User::getAvatarUrl).orElse(null))
-                .cvUrl(userOpt.map(User::getCvUrl).orElse(null))
-                .profile(candidateProfile)
-                .build();
+        AdminApplicationFullDetailResponseDto.CandidateInfoDto candidateInfo =
+                AdminApplicationFullDetailResponseDto.CandidateInfoDto.builder()
+                        .userId(application.getUserId())
+                        .name(userOpt.map(User::getName).orElse("N/A"))
+                        .email(userOpt.map(User::getEmail).orElse("N/A"))
+                        .avatarUrl(userOpt.map(User::getAvatarUrl).orElse(null))
+                        .cvUrl(userOpt.map(User::getCvUrl).orElse(null))
+                        .profile(candidateProfile)
+                        .build();
 
         List<ApplicationDetail> appDetails = applicationDetailRepository.findAllByApplicationId(applicationId);
 
@@ -289,9 +307,7 @@ public class AdminManagementServiceImpl implements AdminManagementService {
 
         // Sort by round order
         roundDetails.sort(Comparator.comparing(
-                AdminRoundDetailDto::getRoundOrder,
-                Comparator.nullsLast(Comparator.naturalOrder())
-        ));
+                AdminRoundDetailDto::getRoundOrder, Comparator.nullsLast(Comparator.naturalOrder())));
 
         return AdminApplicationFullDetailResponseDto.builder()
                 .applicationOverview(appOverview)
