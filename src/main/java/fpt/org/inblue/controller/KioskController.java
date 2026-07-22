@@ -22,7 +22,7 @@ public class KioskController {
     private final KioskService kioskService;
 
     @Operation(
-            summary = "Lấy danh sách các Kiosk đang hoạt động",
+            summary = "Lấy danh sách các Kiosk ",
             description = "Trả về danh sách tất cả các trạm Kiosk vật lý có trạng thái hoạt động (isActive = true).")
     @GetMapping
     public ResponseEntity<List<Kiosk>> getAllKiosk() {
