@@ -7,7 +7,6 @@ import fpt.org.inblue.enums.RoundType;
 import fpt.org.inblue.exception.CustomException;
 import fpt.org.inblue.model.Application;
 import fpt.org.inblue.model.ApplicationDetail;
-import fpt.org.inblue.model.JdPurchase;
 import fpt.org.inblue.model.JobDescription;
 import fpt.org.inblue.model.Round;
 import fpt.org.inblue.repository.ApplicationDetailRepository;
@@ -38,8 +37,7 @@ public class ApplicationServiceImpl implements ApplicationService {
         int userId = securityUtils.getCurrentUserId();
 
         if (!jdPurchaseRepository.existsByUserIdAndJdIdAndStatus(userId, jdId, JdPurchaseStatus.PURCHASED)) {
-            throw new CustomException(
-                    "Bạn cần mua gói apply cho JD này trước", HttpStatus.PAYMENT_REQUIRED);
+            throw new CustomException("Bạn cần mua gói apply cho JD này trước", HttpStatus.PAYMENT_REQUIRED);
         }
 
         Application application = new Application();

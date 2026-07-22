@@ -29,8 +29,7 @@ public class JdPurchaseServiceImpl implements JdPurchaseService {
         int userId = securityUtils.getCurrentUserId();
         return jdPurchaseRepository
                 .findByUserIdAndJdIdAndStatus(userId, jdId, JdPurchaseStatus.PURCHASED)
-                .orElseThrow(() -> new CustomException(
-                        "Không tìm thấy gói đã mua cho JD này", HttpStatus.NOT_FOUND));
+                .orElseThrow(() -> new CustomException("Không tìm thấy gói đã mua cho JD này", HttpStatus.NOT_FOUND));
     }
 
     @Override

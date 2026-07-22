@@ -53,8 +53,7 @@ public class PaymentServiceImpl implements PaymentService {
                 .orElseThrow(() -> new CustomException("Job Description not found", HttpStatus.NOT_FOUND));
 
         if (jd.getPrice() == null || jd.getPrice() <= 0) {
-            throw new CustomException(
-                    "JD này chưa có giá. Vui lòng liên hệ admin.", HttpStatus.BAD_REQUEST);
+            throw new CustomException("JD này chưa có giá. Vui lòng liên hệ admin.", HttpStatus.BAD_REQUEST);
         }
 
         long amount = jd.getPrice();
@@ -144,8 +143,8 @@ public class PaymentServiceImpl implements PaymentService {
                         .status(JdPurchaseStatus.PURCHASED)
                         .build();
                 jdPurchaseRepository.save(purchase);
-                System.out.println("Created JdPurchase for userId=" + payment.getUser().getId()
-                        + ", jdId=" + payment.getJdId());
+                System.out.println(
+                        "Created JdPurchase for userId=" + payment.getUser().getId() + ", jdId=" + payment.getJdId());
             } else {
                 payment.setStatus(PaymentStatus.FAILED);
             }
