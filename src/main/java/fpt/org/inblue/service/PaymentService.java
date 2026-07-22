@@ -21,7 +21,6 @@ public interface PaymentService {
      */
     String createSessionPayment(long amount);
 
-
     Payment getPayment(int id);
 
     List<Payment> getPayments();
