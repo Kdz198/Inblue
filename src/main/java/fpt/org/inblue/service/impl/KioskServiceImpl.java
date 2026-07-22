@@ -12,6 +12,11 @@ import fpt.org.inblue.model.JobDescription;
 import fpt.org.inblue.model.User;
 import fpt.org.inblue.model.dto.response.KioskHistoryResponseDto;
 import fpt.org.inblue.repository.ApplicationDetailRepository;
+import fpt.org.inblue.model.CandidateProfile;
+import fpt.org.inblue.model.Company;
+import fpt.org.inblue.repository.CandidateProfileRepository;
+import fpt.org.inblue.repository.CompanyRepository;
+import fpt.org.inblue.repository.ApplicationDetailRepository;
 import fpt.org.inblue.repository.ApplicationRepository;
 import fpt.org.inblue.repository.JobDescriptionRepository;
 import fpt.org.inblue.repository.KioskBookingRepository;
@@ -38,9 +43,11 @@ public class KioskServiceImpl implements KioskService {
     private final KioskScheduleRepository kioskScheduleRepository;
     private final KioskBookingRepository bookingRepository;
     private final UserRepository userRepository;
+    private final CandidateProfileRepository candidateProfileRepository;
     private final ApplicationDetailRepository applicationDetailRepository;
     private final ApplicationRepository applicationRepository;
     private final JobDescriptionRepository jobDescriptionRepository;
+    private final CompanyRepository companyRepository;
 
     @Override
     public List<Kiosk> getAllKiosk() {
@@ -159,10 +166,27 @@ public class KioskServiceImpl implements KioskService {
             String applicantName = userOpt.map(User::getName).orElse("N/A");
             String applicantEmail = userOpt.map(User::getEmail).orElse("N/A");
             String avatarUrl = userOpt.map(User::getAvatarUrl).orElse(null);
+            String cvUrl = userOpt.map(User::getCvUrl).orElse(null);
+
+            CandidateProfile profile = candidateProfileRepository.findByUser_Id(booking.getApplicantUserId());
+            String targetRole = profile != null ? profile.getTargetRole() : null;
+            String targetLevel = profile != null ? profile.getTargetLevel() : null;
+            List<String> technicalSkills = profile != null ? profile.getTechnicalSkills() : null;
+
+            KioskHistoryResponseDto.CandidateInfoDto candidateInfoDto = KioskHistoryResponseDto.CandidateInfoDto.builder()
+                    .userId(booking.getApplicantUserId())
+                    .name(applicantName)
+                    .email(applicantEmail)
+                    .avatarUrl(avatarUrl)
+                    .cvUrl(cvUrl)
+                    .targetRole(targetRole)
+                    .targetLevel(targetLevel)
+                    .technicalSkills(technicalSkills)
+                    .build();
 
             Long applicationId = null;
             Long jdId = null;
-            String jdTitle = null;
+            KioskHistoryResponseDto.JobDescriptionInfoDto jdInfoDto = null;
 
             if (booking.getApplicationDetailId() != null) {
                 Optional<ApplicationDetail> appDetailOpt = applicationDetailRepository.findById(booking.getApplicationDetailId());
@@ -174,7 +198,23 @@ public class KioskServiceImpl implements KioskService {
                             jdId = appOpt.get().getJdId();
                             if (jdId != null) {
                                 Optional<JobDescription> jdOpt = jobDescriptionRepository.findById(jdId);
-                                jdTitle = jdOpt.map(JobDescription::getTitle).orElse(null);
+                                if (jdOpt.isPresent()) {
+                                    JobDescription jd = jdOpt.get();
+
+                                    Optional<Company> companyOpt = companyRepository.findByJobDescriptionsId(jd.getId());
+
+                                    jdInfoDto = KioskHistoryResponseDto.JobDescriptionInfoDto.builder()
+                                            .jdId(jd.getId())
+                                            .title(jd.getTitle())
+                                            .level(jd.getLevel())
+                                            .salaryMin(jd.getSalaryMin())
+                                            .salaryMax(jd.getSalaryMax())
+                                            .currency(jd.getCurrency())
+                                            .companyId(companyOpt.map(Company::getId).orElse(null))
+                                            .companyName(companyOpt.map(Company::getName).orElse("N/A"))
+                                            .companyLogo(companyOpt.map(Company::getLogoUrl).orElse(null))
+                                            .build();
+                                }
                             }
                         }
                     }
@@ -185,19 +225,16 @@ public class KioskServiceImpl implements KioskService {
                     .bookingId(booking.getId())
                     .kioskId(booking.getKioskId())
                     .applicationDetailId(booking.getApplicationDetailId())
-                    .applicantUserId(booking.getApplicantUserId())
-                    .applicantName(applicantName)
-                    .applicantEmail(applicantEmail)
-                    .avatarUrl(avatarUrl)
                     .applicationId(applicationId)
-                    .jdId(jdId)
-                    .jdTitle(jdTitle)
+                    .candidateInfo(candidateInfoDto)
+                    .jobDescriptionInfo(jdInfoDto)
                     .scheduledStart(booking.getScheduledStart())
                     .scheduledEnd(booking.getScheduledEnd())
                     .status(booking.getStatus())
                     .sessionKey(booking.getSessionKey())
                     .notes(booking.getNotes())
                     .createdAt(booking.getCreatedAt())
+                    .updatedAt(booking.getUpdatedAt())
                     .build();
 
             result.add(dto);
