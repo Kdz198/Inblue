@@ -5,7 +5,9 @@ import fpt.org.inblue.enums.RoundType;
 import fpt.org.inblue.model.ApplicationDetail;
 import fpt.org.inblue.model.MentorReview;
 import fpt.org.inblue.model.Round;
+import fpt.org.inblue.model.dto.response.MentorResponse;
 import java.time.LocalDateTime;
+import java.util.List;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -40,6 +42,8 @@ public class AdminRoundDetailDto {
     private ApplicationDetail.RoundSessionInfo sessionInfo;
 
     private Integer mentorId;
+    private List<Integer> assignedMentorIds;
+    private List<MentorResponse> assignedMentors;
     private MentorReview mentorReview;
 
     private LocalDateTime startedAt;

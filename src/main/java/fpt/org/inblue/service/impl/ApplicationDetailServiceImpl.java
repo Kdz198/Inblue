@@ -22,6 +22,11 @@ import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import fpt.org.inblue.model.dto.response.MentorResponse;
+import fpt.org.inblue.service.MentorService;
+import java.util.ArrayList;
+import java.util.Collections;
+
 @Service
 @RequiredArgsConstructor
 public class ApplicationDetailServiceImpl implements ApplicationDetailService {
@@ -33,6 +38,7 @@ public class ApplicationDetailServiceImpl implements ApplicationDetailService {
     private final CandidateProfileRepository candidateProfileRepository;
     private final InterviewSessionService interviewSessionService;
     private final fpt.org.inblue.repository.InterviewSessionRepository interviewSessionRepository;
+    private final MentorService mentorService;
     private final JwtUtils jwtUtils;
 
     @Override
@@ -79,8 +85,9 @@ public class ApplicationDetailServiceImpl implements ApplicationDetailService {
     @Transactional
     public ApplicationDetail assignMentor(long applicationDetailId, int mentorId) {
         ApplicationDetail applicationDetail = getApplicationDetailById(applicationDetailId);
-        if (applicationDetail.getStatus() != ApplicationDetailStatus.AWAITING_MENTOR) {
-            throw new CustomException("Application detail status is not AWAITING_MENTOR", HttpStatus.BAD_REQUEST);
+        if (applicationDetail.getStatus() != ApplicationDetailStatus.AWAITING_MENTOR
+                && applicationDetail.getStatus() != ApplicationDetailStatus.AWAITING_CANDIDATE_SELECT_MENTOR) {
+            throw new CustomException("Application detail status is not AWAITING_MENTOR or AWAITING_CANDIDATE_SELECT_MENTOR", HttpStatus.BAD_REQUEST);
         }
         Round round = roundRepository
                 .findById(applicationDetail.getRoundId())
@@ -103,6 +110,80 @@ public class ApplicationDetailServiceImpl implements ApplicationDetailService {
         applicationDetail.setMentorId(mentorId);
         applicationDetail.setStatus(ApplicationDetailStatus.PENDING);
         return applicationDetailRepository.save(applicationDetail);
+    }
+
+    @Override
+    @Transactional
+    public ApplicationDetail assignMentors(long applicationDetailId, List<Integer> mentorIds) {
+        ApplicationDetail applicationDetail = getApplicationDetailById(applicationDetailId);
+        if (applicationDetail.getStatus() != ApplicationDetailStatus.AWAITING_MENTOR
+                && applicationDetail.getStatus() != ApplicationDetailStatus.AWAITING_CANDIDATE_SELECT_MENTOR) {
+            throw new CustomException("Application detail status is not AWAITING_MENTOR or AWAITING_CANDIDATE_SELECT_MENTOR", HttpStatus.BAD_REQUEST);
+        }
+        if (mentorIds == null || mentorIds.isEmpty()) {
+            throw new CustomException("Mentor IDs list cannot be empty", HttpStatus.BAD_REQUEST);
+        }
+
+        applicationDetail.setAssignedMentorIds(mentorIds);
+        applicationDetail.setMentorId(null);
+        applicationDetail.setStatus(ApplicationDetailStatus.AWAITING_CANDIDATE_SELECT_MENTOR);
+        return applicationDetailRepository.save(applicationDetail);
+    }
+
+    @Override
+    @Transactional
+    public ApplicationDetail selectMentor(long applicationDetailId, int mentorId) {
+        ApplicationDetail applicationDetail = getApplicationDetailById(applicationDetailId);
+        if (applicationDetail.getStatus() != ApplicationDetailStatus.AWAITING_CANDIDATE_SELECT_MENTOR) {
+            throw new CustomException("Application detail is not in AWAITING_CANDIDATE_SELECT_MENTOR status", HttpStatus.BAD_REQUEST);
+        }
+        if (applicationDetail.getAssignedMentorIds() == null
+                || !applicationDetail.getAssignedMentorIds().contains(mentorId)) {
+            throw new CustomException("Selected mentor is not in the assigned mentor list for this round", HttpStatus.BAD_REQUEST);
+        }
+
+        Round round = roundRepository
+                .findById(applicationDetail.getRoundId())
+                .orElseThrow(() -> new CustomException("Round not found", HttpStatus.NOT_FOUND));
+
+        java.time.LocalDateTime now = java.time.LocalDateTime.now();
+        java.time.LocalDateTime endTime = null;
+        if (round.getConfigData() != null && round.getConfigData().getTimeLimitMinutes() != null) {
+            endTime = now.plusMinutes(round.getConfigData().getTimeLimitMinutes());
+        }
+
+        ApplicationDetail.RoundSessionInfo sessionInfo = applicationDetail.getSessionInfo();
+        if (sessionInfo == null) {
+            sessionInfo = new ApplicationDetail.RoundSessionInfo();
+        }
+        sessionInfo.setStartTime(now);
+        sessionInfo.setEndTime(endTime);
+
+        applicationDetail.setSessionInfo(sessionInfo);
+        applicationDetail.setMentorId(mentorId);
+        applicationDetail.setStatus(ApplicationDetailStatus.PENDING);
+        return applicationDetailRepository.save(applicationDetail);
+    }
+
+    @Override
+    public List<MentorResponse> getAssignedMentors(long applicationDetailId) {
+        ApplicationDetail applicationDetail = getApplicationDetailById(applicationDetailId);
+        if (applicationDetail.getAssignedMentorIds() == null || applicationDetail.getAssignedMentorIds().isEmpty()) {
+            return Collections.emptyList();
+        }
+
+        List<MentorResponse> mentorResponses = new ArrayList<>();
+        for (Integer mentorId : applicationDetail.getAssignedMentorIds()) {
+            try {
+                MentorResponse mentorResponse = mentorService.getMentorById(mentorId);
+                if (mentorResponse != null) {
+                    mentorResponses.add(mentorResponse);
+                }
+            } catch (Exception e) {
+                // Ignore if a mentor is deleted/not found
+            }
+        }
+        return mentorResponses;
     }
 
     @Override

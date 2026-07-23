@@ -1,6 +1,7 @@
 package fpt.org.inblue.controller;
 
 import fpt.org.inblue.model.ApplicationDetail;
+import fpt.org.inblue.model.dto.request.AssignMentorsRequestDto;
 import fpt.org.inblue.model.dto.request.CodeReviewSubmitRequest;
 import fpt.org.inblue.model.dto.request.SubmitRequest;
 import fpt.org.inblue.service.ApplicationDetailService;
@@ -15,6 +16,9 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+
+import fpt.org.inblue.model.dto.response.MentorResponse;
+import java.util.List;
 
 @RestController
 @RequestMapping("/api/application-details")
@@ -83,10 +87,39 @@ public class ApplicationDetailController {
 
     @PutMapping("/{id}/assign-mentor")
     @Operation(
-            summary = "Gán mentor cho vòng Mentor Review",
-            description = "Dành cho Admin để gán mentor cho vòng thi của ứng viên.")
+            summary = "Gán 1 mentor cho vòng Mentor Review",
+            description = "Dành cho Admin để gán trực tiếp 1 mentor cho vòng thi của ứng viên.")
     public ResponseEntity<ApplicationDetail> assignMentor(@PathVariable long id, @RequestParam int mentorId) {
         ApplicationDetail updated = applicationDetailService.assignMentor(id, mentorId);
+        return ResponseEntity.ok(updated);
+    }
+
+    @PutMapping("/{id}/assign-mentors")
+    @Operation(
+            summary = "Gán danh sách nhiều mentor cho vòng Mentor Review",
+            description = "Dành cho Admin để đề xuất danh sách nhiều mentor cho ứng viên tự chọn 1 người.")
+    public ResponseEntity<ApplicationDetail> assignMentors(
+            @PathVariable long id, @RequestBody AssignMentorsRequestDto request) {
+        ApplicationDetail updated = applicationDetailService.assignMentors(id, request.getMentorIds());
+        return ResponseEntity.ok(updated);
+    }
+
+    @GetMapping("/{id}/assigned-mentors")
+    @Operation(
+            summary = "Lấy danh sách các mentor được đề xuất cho vòng này",
+            description = "Dành cho Ứng viên xem danh sách profile các mentor do Admin đề xuất.")
+    public ResponseEntity<List<MentorResponse>> getAssignedMentors(@PathVariable long id) {
+        List<MentorResponse> mentors = applicationDetailService.getAssignedMentors(id);
+        return ResponseEntity.ok(mentors);
+    }
+
+    @PutMapping("/{id}/select-mentor")
+    @Operation(
+            summary = "Ứng viên chọn 1 mentor cho vòng phỏng vấn",
+            description = "Dành cho Ứng viên chọn 1 mentor trong số các mentor được Admin đề xuất.")
+    public ResponseEntity<ApplicationDetail> selectMentor(
+            @PathVariable long id, @RequestParam int mentorId) {
+        ApplicationDetail updated = applicationDetailService.selectMentor(id, mentorId);
         return ResponseEntity.ok(updated);
     }
 }

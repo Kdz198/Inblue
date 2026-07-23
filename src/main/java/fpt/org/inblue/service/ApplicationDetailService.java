@@ -3,6 +3,8 @@ package fpt.org.inblue.service;
 import fpt.org.inblue.model.ApplicationDetail;
 import java.util.List;
 
+import fpt.org.inblue.model.dto.response.MentorResponse;
+
 public interface ApplicationDetailService {
     ApplicationDetail getApplicationDetailById(long id);
 
@@ -12,8 +14,17 @@ public interface ApplicationDetailService {
 
     List<ApplicationDetail> getApplicationDetailsForReviewer();
 
-    // Dành cho Admin: gán mentor cho vòng Mentor Review
+    // Dành cho Admin: gán 1 mentor cho vòng Mentor Review
     ApplicationDetail assignMentor(long applicationDetailId, int mentorId);
+
+    // Dành cho Admin: gán danh sách nhiều mentor cho vòng Mentor Review
+    ApplicationDetail assignMentors(long applicationDetailId, List<Integer> mentorIds);
+
+    // Dành cho Candidate: chọn 1 mentor từ danh sách do Admin đề xuất
+    ApplicationDetail selectMentor(long applicationDetailId, int mentorId);
+
+    // Lấy thông tin chi tiết các mentor được đề xuất cho ứng viên
+    List<MentorResponse> getAssignedMentors(long applicationDetailId);
 
     // Bắt đầu vòng AI Interview (gọi từ Kiosk checkin hoặc web)
     String startAiInterview(long applicationDetailId);

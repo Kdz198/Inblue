@@ -64,6 +64,10 @@ public class ApplicationDetail {
 
     private Integer mentorId; // ID mentor được Admin gán vào vòng này
 
+    @JdbcTypeCode(SqlTypes.JSON)
+    @Column(columnDefinition = "jsonb")
+    private List<Integer> assignedMentorIds; // Danh sách ID các mentor được Admin đề xuất cho ứng viên chọn
+
     private Integer sessionId; // ID của session tương ứng (Mentor Review)
 
     private Integer aiInterviewSessionId; // ID của session tương ứng (AI Interview)

@@ -17,6 +17,9 @@ import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import fpt.org.inblue.model.dto.response.MentorResponse;
+import fpt.org.inblue.service.MentorService;
+
 @Service
 @RequiredArgsConstructor
 public class AdminManagementServiceImpl implements AdminManagementService {
@@ -27,6 +30,7 @@ public class AdminManagementServiceImpl implements AdminManagementService {
     private final ApplicationDetailRepository applicationDetailRepository;
     private final UserRepository userRepository;
     private final CandidateProfileRepository candidateProfileRepository;
+    private final MentorService mentorService;
 
     @Override
     @Transactional(readOnly = true)
@@ -276,6 +280,19 @@ public class AdminManagementServiceImpl implements AdminManagementService {
                         .findFirst();
             }
 
+            List<MentorResponse> assignedMentorsList = new ArrayList<>();
+            if (detail.getAssignedMentorIds() != null && !detail.getAssignedMentorIds().isEmpty()) {
+                for (Integer mentorId : detail.getAssignedMentorIds()) {
+                    try {
+                        MentorResponse mRes = mentorService.getMentorById(mentorId);
+                        if (mRes != null) {
+                            assignedMentorsList.add(mRes);
+                        }
+                    } catch (Exception ignored) {
+                    }
+                }
+            }
+
             AdminRoundDetailDto roundDto = AdminRoundDetailDto.builder()
                     .applicationDetailId(detail.getId())
                     .roundId(detail.getRoundId())
@@ -295,6 +312,8 @@ public class AdminManagementServiceImpl implements AdminManagementService {
                     .submissionData(detail.getSubmissionData())
                     .sessionInfo(detail.getSessionInfo())
                     .mentorId(detail.getMentorId())
+                    .assignedMentorIds(detail.getAssignedMentorIds())
+                    .assignedMentors(assignedMentorsList)
                     .mentorReview(detail.getMentorReview())
                     .startedAt(detail.getStartedAt())
                     .completedAt(detail.getCompletedAt())
