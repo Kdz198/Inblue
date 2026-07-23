@@ -5,9 +5,11 @@ import fpt.org.inblue.enums.JobDescriptionStatus;
 import fpt.org.inblue.exception.CustomException;
 import fpt.org.inblue.model.*;
 import fpt.org.inblue.model.dto.request.AdminJdApplicationsResponseDto;
+import fpt.org.inblue.model.dto.response.MentorResponse;
 import fpt.org.inblue.model.dto.response.admin.*;
 import fpt.org.inblue.repository.*;
 import fpt.org.inblue.service.AdminManagementService;
+import fpt.org.inblue.service.MentorService;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
@@ -16,9 +18,6 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-
-import fpt.org.inblue.model.dto.response.MentorResponse;
-import fpt.org.inblue.service.MentorService;
 
 @Service
 @RequiredArgsConstructor
@@ -281,7 +280,8 @@ public class AdminManagementServiceImpl implements AdminManagementService {
             }
 
             List<MentorResponse> assignedMentorsList = new ArrayList<>();
-            if (detail.getAssignedMentorIds() != null && !detail.getAssignedMentorIds().isEmpty()) {
+            if (detail.getAssignedMentorIds() != null
+                    && !detail.getAssignedMentorIds().isEmpty()) {
                 for (Integer mentorId : detail.getAssignedMentorIds()) {
                     try {
                         MentorResponse mRes = mentorService.getMentorById(mentorId);

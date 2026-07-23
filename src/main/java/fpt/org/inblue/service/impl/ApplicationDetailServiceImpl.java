@@ -5,6 +5,7 @@ import fpt.org.inblue.exception.CustomException;
 import fpt.org.inblue.model.*;
 import fpt.org.inblue.model.dto.request.InterviewSetupRequest;
 import fpt.org.inblue.model.dto.request.OrchestratorRequest;
+import fpt.org.inblue.model.dto.response.MentorResponse;
 import fpt.org.inblue.repository.ApplicationDetailRepository;
 import fpt.org.inblue.repository.CandidateProfileRepository;
 import fpt.org.inblue.repository.JobDescriptionRepository;
@@ -14,18 +15,16 @@ import fpt.org.inblue.security.JwtUtils;
 import fpt.org.inblue.service.ApplicationDetailService;
 import fpt.org.inblue.service.ApplicationService;
 import fpt.org.inblue.service.InterviewSessionService;
+import fpt.org.inblue.service.MentorService;
 import fpt.org.inblue.utils.HelperUtil;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-
-import fpt.org.inblue.model.dto.response.MentorResponse;
-import fpt.org.inblue.service.MentorService;
-import java.util.ArrayList;
-import java.util.Collections;
 
 @Service
 @RequiredArgsConstructor
@@ -87,7 +86,9 @@ public class ApplicationDetailServiceImpl implements ApplicationDetailService {
         ApplicationDetail applicationDetail = getApplicationDetailById(applicationDetailId);
         if (applicationDetail.getStatus() != ApplicationDetailStatus.AWAITING_MENTOR
                 && applicationDetail.getStatus() != ApplicationDetailStatus.AWAITING_CANDIDATE_SELECT_MENTOR) {
-            throw new CustomException("Application detail status is not AWAITING_MENTOR or AWAITING_CANDIDATE_SELECT_MENTOR", HttpStatus.BAD_REQUEST);
+            throw new CustomException(
+                    "Application detail status is not AWAITING_MENTOR or AWAITING_CANDIDATE_SELECT_MENTOR",
+                    HttpStatus.BAD_REQUEST);
         }
         Round round = roundRepository
                 .findById(applicationDetail.getRoundId())
@@ -118,7 +119,9 @@ public class ApplicationDetailServiceImpl implements ApplicationDetailService {
         ApplicationDetail applicationDetail = getApplicationDetailById(applicationDetailId);
         if (applicationDetail.getStatus() != ApplicationDetailStatus.AWAITING_MENTOR
                 && applicationDetail.getStatus() != ApplicationDetailStatus.AWAITING_CANDIDATE_SELECT_MENTOR) {
-            throw new CustomException("Application detail status is not AWAITING_MENTOR or AWAITING_CANDIDATE_SELECT_MENTOR", HttpStatus.BAD_REQUEST);
+            throw new CustomException(
+                    "Application detail status is not AWAITING_MENTOR or AWAITING_CANDIDATE_SELECT_MENTOR",
+                    HttpStatus.BAD_REQUEST);
         }
         if (mentorIds == null || mentorIds.isEmpty()) {
             throw new CustomException("Mentor IDs list cannot be empty", HttpStatus.BAD_REQUEST);
@@ -135,11 +138,13 @@ public class ApplicationDetailServiceImpl implements ApplicationDetailService {
     public ApplicationDetail selectMentor(long applicationDetailId, int mentorId) {
         ApplicationDetail applicationDetail = getApplicationDetailById(applicationDetailId);
         if (applicationDetail.getStatus() != ApplicationDetailStatus.AWAITING_CANDIDATE_SELECT_MENTOR) {
-            throw new CustomException("Application detail is not in AWAITING_CANDIDATE_SELECT_MENTOR status", HttpStatus.BAD_REQUEST);
+            throw new CustomException(
+                    "Application detail is not in AWAITING_CANDIDATE_SELECT_MENTOR status", HttpStatus.BAD_REQUEST);
         }
         if (applicationDetail.getAssignedMentorIds() == null
                 || !applicationDetail.getAssignedMentorIds().contains(mentorId)) {
-            throw new CustomException("Selected mentor is not in the assigned mentor list for this round", HttpStatus.BAD_REQUEST);
+            throw new CustomException(
+                    "Selected mentor is not in the assigned mentor list for this round", HttpStatus.BAD_REQUEST);
         }
 
         Round round = roundRepository
@@ -168,7 +173,8 @@ public class ApplicationDetailServiceImpl implements ApplicationDetailService {
     @Override
     public List<MentorResponse> getAssignedMentors(long applicationDetailId) {
         ApplicationDetail applicationDetail = getApplicationDetailById(applicationDetailId);
-        if (applicationDetail.getAssignedMentorIds() == null || applicationDetail.getAssignedMentorIds().isEmpty()) {
+        if (applicationDetail.getAssignedMentorIds() == null
+                || applicationDetail.getAssignedMentorIds().isEmpty()) {
             return Collections.emptyList();
         }
 

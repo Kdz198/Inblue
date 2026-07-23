@@ -1,9 +1,8 @@
 package fpt.org.inblue.service;
 
 import fpt.org.inblue.model.ApplicationDetail;
-import java.util.List;
-
 import fpt.org.inblue.model.dto.response.MentorResponse;
+import java.util.List;
 
 public interface ApplicationDetailService {
     ApplicationDetail getApplicationDetailById(long id);
