@@ -2,6 +2,8 @@ package fpt.org.inblue.model.dto.response;
 
 import lombok.Data;
 
+import java.time.LocalDateTime;
+
 @Data
 public class MentorResponse {
     int id;
@@ -18,4 +20,6 @@ public class MentorResponse {
     int totalSession;
     double averageRating;
     int pricePerMinute;
+    LocalDateTime createdAt;
+    LocalDateTime updatedAt;
 }
