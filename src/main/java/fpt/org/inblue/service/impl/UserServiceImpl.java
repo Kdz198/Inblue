@@ -63,6 +63,9 @@ public class UserServiceImpl implements UserService {
                     .email(user.getEmail())
                     .password(user.getPassword())
                     .role(user.getRole())
+                    .phone(user.getPhone())
+                    .address(user.getAddress())
+                    .linkedInUrl(user.getLinkedInUrl())
                     .isActive(true)
                     .build();
 
@@ -85,6 +88,9 @@ public class UserServiceImpl implements UserService {
             updateUser.setName(user.getName());
             updateUser.setEmail(user.getEmail());
             updateUser.setPassword(user.getPassword());
+            updateUser.setPhone(user.getPhone());
+            updateUser.setAddress(user.getAddress());
+            updateUser.setLinkedInUrl(user.getLinkedInUrl());
             if (updateUser.getAvatarUrl() != null) {
                 updateUser.setAvatarUrl(updateUser.getAvatarUrl());
                 updateUser.setPublic_id(updateUser.getPublic_id());
