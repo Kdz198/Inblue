@@ -25,4 +25,5 @@ public class UserInfo {
     private String phone;
     private String address;
     private String linkedInUrl;
+    private String githubUrl;
 }
