@@ -36,7 +36,6 @@ public class User {
     private String address;
     private String linkedInUrl;
 
-
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
 }
