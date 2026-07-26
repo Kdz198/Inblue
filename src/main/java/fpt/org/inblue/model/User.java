@@ -32,6 +32,11 @@ public class User {
     private String cvUrl;
     private String cv_public_id;
 
+    private String phone;
+    private String address;
+    private String linkedInUrl;
+
+
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
 }
