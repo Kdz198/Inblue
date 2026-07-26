@@ -35,6 +35,7 @@ public class User {
     private String phone;
     private String address;
     private String linkedInUrl;
+    private String githubUrl;
 
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
