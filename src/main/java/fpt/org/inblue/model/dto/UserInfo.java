@@ -21,4 +21,9 @@ public class UserInfo {
 
     private String password;
     private Role role;
+
+    private String phone;
+    private String address;
+    private String linkedInUrl;
+    private String githubUrl;
 }

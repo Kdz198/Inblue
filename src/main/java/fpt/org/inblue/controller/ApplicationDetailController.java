@@ -4,6 +4,7 @@ import fpt.org.inblue.model.ApplicationDetail;
 import fpt.org.inblue.model.dto.request.AssignMentorsRequestDto;
 import fpt.org.inblue.model.dto.request.CodeReviewSubmitRequest;
 import fpt.org.inblue.model.dto.request.SubmitRequest;
+import fpt.org.inblue.model.dto.response.MentorResponse;
 import fpt.org.inblue.service.ApplicationDetailService;
 import fpt.org.inblue.service.submission.SubmissionResult;
 import fpt.org.inblue.service.submission.SubmissionService;
@@ -12,13 +13,11 @@ import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import java.io.IOException;
+import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-
-import fpt.org.inblue.model.dto.response.MentorResponse;
-import java.util.List;
 
 @RestController
 @RequestMapping("/api/application-details")
@@ -117,8 +116,7 @@ public class ApplicationDetailController {
     @Operation(
             summary = "Ứng viên chọn 1 mentor cho vòng phỏng vấn",
             description = "Dành cho Ứng viên chọn 1 mentor trong số các mentor được Admin đề xuất.")
-    public ResponseEntity<ApplicationDetail> selectMentor(
-            @PathVariable long id, @RequestParam int mentorId) {
+    public ResponseEntity<ApplicationDetail> selectMentor(@PathVariable long id, @RequestParam int mentorId) {
         ApplicationDetail updated = applicationDetailService.selectMentor(id, mentorId);
         return ResponseEntity.ok(updated);
     }
