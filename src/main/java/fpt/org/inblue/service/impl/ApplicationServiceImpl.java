@@ -143,8 +143,9 @@ public class ApplicationServiceImpl implements ApplicationService {
                         .filter(r -> r.getRoundOrder() != null && r.getRoundOrder() == nextRoundOrder)
                         .findFirst()
                         .orElse(null);
-                if (nextRound != null && (nextRound.getRoundType() == RoundType.MENTROR_REVIEW
-                        || nextRound.getRoundType() == RoundType.AI_INTERVIEW)) {
+                if (nextRound != null
+                        && (nextRound.getRoundType() == RoundType.MENTROR_REVIEW
+                                || nextRound.getRoundType() == RoundType.AI_INTERVIEW)) {
                     boolean alreadyExists = applicationDetailRepository
                             .findByApplicationIdAndRoundId(currentApplication.getId(), nextRound.getId())
                             .isPresent();
