@@ -40,9 +40,14 @@ public class QuizRoundProcessor implements RoundSubmissionProcessor {
     @Override
     @Transactional
     public SubmissionResult process(ProcessDto dto) {
-        // Lấy dữ liệu từ câu hỏi ra và đối chiếu với đáp án của user
         Round round = dto.getRound();
-        ApplicationDetail applicationDetail = new ApplicationDetail();
+        java.util.Optional<ApplicationDetail> existingOpt = applicationDetailRepository
+                .findByApplicationIdAndRoundId(dto.getApplication().getId(), round.getId());
+        if (existingOpt.isPresent() && existingOpt.get().getStatus() == ApplicationDetailStatus.COMPLETED) {
+            return SubmissionResult.completed(existingOpt.get());
+        }
+
+        ApplicationDetail applicationDetail = existingOpt.orElseGet(ApplicationDetail::new);
         List<ApplicationDetail.QuizAnswer> quizAnswers = new ArrayList<>();
         double earnedPoints = 0.0;
         double maxPoints = 0.0;

@@ -53,8 +53,12 @@ public class ApplicationDetailServiceImpl implements ApplicationDetailService {
     }
 
     @Override
+    @Transactional
     public void hrScore(long applicationDetailId, boolean isPass, String note, double score) {
         ApplicationDetail applicationDetail = getApplicationDetailById(applicationDetailId);
+        if (applicationDetail.getStatus() == ApplicationDetailStatus.COMPLETED) {
+            throw new CustomException("Vòng thi này đã được HR duyệt kết quả trước đó", HttpStatus.BAD_REQUEST);
+        }
         applicationDetail.setHrScore(score);
         applicationDetail.setHrNote(note);
         applicationDetail.setFinalScore(score);
