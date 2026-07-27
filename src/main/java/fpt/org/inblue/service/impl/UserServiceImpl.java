@@ -15,13 +15,12 @@ import fpt.org.inblue.service.ApiClient;
 import fpt.org.inblue.service.CandidateProfileService;
 import fpt.org.inblue.service.UserService;
 import fpt.org.inblue.utils.FileUtil;
+import fpt.org.inblue.utils.SecurityUtils;
 import java.io.File;
 import java.io.IOException;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.stream.Collectors;
-
-import fpt.org.inblue.utils.SecurityUtils;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.http.HttpMethod;
