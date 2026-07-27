@@ -14,7 +14,6 @@ import fpt.org.inblue.repository.PaymentRepository;
 import fpt.org.inblue.service.JdPurchaseService;
 import fpt.org.inblue.utils.SecurityUtils;
 import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
@@ -58,7 +57,9 @@ public class JdPurchaseServiceImpl implements JdPurchaseService {
 
             LocalDateTime validUntil = purchasedAt != null ? purchasedAt.plusDays(30) : null;
             JdPurchaseStatus status = purchase.getStatus();
-            if (status == JdPurchaseStatus.PURCHASED && validUntil != null && LocalDateTime.now().isAfter(validUntil)) {
+            if (status == JdPurchaseStatus.PURCHASED
+                    && validUntil != null
+                    && LocalDateTime.now().isAfter(validUntil)) {
                 status = JdPurchaseStatus.EXPIRED;
             }
 

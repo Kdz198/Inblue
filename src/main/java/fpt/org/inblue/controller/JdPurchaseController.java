@@ -1,6 +1,5 @@
 package fpt.org.inblue.controller;
 
-import fpt.org.inblue.model.JdPurchase;
 import fpt.org.inblue.model.dto.response.MyJdPurchaseResponseDto;
 import fpt.org.inblue.service.JdPurchaseService;
 import java.util.List;
