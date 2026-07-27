@@ -41,8 +41,8 @@ public class QuizRoundProcessor implements RoundSubmissionProcessor {
     @Transactional
     public SubmissionResult process(ProcessDto dto) {
         Round round = dto.getRound();
-        java.util.Optional<ApplicationDetail> existingOpt = applicationDetailRepository
-                .findByApplicationIdAndRoundId(dto.getApplication().getId(), round.getId());
+        java.util.Optional<ApplicationDetail> existingOpt = applicationDetailRepository.findByApplicationIdAndRoundId(
+                dto.getApplication().getId(), round.getId());
         if (existingOpt.isPresent() && existingOpt.get().getStatus() == ApplicationDetailStatus.COMPLETED) {
             return SubmissionResult.completed(existingOpt.get());
         }
