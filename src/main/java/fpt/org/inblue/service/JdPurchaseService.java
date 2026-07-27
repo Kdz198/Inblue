@@ -1,6 +1,7 @@
 package fpt.org.inblue.service;
 
 import fpt.org.inblue.model.JdPurchase;
+import fpt.org.inblue.model.dto.response.MyJdPurchaseResponseDto;
 import java.util.List;
 
 public interface JdPurchaseService {
@@ -9,5 +10,5 @@ public interface JdPurchaseService {
 
     JdPurchase getPurchase(Long jdId);
 
-    List<JdPurchase> getMyPurchases();
+    List<MyJdPurchaseResponseDto> getMyPurchases();
 }

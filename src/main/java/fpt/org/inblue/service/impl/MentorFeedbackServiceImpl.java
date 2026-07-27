@@ -59,11 +59,20 @@ public class MentorFeedbackServiceImpl implements MentorFeedbackService {
 
     private double caculateAverageRating(int mentorId) {
         List<MentorFeedback> feedbacks = mentorFeedbackRepository.findAllByMentor_Id(mentorId);
+        if (feedbacks == null || feedbacks.isEmpty()) {
+            return 0.0;
+        }
         double sum = 0;
         for (MentorFeedback feedback : feedbacks) {
-            sum += feedback.getRating();
+            double rating = feedback.getRating();
+            if (rating > 5.0) {
+                rating = rating / 2.0;
+            }
+            sum += rating;
         }
-        return sum / feedbacks.size();
+        double avg = sum / feedbacks.size();
+        double rounded = Math.round(avg * 100.0) / 100.0;
+        return Math.min(5.0, Math.max(0.0, rounded));
     }
 
     @Override
