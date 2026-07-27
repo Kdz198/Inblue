@@ -78,4 +78,9 @@ public class UserController {
     public ResponseEntity<UserResponse> getUserResponseById(@PathVariable int userId) {
         return ResponseEntity.ok(userService.getUserResponseById(userId));
     }
+
+    @PutMapping("/change-password")
+    public ResponseEntity<UserResponse> changePassword(@RequestParam String oldPass, @RequestParam String newPass) {
+        return ResponseEntity.ok(userService.changePassword(oldPass, newPass));
+    }
 }

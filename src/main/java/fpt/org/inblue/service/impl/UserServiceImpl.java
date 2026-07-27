@@ -20,6 +20,8 @@ import java.io.IOException;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.stream.Collectors;
+
+import fpt.org.inblue.utils.SecurityUtils;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.http.HttpMethod;
@@ -40,6 +42,7 @@ public class UserServiceImpl implements UserService {
     private final CloudinaryService cloudinaryService;
     private final ApiClient ApiClient;
     private final CandidateProfileService candidateProfileService;
+    private final SecurityUtils securityUtils;
 
     @Override
     public List<User> getAll() {
@@ -239,6 +242,28 @@ public class UserServiceImpl implements UserService {
     @Override
     public UserResponse getUserResponseById(int userId) {
         User user = userRepository.findById(userId).orElseThrow(() -> new RuntimeException("User Not Found"));
+        return UserResponse.builder()
+                .id(user.getId())
+                .name(user.getName())
+                .email(user.getEmail())
+                .role(user.getRole())
+                .isActive(user.getIsActive())
+                .avatarUrl(user.getAvatarUrl())
+                .public_id(user.getPublic_id())
+                .cvUrl(user.getCvUrl())
+                .cv_public_id(user.getCv_public_id())
+                .build();
+    }
+
+    @Override
+    public UserResponse changePassword(String oldPass, String newPass) {
+        int id = securityUtils.getCurrentUserId();
+        User user = userRepository.findById(id).orElseThrow(() -> new RuntimeException("User Not Found"));
+        if (!user.getPassword().equals(oldPass)) {
+            throw new CustomException("Mật khẩu cũ không đúng", HttpStatus.BAD_REQUEST);
+        }
+        user.setPassword(newPass);
+        userRepository.save(user);
         return UserResponse.builder()
                 .id(user.getId())
                 .name(user.getName())

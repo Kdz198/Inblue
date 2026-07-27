@@ -18,4 +18,5 @@ public interface UserService {
     CandidateProfile upCv(int userId, MultipartFile cvFile) throws IOException;
 
     UserResponse getUserResponseById(int userId);
+    UserResponse changePassword(String oldPass,String newPass);
 }
