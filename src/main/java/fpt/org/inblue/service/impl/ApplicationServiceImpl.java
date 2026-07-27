@@ -131,16 +131,20 @@ public class ApplicationServiceImpl implements ApplicationService {
                     currentApplication.setStatus(ApplicationStatus.SOFT_FAILED);
                 }
 
-                currentApplication.setCurrentRoundOrder(currentRoundOrder + 1);
+                int nextRoundOrder = currentRoundOrder + 1;
+                currentApplication.setCurrentRoundOrder(nextRoundOrder);
                 applicationRepository.save(currentApplication);
                 System.out.println("Application " + currentApplication.getId() + " moved to round order "
                         + currentApplication.getCurrentRoundOrder());
 
                 // Tự động tạo ApplicationDetail với status AWAITING_MENTOR cho vòng MENTROR_REVIEW
                 // và PENDING cho các vòng khác không có luồng nộp bài (AI_INTERVIEW)
-                Round nextRound = rounds.get(currentRoundOrder); // index = currentRoundOrder (0-based) = vòng mới
-                if (nextRound.getRoundType() == RoundType.MENTROR_REVIEW
-                        || nextRound.getRoundType() == RoundType.AI_INTERVIEW) {
+                Round nextRound = rounds.stream()
+                        .filter(r -> r.getRoundOrder() != null && r.getRoundOrder() == nextRoundOrder)
+                        .findFirst()
+                        .orElse(null);
+                if (nextRound != null && (nextRound.getRoundType() == RoundType.MENTROR_REVIEW
+                        || nextRound.getRoundType() == RoundType.AI_INTERVIEW)) {
                     boolean alreadyExists = applicationDetailRepository
                             .findByApplicationIdAndRoundId(currentApplication.getId(), nextRound.getId())
                             .isPresent();

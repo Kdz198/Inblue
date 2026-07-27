@@ -47,6 +47,7 @@ public class JobDescription {
 
     @OneToMany(cascade = CascadeType.ALL, orphanRemoval = true)
     @JoinColumn(name = "jd_id", nullable = false)
+    @OrderBy("roundOrder ASC")
     @Builder.Default
     private List<Round> rounds = new ArrayList<>();
 
