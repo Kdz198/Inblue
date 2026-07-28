@@ -42,8 +42,8 @@ public class ApplicationServiceImpl implements ApplicationService {
                 .findById(jdId)
                 .orElseThrow(() -> new CustomException("Job Description not found", HttpStatus.NOT_FOUND));
 
-        Optional<JdPurchase> purchaseOpt = jdPurchaseRepository
-                .findByUserIdAndJdIdAndStatus(userId, jdId, JdPurchaseStatus.PURCHASED);
+        Optional<JdPurchase> purchaseOpt =
+                jdPurchaseRepository.findByUserIdAndJdIdAndStatus(userId, jdId, JdPurchaseStatus.PURCHASED);
 
         if (purchaseOpt.isPresent()) {
             JdPurchase purchase = purchaseOpt.get();
