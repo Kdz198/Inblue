@@ -75,4 +75,7 @@ public class JobDescription {
 
     LocalDateTime deletedAt;
     LocalDateTime deadlineAt; // Hạn chót nộp hồ sơ
+
+    String companyName;
+    String companyLogo;
 }
