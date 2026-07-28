@@ -10,6 +10,7 @@ import fpt.org.inblue.model.dto.response.SessionDetailResponse;
 import fpt.org.inblue.service.SessionService;
 import io.swagger.v3.oas.annotations.Operation;
 import java.util.List;
+import java.util.Map;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -76,13 +77,50 @@ public class SessionController {
     }
 
     @PostMapping(value = "webhooks/dailyco") // Chấp nhận tất cả kiểu dữ liệu
-    public ResponseEntity<Void> handleDailyCoWebhook(@RequestBody DailyWebHookPayload payload) {
-        System.out.println("Received Daily.co webhook event: " + payload.getEvent());
-        if ("participant.left".equals(payload.getEvent())) {
-            System.out.println("Handling participant.left event for payload: " + payload);
-            sessionService.updateLeaveRecord(payload);
+    public ResponseEntity<Void> handleDailyCoWebhook(@RequestBody(required = false) Map<String, Object> body) {
+        DailyWebHookPayload payload = toDailyWebHookPayload(body);
+        String event = payload.getEvent();
+        System.out.println("Received Daily.co webhook event: " + event);
+
+        try {
+            if ("participant.left".equals(event)) {
+                System.out.println("Handling participant.left event for payload: " + payload);
+                sessionService.updateLeaveRecord(payload);
+            }
+        } catch (Exception e) {
+            System.err.println("Failed to process Daily.co webhook event: " + e.getMessage());
         }
+
         return ResponseEntity.ok().build();
+    }
+
+    @SuppressWarnings("unchecked")
+    private DailyWebHookPayload toDailyWebHookPayload(Map<String, Object> body) {
+        DailyWebHookPayload payload = new DailyWebHookPayload();
+        if (body == null || body.isEmpty()) {
+            return payload;
+        }
+
+        Object event = body.getOrDefault("type", body.get("event"));
+        if (event != null) {
+            payload.setEvent(event.toString());
+        }
+
+        Object payloadBody = body.get("payload");
+        if (payloadBody instanceof Map<?, ?> payloadMap) {
+            Map<String, Object> payloadValues = (Map<String, Object>) payloadMap;
+            DailyWebHookPayload.PayloadData payloadData = new DailyWebHookPayload.PayloadData();
+            payloadData.setRoomName(toStringOrNull(payloadValues.get("room")));
+            payloadData.setParticipantId(toStringOrNull(payloadValues.get("session_id")));
+            payloadData.setRecording_id(toStringOrNull(payloadValues.get("recording_id")));
+            payload.setPayload(payloadData);
+        }
+
+        return payload;
+    }
+
+    private String toStringOrNull(Object value) {
+        return value == null ? null : value.toString();
     }
 
     @GetMapping("update-status")

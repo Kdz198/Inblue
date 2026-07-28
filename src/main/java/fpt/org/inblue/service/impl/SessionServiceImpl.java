@@ -28,6 +28,7 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.stream.Collectors;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.http.*;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -36,9 +37,18 @@ import org.springframework.web.client.RestTemplate;
 
 @Service
 public class SessionServiceImpl implements SessionService {
+    private static final String DAILY_WEBHOOKS_PATH = "/webhooks";
+    private static final List<String> DAILY_WEBHOOK_EVENT_TYPES = List.of(
+            "meeting.started",
+            "meeting.ended",
+            "participant.joined",
+            "participant.left",
+            "recording.ready-to-download");
+
     public final RestTemplate restTemplate;
     public final String dailyApiUrl;
     public final String dailyApiKey;
+    public final String dailyWebhookUrl;
     public final SessionRepository sessionRepository;
     private final PaymentService paymentService;
     private final MentorReviewRepository mentorReviewRepository;
@@ -49,6 +59,7 @@ public class SessionServiceImpl implements SessionService {
     public SessionServiceImpl(
             @Value("${daily.api.url}") String dailyApiUrl,
             @Value("${daily.api.key}") String dailyApiKey,
+            @Value("${daily.webhook.url:https://api.kdz.asia/api/sessions/webhooks/dailyco}") String dailyWebhookUrl,
             SessionRepository sessionRepository,
             RestTemplate restTemplate,
             PaymentService paymentService,
@@ -58,6 +69,7 @@ public class SessionServiceImpl implements SessionService {
             ApplicationDetailRepository applicationDetailRepository) {
         this.dailyApiUrl = dailyApiUrl;
         this.dailyApiKey = dailyApiKey;
+        this.dailyWebhookUrl = dailyWebhookUrl;
         this.sessionRepository = sessionRepository;
         this.restTemplate = restTemplate;
         this.paymentService = paymentService;
@@ -445,42 +457,81 @@ public class SessionServiceImpl implements SessionService {
 
     @Override
     public String reactivateWebhook() {
-        String dailycoApiUrl = "https://api.daily.co/v1/webhooks";
+        String dailycoApiUrl = dailyApiUrl + DAILY_WEBHOOKS_PATH;
 
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_JSON);
-        headers.set("Authorization", "Bearer " + dailyApiKey);
+        headers.setBearerAuth(dailyApiKey);
 
-        Map<String, Object> requestBody = Map.of(
-                "url",
-                "https://api.kdz.asia/api/sessions/webhooks/dailyco",
-                "eventTypes",
-                List.of(
-                        "meeting.started",
-                        "meeting.ended",
-                        "participant.joined",
-                        "participant.left",
-                        "recording.ready-to-download"));
+        Map<String, Object> requestBody = buildDailyWebhookRequestBody();
 
         HttpEntity<Map<String, Object>> entity = new HttpEntity<>(requestBody, headers);
 
         try {
-            ResponseEntity<String> response =
-                    restTemplate.exchange(dailycoApiUrl, HttpMethod.POST, entity, String.class);
+            String existingWebhookUuid = getExistingDailyWebhookUuid(dailycoApiUrl, headers);
+            if (existingWebhookUuid == null) {
+                ResponseEntity<String> response =
+                        restTemplate.exchange(dailycoApiUrl, HttpMethod.POST, entity, String.class);
+                return response.getBody();
+            }
+
+            ResponseEntity<String> response = restTemplate.exchange(
+                    dailycoApiUrl + "/" + existingWebhookUuid, HttpMethod.POST, entity, String.class);
             return response.getBody();
 
+        } catch (HttpClientErrorException.BadRequest e) {
+            if (e.getResponseBodyAsString().contains("only 1 webhook is allowed per domain")) {
+                String existingWebhookUuid = getExistingDailyWebhookUuid(dailycoApiUrl, headers);
+                if (existingWebhookUuid != null) {
+                    ResponseEntity<String> response = restTemplate.exchange(
+                            dailycoApiUrl + "/" + existingWebhookUuid, HttpMethod.POST, entity, String.class);
+                    return response.getBody();
+                }
+            }
+            System.err.println("Failed to reactivate Daily.co webhook via RestTemplate: " + e.getMessage());
+            throw new RuntimeException("Cannot reactivate Daily.co webhook", e);
         } catch (Exception e) {
             System.err.println("Lỗi khi kích hoạt lại Webhook Daily.co qua RestTemplate: " + e.getMessage());
             throw new RuntimeException("Không thể kích hoạt Webhook", e);
         }
     }
 
+    private Map<String, Object> buildDailyWebhookRequestBody() {
+        return Map.of("url", dailyWebhookUrl, "eventTypes", DAILY_WEBHOOK_EVENT_TYPES, "retryType", "exponential");
+    }
+
+    private String getExistingDailyWebhookUuid(String dailycoApiUrl, HttpHeaders headers) {
+        HttpEntity<Void> entity = new HttpEntity<>(headers);
+        ResponseEntity<List<Map<String, Object>>> response = restTemplate.exchange(
+                dailycoApiUrl,
+                HttpMethod.GET,
+                entity,
+                new ParameterizedTypeReference<List<Map<String, Object>>>() {});
+
+        List<Map<String, Object>> webhooks = response.getBody();
+        if (webhooks == null || webhooks.isEmpty()) {
+            return null;
+        }
+
+        Map<String, Object> webhook = webhooks.stream()
+                .filter(item -> dailyWebhookUrl.equals(item.get("url")))
+                .findFirst()
+                .orElse(webhooks.getFirst());
+
+        Object uuid = webhook.get("uuid");
+        if (uuid == null) {
+            throw new CustomException(
+                    "Existing Daily.co webhook does not contain uuid", HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+        return uuid.toString();
+    }
+
     @Override
     public String checkWebhook() {
-        String dailycoApiUrl = "https://api.daily.co/v1/webhooks";
+        String dailycoApiUrl = dailyApiUrl + DAILY_WEBHOOKS_PATH;
 
         HttpHeaders headers = new HttpHeaders();
-        headers.set("Authorization", "Bearer " + dailyApiKey);
+        headers.setBearerAuth(dailyApiKey);
 
         HttpEntity<Void> entity = new HttpEntity<>(headers);
         try {
