@@ -503,10 +503,7 @@ public class SessionServiceImpl implements SessionService {
     private String getExistingDailyWebhookUuid(String dailycoApiUrl, HttpHeaders headers) {
         HttpEntity<Void> entity = new HttpEntity<>(headers);
         ResponseEntity<List<Map<String, Object>>> response = restTemplate.exchange(
-                dailycoApiUrl,
-                HttpMethod.GET,
-                entity,
-                new ParameterizedTypeReference<List<Map<String, Object>>>() {});
+                dailycoApiUrl, HttpMethod.GET, entity, new ParameterizedTypeReference<List<Map<String, Object>>>() {});
 
         List<Map<String, Object>> webhooks = response.getBody();
         if (webhooks == null || webhooks.isEmpty()) {
