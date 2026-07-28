@@ -54,7 +54,8 @@ public class MentorServiceImpl implements MentorService {
 
     @Override
     public MentorResponse updateMentor(int id, UpdateMentorRequest data, MultipartFile avatar) throws IOException {
-        Mentor mentor = mentorRepository.findById(id)
+        Mentor mentor = mentorRepository
+                .findById(id)
                 .orElseThrow(() -> new CustomException("Mentor Not Found", HttpStatus.NOT_FOUND));
 
         mentorMapper.updateMentorFromDto(data, mentor);
@@ -71,7 +72,8 @@ public class MentorServiceImpl implements MentorService {
 
     @Override
     public MentorResponse changePassword(int id, ChangeMentorPasswordRequest request) {
-        Mentor mentor = mentorRepository.findById(id)
+        Mentor mentor = mentorRepository
+                .findById(id)
                 .orElseThrow(() -> new CustomException("Mentor Not Found", HttpStatus.NOT_FOUND));
 
         if (request.getOldPassword() != null && !request.getOldPassword().isEmpty()) {

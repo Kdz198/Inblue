@@ -71,8 +71,7 @@ public class MentorController {
     @PutMapping("/{id}/change-password")
     @Operation(summary = "Thay đổi mật khẩu cho Mentor")
     public ResponseEntity<MentorResponse> changePassword(
-            @PathVariable int id,
-            @RequestBody ChangeMentorPasswordRequest request) {
+            @PathVariable int id, @RequestBody ChangeMentorPasswordRequest request) {
         MentorResponse response = mentorService.changePassword(id, request);
         return ResponseEntity.ok(response);
     }
