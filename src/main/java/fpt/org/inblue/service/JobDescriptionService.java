@@ -29,4 +29,6 @@ public interface JobDescriptionService {
             String keyword, JobDescriptionStatus status, TargetLevel level, Double salaryMin, Double salaryMax);
 
     Round getRoundByOrder(Long jdId, int order);
+
+    void toggleActive(Long id);
 }

@@ -6,7 +6,9 @@ import fpt.org.inblue.exception.CustomException;
 import fpt.org.inblue.mapper.MentorMapper;
 import fpt.org.inblue.model.Mentor;
 import fpt.org.inblue.model.dto.MentorEventDto;
-import fpt.org.inblue.model.dto.MentorInfo;
+import fpt.org.inblue.model.dto.request.ChangeMentorPasswordRequest;
+import fpt.org.inblue.model.dto.request.CreateMentorRequest;
+import fpt.org.inblue.model.dto.request.UpdateMentorRequest;
 import fpt.org.inblue.model.dto.response.MentorResponse;
 import fpt.org.inblue.repository.MentorRepository;
 import fpt.org.inblue.service.MentorService;
@@ -17,6 +19,7 @@ import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.http.HttpStatus;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -27,38 +30,64 @@ public class MentorServiceImpl implements MentorService {
     private final ApplicationEventPublisher applicationEventPublisher;
     private final CloudinaryService cloudinaryService;
     private final MentorMapper mentorMapper;
+    private final PasswordEncoder passwordEncoder;
 
     @Override
-    public Mentor createMentor(MentorInfo data, MultipartFile avatar) throws IOException {
-        Mentor mentor;
-        if (data.getId() == null) {
-            mentor = mentorMapper.toEntity(data);
-            mentor.setRole(Role.MENTOR);
-            mentor.setActive(false);
-            mentor.setTotalSession(0);
-            mentor.setAverageRating(0);
-            mentor.setPricePerMinute(data.getPricePerMinute());
-            mentor = mentorRepository.save(mentor);
-            processAndPublishFileEvent(mentor, avatar, "avatar");
-            return mentor;
-        } else {
-            mentor =
-                    mentorRepository.findById(data.getId()).orElseThrow(() -> new RuntimeException("Mentor Not Found"));
-            mentorMapper.updateMentorFromDto(data, mentor);
-
-            if (mentor.getAvatarUrl() != null) {
-                mentor.setAvatarUrl(mentor.getAvatarUrl());
-                mentor.setPublic_id(mentor.getPublic_id());
-            }
-            mentor = mentorRepository.save(mentor);
-            if (avatar != null && !avatar.isEmpty()) {
-                if (mentor.getPublic_id() != null) {
-                    cloudinaryService.deleteImage(mentor.getPublic_id());
-                }
-                processAndPublishFileEvent(mentor, avatar, "avatar");
-            }
-            return mentor;
+    public MentorResponse createMentor(CreateMentorRequest data, MultipartFile avatar) throws IOException {
+        Mentor mentor = mentorMapper.toEntity(data);
+        if (data.getPassword() != null && !data.getPassword().isEmpty()) {
+            mentor.setPassword(passwordEncoder.encode(data.getPassword()));
         }
+        mentor.setRole(Role.MENTOR);
+        mentor.setActive(false);
+        mentor.setTotalSession(0);
+        mentor.setAverageRating(0);
+        if (data.getPricePerMinute() != null) {
+            mentor.setPricePerMinute(data.getPricePerMinute());
+        } else {
+            mentor.setPricePerMinute(0);
+        }
+        mentor = mentorRepository.save(mentor);
+        processAndPublishFileEvent(mentor, avatar, "avatar");
+        return mentorMapper.toMentorResponse(mentor);
+    }
+
+    @Override
+    public MentorResponse updateMentor(int id, UpdateMentorRequest data, MultipartFile avatar) throws IOException {
+        Mentor mentor = mentorRepository.findById(id)
+                .orElseThrow(() -> new CustomException("Mentor Not Found", HttpStatus.NOT_FOUND));
+
+        mentorMapper.updateMentorFromDto(data, mentor);
+
+        mentor = mentorRepository.save(mentor);
+        if (avatar != null && !avatar.isEmpty()) {
+            if (mentor.getPublic_id() != null) {
+                cloudinaryService.deleteImage(mentor.getPublic_id());
+            }
+            processAndPublishFileEvent(mentor, avatar, "avatar");
+        }
+        return mentorMapper.toMentorResponse(mentor);
+    }
+
+    @Override
+    public MentorResponse changePassword(int id, ChangeMentorPasswordRequest request) {
+        Mentor mentor = mentorRepository.findById(id)
+                .orElseThrow(() -> new CustomException("Mentor Not Found", HttpStatus.NOT_FOUND));
+
+        if (request.getOldPassword() != null && !request.getOldPassword().isEmpty()) {
+            if (!passwordEncoder.matches(request.getOldPassword(), mentor.getPassword())
+                    && !mentor.getPassword().equals(request.getOldPassword())) {
+                throw new CustomException("Mật khẩu cũ không đúng", HttpStatus.BAD_REQUEST);
+            }
+        }
+
+        if (request.getNewPassword() == null || request.getNewPassword().trim().isEmpty()) {
+            throw new CustomException("Mật khẩu mới không được để trống", HttpStatus.BAD_REQUEST);
+        }
+
+        mentor.setPassword(passwordEncoder.encode(request.getNewPassword()));
+        mentor = mentorRepository.save(mentor);
+        return mentorMapper.toMentorResponse(mentor);
     }
 
     private void processAndPublishFileEvent(Mentor mentor, MultipartFile file, String type) throws IOException {

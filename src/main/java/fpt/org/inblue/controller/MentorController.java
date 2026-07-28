@@ -1,7 +1,8 @@
 package fpt.org.inblue.controller;
 
-import fpt.org.inblue.model.Mentor;
-import fpt.org.inblue.model.dto.MentorInfo;
+import fpt.org.inblue.model.dto.request.ChangeMentorPasswordRequest;
+import fpt.org.inblue.model.dto.request.CreateMentorRequest;
+import fpt.org.inblue.model.dto.request.UpdateMentorRequest;
 import fpt.org.inblue.model.dto.response.MentorResponse;
 import fpt.org.inblue.service.MentorService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -34,19 +35,46 @@ public class MentorController {
 
     @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     @Operation(
-            summary =
-                    "dùng chung cho create và update mentor, nếu create thì ko có id còn update thì có id gửi kèm trong json data á",
+            summary = "Tạo mới Mentor (có input password, trả về MentorResponse không có password)",
             requestBody =
                     @io.swagger.v3.oas.annotations.parameters.RequestBody(
                             content =
                                     @Content(
                                             mediaType = MediaType.MULTIPART_FORM_DATA_VALUE,
                                             encoding = {@Encoding(name = "data", contentType = "application/json")})))
-    public ResponseEntity<Mentor> createMentor(
-            @RequestPart("data") MentorInfo data, @RequestPart(value = "avatar", required = false) MultipartFile avatar)
+    public ResponseEntity<MentorResponse> createMentor(
+            @RequestPart("data") CreateMentorRequest data,
+            @RequestPart(value = "avatar", required = false) MultipartFile avatar)
             throws IOException {
-        Mentor createdMentor = mentorService.createMentor(data, avatar);
+        MentorResponse createdMentor = mentorService.createMentor(data, avatar);
         return ResponseEntity.ok(createdMentor);
+    }
+
+    @PutMapping(value = "/{id}", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    @Operation(
+            summary = "Cập nhật Mentor (không có password trong request body và response)",
+            requestBody =
+                    @io.swagger.v3.oas.annotations.parameters.RequestBody(
+                            content =
+                                    @Content(
+                                            mediaType = MediaType.MULTIPART_FORM_DATA_VALUE,
+                                            encoding = {@Encoding(name = "data", contentType = "application/json")})))
+    public ResponseEntity<MentorResponse> updateMentor(
+            @PathVariable int id,
+            @RequestPart("data") UpdateMentorRequest data,
+            @RequestPart(value = "avatar", required = false) MultipartFile avatar)
+            throws IOException {
+        MentorResponse updatedMentor = mentorService.updateMentor(id, data, avatar);
+        return ResponseEntity.ok(updatedMentor);
+    }
+
+    @PutMapping("/{id}/change-password")
+    @Operation(summary = "Thay đổi mật khẩu cho Mentor")
+    public ResponseEntity<MentorResponse> changePassword(
+            @PathVariable int id,
+            @RequestBody ChangeMentorPasswordRequest request) {
+        MentorResponse response = mentorService.changePassword(id, request);
+        return ResponseEntity.ok(response);
     }
 
     @GetMapping("/toggle/{id}")

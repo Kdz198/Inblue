@@ -83,4 +83,17 @@ public class JobDescriptionController {
             @RequestParam(required = false) Double salaryMax) {
         return ResponseEntity.ok(jobDescriptionService.searchJobs(titleKeyword, status, level, salaryMin, salaryMax));
     }
+
+    @PutMapping("/toggle/{id}")
+    @Operation(summary = "Toggle trạng thái active (OPEN <-> CLOSED) của JobDescription")
+    public ResponseEntity<Void> toggleActive(@PathVariable Long id) {
+        jobDescriptionService.toggleActive(id);
+        return ResponseEntity.noContent().build();
+    }
+
+    @GetMapping("/toggle/{id}")
+    public ResponseEntity<Void> toggleActiveGet(@PathVariable Long id) {
+        jobDescriptionService.toggleActive(id);
+        return ResponseEntity.noContent().build();
+    }
 }

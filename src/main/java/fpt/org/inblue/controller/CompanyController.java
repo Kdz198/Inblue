@@ -70,4 +70,17 @@ public class CompanyController {
         companyService.deleteById(id);
         return ResponseEntity.noContent().build();
     }
+
+    @PutMapping("/toggle/{id}")
+    @Operation(summary = "Toggle trạng thái active (ACTIVE <-> INACTIVE) của Company")
+    public ResponseEntity<Void> toggleActive(@PathVariable Long id) {
+        companyService.toggleActive(id);
+        return ResponseEntity.noContent().build();
+    }
+
+    @GetMapping("/toggle/{id}")
+    public ResponseEntity<Void> toggleActiveGet(@PathVariable Long id) {
+        companyService.toggleActive(id);
+        return ResponseEntity.noContent().build();
+    }
 }

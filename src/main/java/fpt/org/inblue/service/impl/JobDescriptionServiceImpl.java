@@ -150,4 +150,19 @@ public class JobDescriptionServiceImpl implements JobDescriptionService {
                 .orElseThrow(() -> new CustomException(
                         "Không tìm thấy vòng phỏng vấn với thứ tự: " + order, HttpStatus.NOT_FOUND));
     }
+
+    @Override
+    public void toggleActive(Long id) {
+        JobDescription jobDescription = jobDescriptionRepository
+                .findById(id)
+                .orElseThrow(() ->
+                        new CustomException("Không tìm thấy mô tả công việc với ID: " + id, HttpStatus.NOT_FOUND));
+
+        if (jobDescription.getStatus() == JobDescriptionStatus.OPEN) {
+            jobDescription.setStatus(JobDescriptionStatus.CLOSED);
+        } else {
+            jobDescription.setStatus(JobDescriptionStatus.OPEN);
+        }
+        jobDescriptionRepository.save(jobDescription);
+    }
 }

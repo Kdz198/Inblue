@@ -17,4 +17,6 @@ public interface CompanyService {
     List<Company> getAll();
 
     void deleteById(Long id);
+
+    void toggleActive(Long id);
 }

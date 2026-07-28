@@ -9,10 +9,9 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 @NoArgsConstructor
 @Builder
-public class CreateMentorRequest {
+public class UpdateMentorRequest {
     private String name;
     private String email;
-    private String password;
     private String bio;
     private String expertise;
     private int yearsOfExperience;

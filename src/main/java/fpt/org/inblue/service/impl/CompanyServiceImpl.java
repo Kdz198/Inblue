@@ -147,6 +147,20 @@ public class CompanyServiceImpl implements CompanyService {
                 .findById(id)
                 .orElseThrow(() -> new CustomException("Không tìm thấy công ty với ID: " + id, HttpStatus.NOT_FOUND));
         company.setIsDeleted(true);
+        companyRepository.save(company);
+    }
+
+    @Override
+    public void toggleActive(Long id) {
+        Company company = companyRepository
+                .findById(id)
+                .orElseThrow(() -> new CustomException("Không tìm thấy công ty với ID: " + id, HttpStatus.NOT_FOUND));
+        if ("ACTIVE".equalsIgnoreCase(company.getStatus())) {
+            company.setStatus("INACTIVE");
+        } else {
+            company.setStatus("ACTIVE");
+        }
+        companyRepository.save(company);
     }
 
     private String extractPublicIdFromUrl(String url) {
