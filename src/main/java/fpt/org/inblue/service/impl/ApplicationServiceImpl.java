@@ -7,6 +7,7 @@ import fpt.org.inblue.enums.RoundType;
 import fpt.org.inblue.exception.CustomException;
 import fpt.org.inblue.model.Application;
 import fpt.org.inblue.model.ApplicationDetail;
+import fpt.org.inblue.model.JdPurchase;
 import fpt.org.inblue.model.JobDescription;
 import fpt.org.inblue.model.Round;
 import fpt.org.inblue.repository.ApplicationDetailRepository;
@@ -17,6 +18,7 @@ import fpt.org.inblue.service.ApplicationService;
 import fpt.org.inblue.utils.SecurityUtils;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Optional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
@@ -36,27 +38,38 @@ public class ApplicationServiceImpl implements ApplicationService {
     public Application applyForJob(Long jdId) {
         int userId = securityUtils.getCurrentUserId();
 
-        if (!jdPurchaseRepository.existsByUserIdAndJdIdAndStatus(userId, jdId, JdPurchaseStatus.PURCHASED)) {
+        JobDescription jd = jobDescriptionRepository
+                .findById(jdId)
+                .orElseThrow(() -> new CustomException("Job Description not found", HttpStatus.NOT_FOUND));
+
+        Optional<JdPurchase> purchaseOpt = jdPurchaseRepository
+                .findByUserIdAndJdIdAndStatus(userId, jdId, JdPurchaseStatus.PURCHASED);
+
+        if (purchaseOpt.isPresent()) {
+            JdPurchase purchase = purchaseOpt.get();
+            purchase.setStatus(JdPurchaseStatus.USED);
+            purchase.setUsedAt(LocalDateTime.now());
+            jdPurchaseRepository.save(purchase);
+        } else if (jd.getPrice() == null || jd.getPrice() <= 0) {
+            JdPurchase freePurchase = JdPurchase.builder()
+                    .userId(userId)
+                    .jdId(jdId)
+                    .paymentId(0)
+                    .status(JdPurchaseStatus.USED)
+                    .purchasedAt(LocalDateTime.now())
+                    .usedAt(LocalDateTime.now())
+                    .build();
+            jdPurchaseRepository.save(freePurchase);
+        } else {
             throw new CustomException("Bạn cần mua gói apply cho JD này trước", HttpStatus.PAYMENT_REQUIRED);
         }
 
         Application application = new Application();
         application.setUserId(userId);
         application.setJdId(jdId);
-        JobDescription jd = jobDescriptionRepository
-                .findById(jdId)
-                .orElseThrow(() -> new CustomException("Job Description not found", HttpStatus.NOT_FOUND));
         jd.setAppliedCount(jd.getAppliedCount() + 1);
         jobDescriptionRepository.save(jd);
         Application savedApplication = applicationRepository.save(application);
-
-        jdPurchaseRepository
-                .findByUserIdAndJdIdAndStatus(userId, jdId, JdPurchaseStatus.PURCHASED)
-                .ifPresent(purchase -> {
-                    purchase.setStatus(JdPurchaseStatus.USED);
-                    purchase.setUsedAt(LocalDateTime.now());
-                    jdPurchaseRepository.save(purchase);
-                });
 
         // Nếu vòng đầu tiên là MENTROR_REVIEW hoặc AI_INTERVIEW (không có luồng nộp bài),
         // cần tạo ApplicationDetail ngay lúc apply vì moveToNextRound() chưa bao giờ được gọi trước đó.

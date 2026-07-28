@@ -1,6 +1,7 @@
 package fpt.org.inblue.service.impl;
 
 import fpt.org.inblue.enums.JdPurchaseStatus;
+import fpt.org.inblue.enums.JobDescriptionStatus;
 import fpt.org.inblue.exception.CustomException;
 import fpt.org.inblue.model.Company;
 import fpt.org.inblue.model.JdPurchase;
@@ -34,7 +35,19 @@ public class JdPurchaseServiceImpl implements JdPurchaseService {
     @Override
     public boolean hasPurchased(Long jdId) {
         int userId = securityUtils.getCurrentUserId();
-        return jdPurchaseRepository.existsByUserIdAndJdIdAndStatus(userId, jdId, JdPurchaseStatus.PURCHASED);
+        if (jdPurchaseRepository.existsByUserIdAndJdIdAndStatus(userId, jdId, JdPurchaseStatus.PURCHASED)) {
+            return true;
+        }
+        Optional<JobDescription> jdOpt = jobDescriptionRepository.findById(jdId);
+        if (jdOpt.isPresent()) {
+            JobDescription jd = jdOpt.get();
+            if (jd.getStatus() == JobDescriptionStatus.OPEN
+                    && (jd.getIsDeleted() == null || !jd.getIsDeleted())
+                    && (jd.getPrice() == null || jd.getPrice() <= 0)) {
+                return true;
+            }
+        }
+        return false;
     }
 
     @Override
