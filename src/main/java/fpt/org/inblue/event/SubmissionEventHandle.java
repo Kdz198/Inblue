@@ -24,6 +24,7 @@ import fpt.org.inblue.repository.EmailSubmissionRepository;
 import fpt.org.inblue.repository.JobDescriptionRepository;
 import fpt.org.inblue.service.ApiClient;
 import fpt.org.inblue.service.ApplicationService;
+import fpt.org.inblue.service.UserService;
 import java.io.IOException;
 import java.util.*;
 import lombok.RequiredArgsConstructor;
@@ -49,6 +50,7 @@ public class SubmissionEventHandle {
     private final ApiClient apiClient;
     private final ApplicationService applicationService;
     private final EmailSubmissionRepository emailSubmissionRepository;
+    private final UserService userService;
 
     @Async
     @EventListener
@@ -266,6 +268,8 @@ public class SubmissionEventHandle {
     private void processCvSubmission(ProcessDto dto) throws IOException {
         if (dto.getFile() == null || dto.getFile().isEmpty()) {
             System.err.println("File not found");
+        } else {
+            userService.upCv(dto.getApplication().getUserId(), dto.getFile());
         }
         Round round = dto.getRound();
         Optional<JobDescription> jobDescription =
