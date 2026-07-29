@@ -71,6 +71,8 @@ public class JobDescriptionServiceImpl implements JobDescriptionService {
             jobDescription.setAppliedCount(0);
         }
         jobDescription.setIsDeleted(false);
+        jobDescription.setCompanyLogo(company.getLogoUrl());
+        jobDescription.setCompanyName(company.getName());
         company.getJobDescriptions().add(jobDescription);
         companyRepository.save(company);
         return jobDescription;
