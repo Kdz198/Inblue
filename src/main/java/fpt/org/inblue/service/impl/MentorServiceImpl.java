@@ -39,7 +39,7 @@ public class MentorServiceImpl implements MentorService {
             mentor.setPassword(passwordEncoder.encode(data.getPassword()));
         }
         mentor.setRole(Role.MENTOR);
-        mentor.setActive(false);
+        mentor.setActive(true);
         mentor.setTotalSession(0);
         mentor.setAverageRating(0);
         if (data.getPricePerMinute() != null) {
