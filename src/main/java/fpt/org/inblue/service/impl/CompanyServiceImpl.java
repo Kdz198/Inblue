@@ -135,7 +135,8 @@ public class CompanyServiceImpl implements CompanyService {
                 throw new CustomException("Lỗi tải lên banner: " + e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
             }
         }
-
+        List<JobDescription> jobDescriptions = company.getJobDescriptions();
+        jobDescriptions.forEach(jd -> jd.setCompanyName(company.getName()));
         return companyRepository.save(company);
     }
 
