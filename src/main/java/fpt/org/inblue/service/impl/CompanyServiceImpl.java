@@ -81,7 +81,7 @@ public class CompanyServiceImpl implements CompanyService {
                 .orElseThrow(
                         () -> new CustomException("Không tìm thấy công ty với ID: " + companyId, HttpStatus.NOT_FOUND));
         companyMapper.updateCompanyFromRequest(request, company);
-
+        List<JobDescription> jobDescriptions = company.getJobDescriptions();
         if (logo != null && !logo.isEmpty()) {
             try {
                 if (cloudinaryService.validate(logo)) {
@@ -97,7 +97,7 @@ public class CompanyServiceImpl implements CompanyService {
                     }
                     Map<String, String> logoResult = cloudinaryService.uploadImg(logo);
                     company.setLogoUrl(logoResult.get("secure_url"));
-                    List<JobDescription> jobDescriptions = company.getJobDescriptions();
+
                     jobDescriptions.forEach(jd -> jd.setCompanyLogo(logoResult.get("secure_url")));
                     logger.info("New logo uploaded successfully");
                 } else {
@@ -135,7 +135,6 @@ public class CompanyServiceImpl implements CompanyService {
                 throw new CustomException("Lỗi tải lên banner: " + e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
             }
         }
-        List<JobDescription> jobDescriptions = company.getJobDescriptions();
         jobDescriptions.forEach(jd -> jd.setCompanyName(company.getName()));
         return companyRepository.save(company);
     }
