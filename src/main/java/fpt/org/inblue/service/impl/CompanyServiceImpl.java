@@ -4,6 +4,7 @@ import fpt.org.inblue.cloudinary.CloudinaryService;
 import fpt.org.inblue.exception.CustomException;
 import fpt.org.inblue.mapper.CompanyMapper;
 import fpt.org.inblue.model.Company;
+import fpt.org.inblue.model.JobDescription;
 import fpt.org.inblue.model.dto.request.CreateCompanyRequest;
 import fpt.org.inblue.model.dto.request.UpdateCompanyRequest;
 import fpt.org.inblue.repository.CompanyRepository;
@@ -96,6 +97,8 @@ public class CompanyServiceImpl implements CompanyService {
                     }
                     Map<String, String> logoResult = cloudinaryService.uploadImg(logo);
                     company.setLogoUrl(logoResult.get("secure_url"));
+                    List<JobDescription> jobDescriptions = company.getJobDescriptions();
+                    jobDescriptions.forEach(jd -> jd.setCompanyLogo(logoResult.get("secure_url")));
                     logger.info("New logo uploaded successfully");
                 } else {
                     logger.warning("Logo validation failed, skipping logo upload");
