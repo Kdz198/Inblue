@@ -8,6 +8,10 @@ public interface CandidateProfileService {
 
     CandidateProfile getProfileByUserId(int userId);
 
+    CandidateProfile getProfileByApplicationId(Long applicationId);
+
+    CandidateProfile getProfileByUserIdAndApplicationIdIsNull(int userId);
+
     List<CandidateProfile> getAllProfiles();
 
     void deleteProfile(int userId);

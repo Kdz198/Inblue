@@ -59,14 +59,16 @@ public class UserController {
                                             mediaType = MediaType.MULTIPART_FORM_DATA_VALUE,
                                             encoding = {
                                                 @Encoding(name = "userId", contentType = "application/json"),
+                                                @Encoding(name = "applicationId", contentType = "application/json"),
                                                 @Encoding(name = "cvFile", contentType = "application/octet-stream")
                                             })))
     public ResponseEntity<CandidateProfile> uploadCv(
             @Parameter(name = "userId", schema = @Schema(type = "string", example = "1")) @RequestPart("userId")
                     int userId,
+            @RequestPart(value = "applicationId", required = false) Long applicationId,
             @RequestPart(value = "cvFile", required = false) MultipartFile cvFile)
             throws IOException {
-        return ResponseEntity.ok(userService.upCv(userId, cvFile));
+        return ResponseEntity.ok(userService.upCv(userId, applicationId, cvFile));
     }
 
     @GetMapping("/{id}")

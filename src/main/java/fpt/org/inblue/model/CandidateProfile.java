@@ -1,5 +1,6 @@
 package fpt.org.inblue.model;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import jakarta.persistence.*;
 import java.io.Serializable;
@@ -22,9 +23,12 @@ public class CandidateProfile {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Integer id;
 
-    @OneToOne
+    @ManyToOne
     @JoinColumn(name = "user_id")
+    @JsonIgnoreProperties("candidates")
     private User user;
+
+    private Long applicationId;
 
     @Column(nullable = false)
     private String targetRole; // Vd: "Java Backend Developer", "Digital Marketer"

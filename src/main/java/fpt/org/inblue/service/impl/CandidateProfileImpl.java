@@ -29,6 +29,16 @@ public class CandidateProfileImpl implements CandidateProfileService {
     }
 
     @Override
+    public CandidateProfile getProfileByApplicationId(Long applicationId) {
+        return candidateProfileRepository.findByApplicationId(applicationId);
+    }
+
+    @Override
+    public CandidateProfile getProfileByUserIdAndApplicationIdIsNull(int userId) {
+        return candidateProfileRepository.findByUser_IdAndApplicationIdIsNull(userId);
+    }
+
+    @Override
     public List<CandidateProfile> getAllProfiles() {
         return candidateProfileRepository.findAll();
     }

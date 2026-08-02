@@ -6,5 +6,9 @@ import org.springframework.data.jpa.repository.JpaRepository;
 public interface CandidateProfileRepository extends JpaRepository<CandidateProfile, Integer> {
     CandidateProfile findByUser_Id(int userId);
 
+    CandidateProfile findByApplicationId(Long applicationId);
+
+    CandidateProfile findByUser_IdAndApplicationIdIsNull(int userId);
+
     void deleteByUser_Id(int userId);
 }

@@ -269,7 +269,7 @@ public class SubmissionEventHandle {
         if (dto.getFile() == null || dto.getFile().isEmpty()) {
             System.err.println("File not found");
         } else {
-            userService.upCv(dto.getApplication().getUserId(), dto.getFile());
+            userService.upCv(dto.getApplication().getUserId(), dto.getApplication().getId(), dto.getFile());
         }
         Round round = dto.getRound();
         Optional<JobDescription> jobDescription =

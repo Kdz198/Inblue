@@ -25,6 +25,12 @@ public class CandidateProfileController {
         return ResponseEntity.ok(candidateProfileService.getProfileByUserId(userId));
     }
 
+    @GetMapping("application/{applicationId}")
+    @Operation(summary = "Lấy thông tin candidate profile theo application ID")
+    public ResponseEntity<CandidateProfile> getByApplicationId(@PathVariable Long applicationId) {
+        return ResponseEntity.ok(candidateProfileService.getProfileByApplicationId(applicationId));
+    }
+
     @PostMapping
     public ResponseEntity<CandidateProfile> createProfile(@RequestBody CandidateProfile candidateProfile) {
         return ResponseEntity.ok(candidateProfileService.createProfile(candidateProfile));

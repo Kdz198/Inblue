@@ -15,7 +15,7 @@ public interface UserService {
 
     User createUser(UserInfo data, MultipartFile avatar) throws IOException;
 
-    CandidateProfile upCv(int userId, MultipartFile cvFile) throws IOException;
+    CandidateProfile upCv(int userId, Long applicationId, MultipartFile cvFile) throws IOException;
 
     UserResponse getUserResponseById(int userId);
 

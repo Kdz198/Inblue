@@ -1,6 +1,8 @@
 package fpt.org.inblue.model.dto.response;
 
 import fpt.org.inblue.enums.Role;
+import fpt.org.inblue.model.CandidateProfile;
+import java.util.List;
 import lombok.Builder;
 import lombok.Data;
 
@@ -16,4 +18,5 @@ public class UserResponse {
     private String public_id;
     private String cvUrl;
     private String cv_public_id;
+    private List<CandidateProfile> candidates;
 }
