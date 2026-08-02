@@ -4,6 +4,7 @@ import fpt.org.inblue.cloudinary.CloudinaryService;
 import fpt.org.inblue.exception.CustomException;
 import fpt.org.inblue.mapper.CompanyMapper;
 import fpt.org.inblue.model.Company;
+import fpt.org.inblue.model.JobDescription;
 import fpt.org.inblue.model.dto.request.CreateCompanyRequest;
 import fpt.org.inblue.model.dto.request.UpdateCompanyRequest;
 import fpt.org.inblue.repository.CompanyRepository;
@@ -80,7 +81,7 @@ public class CompanyServiceImpl implements CompanyService {
                 .orElseThrow(
                         () -> new CustomException("Không tìm thấy công ty với ID: " + companyId, HttpStatus.NOT_FOUND));
         companyMapper.updateCompanyFromRequest(request, company);
-
+        List<JobDescription> jobDescriptions = company.getJobDescriptions();
         if (logo != null && !logo.isEmpty()) {
             try {
                 if (cloudinaryService.validate(logo)) {
@@ -96,6 +97,8 @@ public class CompanyServiceImpl implements CompanyService {
                     }
                     Map<String, String> logoResult = cloudinaryService.uploadImg(logo);
                     company.setLogoUrl(logoResult.get("secure_url"));
+
+                    jobDescriptions.forEach(jd -> jd.setCompanyLogo(logoResult.get("secure_url")));
                     logger.info("New logo uploaded successfully");
                 } else {
                     logger.warning("Logo validation failed, skipping logo upload");
@@ -132,7 +135,7 @@ public class CompanyServiceImpl implements CompanyService {
                 throw new CustomException("Lỗi tải lên banner: " + e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
             }
         }
-
+        jobDescriptions.forEach(jd -> jd.setCompanyName(company.getName()));
         return companyRepository.save(company);
     }
 
