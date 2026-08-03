@@ -12,6 +12,7 @@ import org.mapstruct.MappingTarget;
 @Mapper(componentModel = "spring")
 public interface MentorMapper {
     @Mapping(target = "averageRating", expression = "java(roundTwoDecimals(mentor.getAverageRating()))")
+    @Mapping(target = "feedbacks", ignore = true)
     MentorResponse toMentorResponse(Mentor mentor);
 
     List<MentorResponse> toMentorResponseList(List<Mentor> mentors);

@@ -12,4 +12,6 @@ import lombok.NoArgsConstructor;
 public class MentorFeedbackResponse {
     private int rating;
     private String comment;
+    private String userName;
+    private String userAvatarUrl;
 }
