@@ -117,14 +117,15 @@ public class UserServiceImpl implements UserService {
             return savedUser;
         }
     }
+
     @Override
     @Retryable(
             value = {Exception.class}, // Thử lại khi gặp bất kỳ ngoại lệ nào (hoặc cụ thể hơn như RestClientException)
             maxAttempts = 3, // Tối đa 3 lần thử (1 lần chính + 2 lần retry)
             backoff = @Backoff(delay = 2000) // Mỗi lần thử lại cách nhau 2 giây
-    )
+            )
     @Transactional
-    public CandidateProfile upCv(int userId,Long applicationId, MultipartFile cvFile) throws IOException {
+    public CandidateProfile upCv(int userId, Long applicationId, MultipartFile cvFile) throws IOException {
         User user = userRepository.findById(userId).orElseThrow(() -> new RuntimeException("User Not Found 123"));
         if (user.getCv_public_id() != null) {
             cloudinaryService.deletePdf(user.getCv_public_id());
@@ -177,7 +178,6 @@ public class UserServiceImpl implements UserService {
         System.err.println("Retry failed for User ID " + userId + ". Error: " + e.getMessage());
         throw new RuntimeException("Dịch vụ phân tích CV hiện không khả dụng, vui lòng thử lại sau.");
     }
-
 
     @Recover
     public CandidateProfile recover(Exception e, int userId, Long applicationId, MultipartFile cvFile) {
