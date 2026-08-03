@@ -155,8 +155,6 @@ public class MentorServiceImpl implements MentorService {
     }
 
     private List<MentorResponse> toMentorResponseList(List<Mentor> mentors) {
-        return mentors.stream()
-                .map(this::toMentorResponse)
-                .toList();
+        return mentors.stream().map(this::toMentorResponse).toList();
     }
 }
