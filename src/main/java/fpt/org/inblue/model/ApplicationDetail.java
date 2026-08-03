@@ -1,6 +1,5 @@
 package fpt.org.inblue.model;
 
-import com.fasterxml.jackson.annotation.JsonFormat;
 import fpt.org.inblue.enums.ApplicationDetailStatus;
 import fpt.org.inblue.enums.MeetingType;
 import fpt.org.inblue.model.dto.response.CompilerResponseDto;
@@ -116,7 +115,8 @@ public class ApplicationDetail {
                 String str = (String) val;
                 if (str.trim().isEmpty() || "null".equalsIgnoreCase(str)) return null;
                 try {
-                    return LocalDateTime.parse(str, java.time.format.DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss.SSS"));
+                    return LocalDateTime.parse(
+                            str, java.time.format.DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss.SSS"));
                 } catch (Exception e) {
                     try {
                         return LocalDateTime.parse(str);
