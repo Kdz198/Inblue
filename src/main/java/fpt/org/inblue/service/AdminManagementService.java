@@ -1,7 +1,10 @@
 package fpt.org.inblue.service;
 
+import fpt.org.inblue.enums.ApplicationDetailStatus;
 import fpt.org.inblue.enums.JobDescriptionStatus;
+import fpt.org.inblue.model.ApplicationDetail;
 import fpt.org.inblue.model.dto.request.AdminJdApplicationsResponseDto;
+import fpt.org.inblue.model.dto.response.admin.AdminApplicationDetailResponse;
 import fpt.org.inblue.model.dto.response.admin.AdminApplicationFullDetailResponseDto;
 import fpt.org.inblue.model.dto.response.admin.AdminOpenJdResponseDto;
 import java.util.List;
@@ -24,4 +27,9 @@ public interface AdminManagementService {
      * bao gồm thông tin ứng viên, Candidate Profile, JD và chi tiết từng vòng thi (ApplicationDetail).
      */
     AdminApplicationFullDetailResponseDto getApplicationFullDetail(Long applicationId);
+
+    /**
+     * Lấy danh sách Application Details và hỗ trợ lọc theo status.
+     */
+    List<AdminApplicationDetailResponse> getApplicationDetails(ApplicationDetailStatus status);
 }

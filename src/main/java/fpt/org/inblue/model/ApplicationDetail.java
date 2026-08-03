@@ -92,11 +92,41 @@ public class ApplicationDetail {
         private Integer sessionId;
         private MeetingType meetingType; // ONLINE hoặc OFFLINE
 
-        @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd HH:mm:ss.SSS")
+        @lombok.Setter(lombok.AccessLevel.NONE)
         private LocalDateTime startTime; // Thời gian bắt đầu vòng thi
 
-        @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd HH:mm:ss.SSS")
+        @lombok.Setter(lombok.AccessLevel.NONE)
         private LocalDateTime endTime; // Thời gian kết thúc vòng thi / deadline
+
+        public void setStartTime(Object val) {
+            this.startTime = parseDateTime(val);
+        }
+
+        public void setEndTime(Object val) {
+            this.endTime = parseDateTime(val);
+        }
+
+        private LocalDateTime parseDateTime(Object val) {
+            if (val == null) return null;
+            if (val instanceof Number) {
+                long ms = ((Number) val).longValue();
+                return LocalDateTime.ofInstant(java.time.Instant.ofEpochMilli(ms), java.time.ZoneId.systemDefault());
+            }
+            if (val instanceof String) {
+                String str = (String) val;
+                if (str.trim().isEmpty() || "null".equalsIgnoreCase(str)) return null;
+                try {
+                    return LocalDateTime.parse(str, java.time.format.DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss.SSS"));
+                } catch (Exception e) {
+                    try {
+                        return LocalDateTime.parse(str);
+                    } catch (Exception ex) {
+                        return null;
+                    }
+                }
+            }
+            return null;
+        }
     }
 
     @Data

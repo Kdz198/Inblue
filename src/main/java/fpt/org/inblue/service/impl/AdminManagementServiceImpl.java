@@ -1,5 +1,6 @@
 package fpt.org.inblue.service.impl;
 
+import fpt.org.inblue.enums.ApplicationDetailStatus;
 import fpt.org.inblue.enums.ApplicationStatus;
 import fpt.org.inblue.enums.JobDescriptionStatus;
 import fpt.org.inblue.exception.CustomException;
@@ -334,5 +335,97 @@ public class AdminManagementServiceImpl implements AdminManagementService {
                 .candidateInfo(candidateInfo)
                 .roundDetails(roundDetails)
                 .build();
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<AdminApplicationDetailResponse> getApplicationDetails(ApplicationDetailStatus status) {
+        List<ApplicationDetailBasicProjection> projections = (status != null)
+                ? applicationDetailRepository.findAllProjectedByStatus(status)
+                : applicationDetailRepository.findAllProjectedBy();
+
+        List<AdminApplicationDetailResponse> result = new ArrayList<>();
+
+        for (ApplicationDetailBasicProjection proj : projections) {
+            // Find Application to get userId and jdId
+            Optional<Application> appOpt = applicationRepository.findById(proj.getApplicationId());
+            if (appOpt.isEmpty()) continue;
+            Application app = appOpt.get();
+
+            // Find User to get candidateName, email, avatarUrl
+            Optional<User> userOpt = userRepository.findById(app.getUserId());
+
+            // Find Job Description to get title
+            Optional<JobDescription> jdOpt = jobDescriptionRepository.findById(app.getJdId());
+            String jdTitle = jdOpt.map(JobDescription::getTitle).orElse("N/A");
+
+            // Find Round to get roundName and roundOrder
+            String roundName = "Unknown Round";
+            Integer roundOrder = null;
+            if (jdOpt.isPresent() && proj.getRoundId() != null) {
+                JobDescription jd = jdOpt.get();
+                Optional<Round> roundOpt = jd.getRounds().stream()
+                        .filter(r -> proj.getRoundId().equals(r.getId()))
+                        .findFirst();
+                if (roundOpt.isPresent()) {
+                    roundName = roundOpt.get().getName();
+                    roundOrder = roundOpt.get().getRoundOrder();
+                }
+            }
+
+            // Map assigned mentors details
+            List<MentorResponse> assignedMentorsList = new ArrayList<>();
+            if (proj.getAssignedMentorIds() != null && !proj.getAssignedMentorIds().isEmpty()) {
+                for (Integer mentorId : proj.getAssignedMentorIds()) {
+                    try {
+                        MentorResponse mRes = mentorService.getMentorById(mentorId);
+                        if (mRes != null) {
+                            assignedMentorsList.add(mRes);
+                        }
+                    } catch (Exception ignored) {
+                    }
+                }
+            }
+
+            AdminApplicationDetailResponse response = AdminApplicationDetailResponse.builder()
+                    .id(proj.getId())
+                    .applicationId(proj.getApplicationId())
+                    .roundId(proj.getRoundId())
+                    .status(proj.getStatus())
+                    .finalScore(proj.getFinalScore())
+                    .hrScore(proj.getHrScore())
+                    .hrNote(proj.getHrNote())
+                    .aiScore(proj.getAiScore())
+                    .finalResult(proj.getFinalResult())
+                    .startedAt(proj.getStartedAt())
+                    .completedAt(proj.getCompletedAt())
+                    .mentorId(proj.getMentorId())
+                    .assignedMentorIds(proj.getAssignedMentorIds())
+                    .assignedMentors(assignedMentorsList)
+                    .sessionId(proj.getSessionId())
+                    .aiInterviewSessionId(proj.getAiInterviewSessionId())
+                    .createdAt(proj.getCreatedAt())
+                    .updatedAt(proj.getUpdatedAt())
+                    // Add-on fields
+                    .roundName(roundName)
+                    .roundOrder(roundOrder)
+                    .jdTitle(jdTitle)
+                    .candidateName(userOpt.map(User::getName).orElse("N/A"))
+                    .candidateEmail(userOpt.map(User::getEmail).orElse("N/A"))
+                    .candidateAvatarUrl(userOpt.map(User::getAvatarUrl).orElse(null))
+                    .build();
+
+            result.add(response);
+        }
+
+        // Sort by updatedAt descending
+        result.sort((a, b) -> {
+            if (a.getUpdatedAt() == null && b.getUpdatedAt() == null) return 0;
+            if (a.getUpdatedAt() == null) return 1;
+            if (b.getUpdatedAt() == null) return -1;
+            return b.getUpdatedAt().compareTo(a.getUpdatedAt());
+        });
+
+        return result;
     }
 }

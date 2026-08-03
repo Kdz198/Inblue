@@ -1,7 +1,10 @@
 package fpt.org.inblue.controller;
 
+import fpt.org.inblue.enums.ApplicationDetailStatus;
 import fpt.org.inblue.enums.JobDescriptionStatus;
+import fpt.org.inblue.model.ApplicationDetail;
 import fpt.org.inblue.model.dto.request.AdminJdApplicationsResponseDto;
+import fpt.org.inblue.model.dto.response.admin.AdminApplicationDetailResponse;
 import fpt.org.inblue.model.dto.response.admin.AdminApplicationFullDetailResponseDto;
 import fpt.org.inblue.model.dto.response.admin.AdminOpenJdResponseDto;
 import fpt.org.inblue.service.AdminManagementService;
@@ -52,6 +55,16 @@ public class AdminManagementController {
     public ResponseEntity<AdminApplicationFullDetailResponseDto> getApplicationFullDetail(
             @PathVariable Long applicationId) {
         AdminApplicationFullDetailResponseDto response = adminManagementService.getApplicationFullDetail(applicationId);
+        return ResponseEntity.ok(response);
+    }
+
+    @GetMapping("/application-details")
+    @Operation(
+            summary = "Lấy danh sách các vòng thi (Application Details) và hỗ trợ lọc theo status",
+            description = "Trả về danh sách các Application Details. Hỗ trợ lọc theo trạng thái (ví dụ: status=AWAITING_MENTOR). Nếu không truyền status thì trả về tất cả.")
+    public ResponseEntity<List<AdminApplicationDetailResponse>> getApplicationDetails(
+            @RequestParam(required = false) ApplicationDetailStatus status) {
+        List<AdminApplicationDetailResponse> response = adminManagementService.getApplicationDetails(status);
         return ResponseEntity.ok(response);
     }
 }
