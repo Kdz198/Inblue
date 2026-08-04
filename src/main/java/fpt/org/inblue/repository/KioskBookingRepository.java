@@ -33,4 +33,6 @@ public interface KioskBookingRepository extends JpaRepository<KioskBooking, Long
             @Param("start") LocalDateTime start,
             @Param("end") LocalDateTime end,
             @Param("cancelledStatus") BookingStatus cancelledStatus);
+
+    Optional<KioskBooking> findByApplicationDetailId(Long applicationDetailId);
 }

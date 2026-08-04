@@ -86,6 +86,12 @@ public class KioskBookingServiceImpl implements KioskBookingService {
     }
 
     @Override
+    public KioskBooking findByApplicationDetailId(Long applicationDetailId) {
+
+        return bookingRepository.findByApplicationDetailId(applicationDetailId).get();
+    }
+
+    @Override
     @Transactional
     public void cancelBooking(Long bookingId, int userId) {
         KioskBooking booking = bookingRepository

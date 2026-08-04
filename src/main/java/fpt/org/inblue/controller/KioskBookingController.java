@@ -58,4 +58,10 @@ public class KioskBookingController {
     public ResponseEntity<KioskEnterDtoResponse> enterKiosk(@RequestBody KioskEnterDtoRequest dto) {
         return ResponseEntity.ok(bookingService.enterKiosk(dto.getSessionKey(), dto.getKioskId()));
     }
+
+    @GetMapping("/api/kiosk-bookings/application-detail/{applicationDetailId}")
+    public ResponseEntity<KioskBooking> getBookingByApplicationDetailId(@PathVariable Long applicationDetailId) {
+        KioskBooking booking = bookingService.findByApplicationDetailId(applicationDetailId);
+        return ResponseEntity.ok(booking);
+    }
 }

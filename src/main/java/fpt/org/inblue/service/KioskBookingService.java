@@ -7,6 +7,8 @@ import fpt.org.inblue.model.dto.response.KioskEnterDtoResponse;
 public interface KioskBookingService {
     KioskBooking pickSlot(PickSlotDtoRequest dto, int userId);
 
+    KioskBooking findByApplicationDetailId(Long applicationDetailId);
+
     void cancelBooking(Long bookingId, int userId);
 
     KioskEnterDtoResponse enterKiosk(String sessionKey, Long kioskId);
