@@ -126,7 +126,7 @@ public class SubmissionService {
                 ? ApplicationDetail.RoundResult.PASSED
                 : ApplicationDetail.RoundResult.FAILED;
         detail.setFinalResult(roundResult);
-        applicationService.moveToNextRound(currentApplication);
+      //  applicationService.moveToNextRound(currentApplication);
         return applicationDetailRepository.save(detail);
     }
 
