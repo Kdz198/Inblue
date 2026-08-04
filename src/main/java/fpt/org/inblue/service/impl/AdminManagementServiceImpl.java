@@ -375,7 +375,8 @@ public class AdminManagementServiceImpl implements AdminManagementService {
 
             // Map assigned mentors details
             List<MentorResponse> assignedMentorsList = new ArrayList<>();
-            if (proj.getAssignedMentorIds() != null && !proj.getAssignedMentorIds().isEmpty()) {
+            if (proj.getAssignedMentorIds() != null
+                    && !proj.getAssignedMentorIds().isEmpty()) {
                 for (Integer mentorId : proj.getAssignedMentorIds()) {
                     try {
                         MentorResponse mRes = mentorService.getMentorById(mentorId);
