@@ -233,8 +233,7 @@ public class ApplicationDetailServiceImpl implements ApplicationDetailService {
 
         OrchestratorRequest.SessionConfigData configData = new OrchestratorRequest.SessionConfigData();
 
-
-        //Todo đoạn này chuẩn nếu có thơì gian thì phải lấy từ config của cái round đó
+        // Todo đoạn này chuẩn nếu có thơì gian thì phải lấy từ config của cái round đó
         if (configData.getInterviewMode() == null) {
             configData.setInterviewMode(fpt.org.inblue.enums.InterviewEnums.InterviewMode.STANDARD_MOCK);
         }
