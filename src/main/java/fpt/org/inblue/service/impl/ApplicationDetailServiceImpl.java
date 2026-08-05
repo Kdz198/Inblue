@@ -224,7 +224,7 @@ public class ApplicationDetailServiceImpl implements ApplicationDetailService {
                 interviewSessionService.getJobRequirementFromJD(jd.getDescription());
 
         // Fetch Candidate Profile from DB
-        CandidateProfile profile = candidateProfileRepository.findByApplicationId(applicationDetailId);
+        CandidateProfile profile = candidateProfileRepository.findByApplicationId(appDetail.getApplicationId());
         if (profile == null) {
             throw new CustomException(
                     "Candidate profile not found. Please update your CV/Profile before starting the interview.",
@@ -233,6 +233,8 @@ public class ApplicationDetailServiceImpl implements ApplicationDetailService {
 
         OrchestratorRequest.SessionConfigData configData = new OrchestratorRequest.SessionConfigData();
 
+
+        //Todo đoạn này chuẩn nếu có thơì gian thì phải lấy từ config của cái round đó
         if (configData.getInterviewMode() == null) {
             configData.setInterviewMode(fpt.org.inblue.enums.InterviewEnums.InterviewMode.STANDARD_MOCK);
         }
