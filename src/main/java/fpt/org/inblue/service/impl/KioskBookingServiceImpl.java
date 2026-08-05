@@ -136,7 +136,6 @@ public class KioskBookingServiceImpl implements KioskBookingService {
             throw new CustomException("Booking has been cancelled", HttpStatus.BAD_REQUEST);
         }
 
-
         // LocalDateTime now = LocalDateTime.now(ZoneId.of("Asia/Ho_Chi_Minh"));
         // LocalDateTime start = booking.getScheduledStart();
         // if (now.isBefore(start.minusMinutes(15)) ||

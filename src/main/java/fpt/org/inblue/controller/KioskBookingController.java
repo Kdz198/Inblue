@@ -2,7 +2,6 @@ package fpt.org.inblue.controller;
 
 import fpt.org.inblue.exception.CustomException;
 import fpt.org.inblue.model.KioskBooking;
-import fpt.org.inblue.model.dto.request.KioskEnterDtoRequest;
 import fpt.org.inblue.model.dto.request.PickSlotDtoRequest;
 import fpt.org.inblue.model.dto.response.KioskEnterDtoResponse;
 import fpt.org.inblue.security.CustomUserDetails;
