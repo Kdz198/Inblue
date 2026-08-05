@@ -224,7 +224,7 @@ public class ApplicationDetailServiceImpl implements ApplicationDetailService {
                 interviewSessionService.getJobRequirementFromJD(jd.getDescription());
 
         // Fetch Candidate Profile from DB
-        CandidateProfile profile = candidateProfileRepository.findByUser_Id(applicant.getId());
+        CandidateProfile profile = candidateProfileRepository.findByApplicationId(applicationDetailId);
         if (profile == null) {
             throw new CustomException(
                     "Candidate profile not found. Please update your CV/Profile before starting the interview.",
