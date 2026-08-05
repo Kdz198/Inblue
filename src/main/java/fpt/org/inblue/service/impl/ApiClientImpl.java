@@ -222,7 +222,7 @@ public class ApiClientImpl implements ApiClient {
             return objectMapper.readValue(response.getBody(), responseType);
 
         } catch (Exception e) {
-            //log ra payload
+            // log ra payload
             if (requestBody != null) {
                 log.error("Payload: {}", requestBody);
             }
