@@ -12,6 +12,7 @@ import fpt.org.inblue.service.ApiClient;
 import fpt.org.inblue.service.LlmChatLogService;
 import java.util.*;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.ByteArrayResource;
 import org.springframework.http.*;
@@ -23,6 +24,7 @@ import org.springframework.web.multipart.MultipartFile;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class ApiClientImpl implements ApiClient {
 
     private final RestTemplate restTemplate;
@@ -220,6 +222,10 @@ public class ApiClientImpl implements ApiClient {
             return objectMapper.readValue(response.getBody(), responseType);
 
         } catch (Exception e) {
+            //log ra payload
+            if (requestBody != null) {
+                log.error("Payload: {}", requestBody);
+            }
             throw new RuntimeException("Lỗi gọi Python API [" + endpoint + "]: " + e.getMessage(), e);
         }
     }
