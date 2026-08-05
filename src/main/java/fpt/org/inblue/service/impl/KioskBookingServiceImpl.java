@@ -127,7 +127,7 @@ public class KioskBookingServiceImpl implements KioskBookingService {
 
     @Override
     @Transactional
-    public KioskEnterDtoResponse enterKiosk(String sessionKey, Long kioskId) {
+    public KioskEnterDtoResponse enterKiosk(String sessionKey) {
         KioskBooking booking = bookingRepository
                 .findBySessionKey(sessionKey)
                 .orElseThrow(() -> new CustomException("Booking not found for this session key", HttpStatus.NOT_FOUND));
@@ -136,10 +136,6 @@ public class KioskBookingServiceImpl implements KioskBookingService {
             throw new CustomException("Booking has been cancelled", HttpStatus.BAD_REQUEST);
         }
 
-        if (!booking.getKioskId().equals(kioskId)) {
-            throw new CustomException(
-                    "Session key is registered for Kiosk " + booking.getKioskId(), HttpStatus.BAD_REQUEST);
-        }
 
         // LocalDateTime now = LocalDateTime.now(ZoneId.of("Asia/Ho_Chi_Minh"));
         // LocalDateTime start = booking.getScheduledStart();
