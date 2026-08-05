@@ -166,7 +166,6 @@ public class KioskBookingServiceImpl implements KioskBookingService {
         applicationDetailRepository.save(appDetail);
 
         return KioskEnterDtoResponse.builder()
-                .type("AI")
                 .aiSessionKey(aiSessionKey)
                 .build();
     }

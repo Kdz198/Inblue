@@ -52,7 +52,7 @@ public class KioskBookingController {
     @Operation(
             summary = "Kiosk xác thực và vào phòng phỏng vấn",
             description =
-                    "Máy Kiosk vật lý gửi sessionKey và kioskId để xác thực. Hệ thống kiểm tra thời gian hợp lệ (±15 phút so với giờ hẹn) và gọi orchestrator để lấy AI Session.")
+                    "Máy Kiosk vật lý gửi sessionKey để xác thực. Hệ thống kiểm tra thời gian hợp lệ (±15 phút so với giờ hẹn) và gọi orchestrator để lấy AI Session.")
     @PostMapping("/api/kiosk/enter/{sessionKey}")
     public ResponseEntity<KioskEnterDtoResponse> enterKiosk(@PathVariable String sessionKey) {
         return ResponseEntity.ok(bookingService.enterKiosk(sessionKey));

@@ -10,7 +10,5 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 @NoArgsConstructor
 public class KioskEnterDtoResponse {
-    private String type; // MENTOR or AI
-    private String roomUrl; // For Daily.co (Mentor)
     private String aiSessionKey; // For AI Interview
 }
