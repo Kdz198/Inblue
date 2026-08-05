@@ -165,8 +165,6 @@ public class KioskBookingServiceImpl implements KioskBookingService {
         appDetail.setStatus(fpt.org.inblue.enums.ApplicationDetailStatus.PENDING);
         applicationDetailRepository.save(appDetail);
 
-        return KioskEnterDtoResponse.builder()
-                .aiSessionKey(aiSessionKey)
-                .build();
+        return KioskEnterDtoResponse.builder().aiSessionKey(aiSessionKey).build();
     }
 }
