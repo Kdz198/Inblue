@@ -12,5 +12,7 @@ public interface ApplicationService {
 
     List<Application> getAllApplicationsByUserId();
 
+    List<Application> getAllApplicationsByUserEmail(String email);
+
     void moveToNextRound(Application currentApplication);
 }
