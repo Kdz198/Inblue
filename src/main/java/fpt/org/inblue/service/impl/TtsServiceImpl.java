@@ -20,7 +20,7 @@ public class TtsServiceImpl implements TtsService {
     @Value("${elevenlabs.bearer.token:}")
     private String bearerToken;
 
-    @Value("${elevenlabs.voice.id}")
+    @Value("${elevenlabs.voice.id:}")
     private String voiceId;
 
     private final RestTemplate restTemplate;
