@@ -38,8 +38,6 @@ public class InterviewProcessController {
         byte[] audio = ttsService.generateAudio(request.text());
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_OCTET_STREAM);
-        return ResponseEntity.ok()
-                .headers(headers)
-                .body(audio);
+        return ResponseEntity.ok().headers(headers).body(audio);
     }
 }
