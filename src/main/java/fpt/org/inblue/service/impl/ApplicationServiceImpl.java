@@ -11,6 +11,7 @@ import fpt.org.inblue.model.ApplicationDetail;
 import fpt.org.inblue.model.JdPurchase;
 import fpt.org.inblue.model.JobDescription;
 import fpt.org.inblue.model.Round;
+import fpt.org.inblue.model.dto.response.ApplicationLookupResponse;
 import fpt.org.inblue.repository.ApplicationDetailRepository;
 import fpt.org.inblue.repository.ApplicationRepository;
 import fpt.org.inblue.repository.JdPurchaseRepository;
@@ -20,7 +21,9 @@ import fpt.org.inblue.service.ApplicationService;
 import fpt.org.inblue.utils.SecurityUtils;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
+import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.ApplicationEventPublisher;
@@ -134,7 +137,7 @@ public class ApplicationServiceImpl implements ApplicationService {
     }
 
     @Override
-    public List<Application> getAllApplicationsByUserEmail(String email) {
+    public List<ApplicationLookupResponse> getAllApplicationsByUserEmail(String email) {
         if (email == null || email.isBlank()) {
             throw new CustomException("Email is required", HttpStatus.BAD_REQUEST);
         }
@@ -144,7 +147,30 @@ public class ApplicationServiceImpl implements ApplicationService {
             throw new CustomException("User not found with email: " + email.trim(), HttpStatus.NOT_FOUND);
         }
 
-        return applicationRepository.findAllByUserIdAndStatusNot(user.getId(), ApplicationStatus.IN_PROGRESS);
+        List<Application> applications = applicationRepository.findAllByUserIdAndStatusNot(
+                user.getId(), ApplicationStatus.IN_PROGRESS);
+        Map<Long, String> applicationNamesByJdId = jobDescriptionRepository.findAllById(applications.stream()
+                        .map(Application::getJdId)
+                        .filter(java.util.Objects::nonNull)
+                        .distinct()
+                        .toList())
+                .stream()
+                .collect(Collectors.toMap(JobDescription::getId, JobDescription::getTitle));
+
+        return applications.stream()
+                .map(application -> ApplicationLookupResponse.builder()
+                        .id(application.getId())
+                        .userId(application.getUserId())
+                        .jdId(application.getJdId())
+                        .applicationName(applicationNamesByJdId.get(application.getJdId()))
+                        .currentRoundOrder(application.getCurrentRoundOrder())
+                        .status(application.getStatus())
+                        .overallScore(application.getOverallScore())
+                        .isDeleted(application.getIsDeleted())
+                        .createdAt(application.getCreatedAt())
+                        .updatedAt(application.getUpdatedAt())
+                        .build())
+                .toList();
     }
 
     @Override
