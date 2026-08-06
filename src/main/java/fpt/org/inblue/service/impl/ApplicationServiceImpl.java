@@ -4,6 +4,7 @@ import fpt.org.inblue.enums.ApplicationDetailStatus;
 import fpt.org.inblue.enums.ApplicationStatus;
 import fpt.org.inblue.enums.JdPurchaseStatus;
 import fpt.org.inblue.enums.RoundType;
+import fpt.org.inblue.event.AllRoundsCompletedEvent;
 import fpt.org.inblue.exception.CustomException;
 import fpt.org.inblue.model.Application;
 import fpt.org.inblue.model.ApplicationDetail;
@@ -14,12 +15,15 @@ import fpt.org.inblue.repository.ApplicationDetailRepository;
 import fpt.org.inblue.repository.ApplicationRepository;
 import fpt.org.inblue.repository.JdPurchaseRepository;
 import fpt.org.inblue.repository.JobDescriptionRepository;
+import fpt.org.inblue.repository.UserRepository;
 import fpt.org.inblue.service.ApplicationService;
 import fpt.org.inblue.utils.SecurityUtils;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -27,12 +31,15 @@ import org.springframework.transaction.annotation.Transactional;
 @Service
 @RequiredArgsConstructor
 @Transactional
+@Slf4j
 public class ApplicationServiceImpl implements ApplicationService {
     private final SecurityUtils securityUtils;
     private final ApplicationRepository applicationRepository;
     private final JobDescriptionRepository jobDescriptionRepository;
     private final ApplicationDetailRepository applicationDetailRepository;
     private final JdPurchaseRepository jdPurchaseRepository;
+    private final UserRepository userRepository;
+    private final ApplicationEventPublisher applicationEventPublisher;
 
     @Override
     public Application applyForJob(Long jdId) {
@@ -127,14 +134,35 @@ public class ApplicationServiceImpl implements ApplicationService {
     }
 
     @Override
+    public List<Application> getAllApplicationsByUserEmail(String email) {
+        if (email == null || email.isBlank()) {
+            throw new CustomException("Email is required", HttpStatus.BAD_REQUEST);
+        }
+
+        var user = userRepository.findByEmail(email.trim());
+        if (user == null) {
+            throw new CustomException("User not found with email: " + email.trim(), HttpStatus.NOT_FOUND);
+        }
+
+        return applicationRepository.findAllByUserIdAndStatusNot(user.getId(), ApplicationStatus.IN_PROGRESS);
+    }
+
+    @Override
     public void moveToNextRound(Application currentApplication) {
         JobDescription jd =
                 jobDescriptionRepository.findById(currentApplication.getJdId()).orElse(null);
-        System.out.println("Moving application " + currentApplication.getId() + " to next round. Current round order: "
-                + currentApplication.getCurrentRoundOrder());
+        log.info(
+                "Moving applicationId={} to next round. currentRoundOrder={}",
+                currentApplication.getId(),
+                currentApplication.getCurrentRoundOrder());
         if (jd != null) {
             List<Round> rounds = jd.getRounds();
             int currentRoundOrder = currentApplication.getCurrentRoundOrder();
+            log.info(
+                    "Application round progress check: applicationId={}, currentRoundOrder={}, totalRounds={}",
+                    currentApplication.getId(),
+                    currentRoundOrder,
+                    rounds != null ? rounds.size() : 0);
             if (currentRoundOrder < rounds.size()) {
                 List<ApplicationDetail> existingDetails =
                         applicationDetailRepository.findAllByApplicationId(currentApplication.getId());
@@ -147,8 +175,10 @@ public class ApplicationServiceImpl implements ApplicationService {
                 int nextRoundOrder = currentRoundOrder + 1;
                 currentApplication.setCurrentRoundOrder(nextRoundOrder);
                 applicationRepository.save(currentApplication);
-                System.out.println("Application " + currentApplication.getId() + " moved to round order "
-                        + currentApplication.getCurrentRoundOrder());
+                log.info(
+                        "Application moved to next round: applicationId={}, nextRoundOrder={}",
+                        currentApplication.getId(),
+                        currentApplication.getCurrentRoundOrder());
 
                 // Tự động tạo ApplicationDetail với status AWAITING_MENTOR cho vòng MENTROR_REVIEW
                 // và PENDING cho các vòng khác không có luồng nộp bài (AI_INTERVIEW)
@@ -192,6 +222,8 @@ public class ApplicationServiceImpl implements ApplicationService {
                 }
 
             } else {
+                boolean wasFinished = currentApplication.getStatus() == ApplicationStatus.PASSED
+                        || currentApplication.getStatus() == ApplicationStatus.FAILED;
                 List<ApplicationDetail> details =
                         applicationDetailRepository.findAllByApplicationId(currentApplication.getId());
                 double totalEarnedScore = 0;
@@ -235,9 +267,44 @@ public class ApplicationServiceImpl implements ApplicationService {
                     currentApplication.setStatus(ApplicationStatus.PASSED);
                 }
                 applicationRepository.save(currentApplication);
-                System.out.println("Application " + currentApplication.getId() + " finished all rounds. Status: "
-                        + currentApplication.getStatus() + ", Overall Score: " + overallScorePercentage + "%");
+                boolean allRoundsCompleted = areAllRoundsCompleted(rounds, details);
+                log.info(
+                        "Final round completion check: applicationId={}, wasFinished={}, allRoundsCompleted={}, finalStatus={}, detailCount={}",
+                        currentApplication.getId(),
+                        wasFinished,
+                        allRoundsCompleted,
+                        currentApplication.getStatus(),
+                        details.size());
+                if (!wasFinished && allRoundsCompleted) {
+                    log.info(
+                            "Publishing AllRoundsCompletedEvent for applicationId={}",
+                            currentApplication.getId());
+                    applicationEventPublisher.publishEvent(new AllRoundsCompletedEvent(currentApplication.getId()));
+                } else {
+                    log.info(
+                            "Skip publishing AllRoundsCompletedEvent for applicationId={}. wasFinished={}, allRoundsCompleted={}",
+                            currentApplication.getId(),
+                            wasFinished,
+                            allRoundsCompleted);
+                }
+                log.info(
+                        "Application finished all rounds: applicationId={}, status={}, overallScore={}",
+                        currentApplication.getId(),
+                        currentApplication.getStatus(),
+                        overallScorePercentage);
             }
         }
+    }
+
+    private boolean areAllRoundsCompleted(List<Round> rounds, List<ApplicationDetail> details) {
+        if (rounds == null || rounds.isEmpty()) {
+            return false;
+        }
+        return rounds.stream()
+                .allMatch(round -> details.stream()
+                        .anyMatch(detail -> detail.getRoundId() != null
+                                && round.getId() != null
+                                && detail.getRoundId().equals(round.getId())
+                                && detail.getFinalResult() != null));
     }
 }

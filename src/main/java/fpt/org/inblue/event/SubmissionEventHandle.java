@@ -145,6 +145,7 @@ public class SubmissionEventHandle {
 
             // Lưu source code từng bài vào CodeSubmission
             codeSubmissions.add(ApplicationDetail.CodeSubmission.builder()
+                    .problemId(compileRequest.getProblemId())
                     .sourceCode(compileRequest.getSourceCode())
                     .testCases(response)
                     .build());
