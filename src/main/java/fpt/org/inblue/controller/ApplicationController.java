@@ -2,6 +2,7 @@ package fpt.org.inblue.controller;
 
 import fpt.org.inblue.model.Application;
 import fpt.org.inblue.model.JourneySummary;
+import fpt.org.inblue.model.dto.response.ApplicationLookupResponse;
 import fpt.org.inblue.model.dto.response.CompetencyChartResponse;
 import fpt.org.inblue.service.ApplicationService;
 import fpt.org.inblue.service.JourneySummaryService;
@@ -28,7 +29,7 @@ public class ApplicationController {
     }
 
     @GetMapping("/by-email")
-    public ResponseEntity<List<Application>> getApplicationsByEmail(@RequestParam String email) {
+    public ResponseEntity<List<ApplicationLookupResponse>> getApplicationsByEmail(@RequestParam String email) {
         return ResponseEntity.ok(applicationService.getAllApplicationsByUserEmail(email));
     }
 

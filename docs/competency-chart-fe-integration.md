@@ -29,6 +29,7 @@ Success response:
       "id": 133,
       "userId": 8,
       "jdId": 41,
+      "applicationName": "Backend Developer Intern",
       "currentRoundOrder": 4,
       "status": "PASSED",
       "overallScore": 91,
@@ -66,6 +67,7 @@ export type Application = {
   id: number;
   userId: number;
   jdId: number;
+  applicationName: string;
   currentRoundOrder: number;
   status: ApplicationStatus;
   overallScore: number;
