@@ -37,13 +37,9 @@ public class SecurityConfig {
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http.cors(cors -> cors.configurationSource(request -> {
                     CorsConfiguration corsConfiguration = new CorsConfiguration();
-                    corsConfiguration.setAllowedOriginPatterns(Arrays.asList(
-                            "http://localhost:3000",
-                            "http://localhost:8080",
-                            frontendUrl,
-                            "https://api.kdz.asia",
-                            "http://localhost:5173",
-                            "https://inblue-fpt-zeta.vercel.app"));
+
+                    corsConfiguration.setAllowedOriginPatterns(Arrays.asList("*"));
+
                     corsConfiguration.setAllowedMethods(
                             Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"));
                     corsConfiguration.setAllowedHeaders(Arrays.asList("*"));
