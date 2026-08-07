@@ -108,9 +108,7 @@ public class JourneySummaryServiceImpl implements JourneySummaryService {
     @Transactional(readOnly = true)
     public JourneySummaryAIRequest buildAIRequest(Long applicationId) {
         AISummaryRequest summaryRequest = buildSummaryRequest(applicationId);
-        return JourneySummaryAIRequest.builder()
-                .data(summaryRequest)
-                .build();
+        return JourneySummaryAIRequest.builder().data(summaryRequest).build();
     }
 
     @Override
