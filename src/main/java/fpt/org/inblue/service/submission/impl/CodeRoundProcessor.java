@@ -1,6 +1,7 @@
 package fpt.org.inblue.service.submission.impl;
 
 import fpt.org.inblue.enums.RoundType;
+import fpt.org.inblue.event.SubmissionEventHandle;
 import fpt.org.inblue.model.CodingProblem;
 import fpt.org.inblue.model.dto.ProcessDto;
 import fpt.org.inblue.model.dto.request.CompileRequest;
@@ -15,7 +16,6 @@ import java.util.ArrayList;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Component;
 
 @Component
@@ -25,7 +25,7 @@ public class CodeRoundProcessor implements RoundSubmissionProcessor {
 
     private final ApiClient apiClient;
     private final CodingProblemsRepository codingProblemsRepository;
-    private final ApplicationEventPublisher applicationEventPublisher;
+    private final SubmissionEventHandle submissionEventHandle;
 
     @Override
     public RoundType getSupportedType() {
@@ -48,7 +48,7 @@ public class CodeRoundProcessor implements RoundSubmissionProcessor {
         CompileRequest testRequest = null;
         for (CompileRequest req : compileRequests) {
 
-            if (req.getIsTest()) {
+            if (Boolean.TRUE.equals(req.getIsTest())) {
                 System.out.println(
                         "Phát hiện yêu cầu chạy thử (isTest == true) cho bài toán mã số: " + req.getProblemId());
                 testRequest = req;
@@ -92,8 +92,7 @@ public class CodeRoundProcessor implements RoundSubmissionProcessor {
             CompilerResponseDto response = apiClient.executeCode(requestDto);
             return SubmissionResult.compileCode(response);
         } else {
-            applicationEventPublisher.publishEvent(dto);
-            return SubmissionResult.pending(dto.getApplication().getId());
+            return SubmissionResult.completed(submissionEventHandle.processCodeSubmission(dto));
         }
 
         // Xử lý nộp bài chính thức tại đây nếu test == false (ví dụ lưu kết quả vào DB

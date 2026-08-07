@@ -19,8 +19,8 @@ import fpt.org.inblue.service.ApplicationService;
 import fpt.org.inblue.service.JobDescriptionService;
 import java.io.IOException;
 import java.util.List;
-import java.util.Optional;
 import lombok.RequiredArgsConstructor;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -53,6 +53,12 @@ public class SubmissionService {
 
         Round.CodeReviewProblemSnapshot problemSnapshot =
                 currentRound.getConfigData().getCodeReviewProblems().get(0);
+
+        if (applicationDetailRepository
+                .findByApplicationIdAndRoundId(request.getApplicationId(), currentRound.getId())
+                .isPresent()) {
+            throw new CustomException("Bài đã được nộp cho vòng này", HttpStatus.CONFLICT);
+        }
 
         List<String> defaultMetrics = List.of(
                 CodeReviewMetricConstant.BUG_DETECTION,
@@ -103,13 +109,10 @@ public class SubmissionService {
             throw new CustomException("AI Service không phản hồi kết quả chấm điểm", HttpStatus.INTERNAL_SERVER_ERROR);
         }
 
-        Optional<ApplicationDetail> detailOpt = applicationDetailRepository.findByApplicationIdAndRoundId(
-                request.getApplicationId(), currentRound.getId());
-
-        ApplicationDetail detail = detailOpt.orElseGet(() -> ApplicationDetail.builder()
+        ApplicationDetail detail = ApplicationDetail.builder()
                 .applicationId(request.getApplicationId())
                 .roundId(currentRound.getId())
-                .build());
+                .build();
 
         ApplicationDetail.SubmissionData submissionData = detail.getSubmissionData() != null
                 ? detail.getSubmissionData()
@@ -127,7 +130,11 @@ public class SubmissionService {
                 : ApplicationDetail.RoundResult.FAILED;
         detail.setFinalResult(roundResult);
         //  applicationService.moveToNextRound(currentApplication);
-        return applicationDetailRepository.save(detail);
+        try {
+            return applicationDetailRepository.saveAndFlush(detail);
+        } catch (DataIntegrityViolationException e) {
+            throw new CustomException("Bài đã được nộp cho vòng này", HttpStatus.CONFLICT);
+        }
     }
 
     @Transactional

@@ -29,6 +29,7 @@ import java.io.IOException;
 import java.util.*;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.context.event.EventListener;
 import org.springframework.http.HttpStatus;
 import org.springframework.scheduling.annotation.Async;
@@ -64,7 +65,8 @@ public class SubmissionEventHandle {
         }
     }
 
-    private void processCodeSubmission(ProcessDto dto) {
+    public ApplicationDetail processCodeSubmission(ProcessDto dto) {
+        ensureRoundHasNotBeenSubmitted(dto);
         Round round = dto.getRound();
 
         List<CompileRequest> compileRequests = dto.getCompileRequest();
@@ -197,9 +199,10 @@ public class SubmissionEventHandle {
                 .submissionData(submissionData)
                 .build();
 
-        applicationDetailRepository.save(applicationDetail);
+        ApplicationDetail savedDetail = saveApplicationDetail(applicationDetail);
 
         applicationService.moveToNextRound(dto.getApplication());
+        return savedDetail;
     }
 
     private void processEmailSubmission(ProcessDto dto) {
@@ -281,7 +284,8 @@ public class SubmissionEventHandle {
         }
     }
 
-    private void processCvSubmission(ProcessDto dto) throws IOException {
+    public ApplicationDetail processCvSubmission(ProcessDto dto) throws IOException {
+        ensureRoundHasNotBeenSubmitted(dto);
         if (dto.getFile() == null || dto.getFile().isEmpty()) {
             System.err.println("File not found");
         } else {
@@ -346,7 +350,24 @@ public class SubmissionEventHandle {
         applicationDetail.setSubmissionData(submissionData);
         applicationDetail.setAiScore(response.getScore());
         applicationDetail.setAiFeedback(parseRawMetrics(response.getExtraMetrics()));
-        applicationDetailRepository.save(applicationDetail);
+        return saveApplicationDetail(applicationDetail);
+    }
+
+    private void ensureRoundHasNotBeenSubmitted(ProcessDto dto) {
+        boolean alreadySubmitted = applicationDetailRepository
+                .findByApplicationIdAndRoundId(dto.getApplication().getId(), dto.getRound().getId())
+                .isPresent();
+        if (alreadySubmitted) {
+            throw new CustomException("Bài đã được nộp cho vòng này", HttpStatus.CONFLICT);
+        }
+    }
+
+    private ApplicationDetail saveApplicationDetail(ApplicationDetail applicationDetail) {
+        try {
+            return applicationDetailRepository.saveAndFlush(applicationDetail);
+        } catch (DataIntegrityViolationException e) {
+            throw new CustomException("Bài đã được nộp cho vòng này", HttpStatus.CONFLICT);
+        }
     }
 
     public static ApplicationDetail.AiFeedback parseRawMetrics(Map<String, Object> rawMap) {
