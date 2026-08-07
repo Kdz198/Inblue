@@ -1,5 +1,6 @@
 package fpt.org.inblue.controller;
 
+import fpt.org.inblue.model.dto.request.EnhanceTranscriptRequest;
 import fpt.org.inblue.model.dto.request.SubmitAnswerRequest;
 import fpt.org.inblue.model.dto.response.QuestionResponse;
 import fpt.org.inblue.service.InterviewProcessService;
@@ -39,5 +40,10 @@ public class InterviewProcessController {
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_OCTET_STREAM);
         return ResponseEntity.ok().headers(headers).body(audio);
+    }
+
+    @PostMapping("/enhance-transcript")
+    public String enhanceTranscript(@RequestBody EnhanceTranscriptRequest request) {
+        return ttsService.enhancedTranscript(request);
     }
 }

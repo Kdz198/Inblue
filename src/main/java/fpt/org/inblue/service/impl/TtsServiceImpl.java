@@ -1,17 +1,24 @@
 package fpt.org.inblue.service.impl;
 
+import fpt.org.inblue.enums.AnythingLlmWorkspace;
+import fpt.org.inblue.model.dto.request.EnhanceTranscriptRequest;
+import fpt.org.inblue.service.ApiClient;
 import fpt.org.inblue.service.TtsService;
 import java.util.HashMap;
 import java.util.Map;
+
+import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.client.RestTemplate;
 
 @Service
+@RequiredArgsConstructor
 public class TtsServiceImpl implements TtsService {
 
     @Value("${elevenlabs.api.key:}")
@@ -25,9 +32,8 @@ public class TtsServiceImpl implements TtsService {
 
     private final RestTemplate restTemplate;
 
-    public TtsServiceImpl(RestTemplate restTemplate) {
-        this.restTemplate = restTemplate;
-    }
+    private final ApiClient apiClient;
+
 
     @Override
     public byte[] generateAudio(String text) {
@@ -65,5 +71,10 @@ public class TtsServiceImpl implements TtsService {
             ResponseEntity<byte[]> fallbackResponse = restTemplate.getForEntity(googleTtsUrl, byte[].class, text);
             return fallbackResponse.getBody();
         }
+    }
+
+    @Override
+    public String enhancedTranscript(@RequestBody EnhanceTranscriptRequest request) {
+        return apiClient.sendChatToAnythingLlm(AnythingLlmWorkspace.ENHANCE_TRANSCRIPT, request, "transcript", true, null, String.class);
     }
 }
