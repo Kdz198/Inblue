@@ -142,7 +142,8 @@ public class ApplicationDetail {
 
         // Dành riêng cho vòng QUIZ
         private List<QuizAnswer> quizAnswers;
-        List<CodeSubmission> codeSubmissions; // Dành riêng cho vòng Coding (Frontend gửi lên cấu trúc JSON gồm source code + kết quả
+        List<CodeSubmission>
+                codeSubmissions; // Dành riêng cho vòng Coding (Frontend gửi lên cấu trúc JSON gồm source code + kết quả
         // test case)
         private List<CodeReviewSubmission> codeReviewSubmissions; // Dành riêng cho vòng Code Review để lưu lại bài làm
         private Long emailSubmissionId;

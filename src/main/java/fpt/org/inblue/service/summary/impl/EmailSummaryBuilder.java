@@ -29,9 +29,8 @@ public class EmailSummaryBuilder implements RoundSummaryBuilder {
         String emailContext = resolveEmailContext(detail);
         String generalComment = feedback != null ? feedback.getGeneralComment() : null;
         String extraMetrics = describeExtraMetrics(feedback);
-        List<String> strengths = feedback != null && feedback.getStrengths() != null
-                ? feedback.getStrengths()
-                : Collections.emptyList();
+        List<String> strengths =
+                feedback != null && feedback.getStrengths() != null ? feedback.getStrengths() : Collections.emptyList();
         List<String> weaknesses = feedback != null && feedback.getWeaknesses() != null
                 ? feedback.getWeaknesses()
                 : Collections.emptyList();
@@ -42,7 +41,10 @@ public class EmailSummaryBuilder implements RoundSummaryBuilder {
                 .roundOrder(roundConfig.getRoundOrder())
                 .score(detail.getAiScore())
                 .maxScore(resolveMaxScore(roundConfig))
-                .finalResult(detail.getFinalResult() != null ? detail.getFinalResult().name() : null)
+                .finalResult(
+                        detail.getFinalResult() != null
+                                ? detail.getFinalResult().name()
+                                : null)
                 .summary(joinNonBlank(" | ", emailContext, generalComment, extraMetrics, fallbackSummary(feedback)))
                 .strengths(strengths)
                 .weaknesses(weaknesses)
@@ -79,7 +81,9 @@ public class EmailSummaryBuilder implements RoundSummaryBuilder {
     }
 
     private String describeExtraMetrics(ApplicationDetail.AiFeedback feedback) {
-        if (feedback == null || feedback.getExtraMetrics() == null || feedback.getExtraMetrics().isEmpty()) {
+        if (feedback == null
+                || feedback.getExtraMetrics() == null
+                || feedback.getExtraMetrics().isEmpty()) {
             return null;
         }
 

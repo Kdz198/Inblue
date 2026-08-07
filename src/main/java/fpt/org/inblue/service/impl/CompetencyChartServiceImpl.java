@@ -64,7 +64,8 @@ public class CompetencyChartServiceImpl implements CompetencyChartService {
                 .orElseThrow(() -> new CustomException("Candidate not found", HttpStatus.NOT_FOUND));
 
         List<ApplicationDetail> details = applicationDetailRepository.findAllByApplicationId(applicationId);
-        Map<Long, Round> roundsById = roundRepository.findAllById(details.stream()
+        Map<Long, Round> roundsById = roundRepository
+                .findAllById(details.stream()
                         .map(ApplicationDetail::getRoundId)
                         .filter(roundId -> roundId != null)
                         .distinct()
@@ -100,7 +101,9 @@ public class CompetencyChartServiceImpl implements CompetencyChartService {
                 continue;
             }
             for (String skillArea : skillAreas) {
-                contributionsByArea.computeIfAbsent(skillArea, key -> new ArrayList<>()).add(contribution);
+                contributionsByArea
+                        .computeIfAbsent(skillArea, key -> new ArrayList<>())
+                        .add(contribution);
             }
         }
 
@@ -126,7 +129,9 @@ public class CompetencyChartServiceImpl implements CompetencyChartService {
             if (skillName == null) {
                 continue;
             }
-            contributionsBySkill.computeIfAbsent(skillName, key -> new ArrayList<>()).add(contribution);
+            contributionsBySkill
+                    .computeIfAbsent(skillName, key -> new ArrayList<>())
+                    .add(contribution);
         }
 
         return contributionsBySkill.entrySet().stream()
@@ -181,10 +186,10 @@ public class CompetencyChartServiceImpl implements CompetencyChartService {
 
     private Double average(List<RoundContribution> contributions) {
         return Math.round(contributions.stream()
-                        .map(RoundContribution::score)
-                        .mapToDouble(Double::doubleValue)
-                        .average()
-                        .orElse(0.0)
+                                .map(RoundContribution::score)
+                                .mapToDouble(Double::doubleValue)
+                                .average()
+                                .orElse(0.0)
                         * 100.0)
                 / 100.0;
     }

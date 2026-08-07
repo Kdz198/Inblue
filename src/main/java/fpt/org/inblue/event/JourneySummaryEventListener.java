@@ -17,7 +17,8 @@ public class JourneySummaryEventListener {
     @EventListener
     public void handleAllRoundsCompleted(AllRoundsCompletedEvent event) {
         try {
-            log.info("Received AllRoundsCompletedEvent. Start journey summary generation for applicationId={}",
+            log.info(
+                    "Received AllRoundsCompletedEvent. Start journey summary generation for applicationId={}",
                     event.getApplicationId());
             journeySummaryService.generate(event.getApplicationId());
             log.info("Finished handling AllRoundsCompletedEvent for applicationId={}", event.getApplicationId());

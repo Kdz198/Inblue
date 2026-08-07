@@ -31,9 +31,8 @@ public class AiInterviewSummaryBuilder implements RoundSummaryBuilder {
         String sessionSummary = session.map(this::buildSessionSummary).orElse(null);
         String generalComment = feedback != null ? feedback.getGeneralComment() : null;
         String extraMetrics = describeExtraMetrics(feedback);
-        List<String> strengths = feedback != null && feedback.getStrengths() != null
-                ? feedback.getStrengths()
-                : Collections.emptyList();
+        List<String> strengths =
+                feedback != null && feedback.getStrengths() != null ? feedback.getStrengths() : Collections.emptyList();
         List<String> weaknesses = feedback != null && feedback.getWeaknesses() != null
                 ? feedback.getWeaknesses()
                 : Collections.emptyList();
@@ -78,7 +77,9 @@ public class AiInterviewSummaryBuilder implements RoundSummaryBuilder {
         String questionSummary = resultDetail != null && resultDetail.getHistory() != null
                 ? "Answered questions: " + resultDetail.getHistory().size()
                 : null;
-        String result = session.getResult() != null ? "Evaluation: " + session.getResult().name() : null;
+        String result = session.getResult() != null
+                ? "Evaluation: " + session.getResult().name()
+                : null;
 
         return joinNonBlank(" | ", result, questionSummary, overview);
     }
@@ -91,7 +92,9 @@ public class AiInterviewSummaryBuilder implements RoundSummaryBuilder {
     }
 
     private String describeExtraMetrics(ApplicationDetail.AiFeedback feedback) {
-        if (feedback == null || feedback.getExtraMetrics() == null || feedback.getExtraMetrics().isEmpty()) {
+        if (feedback == null
+                || feedback.getExtraMetrics() == null
+                || feedback.getExtraMetrics().isEmpty()) {
             return null;
         }
 
