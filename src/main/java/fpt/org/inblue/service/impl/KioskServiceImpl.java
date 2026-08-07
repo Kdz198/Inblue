@@ -167,7 +167,8 @@ public class KioskServiceImpl implements KioskService {
             String avatarUrl = userOpt.map(User::getAvatarUrl).orElse(null);
             String cvUrl = userOpt.map(User::getCvUrl).orElse(null);
 
-            CandidateProfile profile = candidateProfileRepository.findByUser_Id(booking.getApplicantUserId());
+            List<CandidateProfile> profiles = candidateProfileRepository.findByUser_Id(booking.getApplicantUserId());
+            CandidateProfile profile = (profiles != null && !profiles.isEmpty()) ? profiles.get(0) : null;
             String targetRole = profile != null ? profile.getTargetRole() : null;
             String targetLevel = profile != null ? profile.getTargetLevel() : null;
             List<String> technicalSkills = profile != null ? profile.getTechnicalSkills() : null;

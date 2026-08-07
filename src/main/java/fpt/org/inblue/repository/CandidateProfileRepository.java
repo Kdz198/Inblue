@@ -1,10 +1,11 @@
 package fpt.org.inblue.repository;
 
 import fpt.org.inblue.model.CandidateProfile;
+import java.util.List;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 public interface CandidateProfileRepository extends JpaRepository<CandidateProfile, Integer> {
-    CandidateProfile findByUser_Id(int userId);
+    List<CandidateProfile> findByUser_Id(int userId);
 
     CandidateProfile findByApplicationId(Long applicationId);
 

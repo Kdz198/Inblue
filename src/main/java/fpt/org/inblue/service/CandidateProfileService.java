@@ -6,7 +6,7 @@ import java.util.List;
 public interface CandidateProfileService {
     CandidateProfile createProfile(CandidateProfile profile);
 
-    CandidateProfile getProfileByUserId(int userId);
+    List<CandidateProfile> getProfileByUserId(int userId);
 
     CandidateProfile getProfileByApplicationId(Long applicationId);
 

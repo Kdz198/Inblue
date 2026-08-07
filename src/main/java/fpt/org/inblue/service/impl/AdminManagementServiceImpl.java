@@ -141,7 +141,8 @@ public class AdminManagementServiceImpl implements AdminManagementService {
             }
 
             Optional<User> userOpt = userRepository.findById(app.getUserId());
-            CandidateProfile candidateProfile = candidateProfileRepository.findByUser_Id(app.getUserId());
+            List<CandidateProfile> candidateProfiles = candidateProfileRepository.findByUser_Id(app.getUserId());
+            CandidateProfile candidateProfile = (candidateProfiles != null && !candidateProfiles.isEmpty()) ? candidateProfiles.get(0) : null;
 
             String candidateName = userOpt.map(User::getName).orElse("N/A");
             String candidateEmail = userOpt.map(User::getEmail).orElse("N/A");
@@ -221,7 +222,8 @@ public class AdminManagementServiceImpl implements AdminManagementService {
         String companyLogo = companyOpt.map(Company::getLogoUrl).orElse(null);
 
         Optional<User> userOpt = userRepository.findById(application.getUserId());
-        CandidateProfile candidateProfile = candidateProfileRepository.findByUser_Id(application.getUserId());
+        List<CandidateProfile> candidateProfiles = candidateProfileRepository.findByUser_Id(application.getUserId());
+        CandidateProfile candidateProfile = (candidateProfiles != null && !candidateProfiles.isEmpty()) ? candidateProfiles.get(0) : null;
 
         String currentRoundName = "Vòng " + application.getCurrentRoundOrder();
         if (jd.getRounds() != null && application.getCurrentRoundOrder() != null) {

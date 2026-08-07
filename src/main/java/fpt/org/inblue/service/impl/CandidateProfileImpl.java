@@ -19,13 +19,8 @@ public class CandidateProfileImpl implements CandidateProfileService {
     }
 
     @Override
-    public CandidateProfile getProfileByUserId(int userId) {
-        CandidateProfile profile = candidateProfileRepository.findByUser_Id(userId);
-        if (profile != null) {
-            return profile;
-        } else {
-            return null;
-        }
+    public List<CandidateProfile> getProfileByUserId(int userId) {
+        return candidateProfileRepository.findByUser_Id(userId);
     }
 
     @Override
@@ -51,6 +46,19 @@ public class CandidateProfileImpl implements CandidateProfileService {
 
     @Override
     public CandidateProfile updateProfile(CandidateProfile profile) {
+        if (profile.getId() != null) {
+            candidateProfileRepository.findById(profile.getId()).ifPresent(existing -> {
+                if (profile.getUser() == null) {
+                    profile.setUser(existing.getUser());
+                }
+                if (profile.getApplicationId() == null) {
+                    profile.setApplicationId(existing.getApplicationId());
+                }
+                if (profile.getCreatedAt() == null) {
+                    profile.setCreatedAt(existing.getCreatedAt());
+                }
+            });
+        }
         return candidateProfileRepository.save(profile);
     }
 }

@@ -21,7 +21,7 @@ public class CandidateProfileController {
     }
 
     @GetMapping("{userId}")
-    public ResponseEntity<CandidateProfile> getByUserId(@PathVariable int userId) {
+    public ResponseEntity<List<CandidateProfile>> getByUserId(@PathVariable int userId) {
         return ResponseEntity.ok(candidateProfileService.getProfileByUserId(userId));
     }
 
