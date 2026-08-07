@@ -8,6 +8,7 @@ import java.util.HashMap;
 import java.util.Map;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
@@ -15,7 +16,6 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.client.RestTemplate;
-import org.springframework.data.redis.core.StringRedisTemplate;
 
 @Service
 @RequiredArgsConstructor
@@ -44,14 +44,15 @@ public class TtsServiceImpl implements TtsService {
         try {
             return callElevenLabsApi(url, text, voiceSettings);
         } catch (Exception e) {
-            System.err.println("[DEBUG TTS] ElevenLabs API failed (" + e.getMessage() + "). Falling back to Google TTS...");
+            System.err.println(
+                    "[DEBUG TTS] ElevenLabs API failed (" + e.getMessage() + "). Falling back to Google TTS...");
             return fallbackToGoogleTts(text);
         }
     }
 
     private byte[] callElevenLabsApi(String url, String text, Map<String, Object> voiceSettings) {
         String bearerToken = stringRedisTemplate.opsForValue().get(REDIS_TOKEN_KEY);
-        
+
         if (bearerToken == null || bearerToken.isEmpty()) {
             System.out.println("[DEBUG TTS] Không tìm thấy Token SSO trong Redis. Bỏ qua ElevenLabs.");
             throw new RuntimeException("Missing Token in Redis");
