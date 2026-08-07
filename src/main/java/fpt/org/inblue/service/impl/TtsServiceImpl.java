@@ -23,7 +23,7 @@ public class TtsServiceImpl implements TtsService {
 
     private static final String REDIS_TOKEN_KEY = "elevenlabs:bearer:token";
 
-    @Value("${elevenlabs.voice.id}")
+    @Value("${elevenlabs.voice.id:}")
     private String voiceId;
 
     private final RestTemplate restTemplate;
