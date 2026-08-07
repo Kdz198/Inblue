@@ -74,6 +74,7 @@ public class SubmissionEventHandle {
         }
 
         double totalScore = 0.0;
+        double totalMaxPossibleScore = 0.0;
         int totalPassed = 0;
         int totalTests = 0;
         long totalTime = 0;
@@ -96,6 +97,9 @@ public class SubmissionEventHandle {
                             .inputs(testCase.getInputs())
                             .build();
                     testcases.add(testCaseDto);
+                    if (testCase.getWeightPoints() != null) {
+                        totalMaxPossibleScore += testCase.getWeightPoints();
+                    }
                 }
             }
 
@@ -127,7 +131,9 @@ public class SubmissionEventHandle {
                                     < problem.getHiddenTestCases().size()) {
                         CodingProblem.TestCase testCase =
                                 problem.getHiddenTestCases().get(testCaseResult.getIndex());
-                        score += testCase.getWeightPoints();
+                        if (testCase.getWeightPoints() != null) {
+                            score += testCase.getWeightPoints();
+                        }
                     }
                 }
             }
@@ -166,7 +172,15 @@ public class SubmissionEventHandle {
                     compileRequest.getSourceCode() != null ? String.join("\n", compileRequest.getSourceCode()) : "");
         }
 
-        ApplicationDetail.RoundResult roundResult = totalScore >= round.getPassThreshold()
+        double normalizedFinalScore = 0.0;
+        if (totalMaxPossibleScore > 0) {
+            normalizedFinalScore = Math.min(100.0, Math.round((totalScore / totalMaxPossibleScore) * 100.0));
+        } else {
+            normalizedFinalScore = Math.min(100.0, totalScore);
+        }
+
+        double passThreshold = round.getPassThreshold() != null ? round.getPassThreshold() : 50.0;
+        ApplicationDetail.RoundResult roundResult = normalizedFinalScore >= passThreshold
                 ? ApplicationDetail.RoundResult.PASSED
                 : ApplicationDetail.RoundResult.FAILED;
         ApplicationDetail.SubmissionData submissionData = ApplicationDetail.SubmissionData.builder()
@@ -177,7 +191,8 @@ public class SubmissionEventHandle {
                 .applicationId(dto.getApplication().getId())
                 .roundId(dto.getRound().getId())
                 .status(ApplicationDetailStatus.COMPLETED)
-                .finalScore(totalScore)
+                .aiScore(normalizedFinalScore)
+                .finalScore(normalizedFinalScore)
                 .finalResult(roundResult)
                 .submissionData(submissionData)
                 .build();

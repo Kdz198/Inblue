@@ -258,8 +258,19 @@ public class ApplicationServiceImpl implements ApplicationService {
                 boolean hasFailedRound = false;
 
                 for (ApplicationDetail detail : details) {
-                    if (detail.getFinalScore() != null) {
-                        totalEarnedScore += detail.getFinalScore();
+                    Double roundScore = detail.getFinalScore();
+                    if (roundScore == null) {
+                        roundScore = detail.getAiScore();
+                        if (roundScore != null && roundScore <= 10.0) {
+                            roundScore = roundScore * 10.0;
+                        }
+                    }
+                    if (roundScore == null) {
+                        roundScore = detail.getHrScore();
+                    }
+
+                    if (roundScore != null) {
+                        totalEarnedScore += Math.min(100.0, Math.max(0.0, roundScore));
                     }
                     if (detail.getFinalResult() == ApplicationDetail.RoundResult.FAILED) {
                         hasFailedRound = true;
@@ -285,6 +296,7 @@ public class ApplicationServiceImpl implements ApplicationService {
                 double overallScorePercentage = 0.0;
                 if (totalMaxScore > 0) {
                     overallScorePercentage = Math.round((totalEarnedScore / totalMaxScore) * 100.0);
+                    overallScorePercentage = Math.min(100.0, Math.max(0.0, overallScorePercentage));
                 }
                 currentApplication.setOverallScore(overallScorePercentage);
 

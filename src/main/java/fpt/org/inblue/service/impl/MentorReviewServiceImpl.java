@@ -104,8 +104,8 @@ public class MentorReviewServiceImpl implements MentorReviewService {
                     maxScore = round.getConfigData().getMaxScore();
                 }
 
-                // Điểm số tính theo rating của MentorReview
-                double score = (review.getRating() / 10.0) * maxScore;
+                // Điểm số tính theo rating của MentorReview (thang điểm 100)
+                double score = Math.min(maxScore, Math.max(0.0, (review.getRating() / 100.0) * maxScore));
                 appDetail.setFinalScore(score);
 
                 if (round != null && round.getPassThreshold() != null) {
