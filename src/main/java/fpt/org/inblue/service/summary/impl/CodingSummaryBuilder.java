@@ -21,10 +21,10 @@ public class CodingSummaryBuilder implements RoundSummaryBuilder {
 
     @Override
     public AISummaryRequest.RoundSummaryInfo buildSummary(ApplicationDetail detail, Round roundConfig) {
-        List<ApplicationDetail.CodeSubmission> submissions = detail.getSubmissionData() != null
-                        && detail.getSubmissionData().getCodeSubmissions() != null
-                ? detail.getSubmissionData().getCodeSubmissions()
-                : Collections.emptyList();
+        List<ApplicationDetail.CodeSubmission> submissions =
+                detail.getSubmissionData() != null && detail.getSubmissionData().getCodeSubmissions() != null
+                        ? detail.getSubmissionData().getCodeSubmissions()
+                        : Collections.emptyList();
         StringBuilder summary = new StringBuilder();
 
         for (int i = 0; i < submissions.size(); i++) {
@@ -52,7 +52,10 @@ public class CodingSummaryBuilder implements RoundSummaryBuilder {
                 .roundOrder(roundConfig.getRoundOrder())
                 .score(detail.getFinalScore())
                 .maxScore(resolveMaxScore(roundConfig))
-                .finalResult(detail.getFinalResult() != null ? detail.getFinalResult().name() : null)
+                .finalResult(
+                        detail.getFinalResult() != null
+                                ? detail.getFinalResult().name()
+                                : null)
                 .summary(summary.toString().trim())
                 .hrNote(detail.getHrNote())
                 .hrScore(detail.getHrScore())

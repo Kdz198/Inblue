@@ -14,10 +14,10 @@ import org.springframework.stereotype.Service;
 public class QuizSummaryBuilder implements RoundSummaryBuilder {
     @Override
     public AISummaryRequest.RoundSummaryInfo buildSummary(ApplicationDetail detail, Round roundConfig) {
-        List<ApplicationDetail.QuizAnswer> quizAnswers = detail.getSubmissionData() != null
-                        && detail.getSubmissionData().getQuizAnswers() != null
-                ? detail.getSubmissionData().getQuizAnswers()
-                : Collections.emptyList();
+        List<ApplicationDetail.QuizAnswer> quizAnswers =
+                detail.getSubmissionData() != null && detail.getSubmissionData().getQuizAnswers() != null
+                        ? detail.getSubmissionData().getQuizAnswers()
+                        : Collections.emptyList();
 
         long correctCount = quizAnswers.stream()
                 .filter(answer -> Boolean.TRUE.equals(answer.getIsCorrect()))
@@ -38,7 +38,10 @@ public class QuizSummaryBuilder implements RoundSummaryBuilder {
                 .roundOrder(roundConfig.getRoundOrder())
                 .score(detail.getFinalScore())
                 .maxScore(resolveMaxScore(roundConfig))
-                .finalResult(detail.getFinalResult() != null ? detail.getFinalResult().name() : null)
+                .finalResult(
+                        detail.getFinalResult() != null
+                                ? detail.getFinalResult().name()
+                                : null)
                 .summary(summary)
                 .hrNote(detail.getHrNote())
                 .hrScore(detail.getHrScore())

@@ -21,31 +21,50 @@ public class AISummaryRequest {
         StringBuilder prompt = new StringBuilder();
         prompt.append("JOB DESCRIPTION\n");
         if (jobDescription != null) {
-            prompt.append("- Title: ").append(valueOrEmpty(jobDescription.getTitle())).append("\n");
-            prompt.append("- Level: ").append(valueOrEmpty(jobDescription.getLevel())).append("\n");
+            prompt.append("- Title: ")
+                    .append(valueOrEmpty(jobDescription.getTitle()))
+                    .append("\n");
+            prompt.append("- Level: ")
+                    .append(valueOrEmpty(jobDescription.getLevel()))
+                    .append("\n");
             prompt.append("- Key requirements: ")
                     .append(joinList(jobDescription.getKeyRequirements()))
                     .append("\n");
         }
 
         prompt.append("\nROUND SUMMARIES\n");
-        List<RoundSummaryInfo> summaries =
-                roundSummaries != null ? roundSummaries : Collections.emptyList();
+        List<RoundSummaryInfo> summaries = roundSummaries != null ? roundSummaries : Collections.emptyList();
         for (RoundSummaryInfo summary : summaries) {
-            prompt.append("- Round: ").append(valueOrEmpty(summary.getRoundName())).append("\n");
+            prompt.append("- Round: ")
+                    .append(valueOrEmpty(summary.getRoundName()))
+                    .append("\n");
             prompt.append("  Type: ").append(summary.getRoundType()).append("\n");
-            prompt.append("  Order: ").append(valueOrEmpty(summary.getRoundOrder())).append("\n");
+            prompt.append("  Order: ")
+                    .append(valueOrEmpty(summary.getRoundOrder()))
+                    .append("\n");
             prompt.append("  Score: ")
                     .append(valueOrEmpty(summary.getScore()))
                     .append("/")
                     .append(valueOrEmpty(summary.getMaxScore()))
                     .append("\n");
-            prompt.append("  Final result: ").append(valueOrEmpty(summary.getFinalResult())).append("\n");
-            prompt.append("  Summary: ").append(valueOrEmpty(summary.getSummary())).append("\n");
-            prompt.append("  Strengths: ").append(joinList(summary.getStrengths())).append("\n");
-            prompt.append("  Weaknesses: ").append(joinList(summary.getWeaknesses())).append("\n");
-            prompt.append("  HR score: ").append(valueOrEmpty(summary.getHrScore())).append("\n");
-            prompt.append("  HR note: ").append(valueOrEmpty(summary.getHrNote())).append("\n");
+            prompt.append("  Final result: ")
+                    .append(valueOrEmpty(summary.getFinalResult()))
+                    .append("\n");
+            prompt.append("  Summary: ")
+                    .append(valueOrEmpty(summary.getSummary()))
+                    .append("\n");
+            prompt.append("  Strengths: ")
+                    .append(joinList(summary.getStrengths()))
+                    .append("\n");
+            prompt.append("  Weaknesses: ")
+                    .append(joinList(summary.getWeaknesses()))
+                    .append("\n");
+            prompt.append("  HR score: ")
+                    .append(valueOrEmpty(summary.getHrScore()))
+                    .append("\n");
+            prompt.append("  HR note: ")
+                    .append(valueOrEmpty(summary.getHrNote()))
+                    .append("\n");
         }
         return prompt.toString();
     }

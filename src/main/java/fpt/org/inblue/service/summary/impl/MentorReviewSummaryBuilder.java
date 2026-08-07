@@ -22,7 +22,10 @@ public class MentorReviewSummaryBuilder implements RoundSummaryBuilder {
                 .roundOrder(roundConfig.getRoundOrder())
                 .score(detail.getFinalScore())
                 .maxScore(resolveMaxScore(roundConfig))
-                .finalResult(detail.getFinalResult() != null ? detail.getFinalResult().name() : null)
+                .finalResult(
+                        detail.getFinalResult() != null
+                                ? detail.getFinalResult().name()
+                                : null)
                 .summary(buildSummary(review))
                 .strengths(review != null && review.getStrength() != null ? List.of(review.getStrength()) : List.of())
                 .weaknesses(review != null && review.getWeakness() != null ? List.of(review.getWeakness()) : List.of())

@@ -73,7 +73,9 @@ public class JourneySummaryServiceImpl implements JourneySummaryService {
                     null,
                     JourneySummaryAIResponse.class);
 
-            if (response == null || response.getNarrative() == null || response.getNarrative().isBlank()) {
+            if (response == null
+                    || response.getNarrative() == null
+                    || response.getNarrative().isBlank()) {
                 throw new CustomException("AI summary report response is empty", HttpStatus.INTERNAL_SERVER_ERROR);
             }
 
@@ -81,7 +83,9 @@ public class JourneySummaryServiceImpl implements JourneySummaryService {
                     "Received SUMMARY_REPORT response. applicationId={}, hasCompetencyChart={}, swecomAssessmentCount={}, recommendationCount={}",
                     applicationId,
                     response.getCompetencyChart() != null,
-                    response.getSwecomAssessments() != null ? response.getSwecomAssessments().size() : 0,
+                    response.getSwecomAssessments() != null
+                            ? response.getSwecomAssessments().size()
+                            : 0,
                     response.getDevelopmentRecommendations() != null
                             ? response.getDevelopmentRecommendations().size()
                             : 0);
@@ -120,7 +124,8 @@ public class JourneySummaryServiceImpl implements JourneySummaryService {
                 .orElseThrow(() -> new CustomException("Job Description not found", HttpStatus.NOT_FOUND));
 
         List<ApplicationDetail> details = applicationDetailRepository.findAllByApplicationId(applicationId);
-        Map<Long, Round> roundsById = roundRepository.findAllById(details.stream()
+        Map<Long, Round> roundsById = roundRepository
+                .findAllById(details.stream()
                         .map(ApplicationDetail::getRoundId)
                         .filter(roundId -> roundId != null)
                         .distinct()
@@ -137,7 +142,10 @@ public class JourneySummaryServiceImpl implements JourneySummaryService {
         return AISummaryRequest.builder()
                 .jobDescription(AISummaryRequest.JobDescriptionDto.builder()
                         .title(jobDescription.getTitle())
-                        .level(jobDescription.getLevel() != null ? jobDescription.getLevel().name() : null)
+                        .level(
+                                jobDescription.getLevel() != null
+                                        ? jobDescription.getLevel().name()
+                                        : null)
                         .keyRequirements(extractKeyRequirements(jobDescription.getRequirements()))
                         .build())
                 .roundSummaries(roundSummaries)
@@ -238,7 +246,8 @@ public class JourneySummaryServiceImpl implements JourneySummaryService {
         }
 
         competencyChart.setApplicationId(applicationId);
-        if (competencyChart.getJobTitle() == null || competencyChart.getJobTitle().isBlank()) {
+        if (competencyChart.getJobTitle() == null
+                || competencyChart.getJobTitle().isBlank()) {
             AISummaryRequest.JobDescriptionDto jobDescription =
                     request.getData() != null ? request.getData().getJobDescription() : null;
             if (jobDescription != null) {
@@ -263,7 +272,8 @@ public class JourneySummaryServiceImpl implements JourneySummaryService {
             return List.of();
         }
 
-        return requirements.lines()
+        return requirements
+                .lines()
                 .map(String::trim)
                 .filter(line -> line.startsWith("-"))
                 .map(line -> line.substring(1).trim())

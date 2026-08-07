@@ -18,17 +18,16 @@ public class CodeReviewSummaryBuilder implements RoundSummaryBuilder {
     public AISummaryRequest.RoundSummaryInfo buildSummary(ApplicationDetail detail, Round roundConfig) {
         ApplicationDetail.AiFeedback feedback = detail.getAiFeedback();
 
-        List<ApplicationDetail.CodeReviewSubmission> submissions = detail.getSubmissionData() != null
-                        && detail.getSubmissionData().getCodeReviewSubmissions() != null
-                ? detail.getSubmissionData().getCodeReviewSubmissions()
-                : Collections.emptyList();
+        List<ApplicationDetail.CodeReviewSubmission> submissions =
+                detail.getSubmissionData() != null && detail.getSubmissionData().getCodeReviewSubmissions() != null
+                        ? detail.getSubmissionData().getCodeReviewSubmissions()
+                        : Collections.emptyList();
 
         String submissionSummary = buildSubmissionSummary(submissions);
         String generalComment = feedback != null ? feedback.getGeneralComment() : null;
         String extraMetrics = describeExtraMetrics(feedback);
-        List<String> strengths = feedback != null && feedback.getStrengths() != null
-                ? feedback.getStrengths()
-                : Collections.emptyList();
+        List<String> strengths =
+                feedback != null && feedback.getStrengths() != null ? feedback.getStrengths() : Collections.emptyList();
         List<String> weaknesses = feedback != null && feedback.getWeaknesses() != null
                 ? feedback.getWeaknesses()
                 : Collections.emptyList();
@@ -39,8 +38,12 @@ public class CodeReviewSummaryBuilder implements RoundSummaryBuilder {
                 .roundOrder(roundConfig.getRoundOrder())
                 .score(detail.getFinalScore() != null ? detail.getFinalScore() : detail.getAiScore())
                 .maxScore(resolveMaxScore(roundConfig))
-                .finalResult(detail.getFinalResult() != null ? detail.getFinalResult().name() : null)
-                .summary(joinNonBlank(" | ", submissionSummary, generalComment, extraMetrics, fallbackSummary(feedback)))
+                .finalResult(
+                        detail.getFinalResult() != null
+                                ? detail.getFinalResult().name()
+                                : null)
+                .summary(
+                        joinNonBlank(" | ", submissionSummary, generalComment, extraMetrics, fallbackSummary(feedback)))
                 .strengths(strengths)
                 .weaknesses(weaknesses)
                 .hrNote(detail.getHrNote())
@@ -77,7 +80,9 @@ public class CodeReviewSummaryBuilder implements RoundSummaryBuilder {
     }
 
     private String describeExtraMetrics(ApplicationDetail.AiFeedback feedback) {
-        if (feedback == null || feedback.getExtraMetrics() == null || feedback.getExtraMetrics().isEmpty()) {
+        if (feedback == null
+                || feedback.getExtraMetrics() == null
+                || feedback.getExtraMetrics().isEmpty()) {
             return null;
         }
 

@@ -147,9 +147,10 @@ public class ApplicationServiceImpl implements ApplicationService {
             throw new CustomException("User not found with email: " + email.trim(), HttpStatus.NOT_FOUND);
         }
 
-        List<Application> applications = applicationRepository.findAllByUserIdAndStatusNot(
-                user.getId(), ApplicationStatus.IN_PROGRESS);
-        Map<Long, String> applicationNamesByJdId = jobDescriptionRepository.findAllById(applications.stream()
+        List<Application> applications =
+                applicationRepository.findAllByUserIdAndStatusNot(user.getId(), ApplicationStatus.IN_PROGRESS);
+        Map<Long, String> applicationNamesByJdId = jobDescriptionRepository
+                .findAllById(applications.stream()
                         .map(Application::getJdId)
                         .filter(java.util.Objects::nonNull)
                         .distinct()
@@ -302,9 +303,7 @@ public class ApplicationServiceImpl implements ApplicationService {
                         currentApplication.getStatus(),
                         details.size());
                 if (!wasFinished && allRoundsCompleted) {
-                    log.info(
-                            "Publishing AllRoundsCompletedEvent for applicationId={}",
-                            currentApplication.getId());
+                    log.info("Publishing AllRoundsCompletedEvent for applicationId={}", currentApplication.getId());
                     applicationEventPublisher.publishEvent(new AllRoundsCompletedEvent(currentApplication.getId()));
                 } else {
                     log.info(
@@ -326,11 +325,10 @@ public class ApplicationServiceImpl implements ApplicationService {
         if (rounds == null || rounds.isEmpty()) {
             return false;
         }
-        return rounds.stream()
-                .allMatch(round -> details.stream()
-                        .anyMatch(detail -> detail.getRoundId() != null
-                                && round.getId() != null
-                                && detail.getRoundId().equals(round.getId())
-                                && detail.getFinalResult() != null));
+        return rounds.stream().allMatch(round -> details.stream()
+                .anyMatch(detail -> detail.getRoundId() != null
+                        && round.getId() != null
+                        && detail.getRoundId().equals(round.getId())
+                        && detail.getFinalResult() != null));
     }
 }
