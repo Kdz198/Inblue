@@ -10,6 +10,7 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import java.util.List;
 
 @RestController
 @RequestMapping("/api/v1/interview")
@@ -32,11 +33,11 @@ public class InterviewProcessController {
         return interviewService.submitAnswer(request);
     }
 
-    public record TtsRequest(String text) {}
+    public record TtsRequest(String text, String voiceId) {}
 
     @PostMapping("/tts")
     public ResponseEntity<byte[]> generateAudio(@RequestBody TtsRequest request) {
-        byte[] audio = ttsService.generateAudio(request.text());
+        byte[] audio = ttsService.generateAudio(request.text(), request.voiceId());
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_OCTET_STREAM);
         return ResponseEntity.ok().headers(headers).body(audio);
@@ -45,5 +46,19 @@ public class InterviewProcessController {
     @PostMapping("/enhance-transcript")
     public String enhanceTranscript(@RequestBody EnhanceTranscriptRequest request) {
         return ttsService.enhancedTranscript(request);
+    }
+
+    public record VoiceResponse(String id, String name, String description, String previewUrl) {}
+
+    @GetMapping("/voices")
+    public ResponseEntity<List<VoiceResponse>> getAvailableVoices() {
+        // FE sẽ đọc các file MP3 tĩnh trong thư mục src/main/resources/static/voices/
+        List<VoiceResponse> voices = List.of(
+            new VoiceResponse("UsgbMVmY3U59ijwK5mdh", "Trieu Duong (Male)", "Giọng nam truyền cảm, phù hợp đọc Podcast và kể chuyện", "/voices/trieuduong.mp3"),
+            new VoiceResponse("x4KAhuXs2G8TfK9Zr7Q4", "Cam Hong (Female)", "Giọng nữ thanh thoát, chuyên nghiệp, chuẩn phong cách TVC", "/voices/camhong.mp3"),
+            new VoiceResponse("f5q6kePPoQAjCPYG6moa", "Giang (Female)", "Giọng nữ ấm áp, tự nhiên, thích hợp dẫn chương trình", "/voices/giang.mp3"),
+            new VoiceResponse("CxJbDdwqY48MY3gPVYwe", "Trinh (Male)", "Giọng nam trầm tĩnh, đọc chậm rãi và dứt khoát", "/voices/trinh.mp3")
+        );
+        return ResponseEntity.ok(voices);
     }
 }
