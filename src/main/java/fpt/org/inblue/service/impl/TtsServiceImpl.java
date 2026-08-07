@@ -6,7 +6,6 @@ import fpt.org.inblue.service.ApiClient;
 import fpt.org.inblue.service.TtsService;
 import java.util.HashMap;
 import java.util.Map;
-
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpEntity;
@@ -33,7 +32,6 @@ public class TtsServiceImpl implements TtsService {
     private final RestTemplate restTemplate;
 
     private final ApiClient apiClient;
-
 
     @Override
     public byte[] generateAudio(String text) {
@@ -75,6 +73,7 @@ public class TtsServiceImpl implements TtsService {
 
     @Override
     public String enhancedTranscript(@RequestBody EnhanceTranscriptRequest request) {
-        return apiClient.sendChatToAnythingLlm(AnythingLlmWorkspace.ENHANCE_TRANSCRIPT, request, "transcript", true, null, String.class);
+        return apiClient.sendChatToAnythingLlm(
+                AnythingLlmWorkspace.ENHANCE_TRANSCRIPT, request, "transcript", true, null, String.class);
     }
 }
