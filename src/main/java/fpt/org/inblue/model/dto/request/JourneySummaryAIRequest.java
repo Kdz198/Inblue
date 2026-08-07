@@ -10,6 +10,5 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @AllArgsConstructor
 public class JourneySummaryAIRequest {
-    private String promptText;
     private AISummaryRequest data;
 }

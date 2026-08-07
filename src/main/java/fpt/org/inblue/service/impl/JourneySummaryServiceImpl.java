@@ -105,7 +105,6 @@ public class JourneySummaryServiceImpl implements JourneySummaryService {
     public JourneySummaryAIRequest buildAIRequest(Long applicationId) {
         AISummaryRequest summaryRequest = buildSummaryRequest(applicationId);
         return JourneySummaryAIRequest.builder()
-                .promptText(summaryRequest.toPromptText())
                 .data(summaryRequest)
                 .build();
     }
