@@ -29,8 +29,8 @@ import java.io.IOException;
 import java.util.*;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.context.event.EventListener;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Component;
@@ -355,7 +355,8 @@ public class SubmissionEventHandle {
 
     private void ensureRoundHasNotBeenSubmitted(ProcessDto dto) {
         boolean alreadySubmitted = applicationDetailRepository
-                .findByApplicationIdAndRoundId(dto.getApplication().getId(), dto.getRound().getId())
+                .findByApplicationIdAndRoundId(
+                        dto.getApplication().getId(), dto.getRound().getId())
                 .isPresent();
         if (alreadySubmitted) {
             throw new CustomException("Bài đã được nộp cho vòng này", HttpStatus.CONFLICT);
