@@ -1,11 +1,16 @@
 package fpt.org.inblue.service.impl;
 
 import fpt.org.inblue.enums.AnythingLlmWorkspace;
+import fpt.org.inblue.enums.PythonService;
 import fpt.org.inblue.model.dto.request.EnhanceTranscriptRequest;
 import fpt.org.inblue.service.ApiClient;
-import fpt.org.inblue.service.TtsService;
+import fpt.org.inblue.service.SpeechService;
+
+import java.net.http.WebSocket;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.function.Consumer;
+
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.redis.core.StringRedisTemplate;
@@ -17,9 +22,11 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.client.RestTemplate;
 
+import static fpt.org.inblue.constants.ApiPath.SPEECH_TO_TEXT_API;
+
 @Service
 @RequiredArgsConstructor
-public class TtsServiceImpl implements TtsService {
+public class SpeechServiceImpl implements SpeechService {
 
     private static final String REDIS_TOKEN_KEY = "elevenlabs:bearer:token";
 
@@ -83,5 +90,27 @@ public class TtsServiceImpl implements TtsService {
     public String enhancedTranscript(@RequestBody EnhanceTranscriptRequest request) {
         return apiClient.sendChatToAnythingLlm(
                 AnythingLlmWorkspace.ENHANCE_TRANSCRIPT, request, "transcript", true, null, String.class);
+    }
+
+    @Override
+    public WebSocket connectStt(
+            Consumer<String> onMessage,
+            Consumer<Throwable> onError) {
+
+        WebSocket socket = apiClient.connectWebSocket(
+                PythonService.LLM,
+                "/api/v1/transcription/live",
+                onMessage,
+                onError
+        );
+
+        socket.sendText(
+                """
+                        {"type":"start","sampleRate":16000}
+                        """,
+                true
+        );
+
+        return socket;
     }
 }
