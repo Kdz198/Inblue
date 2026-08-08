@@ -1,6 +1,7 @@
 package fpt.org.inblue.service.impl;
 
 import fpt.org.inblue.constants.ApiPath;
+import fpt.org.inblue.enums.ApplicationDetailStatus;
 import fpt.org.inblue.enums.PythonService;
 import fpt.org.inblue.model.ApplicationDetail;
 import fpt.org.inblue.model.InterviewResultDetail;
@@ -300,7 +301,7 @@ public class InterviewProcessServiceImpl implements InterviewProcessService {
                 ApplicationDetail.AiFeedback aiFeedback = new ApplicationDetail.AiFeedback();
                 aiFeedback.setGeneralComment("Đã chấm điểm xong. Vui lòng xem chi tiết lịch sử phỏng vấn AI.");
                 appDetail.setAiFeedback(aiFeedback);
-                appDetail.setStatus(fpt.org.inblue.enums.ApplicationDetailStatus.COMPLETED);
+                appDetail.setStatus(ApplicationDetailStatus.SUBMITTED);
                 applicationDetailRepository.save(appDetail);
             }
         }
