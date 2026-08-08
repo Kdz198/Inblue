@@ -166,7 +166,14 @@ public class ApiClientImpl implements ApiClient {
             }
 
             chatLogService.saveLog(
-                    traceId, sessionId, workspace.name(), message, cleanJson, promptTokens, completionTokens, responseTimeMs);
+                    traceId,
+                    sessionId,
+                    workspace.name(),
+                    message,
+                    cleanJson,
+                    promptTokens,
+                    completionTokens,
+                    responseTimeMs);
 
             // [CHỐT CHẶN AN TOÀN] Nếu backend chỉ cần trả về String thuần
             if (responseType.equals(String.class)) {

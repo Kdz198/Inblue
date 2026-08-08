@@ -1,9 +1,7 @@
 package fpt.org.inblue.service.impl;
 
 import fpt.org.inblue.cloudinary.CloudinaryService;
-import fpt.org.inblue.constants.ApiPath;
 import fpt.org.inblue.enums.AnythingLlmWorkspace;
-import fpt.org.inblue.enums.PythonService;
 import fpt.org.inblue.exception.CustomException;
 import fpt.org.inblue.model.CandidateProfile;
 import fpt.org.inblue.model.User;
@@ -24,7 +22,6 @@ import java.util.List;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.ApplicationEventPublisher;
-import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
 import org.springframework.retry.annotation.Backoff;
 import org.springframework.retry.annotation.Recover;
@@ -121,7 +118,8 @@ public class UserServiceImpl implements UserService {
 
     @Override
     @Retryable(
-            retryFor = {Exception.class}, // Thử lại khi gặp bất kỳ ngoại lệ nào (hoặc cụ thể hơn như RestClientException)
+            retryFor = {Exception.class
+            }, // Thử lại khi gặp bất kỳ ngoại lệ nào (hoặc cụ thể hơn như RestClientException)
             maxAttempts = 3, // Tối đa 3 lần thử (1 lần chính + 2 lần retry)
             backoff = @Backoff(delay = 2000) // Mỗi lần thử lại cách nhau 2 giây
             )
@@ -143,10 +141,8 @@ public class UserServiceImpl implements UserService {
                 candidateId = existing.getId();
             }
         }
-        CVParserResponse response =
-                ApiClient.sendChatToAnythingLlm(
-                        AnythingLlmWorkspace.CV_PARSE, null, "parse-cv", true,List.of(cvFile), CVParserResponse.class
-                );
+        CVParserResponse response = ApiClient.sendChatToAnythingLlm(
+                AnythingLlmWorkspace.CV_PARSE, null, "parse-cv", true, List.of(cvFile), CVParserResponse.class);
         CandidateProfile candidateProfile = CandidateProfile.builder()
                 .id(candidateId)
                 .applicationId(applicationId)

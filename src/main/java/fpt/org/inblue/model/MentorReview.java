@@ -30,18 +30,25 @@ public class MentorReview {
     User user;
 
     int rating;
+
     @Column(columnDefinition = "TEXT")
     String situationNote;
+
     @Column(columnDefinition = "TEXT")
     String taskNote;
+
     @Column(columnDefinition = "TEXT")
     String actionNote;
+
     @Column(columnDefinition = "TEXT")
     String resultNote;
+
     @Column(columnDefinition = "TEXT")
     String strength;
+
     @Column(columnDefinition = "TEXT")
     String weakness;
+
     @Column(columnDefinition = "TEXT")
     String improve;
 }

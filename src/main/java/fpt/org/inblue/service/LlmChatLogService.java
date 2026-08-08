@@ -2,13 +2,12 @@ package fpt.org.inblue.service;
 
 import fpt.org.inblue.model.LlmChatLog;
 import fpt.org.inblue.repository.LlmChatLogRepository;
+import java.math.BigDecimal;
+import java.math.RoundingMode;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
-
-import java.math.BigDecimal;
-import java.math.RoundingMode;
 
 @Service
 @RequiredArgsConstructor
@@ -29,8 +28,7 @@ public class LlmChatLogService {
             Long responseTimeMs) {
         try {
             BigDecimal responseTime =
-                    BigDecimal.valueOf(responseTimeMs)
-                            .divide(BigDecimal.valueOf(1000), 5, RoundingMode.HALF_UP);
+                    BigDecimal.valueOf(responseTimeMs).divide(BigDecimal.valueOf(1000), 5, RoundingMode.HALF_UP);
             LlmChatLog chatLog = LlmChatLog.builder()
                     .traceId(traceId)
                     .sessionId(sessionId)
