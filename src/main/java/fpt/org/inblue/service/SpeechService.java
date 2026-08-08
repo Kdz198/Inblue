@@ -1,7 +1,6 @@
 package fpt.org.inblue.service;
 
 import fpt.org.inblue.model.dto.request.EnhanceTranscriptRequest;
-
 import java.net.http.WebSocket;
 import java.util.function.Consumer;
 
@@ -10,8 +9,5 @@ public interface SpeechService {
 
     String enhancedTranscript(EnhanceTranscriptRequest request);
 
-    WebSocket connectStt(
-            Consumer<String> onMessage,
-            Consumer<Throwable> onError
-    );
+    WebSocket connectStt(Consumer<String> onMessage, Consumer<Throwable> onError);
 }

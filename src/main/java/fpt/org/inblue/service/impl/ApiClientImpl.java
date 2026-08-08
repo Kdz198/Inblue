@@ -10,15 +10,12 @@ import fpt.org.inblue.model.dto.request.CompilerRequestDto;
 import fpt.org.inblue.model.dto.response.CompilerResponseDto;
 import fpt.org.inblue.service.ApiClient;
 import fpt.org.inblue.service.LlmChatLogService;
-
 import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.WebSocket;
-import java.nio.ByteBuffer;
 import java.util.*;
 import java.util.concurrent.CompletionStage;
 import java.util.function.Consumer;
-
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -268,48 +265,34 @@ public class ApiClientImpl implements ApiClient {
 
     @Override
     public WebSocket connectWebSocket(
-            PythonService targetService,
-            String endpoint,
-            Consumer<String> onMessage,
-            Consumer<Throwable> onError) {
+            PythonService targetService, String endpoint, Consumer<String> onMessage, Consumer<Throwable> onError) {
 
-        String url = getBaseUrl(targetService)
-                .replace("http://", "ws://")
-                .replace("https://", "wss://")
-                + endpoint;
+        String url = getBaseUrl(targetService).replace("http://", "ws://").replace("https://", "wss://") + endpoint;
 
         return HttpClient.newHttpClient()
                 .newWebSocketBuilder()
-                .buildAsync(
-                        URI.create(url),
-                        new WebSocket.Listener() {
+                .buildAsync(URI.create(url), new WebSocket.Listener() {
 
-                            @Override
-                            public void onOpen(WebSocket webSocket) {
-                                webSocket.request(1);
-                            }
+                    @Override
+                    public void onOpen(WebSocket webSocket) {
+                        webSocket.request(1);
+                    }
 
-                            @Override
-                            public CompletionStage<?> onText(
-                                    WebSocket webSocket,
-                                    CharSequence data,
-                                    boolean last) {
+                    @Override
+                    public CompletionStage<?> onText(WebSocket webSocket, CharSequence data, boolean last) {
 
-                                onMessage.accept(data.toString());
-                                webSocket.request(1);
+                        onMessage.accept(data.toString());
+                        webSocket.request(1);
 
-                                return null;
-                            }
+                        return null;
+                    }
 
-                            @Override
-                            public void onError(
-                                    WebSocket webSocket,
-                                    Throwable error) {
+                    @Override
+                    public void onError(WebSocket webSocket, Throwable error) {
 
-                                onError.accept(error);
-                            }
-                        }
-                )
+                        onError.accept(error);
+                    }
+                })
                 .join();
     }
 }

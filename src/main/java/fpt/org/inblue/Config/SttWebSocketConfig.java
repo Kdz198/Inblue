@@ -10,19 +10,14 @@ import org.springframework.web.socket.config.annotation.WebSocketHandlerRegistry
 @Configuration
 @EnableWebSocket
 @RequiredArgsConstructor
-public class SttWebSocketConfig
-        implements WebSocketConfigurer {
+public class SttWebSocketConfig implements WebSocketConfigurer {
 
     private final SttWebSocketController sttWebSocketController;
 
     @Override
-    public void registerWebSocketHandlers(
-            WebSocketHandlerRegistry registry) {
+    public void registerWebSocketHandlers(WebSocketHandlerRegistry registry) {
 
-        registry.addHandler(
-                        sttWebSocketController,
-                        "/api/v1/interview/transcribe"
-                )
+        registry.addHandler(sttWebSocketController, "/api/v1/interview/transcribe")
                 .setAllowedOriginPatterns("*");
     }
 }

@@ -26,35 +26,21 @@ public class SttWebSocketController extends BinaryWebSocketHandler {
      *      ↓
      * Python/Gemini WebSocket session
      */
-    private final Map<String, WebSocket> sttSessions =
-            new ConcurrentHashMap<>();
+    private final Map<String, WebSocket> sttSessions = new ConcurrentHashMap<>();
 
     /**
      * FE vừa connect vào Java.
      */
     @Override
-    public void afterConnectionEstablished(
-            WebSocketSession session) {
+    public void afterConnectionEstablished(WebSocketSession session) {
 
-        log.info(
-                "[STT] Client connected: {}",
-                session.getId()
-        );
+        log.info("[STT] Client connected: {}", session.getId());
 
         WebSocket sttSocket = speechService.connectStt(
                 message -> sendToClient(session, message),
+                error -> log.error("[STT] Error session {}", session.getId(), error));
 
-                error -> log.error(
-                        "[STT] Error session {}",
-                        session.getId(),
-                        error
-                )
-        );
-
-        sttSessions.put(
-                session.getId(),
-                sttSocket
-        );
+        sttSessions.put(session.getId(), sttSocket);
     }
 
     /**
@@ -63,21 +49,15 @@ public class SttWebSocketController extends BinaryWebSocketHandler {
      * Java forward ngay sang Python/Gemini.
      */
     @Override
-    protected void handleBinaryMessage(
-            WebSocketSession session,
-            BinaryMessage message) {
+    protected void handleBinaryMessage(WebSocketSession session, BinaryMessage message) {
 
-        WebSocket sttSocket =
-                sttSessions.get(session.getId());
+        WebSocket sttSocket = sttSessions.get(session.getId());
 
         if (sttSocket == null) {
             return;
         }
 
-        sttSocket.sendBinary(
-                message.getPayload(),
-                true
-        );
+        sttSocket.sendBinary(message.getPayload(), true);
     }
 
     /**
@@ -86,65 +66,42 @@ public class SttWebSocketController extends BinaryWebSocketHandler {
      * {"type":"audio_end"}
      */
     @Override
-    protected void handleTextMessage(
-            WebSocketSession session,
-            TextMessage message) {
+    protected void handleTextMessage(WebSocketSession session, TextMessage message) {
 
-        WebSocket sttSocket =
-                sttSessions.get(session.getId());
+        WebSocket sttSocket = sttSessions.get(session.getId());
 
         if (sttSocket == null) {
             return;
         }
 
-        sttSocket.sendText(
-                message.getPayload(),
-                true
-        );
+        sttSocket.sendText(message.getPayload(), true);
     }
 
     /**
      * FE disconnect → đóng luôn connection Python.
      */
     @Override
-    public void afterConnectionClosed(
-            WebSocketSession session,
-            CloseStatus status) {
+    public void afterConnectionClosed(WebSocketSession session, CloseStatus status) {
 
-        WebSocket sttSocket =
-                sttSessions.remove(session.getId());
+        WebSocket sttSocket = sttSessions.remove(session.getId());
 
         if (sttSocket != null) {
-            sttSocket.sendClose(
-                    WebSocket.NORMAL_CLOSURE,
-                    "Client disconnected"
-            );
+            sttSocket.sendClose(WebSocket.NORMAL_CLOSURE, "Client disconnected");
         }
 
-        log.info(
-                "[STT] Client disconnected: {}",
-                session.getId()
-        );
+        log.info("[STT] Client disconnected: {}", session.getId());
     }
 
-    private void sendToClient(
-            WebSocketSession session,
-            String message) {
+    private void sendToClient(WebSocketSession session, String message) {
 
         if (!session.isOpen()) {
             return;
         }
 
         try {
-            session.sendMessage(
-                    new TextMessage(message)
-            );
+            session.sendMessage(new TextMessage(message));
         } catch (IOException e) {
-            log.error(
-                    "[STT] Cannot send transcript to client {}",
-                    session.getId(),
-                    e
-            );
+            log.error("[STT] Cannot send transcript to client {}", session.getId(), e);
         }
     }
 }
