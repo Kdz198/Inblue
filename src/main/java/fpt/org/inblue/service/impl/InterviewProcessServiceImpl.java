@@ -301,7 +301,7 @@ public class InterviewProcessServiceImpl implements InterviewProcessService {
                 ApplicationDetail.AiFeedback aiFeedback = new ApplicationDetail.AiFeedback();
                 aiFeedback.setGeneralComment("Đã chấm điểm xong. Vui lòng xem chi tiết lịch sử phỏng vấn AI.");
                 appDetail.setAiFeedback(aiFeedback);
-                appDetail.setStatus(ApplicationDetailStatus.SUBMITTED);
+                appDetail.setStatus(ApplicationDetailStatus.AI_EVALUATED);
                 applicationDetailRepository.save(appDetail);
             }
         }
