@@ -5,6 +5,8 @@ import fpt.org.inblue.enums.JobDescriptionStatus;
 import fpt.org.inblue.model.dto.request.AdminJdApplicationsResponseDto;
 import fpt.org.inblue.model.dto.response.admin.AdminApplicationDetailResponse;
 import fpt.org.inblue.model.dto.response.admin.AdminApplicationFullDetailResponseDto;
+import fpt.org.inblue.model.dto.response.admin.AdminApplicationsPerUserResponse;
+import fpt.org.inblue.model.dto.response.admin.AdminDashboardOverviewResponse;
 import fpt.org.inblue.model.dto.response.admin.AdminOpenJdResponseDto;
 import java.util.List;
 
@@ -31,4 +33,14 @@ public interface AdminManagementService {
      * Lấy danh sách Application Details và hỗ trợ lọc theo status.
      */
     List<AdminApplicationDetailResponse> getApplicationDetails(ApplicationDetailStatus status);
+
+    /**
+     * Lấy dữ liệu tổng hợp cho dashboard Admin: xu hướng ứng tuyển, trạng thái hồ sơ,
+     * interview đang diễn ra và tiến độ theo từng vòng.
+     */
+    AdminDashboardOverviewResponse getDashboardOverview(int limit);
+
+    AdminDashboardOverviewResponse getDashboardOverview(int limit, int days);
+
+    AdminApplicationsPerUserResponse getApplicationsPerUser();
 }

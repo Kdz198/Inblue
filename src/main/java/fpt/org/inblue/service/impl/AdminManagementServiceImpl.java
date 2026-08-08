@@ -3,19 +3,27 @@ package fpt.org.inblue.service.impl;
 import fpt.org.inblue.enums.ApplicationDetailStatus;
 import fpt.org.inblue.enums.ApplicationStatus;
 import fpt.org.inblue.enums.JobDescriptionStatus;
+import fpt.org.inblue.enums.PaymentStatus;
+import fpt.org.inblue.enums.RoundType;
 import fpt.org.inblue.exception.CustomException;
 import fpt.org.inblue.model.*;
 import fpt.org.inblue.model.dto.request.AdminJdApplicationsResponseDto;
 import fpt.org.inblue.model.dto.response.MentorResponse;
 import fpt.org.inblue.model.dto.response.admin.*;
 import fpt.org.inblue.repository.*;
+import fpt.org.inblue.repository.projection.AdminAnalyticsProjection;
 import fpt.org.inblue.service.AdminManagementService;
 import fpt.org.inblue.service.MentorService;
 import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
+import java.time.LocalDateTime;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -31,6 +39,7 @@ public class AdminManagementServiceImpl implements AdminManagementService {
     private final UserRepository userRepository;
     private final CandidateProfileRepository candidateProfileRepository;
     private final MentorService mentorService;
+    private final PaymentRepository paymentRepository;
 
     @Override
     @Transactional(readOnly = true)
@@ -432,5 +441,162 @@ public class AdminManagementServiceImpl implements AdminManagementService {
         });
 
         return result;
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public AdminDashboardOverviewResponse getDashboardOverview(int limit) {
+        return getDashboardOverview(limit, 7);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public AdminDashboardOverviewResponse getDashboardOverview(int limit, int days) {
+        int safeLimit = Math.max(1, Math.min(limit, 50));
+        int safeDays = Math.max(1, Math.min(days, 365));
+        Pageable topN = PageRequest.of(0, safeLimit);
+        Pageable recentTransactionsPage = PageRequest.of(0, 50);
+
+        // Mỗi repository query là một aggregate query độc lập, không load toàn bộ application/profile.
+        List<AdminAnalyticsProjection.JobTrend> jobTrends =
+                applicationRepository.findApplicationTrendsByJob(topN);
+        List<AdminAnalyticsProjection.PositionTrend> positionTrends =
+                candidateProfileRepository.findApplicationTrendsByPosition(topN);
+        List<AdminAnalyticsProjection.ApplicationStatusCount> statusCounts =
+                applicationRepository.countApplicationsByStatus();
+        List<ApplicationDetailStatus> activeInterviewStatuses =
+                List.of(ApplicationDetailStatus.PENDING, ApplicationDetailStatus.SLOT_PICKED);
+        List<RoundType> interviewRoundTypes = List.of(RoundType.AI_INTERVIEW, RoundType.MENTROR_REVIEW);
+        List<AdminAnalyticsProjection.ActiveInterview> activeInterviews = applicationDetailRepository
+                .findActiveInterviews(activeInterviewStatuses, interviewRoundTypes, topN);
+        long activeInterviewCount =
+                applicationDetailRepository.countActiveInterviews(activeInterviewStatuses, interviewRoundTypes);
+        LocalDateTime toTime = LocalDateTime.now();
+        LocalDateTime fromTime = toTime.minusDays(safeDays);
+        List<AdminAnalyticsProjection.RecentTransaction> recentTransactions =
+                paymentRepository.findRecentTransactions(
+                        fromTime, toTime, PaymentStatus.COMPLETED, recentTransactionsPage);
+
+        Map<ApplicationStatus, Long> applicationsByStatus = new HashMap<>();
+        for (AdminAnalyticsProjection.ApplicationStatusCount item : statusCounts) {
+            if (item.getStatus() != null) {
+                applicationsByStatus.put(item.getStatus(), safeLong(item.getApplicationCount()));
+            }
+        }
+
+        long totalApplications = applicationsByStatus.values().stream().mapToLong(Long::longValue).sum();
+        long inProgressApplications = applicationsByStatus.getOrDefault(ApplicationStatus.IN_PROGRESS, 0L);
+        long passedApplications = applicationsByStatus.getOrDefault(ApplicationStatus.PASSED, 0L);
+        long failedApplications = applicationsByStatus.getOrDefault(ApplicationStatus.FAILED, 0L)
+                + applicationsByStatus.getOrDefault(ApplicationStatus.SOFT_FAILED, 0L);
+
+        AdminDashboardOverviewResponse.DashboardSummary summary =
+                AdminDashboardOverviewResponse.DashboardSummary.builder()
+                        .totalApplications(totalApplications)
+                        .inProgressApplications(inProgressApplications)
+                        .passedApplications(passedApplications)
+                        .failedApplications(failedApplications)
+                        .activeInterviewCount(activeInterviewCount)
+                        .build();
+
+        List<AdminDashboardOverviewResponse.JobTrendItem> jobTrendItems = new ArrayList<>();
+        for (int i = 0; i < jobTrends.size(); i++) {
+            AdminAnalyticsProjection.JobTrend item = jobTrends.get(i);
+            long count = safeLong(item.getApplicationCount());
+            jobTrendItems.add(AdminDashboardOverviewResponse.JobTrendItem.builder()
+                    .rank(i + 1)
+                    .jobId(item.getJobId())
+                    .jobTitle(item.getJobTitle())
+                    .applicationCount(count)
+                    .percentage(toPercentage(count, totalApplications))
+                    .build());
+        }
+
+        List<AdminDashboardOverviewResponse.PositionTrendItem> positionTrendItems = new ArrayList<>();
+        for (int i = 0; i < positionTrends.size(); i++) {
+            AdminAnalyticsProjection.PositionTrend item = positionTrends.get(i);
+            long count = safeLong(item.getApplicationCount());
+            positionTrendItems.add(AdminDashboardOverviewResponse.PositionTrendItem.builder()
+                    .rank(i + 1)
+                    .position(item.getPosition())
+                    .applicationCount(count)
+                    .percentage(toPercentage(count, totalApplications))
+                    .build());
+        }
+
+        List<AdminDashboardOverviewResponse.ActiveInterviewItem> activeInterviewItems = activeInterviews.stream()
+                .map(item -> AdminDashboardOverviewResponse.ActiveInterviewItem.builder()
+                        .applicationDetailId(item.getApplicationDetailId())
+                        .applicationId(item.getApplicationId())
+                        .userId(item.getUserId())
+                        .userName(item.getUserName())
+                        .userEmail(item.getUserEmail())
+                        .jobId(item.getJobId())
+                        .jobTitle(item.getJobTitle())
+                        .roundId(item.getRoundId())
+                        .roundOrder(item.getRoundOrder())
+                        .roundName(item.getRoundName())
+                        .roundType(item.getRoundType())
+                        .roundStatus(item.getRoundStatus())
+                        .startedAt(item.getStartedAt())
+                        .updatedAt(item.getUpdatedAt())
+                        .build())
+                .toList();
+
+        List<AdminDashboardOverviewResponse.RecentTransactionItem> recentTransactionItems = recentTransactions.stream()
+                .map(item -> AdminDashboardOverviewResponse.RecentTransactionItem.builder()
+                        .transactionId(item.getTransactionId())
+                        .transactionCode(item.getTransactionCode())
+                        .amount(safeLong(item.getAmount()))
+                        .description(item.getDescription())
+                        .status(item.getStatus())
+                        .createdAt(item.getCreatedAt())
+                        .userId(item.getUserId())
+                        .userName(item.getUserName())
+                        .userEmail(item.getUserEmail())
+                        .avatarUrl(item.getAvatarUrl())
+                        .jobId(item.getJobId())
+                        .jobTitle(item.getJobTitle())
+                        .build())
+                .toList();
+
+        return AdminDashboardOverviewResponse.builder()
+                .generatedAt(LocalDateTime.now())
+                .summary(summary)
+                .jobTrends(jobTrendItems)
+                .positionTrends(positionTrendItems)
+                .activeInterviews(activeInterviewItems)
+                .recentTransactionDays(safeDays)
+                .recentTransactions(recentTransactionItems)
+                .build();
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public AdminApplicationsPerUserResponse getApplicationsPerUser() {
+        AdminAnalyticsProjection.ApplicationUserStats stats = applicationRepository.getApplicationUserStats();
+        long totalApplications = stats == null ? 0L : safeLong(stats.getTotalApplications());
+        long uniqueApplicants = stats == null ? 0L : safeLong(stats.getUniqueApplicants());
+        double averageApplicationsPerUser = uniqueApplicants == 0
+                ? 0.0
+                : Math.round((totalApplications * 100.0 / uniqueApplicants)) / 100.0;
+
+        return AdminApplicationsPerUserResponse.builder()
+                .generatedAt(LocalDateTime.now())
+                .totalApplications(totalApplications)
+                .uniqueApplicants(uniqueApplicants)
+                .averageApplicationsPerUser(averageApplicationsPerUser)
+                .build();
+    }
+
+    private static long safeLong(Long value) {
+        return value == null ? 0L : value;
+    }
+
+    private static double toPercentage(long count, long total) {
+        if (total <= 0) {
+            return 0.0;
+        }
+        return Math.round((count * 10000.0 / total)) / 100.0;
     }
 }

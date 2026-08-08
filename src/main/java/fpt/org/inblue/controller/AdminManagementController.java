@@ -5,6 +5,8 @@ import fpt.org.inblue.enums.JobDescriptionStatus;
 import fpt.org.inblue.model.dto.request.AdminJdApplicationsResponseDto;
 import fpt.org.inblue.model.dto.response.admin.AdminApplicationDetailResponse;
 import fpt.org.inblue.model.dto.response.admin.AdminApplicationFullDetailResponseDto;
+import fpt.org.inblue.model.dto.response.admin.AdminApplicationsPerUserResponse;
+import fpt.org.inblue.model.dto.response.admin.AdminDashboardOverviewResponse;
 import fpt.org.inblue.model.dto.response.admin.AdminOpenJdResponseDto;
 import fpt.org.inblue.service.AdminManagementService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -66,5 +68,26 @@ public class AdminManagementController {
             @RequestParam(required = false) ApplicationDetailStatus status) {
         List<AdminApplicationDetailResponse> response = adminManagementService.getApplicationDetails(status);
         return ResponseEntity.ok(response);
+    }
+
+    @GetMapping("/analytics/overview")
+    @Operation(
+            summary = "Lấy dữ liệu tổng quan cho Admin Dashboard",
+            description =
+                    "Trả về thống kê lượt ứng tuyển, top job/vị trí được quan tâm, interview đang diễn ra và tiến độ theo từng vòng. "
+                            + "Tham số limit mặc định là 10, tối đa 50. days là số ngày lấy giao dịch gần đây, mặc định 7 ngày.")
+    public ResponseEntity<AdminDashboardOverviewResponse> getDashboardOverview(
+            @RequestParam(defaultValue = "10") int limit,
+            @RequestParam(defaultValue = "7") int days) {
+        return ResponseEntity.ok(adminManagementService.getDashboardOverview(limit, days));
+    }
+
+    @GetMapping("/analytics/applications-per-user")
+    @Operation(
+            summary = "Lấy số lượt apply trung bình trên mỗi user",
+            description =
+                    "Thống kê trên các application chưa bị xoá, bao gồm tổng lượt apply, số user đã apply và trung bình lượt apply/user.")
+    public ResponseEntity<AdminApplicationsPerUserResponse> getApplicationsPerUser() {
+        return ResponseEntity.ok(adminManagementService.getApplicationsPerUser());
     }
 }
