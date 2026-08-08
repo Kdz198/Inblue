@@ -128,9 +128,10 @@ public class ApiClientImpl implements ApiClient {
 
         // 5. GỌI API & BÓC TÁCH RESPONSE
         try {
+            long startTime = System.currentTimeMillis();
             ResponseEntity<String> response =
                     restTemplate.exchange(ANYTHING_LLM_URL + endpoint, HttpMethod.POST, requestEntity, String.class);
-
+            long responseTimeMs = System.currentTimeMillis() - startTime;
             if (response.getBody() == null) return null;
 
             ObjectMapper objectMapper = new ObjectMapper();
@@ -165,7 +166,7 @@ public class ApiClientImpl implements ApiClient {
             }
 
             chatLogService.saveLog(
-                    traceId, sessionId, workspace.name(), message, cleanJson, promptTokens, completionTokens);
+                    traceId, sessionId, workspace.name(), message, cleanJson, promptTokens, completionTokens, responseTimeMs);
 
             // [CHỐT CHẶN AN TOÀN] Nếu backend chỉ cần trả về String thuần
             if (responseType.equals(String.class)) {

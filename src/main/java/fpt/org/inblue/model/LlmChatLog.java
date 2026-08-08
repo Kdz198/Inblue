@@ -1,6 +1,8 @@
 package fpt.org.inblue.model;
 
 import jakarta.persistence.*;
+
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
@@ -34,4 +36,6 @@ public class LlmChatLog {
 
     @CreationTimestamp
     private LocalDateTime createdAt;
+
+    private BigDecimal responseTime;
 }

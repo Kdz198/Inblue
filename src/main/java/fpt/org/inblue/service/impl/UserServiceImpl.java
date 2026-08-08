@@ -2,6 +2,7 @@ package fpt.org.inblue.service.impl;
 
 import fpt.org.inblue.cloudinary.CloudinaryService;
 import fpt.org.inblue.constants.ApiPath;
+import fpt.org.inblue.enums.AnythingLlmWorkspace;
 import fpt.org.inblue.enums.PythonService;
 import fpt.org.inblue.exception.CustomException;
 import fpt.org.inblue.model.CandidateProfile;
@@ -120,7 +121,7 @@ public class UserServiceImpl implements UserService {
 
     @Override
     @Retryable(
-            value = {Exception.class}, // Thử lại khi gặp bất kỳ ngoại lệ nào (hoặc cụ thể hơn như RestClientException)
+            retryFor = {Exception.class}, // Thử lại khi gặp bất kỳ ngoại lệ nào (hoặc cụ thể hơn như RestClientException)
             maxAttempts = 3, // Tối đa 3 lần thử (1 lần chính + 2 lần retry)
             backoff = @Backoff(delay = 2000) // Mỗi lần thử lại cách nhau 2 giây
             )
@@ -143,7 +144,9 @@ public class UserServiceImpl implements UserService {
             }
         }
         CVParserResponse response =
-                ApiClient.callApi(PythonService.LLM, ApiPath.CV_API, HttpMethod.POST, cvFile, CVParserResponse.class);
+                ApiClient.sendChatToAnythingLlm(
+                        AnythingLlmWorkspace.CV_PARSE, null, "parse-cv", true,List.of(cvFile), CVParserResponse.class
+                );
         CandidateProfile candidateProfile = CandidateProfile.builder()
                 .id(candidateId)
                 .applicationId(applicationId)

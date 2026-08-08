@@ -6,6 +6,7 @@ import lombok.Getter;
 @Getter
 @AllArgsConstructor
 public enum AnythingLlmWorkspace {
+    CV_PARSE("parse-cv"), // Workspace parse CV ứng viên (Gemini)
     CV_ANALYSIS("cv-processor"), // Workspace phân tích CV ứng viên (Gemini)
     CODING_GEN("coding-gen"), // Workspace chuyên về coding (Gemini Pro)
     EMAIL("email-processor"), // Workspace chuyên về email (Gemini Pro)

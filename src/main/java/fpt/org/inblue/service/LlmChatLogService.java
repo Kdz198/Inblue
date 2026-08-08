@@ -7,6 +7,9 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 
+import java.math.BigDecimal;
+import java.math.RoundingMode;
+
 @Service
 @RequiredArgsConstructor
 @Slf4j
@@ -22,8 +25,12 @@ public class LlmChatLogService {
             String userMessage,
             String aiResponse,
             Integer promptTokens,
-            Integer completionTokens) {
+            Integer completionTokens,
+            Long responseTimeMs) {
         try {
+            BigDecimal responseTime =
+                    BigDecimal.valueOf(responseTimeMs)
+                            .divide(BigDecimal.valueOf(1000), 5, RoundingMode.HALF_UP);
             LlmChatLog chatLog = LlmChatLog.builder()
                     .traceId(traceId)
                     .sessionId(sessionId)
@@ -32,6 +39,7 @@ public class LlmChatLogService {
                     .aiResponse(aiResponse)
                     .promptTokens(promptTokens)
                     .completionTokens(completionTokens)
+                    .responseTime(responseTime)
                     .build();
 
             repository.save(chatLog);

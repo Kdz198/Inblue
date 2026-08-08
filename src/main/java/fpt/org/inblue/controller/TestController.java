@@ -132,4 +132,11 @@ public class TestController {
                 fileList,
                 CvEvaluationResponse.class);
     }
+
+    @PostMapping(value = "/parse-cv-test", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public CVParserResponse tesParseCV(@RequestParam("file") MultipartFile file) {
+        return ApiClient.sendChatToAnythingLlm(
+                AnythingLlmWorkspace.CV_PARSE, null, "parse-cv", true,List.of(file), CVParserResponse.class
+        );
+    }
 }
