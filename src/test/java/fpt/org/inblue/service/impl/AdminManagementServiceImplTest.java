@@ -116,7 +116,8 @@ class AdminManagementServiceImplTest {
         when(activeInterview.getRoundType()).thenReturn(RoundType.AI_INTERVIEW);
         when(activeInterview.getRoundStatus()).thenReturn(ApplicationDetailStatus.PENDING);
 
-        when(applicationRepository.findApplicationTrendsByJob(any(Pageable.class))).thenReturn(List.of(jobTrend));
+        when(applicationRepository.findApplicationTrendsByJob(any(Pageable.class)))
+                .thenReturn(List.of(jobTrend));
         when(candidateProfileRepository.findApplicationTrendsByPosition(any(Pageable.class)))
                 .thenReturn(List.of(positionTrend));
         when(applicationRepository.countApplicationsByStatus())
@@ -124,7 +125,8 @@ class AdminManagementServiceImplTest {
         when(applicationDetailRepository.findActiveInterviews(any(), any(), any()))
                 .thenReturn(List.of(activeInterview));
         when(applicationDetailRepository.countActiveInterviews(any(), any())).thenReturn(2L);
-        when(paymentRepository.findRecentTransactions(any(), any(), any(), any())).thenReturn(List.of());
+        when(paymentRepository.findRecentTransactions(any(), any(), any(), any()))
+                .thenReturn(List.of());
 
         AdminDashboardOverviewResponse response = service.getDashboardOverview(10);
 

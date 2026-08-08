@@ -22,7 +22,8 @@ public interface ApplicationDetailRepository extends JpaRepository<ApplicationDe
 
     List<ApplicationDetail> findAllByStatus(ApplicationDetailStatus status);
 
-    @Query("""
+    @Query(
+            """
             SELECT ad.id AS applicationDetailId,
                    ad.applicationId AS applicationId,
                    a.userId AS userId,
@@ -54,7 +55,8 @@ public interface ApplicationDetailRepository extends JpaRepository<ApplicationDe
             @Param("interviewRoundTypes") List<RoundType> interviewRoundTypes,
             org.springframework.data.domain.Pageable pageable);
 
-    @Query("""
+    @Query(
+            """
             SELECT COUNT(ad.id)
             FROM ApplicationDetail ad
             JOIN Application a ON a.id = ad.applicationId

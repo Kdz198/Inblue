@@ -14,13 +14,13 @@ import fpt.org.inblue.repository.*;
 import fpt.org.inblue.repository.projection.AdminAnalyticsProjection;
 import fpt.org.inblue.service.AdminManagementService;
 import fpt.org.inblue.service.MentorService;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.time.LocalDateTime;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -458,8 +458,7 @@ public class AdminManagementServiceImpl implements AdminManagementService {
         Pageable recentTransactionsPage = PageRequest.of(0, 50);
 
         // Mỗi repository query là một aggregate query độc lập, không load toàn bộ application/profile.
-        List<AdminAnalyticsProjection.JobTrend> jobTrends =
-                applicationRepository.findApplicationTrendsByJob(topN);
+        List<AdminAnalyticsProjection.JobTrend> jobTrends = applicationRepository.findApplicationTrendsByJob(topN);
         List<AdminAnalyticsProjection.PositionTrend> positionTrends =
                 candidateProfileRepository.findApplicationTrendsByPosition(topN);
         List<AdminAnalyticsProjection.ApplicationStatusCount> statusCounts =
@@ -467,15 +466,14 @@ public class AdminManagementServiceImpl implements AdminManagementService {
         List<ApplicationDetailStatus> activeInterviewStatuses =
                 List.of(ApplicationDetailStatus.PENDING, ApplicationDetailStatus.SLOT_PICKED);
         List<RoundType> interviewRoundTypes = List.of(RoundType.AI_INTERVIEW, RoundType.MENTROR_REVIEW);
-        List<AdminAnalyticsProjection.ActiveInterview> activeInterviews = applicationDetailRepository
-                .findActiveInterviews(activeInterviewStatuses, interviewRoundTypes, topN);
+        List<AdminAnalyticsProjection.ActiveInterview> activeInterviews =
+                applicationDetailRepository.findActiveInterviews(activeInterviewStatuses, interviewRoundTypes, topN);
         long activeInterviewCount =
                 applicationDetailRepository.countActiveInterviews(activeInterviewStatuses, interviewRoundTypes);
         LocalDateTime toTime = LocalDateTime.now();
         LocalDateTime fromTime = toTime.minusDays(safeDays);
-        List<AdminAnalyticsProjection.RecentTransaction> recentTransactions =
-                paymentRepository.findRecentTransactions(
-                        fromTime, toTime, PaymentStatus.COMPLETED, recentTransactionsPage);
+        List<AdminAnalyticsProjection.RecentTransaction> recentTransactions = paymentRepository.findRecentTransactions(
+                fromTime, toTime, PaymentStatus.COMPLETED, recentTransactionsPage);
 
         Map<ApplicationStatus, Long> applicationsByStatus = new HashMap<>();
         for (AdminAnalyticsProjection.ApplicationStatusCount item : statusCounts) {
@@ -484,7 +482,9 @@ public class AdminManagementServiceImpl implements AdminManagementService {
             }
         }
 
-        long totalApplications = applicationsByStatus.values().stream().mapToLong(Long::longValue).sum();
+        long totalApplications = applicationsByStatus.values().stream()
+                .mapToLong(Long::longValue)
+                .sum();
         long inProgressApplications = applicationsByStatus.getOrDefault(ApplicationStatus.IN_PROGRESS, 0L);
         long passedApplications = applicationsByStatus.getOrDefault(ApplicationStatus.PASSED, 0L);
         long failedApplications = applicationsByStatus.getOrDefault(ApplicationStatus.FAILED, 0L)
@@ -577,9 +577,8 @@ public class AdminManagementServiceImpl implements AdminManagementService {
         AdminAnalyticsProjection.ApplicationUserStats stats = applicationRepository.getApplicationUserStats();
         long totalApplications = stats == null ? 0L : safeLong(stats.getTotalApplications());
         long uniqueApplicants = stats == null ? 0L : safeLong(stats.getUniqueApplicants());
-        double averageApplicationsPerUser = uniqueApplicants == 0
-                ? 0.0
-                : Math.round((totalApplications * 100.0 / uniqueApplicants)) / 100.0;
+        double averageApplicationsPerUser =
+                uniqueApplicants == 0 ? 0.0 : Math.round((totalApplications * 100.0 / uniqueApplicants)) / 100.0;
 
         return AdminApplicationsPerUserResponse.builder()
                 .generatedAt(LocalDateTime.now())

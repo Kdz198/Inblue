@@ -12,7 +12,8 @@ public interface CandidateProfileRepository extends JpaRepository<CandidateProfi
 
     CandidateProfile findByApplicationId(Long applicationId);
 
-    @Query("""
+    @Query(
+            """
             SELECT cp.targetRole AS position, COUNT(cp.id) AS applicationCount
             FROM CandidateProfile cp
             JOIN Application a ON a.id = cp.applicationId
