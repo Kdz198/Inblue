@@ -6,6 +6,7 @@ import fpt.org.inblue.model.*;
 import fpt.org.inblue.model.dto.request.InterviewSetupRequest;
 import fpt.org.inblue.model.dto.request.OrchestratorRequest;
 import fpt.org.inblue.model.dto.response.MentorResponse;
+import fpt.org.inblue.model.dto.response.ReviewerApplicationDetailResponseDto;
 import fpt.org.inblue.repository.ApplicationDetailRepository;
 import fpt.org.inblue.repository.CandidateProfileRepository;
 import fpt.org.inblue.repository.JobDescriptionRepository;
@@ -21,6 +22,7 @@ import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Optional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
@@ -48,31 +50,34 @@ public class ApplicationDetailServiceImpl implements ApplicationDetailService {
     }
 
     @Override
-    public List<ApplicationDetail> getByApplicationId(long applicationDetailId) {
-        return applicationDetailRepository.findAllByApplicationId(applicationDetailId);
+    public List<ApplicationDetail> getByApplicationId(long applicationId) {
+        return applicationDetailRepository.findAllByApplicationId(applicationId);
     }
 
     @Override
     @Transactional
     public void hrScore(long applicationDetailId, boolean isPass, String note, double score) {
         ApplicationDetail applicationDetail = getApplicationDetailById(applicationDetailId);
-        if (applicationDetail.getStatus() == ApplicationDetailStatus.COMPLETED) {
-            throw new CustomException("Vòng thi này đã được HR duyệt kết quả trước đó", HttpStatus.BAD_REQUEST);
-        }
         applicationDetail.setHrScore(score);
         applicationDetail.setHrNote(note);
+
+        if (isPass) {
+            applicationDetail.setFinalResult(ApplicationDetail.RoundResult.PASSED);
+        } else {
+            applicationDetail.setFinalResult(ApplicationDetail.RoundResult.FAILED);
+        }
         applicationDetail.setFinalScore(score);
-        applicationDetail.setFinalResult(
-                isPass ? ApplicationDetail.RoundResult.PASSED : ApplicationDetail.RoundResult.FAILED);
-        applicationDetail.setCompletedAt(LocalDateTime.now());
+
         applicationDetail.setStatus(ApplicationDetailStatus.COMPLETED);
+        applicationDetail.setCompletedAt(java.time.LocalDateTime.now());
         applicationDetailRepository.save(applicationDetail);
+
         Application application = applicationService.getApplicationById(applicationDetail.getApplicationId());
         applicationService.moveToNextRound(application);
     }
 
     @Override
-    public List<ApplicationDetail> getApplicationDetailsForReviewer() {
+    public List<ReviewerApplicationDetailResponseDto> getApplicationDetailsForReviewer() {
         String token = HelperUtil.getToke();
         int reviewerId = jwtUtils.getUserIdFromToken(token);
         List<String> roles = jwtUtils.getRolesFromToken(token);
@@ -81,7 +86,74 @@ public class ApplicationDetailServiceImpl implements ApplicationDetailService {
             throw new CustomException("Only STAFF role is allowed to review application details", HttpStatus.FORBIDDEN);
         }
 
-        return applicationDetailRepository.findAllByReviewerId(reviewerId);
+        List<ApplicationDetail> details = applicationDetailRepository.findAllByReviewerId(reviewerId);
+        List<ReviewerApplicationDetailResponseDto> result = new ArrayList<>();
+
+        for (ApplicationDetail detail : details) {
+            String jobTitle = "N/A";
+            String roundName = "Unknown Round";
+            String instruction = null;
+            Round.RoundConfig roundConfig = null;
+
+            if (detail.getApplicationId() != null) {
+                try {
+                    Application app = applicationService.getApplicationById(detail.getApplicationId());
+                    if (app != null && app.getJdId() != null) {
+                        Optional<JobDescription> jdOpt = jobDescriptionRepository.findById(app.getJdId());
+                        if (jdOpt.isPresent()) {
+                            jobTitle = jdOpt.get().getTitle();
+                        }
+                    }
+                } catch (Exception ignored) {
+                }
+            }
+
+            if (detail.getRoundId() != null) {
+                Optional<Round> roundOpt = roundRepository.findById(detail.getRoundId());
+                if (roundOpt.isPresent()) {
+                    Round round = roundOpt.get();
+                    roundName = round.getName() != null ? round.getName() : "Unknown Round";
+                    roundConfig = round.getConfigData();
+                    if (roundConfig != null) {
+                        instruction = roundConfig.getInstruction() != null
+                                ? roundConfig.getInstruction()
+                                : roundConfig.getEvaluationCriteria();
+                    }
+                }
+            }
+
+            ReviewerApplicationDetailResponseDto dto = ReviewerApplicationDetailResponseDto.builder()
+                    .id(detail.getId())
+                    .applicationId(detail.getApplicationId())
+                    .roundId(detail.getRoundId())
+                    .status(detail.getStatus())
+                    .finalScore(detail.getFinalScore())
+                    .submissionData(detail.getSubmissionData())
+                    .aiScore(detail.getAiScore())
+                    .aiFeedback(detail.getAiFeedback())
+                    .hrScore(detail.getHrScore())
+                    .hrNote(detail.getHrNote())
+                    .finalResult(detail.getFinalResult())
+                    .startedAt(detail.getStartedAt())
+                    .completedAt(detail.getCompletedAt())
+                    .mentorId(detail.getMentorId())
+                    .assignedMentorIds(detail.getAssignedMentorIds())
+                    .mentorReview(detail.getMentorReview())
+                    .sessionId(detail.getSessionId())
+                    .aiInterviewSessionId(detail.getAiInterviewSessionId())
+                    .sessionInfo(detail.getSessionInfo())
+                    .createdAt(detail.getCreatedAt())
+                    .updatedAt(detail.getUpdatedAt())
+                    .jobTitle(jobTitle)
+                    .roundName(roundName)
+                    .instruction(instruction)
+                    .roundConfig(roundConfig)
+                    .build();
+
+            result.add(dto);
+        }
+
+        return result;
     }
 
     @Override

@@ -2,6 +2,7 @@ package fpt.org.inblue.service;
 
 import fpt.org.inblue.model.ApplicationDetail;
 import fpt.org.inblue.model.dto.response.MentorResponse;
+import fpt.org.inblue.model.dto.response.ReviewerApplicationDetailResponseDto;
 import java.util.List;
 
 public interface ApplicationDetailService {
@@ -11,7 +12,7 @@ public interface ApplicationDetailService {
 
     void hrScore(long applicationId, boolean isPass, String note, double score);
 
-    List<ApplicationDetail> getApplicationDetailsForReviewer();
+    List<ReviewerApplicationDetailResponseDto> getApplicationDetailsForReviewer();
 
     // Dành cho Admin: gán 1 mentor cho vòng Mentor Review
     ApplicationDetail assignMentor(long applicationDetailId, int mentorId);
