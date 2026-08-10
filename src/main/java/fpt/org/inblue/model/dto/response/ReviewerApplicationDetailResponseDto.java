@@ -39,8 +39,8 @@ public class ReviewerApplicationDetailResponseDto {
     private LocalDateTime updatedAt;
 
     // Thông tin bổ sung
-    private String jobTitle;      // Tên vị trí tuyển dụng
-    private String roundName;     // Tên vòng thi
-    private String instruction;   // Đề bài / Hướng dẫn làm bài
+    private String jobTitle; // Tên vị trí tuyển dụng
+    private String roundName; // Tên vòng thi
+    private String instruction; // Đề bài / Hướng dẫn làm bài
     private Round.RoundConfig roundConfig; // Cấu hình chi tiết & đề bài vòng thi
 }
