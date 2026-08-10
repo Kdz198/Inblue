@@ -141,7 +141,7 @@ public class RoundServiceImpl implements RoundService {
         Map<Long, Round> existingRoundMap =
                 jd.getRounds().stream().filter(r -> r.getId() != null).collect(Collectors.toMap(Round::getId, r -> r));
 
-        List<Round> updatedRounds = new ArrayList<>();
+        Set<Long> processedRoundIds = new HashSet<>();
         for (UpdateJdRoundRequest.RoundItemDto item : request.getRounds()) {
             Round round;
             if (item.getId() != null) {
@@ -150,6 +150,7 @@ public class RoundServiceImpl implements RoundService {
                     throw new CustomException(
                             "Round với id " + item.getId() + " không tồn tại", HttpStatus.BAD_REQUEST);
                 }
+                processedRoundIds.add(item.getId());
             } else {
                 round = new Round();
             }
@@ -229,10 +230,14 @@ public class RoundServiceImpl implements RoundService {
             roundConfig.setQuizQuestions(quizQuestions);
             roundConfig.setCodeReviewProblems(codeReviewProblems);
             round.setConfigData(roundConfig);
-            updatedRounds.add(round);
+
+            if (item.getId() == null) {
+                jd.getRounds().add(round);
+            }
         }
-        jd.getRounds().clear();
-        jd.getRounds().addAll(updatedRounds);
+
+        // Gỡ các vòng không còn nằm trong request khỏi JD
+        jd.getRounds().removeIf(r -> r.getId() != null && !processedRoundIds.contains(r.getId()));
         jobDescriptionRepository.save(jd);
 
         return jd.getRounds();

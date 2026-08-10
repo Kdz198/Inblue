@@ -40,6 +40,7 @@ public class AdminManagementServiceImpl implements AdminManagementService {
     private final CandidateProfileRepository candidateProfileRepository;
     private final MentorService mentorService;
     private final PaymentRepository paymentRepository;
+    private final RoundRepository roundRepository;
 
     @Override
     @Transactional(readOnly = true)
@@ -292,6 +293,9 @@ public class AdminManagementServiceImpl implements AdminManagementService {
                         .filter(r -> detail.getRoundId().equals(r.getId()))
                         .findFirst();
             }
+            if (roundOpt.isEmpty() && detail.getRoundId() != null) {
+                roundOpt = roundRepository.findById(detail.getRoundId());
+            }
 
             List<MentorResponse> assignedMentorsList = new ArrayList<>();
             if (detail.getAssignedMentorIds() != null
@@ -380,6 +384,9 @@ public class AdminManagementServiceImpl implements AdminManagementService {
                 Optional<Round> roundOpt = jd.getRounds().stream()
                         .filter(r -> proj.getRoundId().equals(r.getId()))
                         .findFirst();
+                if (roundOpt.isEmpty()) {
+                    roundOpt = roundRepository.findById(proj.getRoundId());
+                }
                 if (roundOpt.isPresent()) {
                     roundName = roundOpt.get().getName();
                     roundOrder = roundOpt.get().getRoundOrder();
