@@ -77,8 +77,7 @@ public class AdminManagementController {
                     "Trả về thống kê lượt ứng tuyển, top job/vị trí được quan tâm, interview đang diễn ra và tiến độ theo từng vòng. "
                             + "Tham số limit mặc định là 10, tối đa 50. days là số ngày lấy giao dịch gần đây, mặc định 7 ngày.")
     public ResponseEntity<AdminDashboardOverviewResponse> getDashboardOverview(
-            @RequestParam(defaultValue = "10") int limit,
-            @RequestParam(defaultValue = "7") int days) {
+            @RequestParam(defaultValue = "10") int limit, @RequestParam(defaultValue = "7") int days) {
         return ResponseEntity.ok(adminManagementService.getDashboardOverview(limit, days));
     }
 

@@ -4,7 +4,7 @@ import fpt.org.inblue.model.dto.request.EnhanceTranscriptRequest;
 import fpt.org.inblue.model.dto.request.SubmitAnswerRequest;
 import fpt.org.inblue.model.dto.response.QuestionResponse;
 import fpt.org.inblue.service.InterviewProcessService;
-import fpt.org.inblue.service.TtsService;
+import fpt.org.inblue.service.SpeechService;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpHeaders;
@@ -19,7 +19,7 @@ import org.springframework.web.bind.annotation.*;
 public class InterviewProcessController {
 
     private final InterviewProcessService interviewService;
-    private final TtsService ttsService;
+    private final SpeechService speechService;
 
     // FE gọi cái này ngay khi vào màn hình Chat
     @GetMapping("/start/{sessionKey}")
@@ -37,7 +37,7 @@ public class InterviewProcessController {
 
     @PostMapping("/tts")
     public ResponseEntity<byte[]> generateAudio(@RequestBody TtsRequest request) {
-        byte[] audio = ttsService.generateAudio(request.text(), request.voiceId());
+        byte[] audio = speechService.generateAudio(request.text(), request.voiceId());
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_OCTET_STREAM);
         return ResponseEntity.ok().headers(headers).body(audio);
@@ -45,7 +45,7 @@ public class InterviewProcessController {
 
     @PostMapping("/enhance-transcript")
     public String enhanceTranscript(@RequestBody EnhanceTranscriptRequest request) {
-        return ttsService.enhancedTranscript(request);
+        return speechService.enhancedTranscript(request);
     }
 
     public record VoiceResponse(String id, String name, String description, String previewUrl) {}
