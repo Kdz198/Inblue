@@ -45,7 +45,9 @@ public class JobDescription {
     @Column(nullable = true)
     private Long price;
 
-    @OneToMany(cascade = {CascadeType.PERSIST, CascadeType.MERGE}, orphanRemoval = false)
+    @OneToMany(
+            cascade = {CascadeType.PERSIST, CascadeType.MERGE},
+            orphanRemoval = false)
     @JoinColumn(name = "jd_id", nullable = true)
     @OrderBy("roundOrder ASC")
     @Builder.Default
