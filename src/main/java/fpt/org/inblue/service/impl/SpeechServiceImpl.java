@@ -1,18 +1,17 @@
 package fpt.org.inblue.service.impl;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import fpt.org.inblue.enums.AnythingLlmWorkspace;
 import fpt.org.inblue.enums.PythonService;
 import fpt.org.inblue.model.dto.request.EnhanceTranscriptRequest;
 import fpt.org.inblue.service.ApiClient;
 import fpt.org.inblue.service.SpeechService;
+import java.io.OutputStream;
 import java.net.http.WebSocket;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.function.Consumer;
-import java.util.List;
-import java.io.OutputStream;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import org.springframework.util.StreamUtils;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.redis.core.StringRedisTemplate;
@@ -22,6 +21,7 @@ import org.springframework.http.HttpMethod;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
+import org.springframework.util.StreamUtils;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.client.RestTemplate;
 
@@ -101,32 +101,31 @@ public class SpeechServiceImpl implements SpeechService {
         Map<String, Object> body = new HashMap<>();
         body.put("text", text);
         body.put("voice", voice);
-        
+
         return apiClient.callApi(PythonService.LLM, "/api/v1/tts", HttpMethod.POST, body, byte[].class);
     }
 
     @Override
     public void streamAudioFromPython(String text, String voice, OutputStream outputStream) {
-        String url = LLM_BASE_URL+ "/api/v1/tts/stream";
-        
+        String url = LLM_BASE_URL + "/api/v1/tts/stream";
+
         Map<String, Object> body = new HashMap<>();
         body.put("text", text);
         body.put("voice", voice);
-        
+
         restTemplate.execute(
-            url, 
-            HttpMethod.POST, 
-            request -> {
-                request.getHeaders().setContentType(MediaType.APPLICATION_JSON);
-                request.getHeaders().setAccept(List.of(MediaType.ALL));
-                ObjectMapper mapper = new ObjectMapper();
-                mapper.writeValue(request.getBody(), body);
-            }, 
-            response -> {
-                StreamUtils.copy(response.getBody(), outputStream);
-                return null;
-            }
-        );
+                url,
+                HttpMethod.POST,
+                request -> {
+                    request.getHeaders().setContentType(MediaType.APPLICATION_JSON);
+                    request.getHeaders().setAccept(List.of(MediaType.ALL));
+                    ObjectMapper mapper = new ObjectMapper();
+                    mapper.writeValue(request.getBody(), body);
+                },
+                response -> {
+                    StreamUtils.copy(response.getBody(), outputStream);
+                    return null;
+                });
     }
 
     @Override

@@ -52,7 +52,8 @@ public class InterviewProcessController {
     }
 
     @PostMapping("/tts/python/stream")
-    public ResponseEntity<org.springframework.web.servlet.mvc.method.annotation.StreamingResponseBody> streamAudioPython(@RequestBody TtsRequest request) {
+    public ResponseEntity<org.springframework.web.servlet.mvc.method.annotation.StreamingResponseBody>
+            streamAudioPython(@RequestBody TtsRequest request) {
         org.springframework.web.servlet.mvc.method.annotation.StreamingResponseBody stream = out -> {
             speechService.streamAudioFromPython(request.text(), request.voiceId(), out);
         };
