@@ -43,6 +43,27 @@ public class InterviewProcessController {
         return ResponseEntity.ok().headers(headers).body(audio);
     }
 
+    @PostMapping("/tts/python")
+    public ResponseEntity<byte[]> generateAudioPython(@RequestBody TtsRequest request) {
+        byte[] audio = speechService.generateAudioFromPython(request.text(), request.voiceId());
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.valueOf("audio/wav"));
+        return ResponseEntity.ok().headers(headers).body(audio);
+    }
+
+    @PostMapping("/tts/python/stream")
+    public ResponseEntity<org.springframework.web.servlet.mvc.method.annotation.StreamingResponseBody> streamAudioPython(@RequestBody TtsRequest request) {
+        org.springframework.web.servlet.mvc.method.annotation.StreamingResponseBody stream = out -> {
+            speechService.streamAudioFromPython(request.text(), request.voiceId(), out);
+        };
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.valueOf("audio/wav"));
+        headers.set("X-Audio-Sample-Rate", "48000");
+        headers.set("X-Audio-Format", "pcm_s16le");
+        headers.setCacheControl("no-store");
+        return ResponseEntity.ok().headers(headers).body(stream);
+    }
+
     @PostMapping("/enhance-transcript")
     public String enhanceTranscript(@RequestBody EnhanceTranscriptRequest request) {
         return speechService.enhancedTranscript(request);

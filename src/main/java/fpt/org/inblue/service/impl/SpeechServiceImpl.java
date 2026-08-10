@@ -9,11 +9,16 @@ import java.net.http.WebSocket;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.function.Consumer;
+import java.util.List;
+import java.io.OutputStream;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import org.springframework.util.StreamUtils;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpMethod;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
@@ -34,6 +39,9 @@ public class SpeechServiceImpl implements SpeechService {
     private final ApiClient apiClient;
 
     private final StringRedisTemplate stringRedisTemplate;
+
+    @Value("${PYTHON_LLM_URL:}")
+    private String LLM_BASE_URL;
 
     @Override
     public byte[] generateAudio(String text, String targetVoiceId) {
@@ -86,6 +94,39 @@ public class SpeechServiceImpl implements SpeechService {
     public String enhancedTranscript(@RequestBody EnhanceTranscriptRequest request) {
         return apiClient.sendChatToAnythingLlm(
                 AnythingLlmWorkspace.ENHANCE_TRANSCRIPT, request, "transcript", true, null, String.class);
+    }
+
+    @Override
+    public byte[] generateAudioFromPython(String text, String voice) {
+        Map<String, Object> body = new HashMap<>();
+        body.put("text", text);
+        body.put("voice", voice);
+        
+        return apiClient.callApi(PythonService.LLM, "/api/v1/tts", HttpMethod.POST, body, byte[].class);
+    }
+
+    @Override
+    public void streamAudioFromPython(String text, String voice, OutputStream outputStream) {
+        String url = LLM_BASE_URL+ "/api/v1/tts/stream";
+        
+        Map<String, Object> body = new HashMap<>();
+        body.put("text", text);
+        body.put("voice", voice);
+        
+        restTemplate.execute(
+            url, 
+            HttpMethod.POST, 
+            request -> {
+                request.getHeaders().setContentType(MediaType.APPLICATION_JSON);
+                request.getHeaders().setAccept(List.of(MediaType.ALL));
+                ObjectMapper mapper = new ObjectMapper();
+                mapper.writeValue(request.getBody(), body);
+            }, 
+            response -> {
+                StreamUtils.copy(response.getBody(), outputStream);
+                return null;
+            }
+        );
     }
 
     @Override

@@ -226,13 +226,19 @@ public class ApiClientImpl implements ApiClient {
                 headers.setContentType(MediaType.APPLICATION_JSON);
                 requestEntity = new HttpEntity<>(requestBody, headers);
             }
-            ResponseEntity<String> response =
-                    restTemplate.exchange(baseUrl + endpoint, method, requestEntity, String.class);
+            if (responseType.equals(byte[].class)) {
+                ResponseEntity<byte[]> response =
+                        restTemplate.exchange(baseUrl + endpoint, method, requestEntity, byte[].class);
+                return (T) response.getBody();
+            } else {
+                ResponseEntity<String> response =
+                        restTemplate.exchange(baseUrl + endpoint, method, requestEntity, String.class);
 
-            if (response.getBody() == null) return null;
-            ObjectMapper objectMapper = new ObjectMapper();
-            objectMapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
-            return objectMapper.readValue(response.getBody(), responseType);
+                if (response.getBody() == null) return null;
+                ObjectMapper objectMapper = new ObjectMapper();
+                objectMapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
+                return objectMapper.readValue(response.getBody(), responseType);
+            }
 
         } catch (Exception e) {
             // log ra payload

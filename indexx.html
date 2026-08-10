@@ -1,50 +1,560 @@
-Đây là nguyên văn đoạn Code Syntax Mermaid sạch nhất để bạn nhấn Copy và ném thẳng vào ô Insert của Draw.io nhé:
+<!doctype html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Java Realtime STT Test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 900px;
+            margin: 40px auto;
+            padding: 0 16px;
+        }
+        input {
+            width: 100%;
+            box-sizing: border-box;
+            padding: 10px;
+            margin: 6px 0 14px;
+        }
+        button {
+            padding: 10px 16px;
+            margin-right: 8px;
+            cursor: pointer;
+        }
+        #status {
+            margin: 16px 0;
+            font-weight: bold;
+        }
+        #transcript {
+            min-height: 160px;
+            padding: 16px;
+            border: 1px solid #ccc;
+            border-radius: 8px;
+            white-space: pre-wrap;
+            font-size: 18px;
+        }
+        #logs {
+            min-height: 180px;
+            padding: 14px;
+            background: #111;
+            color: #eee;
+            border-radius: 8px;
+            white-space: pre-wrap;
+            font-family: Consolas, monospace;
+            font-size: 13px;
+        }
+    </style>
+</head>
 
-```mermaid
-flowchart TD
-%% Bắt đầu luồng
-START([Bắt đầu: HR truy cập hệ thống])
-Auth[Đăng nhập / Xác thực JWT]
+<body>
 
-START --> Auth
-Auth --> CheckCompany{Đã có Profile \n Công ty chưa?}
+<h2>Java → Python → Gemini Live STT</h2>
 
-CheckCompany -- Chưa có --> CreateCompany[Tạo Company Profile]
-CreateCompany --> CreateJD
+<label>Java Raw WebSocket Endpoint</label>
 
-CheckCompany -- Đã có --> CreateJD[Tạo mới Job Description - JD]
+<input
+        id="url"
+        value="ws://localhost:8080/api/v1/interview/transcribe"
+/>
 
-CreateJD --> ConfigPipeline[Thiết lập Pipeline Phỏng vấn \n Chọn từ 7 Round Type]
+<button id="startBtn">Start Mic</button>
+<button id="stopBtn" disabled>Stop</button>
 
-ConfigPipeline --> RoundLoop{Cấu hình chi tiết \n từng Round?}
+<div id="status">Status: idle</div>
 
-RoundLoop -- Vòng Quiz / Coding / Code Review --> QuestionBank{Dùng Question Bank?}
-RoundLoop -- Vòng AI / Email / Mentor --> CustomConfig[Nhập Rubrics / Tham số tĩnh]
+<h3>Realtime Transcript</h3>
+<div id="transcript"></div>
 
-QuestionBank -- Có --> AI_Gen[AI sinh đề / Random từ Bank]
-QuestionBank -- Tự tạo --> CustomConfig
+<h3>Logs</h3>
+<div id="logs"></div>
 
-AI_Gen --> PackJSON[Đóng gói cấu hình vào \n configData JSONB]
-CustomConfig --> PackJSON
+<script>
 
-PackJSON --> CheckMore{Còn vòng nào \n chưa cấu hình?}
-CheckMore -- Còn --> RoundLoop
+    const TARGET_SAMPLE_RATE = 16000;
 
-CheckMore -- Hết --> SaveDB[(Lưu JD & List Rounds \n vào PostgreSQL)]
+    let ws = null;
+    let mediaStream = null;
+    let audioContext = null;
+    let sourceNode = null;
+    let processorNode = null;
 
-SaveDB --> Publish[Publish JD lên \n Nền tảng Tìm việc]
-Publish --> END([Kết thúc: Sẵn sàng \n nhận Candidate])
+    const urlInput = document.getElementById("url");
+    const startBtn = document.getElementById("startBtn");
+    const stopBtn = document.getElementById("stopBtn");
+    const statusEl = document.getElementById("status");
+    const transcriptEl = document.getElementById("transcript");
+    const logsEl = document.getElementById("logs");
 
-%% Định nghĩa Style (Màu sắc) để lúc gen ra Draw.io nó có màu ngầu
-classDef startEnd fill:#1A3330,stroke:#1D9E75,stroke-width:2px,color:#80EEC4;
-classDef process fill:#2D2540,stroke:#7B67CC,stroke-width:2px,color:#C9B8FF;
-classDef condition fill:#3D2218,stroke:#D85A30,stroke-width:2px,color:#FFAA88;
-classDef db fill:#252525,stroke:#555555,stroke-width:2px,color:#BBBBBB;
 
-class START,END startEnd;
-class Auth,CreateCompany,CreateJD,ConfigPipeline,CustomConfig,AI_Gen,Publish process;
-class CheckCompany,RoundLoop,QuestionBank,CheckMore condition;
-class PackJSON,SaveDB db;
-```
+    function log(...args) {
+        const line = args.join(" ");
 
-Bạn cứ copy nguyên khung code này, vào **Draw.io -> Dấu `+` (trên thanh công cụ) -> Advanced -> Mermaid**, paste vào và bấm Insert là nó ra sơ đồ đẹp luôn!
+        logsEl.textContent += line + "\n";
+        logsEl.scrollTop = logsEl.scrollHeight;
+
+        console.log(...args);
+    }
+
+
+    function setStatus(text) {
+        statusEl.textContent = "Status: " + text;
+    }
+
+
+    function downsampleBuffer(
+        buffer,
+        inputSampleRate,
+        outputSampleRate
+    ) {
+
+        if (inputSampleRate === outputSampleRate) {
+            return buffer;
+        }
+
+        const ratio =
+            inputSampleRate / outputSampleRate;
+
+        const newLength =
+            Math.round(buffer.length / ratio);
+
+        const result =
+            new Float32Array(newLength);
+
+        let offsetResult = 0;
+        let offsetBuffer = 0;
+
+        while (offsetResult < result.length) {
+
+            const nextOffsetBuffer =
+                Math.round(
+                    (offsetResult + 1) * ratio
+                );
+
+            let accum = 0;
+            let count = 0;
+
+            for (
+                let i = offsetBuffer;
+                i < nextOffsetBuffer &&
+                i < buffer.length;
+                i++
+            ) {
+                accum += buffer[i];
+                count++;
+            }
+
+            result[offsetResult] =
+                count > 0
+                    ? accum / count
+                    : 0;
+
+            offsetResult++;
+            offsetBuffer =
+                nextOffsetBuffer;
+        }
+
+        return result;
+    }
+
+
+    function float32ToPCM16(float32Array) {
+
+        const buffer =
+            new ArrayBuffer(
+                float32Array.length * 2
+            );
+
+        const view =
+            new DataView(buffer);
+
+        for (
+            let i = 0;
+            i < float32Array.length;
+            i++
+        ) {
+
+            let sample =
+                Math.max(
+                    -1,
+                    Math.min(
+                        1,
+                        float32Array[i]
+                    )
+                );
+
+            sample =
+                sample < 0
+                    ? sample * 0x8000
+                    : sample * 0x7fff;
+
+            // PCM16 little-endian
+            view.setInt16(
+                i * 2,
+                sample,
+                true
+            );
+        }
+
+        return buffer;
+    }
+
+
+    async function startMic() {
+
+        setStatus(
+            "connecting Java WebSocket..."
+        );
+
+        ws = new WebSocket(
+            urlInput.value.trim()
+        );
+
+        ws.binaryType = "arraybuffer";
+
+
+        ws.onopen = async () => {
+
+            log("Connected to Java WebSocket");
+
+            /*
+             * KHÔNG gửi {"type":"start"} ở đây.
+             *
+             * SpeechService Java sẽ tự gửi start
+             * sang Python/Gemini.
+             */
+
+            await openMicrophone();
+        };
+
+
+        ws.onmessage = event => {
+
+            if (
+                typeof event.data !== "string"
+            ) {
+                return;
+            }
+
+            log(
+                "SERVER:",
+                event.data
+            );
+
+            let message;
+
+            try {
+                message =
+                    JSON.parse(event.data);
+            } catch {
+                return;
+            }
+
+
+            if (
+                message.type === "ready"
+            ) {
+
+                log(
+                    "Gemini ready"
+                );
+            }
+
+
+            if (
+                message.type ===
+                "transcript"
+            ) {
+
+                /*
+                 * Gemini đang trả từng segment.
+                 * Append ngay để HUD realtime.
+                 */
+
+                transcriptEl.textContent +=
+                    (transcriptEl.textContent
+                        ? " "
+                        : "")
+                    + message.text;
+            }
+
+
+            if (
+                message.type ===
+                "turn_complete"
+            ) {
+
+                transcriptEl.textContent +=
+                    "\n";
+            }
+
+
+            if (
+                message.type === "error"
+            ) {
+
+                log(
+                    "STT ERROR:",
+                    message.message
+                );
+            }
+        };
+
+
+        ws.onerror = error => {
+
+            setStatus(
+                "WebSocket error"
+            );
+
+            log(
+                "WebSocket error",
+                error
+            );
+        };
+
+
+        ws.onclose = event => {
+
+            setStatus(
+                "disconnected"
+            );
+
+            log(
+                "WebSocket closed:",
+                event.code,
+                event.reason || ""
+            );
+        };
+    }
+
+
+    async function openMicrophone() {
+
+        mediaStream =
+            await navigator.mediaDevices
+                .getUserMedia({
+                    audio: {
+                        channelCount: 1,
+                        echoCancellation: true,
+                        noiseSuppression: true,
+                        autoGainControl: true
+                    }
+                });
+
+
+        audioContext =
+            new (
+                window.AudioContext ||
+                window.webkitAudioContext
+            )();
+
+
+        sourceNode =
+            audioContext
+                .createMediaStreamSource(
+                    mediaStream
+                );
+
+
+        /*
+         * Test nhanh bằng ScriptProcessor.
+         *
+         * Production Web:
+         * nên chuyển sang AudioWorklet.
+         */
+        processorNode =
+            audioContext
+                .createScriptProcessor(
+                    4096,
+                    1,
+                    1
+                );
+
+
+        const muteGain =
+            audioContext.createGain();
+
+        muteGain.gain.value = 0;
+
+
+        sourceNode.connect(
+            processorNode
+        );
+
+        processorNode.connect(
+            muteGain
+        );
+
+        muteGain.connect(
+            audioContext.destination
+        );
+
+
+        processorNode.onaudioprocess =
+            event => {
+
+                if (
+                    !ws ||
+                    ws.readyState !==
+                    WebSocket.OPEN
+                ) {
+                    return;
+                }
+
+
+                const input =
+                    event
+                        .inputBuffer
+                        .getChannelData(0);
+
+
+                const downsampled =
+                    downsampleBuffer(
+                        input,
+                        audioContext.sampleRate,
+                        TARGET_SAMPLE_RATE
+                    );
+
+
+                const pcm16 =
+                    float32ToPCM16(
+                        downsampled
+                    );
+
+
+                /*
+                 * REALTIME:
+                 *
+                 * Không lưu vào RAM.
+                 * Không chờ Stop.
+                 *
+                 * Có chunk là gửi Java ngay.
+                 */
+                ws.send(pcm16);
+            };
+
+
+        setStatus(
+            `LIVE | ${audioContext.sampleRate}Hz → 16000Hz PCM16`
+        );
+
+        log(
+            "Mic started:",
+            audioContext.sampleRate,
+            "Hz → 16000 Hz PCM16"
+        );
+
+
+        startBtn.disabled = true;
+        stopBtn.disabled = false;
+    }
+
+
+    async function stopMic() {
+
+        if (processorNode) {
+
+            processorNode.onaudioprocess =
+                null;
+
+            processorNode.disconnect();
+
+            processorNode = null;
+        }
+
+
+        if (sourceNode) {
+
+            sourceNode.disconnect();
+
+            sourceNode = null;
+        }
+
+
+        if (mediaStream) {
+
+            mediaStream
+                .getTracks()
+                .forEach(
+                    track =>
+                        track.stop()
+                );
+
+            mediaStream = null;
+        }
+
+
+        if (audioContext) {
+
+            await audioContext.close();
+
+            audioContext = null;
+        }
+
+
+        /*
+         * Audio đã gửi realtime hết rồi.
+         *
+         * Stop chỉ báo Gemini:
+         * "user đã nói xong".
+         */
+        if (
+            ws &&
+            ws.readyState ===
+            WebSocket.OPEN
+        ) {
+
+            ws.send(
+                JSON.stringify({
+                    type: "audio_end"
+                })
+            );
+
+
+            /*
+             * Cho Gemini một chút thời gian
+             * flush transcript cuối.
+             */
+            setTimeout(() => {
+
+                if (
+                    ws &&
+                    ws.readyState ===
+                    WebSocket.OPEN
+                ) {
+                    ws.close();
+                }
+
+            }, 1500);
+        }
+
+
+        setStatus(
+            "stopped"
+        );
+
+        log(
+            "Mic stopped - audio_end sent"
+        );
+
+
+        startBtn.disabled = false;
+        stopBtn.disabled = true;
+    }
+
+
+    startBtn.addEventListener(
+        "click",
+        startMic
+    );
+
+    stopBtn.addEventListener(
+        "click",
+        stopMic
+    );
+
+</script>
+
+</body>
+</html>
