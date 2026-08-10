@@ -45,8 +45,8 @@ public class JobDescription {
     @Column(nullable = true)
     private Long price;
 
-    @OneToMany(cascade = CascadeType.ALL, orphanRemoval = true)
-    @JoinColumn(name = "jd_id", nullable = false)
+    @OneToMany(cascade = {CascadeType.PERSIST, CascadeType.MERGE}, orphanRemoval = false)
+    @JoinColumn(name = "jd_id", nullable = true)
     @OrderBy("roundOrder ASC")
     @Builder.Default
     private List<Round> rounds = new ArrayList<>();
