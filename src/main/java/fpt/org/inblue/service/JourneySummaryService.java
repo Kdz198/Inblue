@@ -4,7 +4,6 @@ import fpt.org.inblue.model.JourneySummary;
 import fpt.org.inblue.model.dto.request.AISummaryRequest;
 import fpt.org.inblue.model.dto.request.JourneySummaryAIRequest;
 import fpt.org.inblue.model.dto.response.CompetencyChartResponse;
-
 import java.util.List;
 
 public interface JourneySummaryService {
@@ -23,5 +22,4 @@ public interface JourneySummaryService {
     void generateMissingScripts();
 
     List<JourneySummary> getAllJourneyByUser(String email);
-
 }

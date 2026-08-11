@@ -1,7 +1,6 @@
 package fpt.org.inblue.repository;
 
 import fpt.org.inblue.model.JourneySummary;
-
 import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
