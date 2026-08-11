@@ -80,8 +80,7 @@ class AdminManagementServiceImplTest {
                 candidateProfileRepository,
                 mentorService,
                 paymentRepository,
-                roundRepository
-                );
+                roundRepository);
     }
 
     @Test
