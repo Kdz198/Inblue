@@ -28,7 +28,6 @@ import fpt.org.inblue.service.UserService;
 import java.io.IOException;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
-
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.event.EventListener;
@@ -328,32 +327,23 @@ public class SubmissionEventHandle {
             fileList.add(dto.getFile());
         }
 
-        CompletableFuture<Void> uploadCvFuture =
-                CompletableFuture.runAsync(() ->
-                        {
-                            try {
-                                userService.upCv(
-                                        dto.getApplication().getUserId(),
-                                        dto.getApplication().getId(),
-                                        dto.getFile()
-                                );
-                            } catch (IOException e) {
-                                throw new RuntimeException(e);
-                            }
-                        }
-                );
+        CompletableFuture<Void> uploadCvFuture = CompletableFuture.runAsync(() -> {
+            try {
+                userService.upCv(
+                        dto.getApplication().getUserId(), dto.getApplication().getId(), dto.getFile());
+            } catch (IOException e) {
+                throw new RuntimeException(e);
+            }
+        });
 
         CompletableFuture<CvEvaluationResponse> evaluationFuture =
-                CompletableFuture.supplyAsync(() ->
-                        ApiClient.sendChatToAnythingLlm(
-                                AnythingLlmWorkspace.CV_ANALYSIS,
-                                cvEvaluationRequest,
-                                "java-backend",
-                                false,
-                                fileList,
-                                CvEvaluationResponse.class
-                        )
-                );
+                CompletableFuture.supplyAsync(() -> ApiClient.sendChatToAnythingLlm(
+                        AnythingLlmWorkspace.CV_ANALYSIS,
+                        cvEvaluationRequest,
+                        "java-backend",
+                        false,
+                        fileList,
+                        CvEvaluationResponse.class));
 
         CompletableFuture.allOf(uploadCvFuture, evaluationFuture).join();
 

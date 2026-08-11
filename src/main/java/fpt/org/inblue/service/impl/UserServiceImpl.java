@@ -125,7 +125,7 @@ public class UserServiceImpl implements UserService {
             )
     @Transactional
     public CandidateProfile upCv(int userId, Long applicationId, MultipartFile cvFile) throws IOException {
-        if(cvFile.isEmpty()) {
+        if (cvFile.isEmpty()) {
             return null;
         }
         User user = userRepository.findById(userId).orElseThrow(() -> new RuntimeException("User Not Found 123"));
