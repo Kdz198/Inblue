@@ -63,7 +63,8 @@ public class UserScheduleServiceImpl implements UserScheduleService {
                 continue;
             }
 
-            Application app = applicationRepository.findById(ad.getApplicationId()).orElse(null);
+            Application app =
+                    applicationRepository.findById(ad.getApplicationId()).orElse(null);
             JobDescription jd = (app != null && app.getJdId() != null)
                     ? jobDescriptionRepository.findById(app.getJdId()).orElse(null)
                     : null;
@@ -75,14 +76,18 @@ public class UserScheduleServiceImpl implements UserScheduleService {
             String jobTitle = (jd != null && jd.getTitle() != null) ? jd.getTitle() : "";
             String title = roundName + (!jobTitle.isEmpty() ? " - " + jobTitle : "");
 
-            String meetingType = (ad.getSessionInfo() != null && ad.getSessionInfo().getMeetingType() != null)
-                    ? ad.getSessionInfo().getMeetingType().name()
-                    : "ONLINE";
+            String meetingType =
+                    (ad.getSessionInfo() != null && ad.getSessionInfo().getMeetingType() != null)
+                            ? ad.getSessionInfo().getMeetingType().name()
+                            : "ONLINE";
 
             UserScheduleEventDto event = UserScheduleEventDto.builder()
                     .id("APP_DETAIL_" + ad.getId())
                     .title(title)
-                    .description(round != null && round.getConfigData() != null ? round.getConfigData().getInstruction() : null)
+                    .description(
+                            round != null && round.getConfigData() != null
+                                    ? round.getConfigData().getInstruction()
+                                    : null)
                     .eventType("APPLICATION_ROUND")
                     .start(start)
                     .end(end)
@@ -160,7 +165,8 @@ public class UserScheduleServiceImpl implements UserScheduleService {
                 continue;
             }
 
-            LocalDateTime start = rawStart.toInstant().atZone(ZoneId.systemDefault()).toLocalDateTime();
+            LocalDateTime start =
+                    rawStart.toInstant().atZone(ZoneId.systemDefault()).toLocalDateTime();
             Timestamp rawEnd = (sess.getUserId() == userId) ? sess.getEndTime1() : sess.getEndTime2();
             LocalDateTime end = null;
             if (rawEnd != null) {
@@ -200,7 +206,8 @@ public class UserScheduleServiceImpl implements UserScheduleService {
         return events;
     }
 
-    private boolean isWithinTimeRange(LocalDateTime start, LocalDateTime end, LocalDateTime startDate, LocalDateTime endDate) {
+    private boolean isWithinTimeRange(
+            LocalDateTime start, LocalDateTime end, LocalDateTime startDate, LocalDateTime endDate) {
         if (startDate != null && end.isBefore(startDate)) {
             return false;
         }
