@@ -1,0 +1,600 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TTS Streaming Lab</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <style>
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+        :root {
+            --bg-primary: #0a0a0f;
+            --bg-card: #12121a;
+            --bg-input: #1a1a26;
+            --bg-log: #0d0d14;
+            --border: #2a2a3a;
+            --border-focus: #6366f1;
+            --text-primary: #f0f0f5;
+            --text-secondary: #8888a0;
+            --text-log: #67e8a0;
+            --accent: #6366f1;
+            --accent-hover: #818cf8;
+            --accent-glow: rgba(99, 102, 241, 0.25);
+            --danger: #ef4444;
+            --success: #22c55e;
+        }
+
+        body {
+            font-family: 'Inter', system-ui, -apple-system, sans-serif;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            padding: 40px 20px;
+        }
+
+        /* ── Two-column layout ── */
+        .page-layout {
+            width: 100%;
+            max-width: 1100px;
+            display: grid;
+            grid-template-columns: 1fr 380px;
+            grid-template-rows: auto 1fr;
+            gap: 20px;
+        }
+
+        /* ── Header ── */
+        .header {
+            grid-column: 1 / -1;
+            text-align: center;
+            margin-bottom: 8px;
+        }
+        .header h1 {
+            font-size: 1.6rem;
+            font-weight: 700;
+            background: linear-gradient(135deg, #818cf8, #c084fc);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            letter-spacing: -0.02em;
+        }
+        .header p {
+            color: var(--text-secondary);
+            font-size: 0.85rem;
+            margin-top: 6px;
+        }
+
+        /* ── Left column ── */
+        .left-col { display: flex; flex-direction: column; gap: 20px; flex: 1; }
+
+        /* ── Card ── */
+        .card {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 28px;
+            display: flex;
+            flex-direction: column;
+            flex: 1;
+        }
+
+        /* ── Form ── */
+        .field { margin-bottom: 20px; }
+        .field:last-child { margin-bottom: 0; }
+        .field-grow { flex: 1; display: flex; flex-direction: column; }
+
+        .field label {
+            display: block;
+            font-size: 0.8rem;
+            font-weight: 600;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+            margin-bottom: 8px;
+        }
+
+        .field input[type="text"],
+        .field select,
+        .field textarea {
+            width: 100%;
+            padding: 12px 14px;
+            background: var(--bg-input);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            color: var(--text-primary);
+            font-family: inherit;
+            font-size: 0.95rem;
+            transition: border-color 0.2s, box-shadow 0.2s;
+            resize: vertical;
+        }
+        .field select {
+            cursor: pointer;
+            appearance: none;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%238888a0' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-position: right 14px center;
+            padding-right: 40px;
+        }
+        .field input:focus,
+        .field select:focus,
+        .field textarea:focus {
+            outline: none;
+            border-color: var(--border-focus);
+            box-shadow: 0 0 0 3px var(--accent-glow);
+        }
+        .field textarea { min-height: 220px; flex: 1; line-height: 1.6; }
+
+        /* ── Button ── */
+        .btn {
+            width: 100%;
+            padding: 14px;
+            border: none;
+            border-radius: 12px;
+            font-family: inherit;
+            font-size: 0.95rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+        .btn-primary {
+            background: linear-gradient(135deg, #6366f1, #8b5cf6);
+            color: white;
+            box-shadow: 0 4px 14px var(--accent-glow);
+        }
+        .btn-primary:hover:not(:disabled) {
+            background: linear-gradient(135deg, #818cf8, #a78bfa);
+            box-shadow: 0 6px 20px var(--accent-glow);
+            transform: translateY(-1px);
+        }
+        .btn-primary:disabled {
+            opacity: 0.4;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        /* ── Progress ── */
+        .progress-section {
+            margin-top: 20px;
+            display: none;
+        }
+        .progress-section.visible { display: block; }
+
+        .progress-bar-track {
+            width: 100%;
+            height: 6px;
+            background: var(--border);
+            border-radius: 3px;
+            overflow: hidden;
+            margin-bottom: 10px;
+        }
+        .progress-bar-fill {
+            height: 100%;
+            width: 0%;
+            background: linear-gradient(90deg, #6366f1, #a78bfa);
+            border-radius: 3px;
+            transition: width 0.3s ease;
+        }
+        .progress-bar-fill.indeterminate {
+            width: 30%;
+            animation: indeterminate 1.5s infinite ease-in-out;
+        }
+        @keyframes indeterminate {
+            0%   { transform: translateX(-100%); }
+            100% { transform: translateX(450%); }
+        }
+        .progress-status {
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+            display: flex;
+            justify-content: space-between;
+        }
+        .progress-status .status-label { display: flex; align-items: center; gap: 6px; }
+        .progress-status .status-label .dot {
+            width: 7px; height: 7px;
+            border-radius: 50%;
+            background: var(--accent);
+            animation: pulse 1.4s infinite;
+        }
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50%  { opacity: 0.3; }
+        }
+
+        /* ── Audio Player ── */
+        .player-section { display: none; }
+        .player-section.visible { display: block; }
+
+        .player-card {
+            background: var(--bg-input);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 20px;
+        }
+        .player-card .player-title {
+            font-size: 0.78rem;
+            font-weight: 600;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+            margin-bottom: 14px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .player-card audio {
+            width: 100%;
+            height: 40px;
+            outline: none;
+            border-radius: 8px;
+        }
+        .player-info {
+            margin-top: 10px;
+            display: flex;
+            gap: 16px;
+            font-size: 0.78rem;
+            color: var(--text-secondary);
+        }
+        .player-info span { display: flex; align-items: center; gap: 4px; }
+
+        /* ── Right column: Log ── */
+        .right-col {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .log-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            height: 100%;
+            max-height: 520px;
+        }
+        .log-header {
+            font-size: 0.78rem;
+            font-weight: 600;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+            margin-bottom: 12px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .log-panel {
+            flex: 1;
+            padding: 14px;
+            background: var(--bg-log);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            font-family: 'JetBrains Mono', 'Courier New', monospace;
+            font-size: 0.72rem;
+            line-height: 1.8;
+            color: var(--text-log);
+            overflow-y: auto;
+            white-space: pre-wrap;
+            height: 440px;
+            max-height: 440px;
+        }
+        .log-panel::-webkit-scrollbar { width: 5px; }
+        .log-panel::-webkit-scrollbar-track { background: transparent; }
+        .log-panel::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+
+        .log-placeholder {
+            color: var(--text-secondary);
+            font-style: italic;
+            opacity: 0.5;
+        }
+
+        /* ── Responsive ── */
+        @media (max-width: 860px) {
+            .page-layout {
+                grid-template-columns: 1fr;
+            }
+            .header { grid-column: 1; }
+            .log-panel { min-height: 200px; }
+        }
+
+        @keyframes spin { to { transform: rotate(360deg); } }
+    </style>
+</head>
+<body>
+<div class="page-layout">
+
+    <div class="header">
+        <h1>🎙️ TTS Streaming Lab</h1>
+        <p>Stream audio từ VieNeu TTS qua Spring Boot → trình duyệt</p>
+    </div>
+
+    <!-- ── Left Column: Controls ── -->
+    <div class="left-col">
+        <div class="card">
+            <div class="field">
+                <label>Giọng đọc</label>
+                <select id="voiceId">
+                    <option value="Trúc Ly" selected>Trúc Ly (Nữ)</option>
+                    <option value="Thục Đoan">Thục Đoan (Nữ)</option>
+                    <option value="Ngọc Linh">Ngọc Linh (Nữ)</option>
+                    <option value="Đoan Trang">Đoan Trang (Nữ)</option>
+                    <option value="Mai Anh">Mai Anh (Nữ)</option>
+                    <option value="Thùy Dung">Thùy Dung (Nữ)</option>
+                    <option value="Ngọc Trân">Ngọc Trân (Nữ)</option>
+                    <option value="Minh Đức">Minh Đức (Nam)</option>
+                    <option value="Phạm Tuyên">Phạm Tuyên (Nam)</option>
+                    <option value="Thái Sơn">Thái Sơn (Nam)</option>
+                    <option value="Xuân Vĩnh">Xuân Vĩnh (Nam)</option>
+                    <option value="Thanh Bình">Thanh Bình (Nam)</option>
+                    <option value="Minh Triết">Minh Triết (Nam)</option>
+                    <option value="Quang Sơn">Quang Sơn (Nam)</option>
+                </select>
+            </div>
+
+            <div class="field field-grow">
+                <label>Văn bản cần đọc</label>
+                <textarea id="text" placeholder="Nhập nội dung cần chuyển thành giọng nói...">Xin chào, đây là hệ thống thử nghiệm luồng âm thanh trực tiếp từ Python API qua Spring Boot.</textarea>
+            </div>
+
+            <button class="btn btn-primary" id="btnGenerate">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>
+                Tạo Audio
+            </button>
+
+            <!-- Progress -->
+            <div class="progress-section" id="progressSection">
+                <div class="progress-bar-track">
+                    <div class="progress-bar-fill" id="progressBar"></div>
+                </div>
+                <div class="progress-status">
+                    <span class="status-label"><span class="dot" id="statusDot"></span><span id="statusText">Đang kết nối...</span></span>
+                    <span id="statusDetail"></span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Audio Player -->
+        <div class="player-section" id="playerSection">
+            <div class="player-card">
+                <div class="player-title">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18V5l12-2v13"></path><circle cx="6" cy="18" r="3"></circle><circle cx="18" cy="16" r="3"></circle></svg>
+                    Phát lại thoải mái
+                </div>
+                <audio id="audioPlayer" controls></audio>
+                <div class="player-info">
+                    <span id="infoDuration">⏱ --</span>
+                    <span id="infoSize">📦 --</span>
+                    <span id="infoChunks">📡 --</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ── Right Column: Log ── -->
+    <div class="right-col">
+        <div class="log-card">
+            <div class="log-header">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M13 2H6a2 2 0 0 0-2 2v16c0 1.1.9 2 2 2h12a2 2 0 0 0 2-2V9l-7-7z"></path><path d="M13 3v6h6"></path></svg>
+                Stream Log
+            </div>
+            <div class="log-panel" id="logPanel"><span class="log-placeholder">Nhấn "Tạo Audio" để bắt đầu stream...</span></div>
+        </div>
+    </div>
+
+</div>
+
+<script>
+    // ── DOM ──
+    const btnGenerate  = document.getElementById('btnGenerate');
+    const progressSection = document.getElementById('progressSection');
+    const progressBar  = document.getElementById('progressBar');
+    const statusText   = document.getElementById('statusText');
+    const statusDetail = document.getElementById('statusDetail');
+    const statusDot    = document.getElementById('statusDot');
+    const playerSection = document.getElementById('playerSection');
+    const audioPlayer  = document.getElementById('audioPlayer');
+    const infoDuration = document.getElementById('infoDuration');
+    const infoSize     = document.getElementById('infoSize');
+    const infoChunks   = document.getElementById('infoChunks');
+    const logPanel     = document.getElementById('logPanel');
+
+    function log(msg) {
+        console.log(msg);
+        logPanel.textContent += msg + '\n';
+        logPanel.scrollTop = logPanel.scrollHeight;
+    }
+
+    // ── Helpers ──
+    function formatBytes(bytes) {
+        if (bytes < 1024) return bytes + ' B';
+        if (bytes < 1048576) return (bytes / 1024).toFixed(1) + ' KB';
+        return (bytes / 1048576).toFixed(2) + ' MB';
+    }
+    function formatDuration(seconds) {
+        const m = Math.floor(seconds / 60);
+        const s = Math.floor(seconds % 60);
+        return m > 0 ? `${m}m ${s}s` : `${s}s`;
+    }
+
+    // ── Main ──
+    btnGenerate.addEventListener('click', async () => {
+        const text = document.getElementById('text').value.trim();
+        const voiceId = document.getElementById('voiceId').value.trim();
+
+        if (!text) { alert("Vui lòng nhập văn bản!"); return; }
+
+        // Reset UI
+        btnGenerate.disabled = true;
+        btnGenerate.innerHTML = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="animation:spin 1s linear infinite"><path d="M21 12a9 9 0 1 1-6.219-8.56"></path></svg> Đang xử lý...';
+        logPanel.textContent = '';
+        playerSection.classList.remove('visible');
+        audioPlayer.src = '';
+        progressSection.classList.add('visible');
+        progressBar.style.width = '0%';
+        progressBar.style.background = '';
+        progressBar.classList.add('indeterminate');
+        statusText.textContent = 'Đang kết nối...';
+        statusDetail.textContent = '';
+        statusDot.style.background = 'var(--accent)';
+        statusDot.style.animation = '';
+
+        const startTime = performance.now();
+        let totalBytes = 0;
+        let totalChunks = 0;
+        let allPcmChunks = [];
+        let isFirstChunk = true;
+        let leftover = new Uint8Array(0);
+
+        log(`🔗 Kết nối tới /api/v1/interview/tts/python/stream`);
+        log(`   Voice: ${voiceId}`);
+        log(`   Text: "${text.substring(0, 80)}${text.length > 80 ? '...' : ''}"`);
+        log('');
+
+        try {
+            const response = await fetch('/api/v1/interview/tts/python/stream', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ text, voiceId })
+            });
+
+            if (!response.ok) throw new Error(`HTTP ${response.status}`);
+
+            log('✅ Kết nối thành công! Đang nhận dữ liệu...');
+            log('');
+            statusText.textContent = 'Đang nhận audio...';
+            progressBar.classList.remove('indeterminate');
+
+            const reader = response.body.getReader();
+            let lastChunkTime = performance.now();
+
+            while (true) {
+                const { done, value } = await reader.read();
+                if (done) break;
+
+                const now = performance.now();
+                const elapsed = (now - lastChunkTime).toFixed(0);
+                lastChunkTime = now;
+                totalChunks++;
+                totalBytes += value.length;
+
+                log(`📦 #${String(totalChunks).padStart(3, '0')}  ${String(value.length).padStart(6)} bytes  ⏱ ${elapsed}ms`);
+
+                // Merge with leftover
+                let data = new Uint8Array(leftover.length + value.length);
+                data.set(leftover);
+                data.set(value, leftover.length);
+
+                // Strip WAV header from first chunk
+                if (isFirstChunk) {
+                    if (data.length < 44) { leftover = data; continue; }
+                    data = data.slice(44);
+                    isFirstChunk = false;
+                }
+
+                // Ensure even byte count for 16-bit PCM
+                let playLength = data.length - (data.length % 2);
+                leftover = data.slice(playLength);
+                let pcmData = data.slice(0, playLength);
+
+                if (pcmData.length > 0) {
+                    allPcmChunks.push(pcmData);
+                }
+
+                // Update progress UI
+                let totalPcmBytes = allPcmChunks.reduce((a, c) => a + c.length, 0);
+                let estimatedDuration = totalPcmBytes / 2 / 48000;
+                statusDetail.textContent = `${formatBytes(totalBytes)} · ${estimatedDuration.toFixed(1)}s audio`;
+            }
+
+            const totalTime = ((performance.now() - startTime) / 1000).toFixed(1);
+            log('');
+            log(`🏁 Stream hoàn tất!`);
+            log(`   Tổng: ${totalChunks} chunks · ${formatBytes(totalBytes)}`);
+            log(`   Thời gian xử lý: ${totalTime}s`);
+
+            // ── Build WAV Blob ──
+            let totalPcmLen = allPcmChunks.reduce((a, c) => a + c.length, 0);
+            let mergedPcm = new Uint8Array(totalPcmLen);
+            let offset = 0;
+            for (let chunk of allPcmChunks) {
+                mergedPcm.set(chunk, offset);
+                offset += chunk.length;
+            }
+
+            // Create proper WAV header
+            let wavBuffer = new ArrayBuffer(44 + mergedPcm.length);
+            let view = new DataView(wavBuffer);
+            let sampleRate = 48000;
+            let numChannels = 1;
+            let bitsPerSample = 16;
+
+            writeString(view, 0, 'RIFF');
+            view.setUint32(4, 36 + mergedPcm.length, true);
+            writeString(view, 8, 'WAVE');
+            writeString(view, 12, 'fmt ');
+            view.setUint32(16, 16, true);
+            view.setUint16(20, 1, true);
+            view.setUint16(22, numChannels, true);
+            view.setUint32(24, sampleRate, true);
+            view.setUint32(28, sampleRate * numChannels * bitsPerSample / 8, true);
+            view.setUint16(32, numChannels * bitsPerSample / 8, true);
+            view.setUint16(34, bitsPerSample, true);
+            writeString(view, 36, 'data');
+            view.setUint32(40, mergedPcm.length, true);
+
+            let wavArray = new Uint8Array(wavBuffer);
+            wavArray.set(mergedPcm, 44);
+
+            let blob = new Blob([wavArray], { type: 'audio/wav' });
+            let audioUrl = URL.createObjectURL(blob);
+            let audioDuration = mergedPcm.length / 2 / sampleRate;
+
+            // ── Show Player ──
+            audioPlayer.src = audioUrl;
+            playerSection.classList.add('visible');
+
+            infoDuration.textContent = `⏱ ${formatDuration(audioDuration)}`;
+            infoSize.textContent = `📦 ${formatBytes(blob.size)}`;
+            infoChunks.textContent = `📡 ${totalChunks} chunks`;
+
+            // Progress complete
+            progressBar.style.width = '100%';
+            statusDot.style.background = 'var(--success)';
+            statusDot.style.animation = 'none';
+            statusText.textContent = 'Hoàn tất!';
+            statusDetail.textContent = totalTime + 's';
+
+            log('');
+            log(`▶️ File WAV (${formatBytes(blob.size)}) đã sẵn sàng phát lại!`);
+
+            audioPlayer.play().catch(() => {});
+
+        } catch (error) {
+            log(`\n❌ Lỗi: ${error.message}`);
+            progressBar.classList.remove('indeterminate');
+            progressBar.style.width = '100%';
+            progressBar.style.background = 'var(--danger)';
+            statusDot.style.background = 'var(--danger)';
+            statusDot.style.animation = 'none';
+            statusText.textContent = 'Lỗi!';
+            statusDetail.textContent = error.message;
+        } finally {
+            btnGenerate.disabled = false;
+            btnGenerate.innerHTML = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg> Tạo Audio';
+        }
+    });
+
+    function writeString(view, offset, string) {
+        for (let i = 0; i < string.length; i++) {
+            view.setUint8(offset + i, string.charCodeAt(i));
+        }
+    }
+</script>
+</body>
+</html>
