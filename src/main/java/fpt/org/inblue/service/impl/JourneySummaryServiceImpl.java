@@ -27,6 +27,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
 import java.util.stream.Collectors;
+
+import fpt.org.inblue.utils.SecurityUtils;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -326,4 +328,17 @@ public class JourneySummaryServiceImpl implements JourneySummaryService {
             }
         }
     }
+
+    @Override
+    public List<JourneySummary> getAllJourneyByUser(String email) {
+        int userId = userRepository.findByEmail(email).getId();
+        List<Application> apps = applicationRepository.findAllByUserId(userId);
+        if (!apps.isEmpty()) {
+            List<Long> appIds = apps.stream().map(Application::getId).toList();
+            return journeySummaryRepository.findAllByApplicationIdIn(appIds);
+        }
+        return List.of();
+    }
+
+
 }

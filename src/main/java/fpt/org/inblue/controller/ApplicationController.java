@@ -58,4 +58,9 @@ public class ApplicationController {
     public ResponseEntity<List<Application>> getAllApplicationsByUserId() {
         return ResponseEntity.ok(applicationService.getAllApplicationsByUserId());
     }
+
+    @GetMapping("/summary-audio/{email}")
+    public ResponseEntity<List<JourneySummary>> getAllJourneySummaryWithMissingAudio(@PathVariable String email) {
+        return ResponseEntity.ok(journeySummaryService.getAllJourneyByUser(email));
+    }
 }

@@ -5,6 +5,8 @@ import fpt.org.inblue.model.dto.request.AISummaryRequest;
 import fpt.org.inblue.model.dto.request.JourneySummaryAIRequest;
 import fpt.org.inblue.model.dto.response.CompetencyChartResponse;
 
+import java.util.List;
+
 public interface JourneySummaryService {
     JourneySummaryAIRequest generate(Long applicationId);
 
@@ -19,4 +21,7 @@ public interface JourneySummaryService {
     CompetencyChartResponse getSavedCompetencyChart(Long applicationId);
 
     void generateMissingScripts();
+
+    List<JourneySummary> getAllJourneyByUser(String email);
+
 }

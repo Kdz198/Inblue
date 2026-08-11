@@ -1,6 +1,8 @@
 package fpt.org.inblue.repository;
 
 import fpt.org.inblue.model.JourneySummary;
+
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -13,4 +15,6 @@ public interface JourneySummaryRepository extends JpaRepository<JourneySummary, 
     List<JourneySummary> findByScriptIsNull();
 
     List<JourneySummary> findByAudioUrlIsNull();
+
+    List<JourneySummary> findAllByApplicationIdIn(Collection<Long> applicationIds);
 }
