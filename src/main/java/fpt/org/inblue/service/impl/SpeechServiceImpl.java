@@ -123,6 +123,7 @@ public class SpeechServiceImpl implements SpeechService {
                     mapper.writeValue(request.getBody(), body);
                 },
                 response -> {
+                    System.out.println("[DEBUG TTS] Streaming audio from Python service...");
                     StreamUtils.copy(response.getBody(), outputStream);
                     return null;
                 });

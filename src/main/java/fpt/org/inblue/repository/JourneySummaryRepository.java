@@ -11,4 +11,5 @@ public interface JourneySummaryRepository extends JpaRepository<JourneySummary, 
     Optional<JourneySummary> findTopByApplicationIdOrderByGeneratedAtDesc(Long applicationId);
 
     List<JourneySummary> findByScriptIsNull();
+    List<JourneySummary> findByAudioUrlIsNull();
 }

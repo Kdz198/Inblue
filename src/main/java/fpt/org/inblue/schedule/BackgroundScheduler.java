@@ -7,16 +7,18 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
+import java.io.FileNotFoundException;
+
 @Component
 @RequiredArgsConstructor
 @Slf4j
 public class BackgroundScheduler {
 
-    private final PaymentSchedule paymentSchedule;
     private final SessionSchedule sessionSchedule;
     private final EmailSubmissionService emailSubmissionService;
     private final JobDescriptionSchedule jobDescriptionSchedule;
     private final JourneySummaryService journeySummaryService;
+    private final SummaryAudioScheduler summaryAudioScheduler;
 
     //    @Scheduled(fixedDelay = 300000)
     //    public void scheduleCheckPaymentStatus() {
@@ -48,5 +50,11 @@ public class BackgroundScheduler {
     @Scheduled(cron = "0 0/30 * * * ?")
     public void scheduleGenerateSummaryScripts() {
         journeySummaryService.generateMissingScripts();
+    }
+
+    @Scheduled(fixedDelay = 120000)
+    public void scheduleGenerateMissingAudio() throws FileNotFoundException {
+        log.info("Generating missing audio");
+        summaryAudioScheduler.scheduleGenerateMissingAudio();
     }
 }
