@@ -4,12 +4,11 @@ import fpt.org.inblue.cloudinary.CloudinaryService;
 import fpt.org.inblue.model.JourneySummary;
 import fpt.org.inblue.repository.JourneySummaryRepository;
 import fpt.org.inblue.service.SpeechService;
+import java.io.*;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
-
-import java.io.*;
 
 @Component
 @RequiredArgsConstructor
@@ -18,9 +17,9 @@ public class SummaryAudioScheduler {
     private final JourneySummaryRepository journeySummaryRepository;
     private final SpeechService speechService;
     private final CloudinaryService cloudinaryService;
+
     @Value("${app.default-voice:Trúc Ly}")
     private String DEFAULT_VOICE;
-
 
     public void scheduleGenerateMissingAudio() {
         for (JourneySummary summary : journeySummaryRepository.findByAudioUrlIsNull()) {
@@ -40,12 +39,10 @@ public class SummaryAudioScheduler {
             } catch (Exception e) {
                 // Bắt MỌI lỗi (RestClientException, IOException, Cloudinary lỗi...)
                 // để 1 summary lỗi không làm hỏng các summary còn lại trong batch
-                log.error("Failed to generate/upload audio for summary id={}: {}",
-                        summary.getId(), e.getMessage());
+                log.error("Failed to generate/upload audio for summary id={}: {}", summary.getId(), e.getMessage());
             } finally {
                 if (tmp != null && tmp.exists()) tmp.delete();
             }
         }
     }
-
 }

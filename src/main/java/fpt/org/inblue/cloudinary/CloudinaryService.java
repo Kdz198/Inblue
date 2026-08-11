@@ -2,14 +2,11 @@ package fpt.org.inblue.cloudinary;
 
 import com.cloudinary.Cloudinary;
 import com.cloudinary.utils.ObjectUtils;
-
 import java.io.File;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
-
-import fpt.org.inblue.exception.CustomException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
@@ -59,16 +56,16 @@ public class CloudinaryService {
         return result;
     }
 
-    public String uploadAudio(File audioFile){
+    public String uploadAudio(File audioFile) {
         try {
-            Map uploadResult = cloudinary.uploader().upload(
-                    audioFile,
-                    ObjectUtils.asMap(
-                            "resource_type", "video",
-                            "folder", "interview-tts-audio",
-                            "public_id", "tts_" + UUID.randomUUID()
-                    )
-            );
+            Map uploadResult = cloudinary
+                    .uploader()
+                    .upload(
+                            audioFile,
+                            ObjectUtils.asMap(
+                                    "resource_type", "video",
+                                    "folder", "interview-tts-audio",
+                                    "public_id", "tts_" + UUID.randomUUID()));
             return (String) uploadResult.get("secure_url");
         } catch (IOException e) {
             throw new RuntimeException("Lỗi upload Cloudinary", e);
