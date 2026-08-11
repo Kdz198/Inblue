@@ -17,4 +17,6 @@ public interface JourneySummaryService {
     JourneySummary getSavedSummary(Long applicationId);
 
     CompetencyChartResponse getSavedCompetencyChart(Long applicationId);
+
+    void generateMissingScripts();
 }

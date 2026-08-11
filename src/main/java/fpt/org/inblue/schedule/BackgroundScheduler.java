@@ -1,5 +1,6 @@
 package fpt.org.inblue.schedule;
 
+import fpt.org.inblue.service.JourneySummaryService;
 import fpt.org.inblue.service.submission.EmailSubmissionService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -15,6 +16,7 @@ public class BackgroundScheduler {
     private final SessionSchedule sessionSchedule;
     private final EmailSubmissionService emailSubmissionService;
     private final JobDescriptionSchedule jobDescriptionSchedule;
+    private final JourneySummaryService journeySummaryService;
 
     //    @Scheduled(fixedDelay = 300000)
     //    public void scheduleCheckPaymentStatus() {
@@ -40,5 +42,11 @@ public class BackgroundScheduler {
     @Scheduled(cron = "0 0 0 * * ?")
     public void scheduleCloseExpiredJobDescriptions() {
         jobDescriptionSchedule.closeExpiredJobDescriptions();
+    }
+
+    // Chạy mỗi 30 phút một lần để scan và sinh script tóm tắt cho các record JourneySummary chưa có script
+    @Scheduled(cron = "0 0/30 * * * ?")
+    public void scheduleGenerateSummaryScripts() {
+        journeySummaryService.generateMissingScripts();
     }
 }

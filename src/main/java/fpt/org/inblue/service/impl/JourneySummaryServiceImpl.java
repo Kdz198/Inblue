@@ -287,4 +287,46 @@ public class JourneySummaryServiceImpl implements JourneySummaryService {
         }
         return round.getRoundOrder();
     }
+
+    @Override
+    public void generateMissingScripts() {
+        List<JourneySummary> pendingSummaries = journeySummaryRepository.findByScriptIsNull();
+        if (pendingSummaries.isEmpty()) {
+            log.info("[JourneySummary Service] Không có JourneySummary nào chưa có script.");
+            return;
+        }
+
+        log.info(
+                "[JourneySummary Service] Tìm thấy {} record chưa có script. Bắt đầu sinh script qua AnythingLLM...",
+                pendingSummaries.size());
+
+        for (JourneySummary summary : pendingSummaries) {
+            try {
+                String sessionId = "summary-script";
+                String script = apiClient.sendChatToAnythingLlm(
+                        AnythingLlmWorkspace.SUMMARY_SCRIPT_GEN,
+                        summary,
+                        sessionId,
+                        true,
+                        null,
+                        String.class);
+
+                if (script != null && !script.isBlank()) {
+                    summary.setScript(script.trim());
+                    journeySummaryRepository.save(summary);
+                    log.info(
+                            "[JourneySummary Service] Đã sinh script thành công cho JourneySummary id={}",
+                            summary.getId());
+                } else {
+                    log.warn("[JourneySummary Service] Phản hồi script rỗng từ AnythingLLM cho JourneySummary id={}", summary.getId());
+                }
+            } catch (Exception e) {
+                log.error(
+                        "[JourneySummary Service] Lỗi khi sinh script cho JourneySummary id={}: {}",
+                        summary.getId(),
+                        e.getMessage(),
+                        e);
+            }
+        }
+    }
 }

@@ -13,6 +13,7 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.type.SqlTypes;
 
@@ -44,4 +45,11 @@ public class JourneySummary {
     private List<JourneySummaryAIResponse.DevelopmentRecommendation> developmentRecommendations;
 
     private LocalDateTime generatedAt;
+
+    @CreationTimestamp
+    private LocalDateTime createdAt;
+
+    @Column(columnDefinition = "TEXT")
+    String script;
+    String audioUrl;
 }

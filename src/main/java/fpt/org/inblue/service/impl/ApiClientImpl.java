@@ -75,6 +75,7 @@ public class ApiClientImpl implements ApiClient {
                 message = (String) payload;
             } else {
                 ObjectMapper payloadMapper = new ObjectMapper();
+                payloadMapper.registerModule(new com.fasterxml.jackson.datatype.jsr310.JavaTimeModule());
                 // Tắt pretty print để ép JSON thành 1 dòng, tiết kiệm Token
                 payloadMapper.configure(SerializationFeature.INDENT_OUTPUT, false);
                 message = payloadMapper.writeValueAsString(payload);
