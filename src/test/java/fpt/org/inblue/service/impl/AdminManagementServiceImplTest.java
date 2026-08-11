@@ -10,13 +10,7 @@ import fpt.org.inblue.enums.ApplicationStatus;
 import fpt.org.inblue.enums.RoundType;
 import fpt.org.inblue.model.dto.response.admin.AdminDashboardOverviewResponse;
 import fpt.org.inblue.model.dto.response.admin.AdminDashboardOverviewResponse.JobTrendItem;
-import fpt.org.inblue.repository.ApplicationDetailRepository;
-import fpt.org.inblue.repository.ApplicationRepository;
-import fpt.org.inblue.repository.CandidateProfileRepository;
-import fpt.org.inblue.repository.CompanyRepository;
-import fpt.org.inblue.repository.JobDescriptionRepository;
-import fpt.org.inblue.repository.PaymentRepository;
-import fpt.org.inblue.repository.UserRepository;
+import fpt.org.inblue.repository.*;
 import fpt.org.inblue.repository.projection.AdminAnalyticsProjection;
 import fpt.org.inblue.service.MentorService;
 import java.util.List;
@@ -73,6 +67,7 @@ class AdminManagementServiceImplTest {
     private AdminAnalyticsProjection.ActiveInterview activeInterview;
 
     private AdminManagementServiceImpl service;
+    private RoundRepository roundRepository;
 
     @BeforeEach
     void setUp() {
@@ -84,7 +79,9 @@ class AdminManagementServiceImplTest {
                 userRepository,
                 candidateProfileRepository,
                 mentorService,
-                paymentRepository);
+                paymentRepository,
+                roundRepository
+                );
     }
 
     @Test
