@@ -304,12 +304,7 @@ public class JourneySummaryServiceImpl implements JourneySummaryService {
             try {
                 String sessionId = "summary-script";
                 String script = apiClient.sendChatToAnythingLlm(
-                        AnythingLlmWorkspace.SUMMARY_SCRIPT_GEN,
-                        summary,
-                        sessionId,
-                        true,
-                        null,
-                        String.class);
+                        AnythingLlmWorkspace.SUMMARY_SCRIPT_GEN, summary, sessionId, true, null, String.class);
 
                 if (script != null && !script.isBlank()) {
                     summary.setScript(script.trim());
@@ -318,7 +313,9 @@ public class JourneySummaryServiceImpl implements JourneySummaryService {
                             "[JourneySummary Service] Đã sinh script thành công cho JourneySummary id={}",
                             summary.getId());
                 } else {
-                    log.warn("[JourneySummary Service] Phản hồi script rỗng từ AnythingLLM cho JourneySummary id={}", summary.getId());
+                    log.warn(
+                            "[JourneySummary Service] Phản hồi script rỗng từ AnythingLLM cho JourneySummary id={}",
+                            summary.getId());
                 }
             } catch (Exception e) {
                 log.error(

@@ -51,5 +51,6 @@ public class JourneySummary {
 
     @Column(columnDefinition = "TEXT")
     String script;
+
     String audioUrl;
 }
