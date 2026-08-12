@@ -183,7 +183,9 @@ public class UserScheduleServiceImpl implements UserScheduleService {
                 continue;
             }
 
-            Mentor mentor = (sess.getUserId2() > 0) ? mentorRepository.findById(sess.getUserId2()).orElse(null) : null;
+            Mentor mentor = (sess.getUserId2() > 0)
+                    ? mentorRepository.findById(sess.getUserId2()).orElse(null)
+                    : null;
             String mentorName = (mentor != null && mentor.getName() != null) ? mentor.getName() : "";
 
             UserScheduleEventDto event = UserScheduleEventDto.builder()
@@ -256,9 +258,8 @@ public class UserScheduleServiceImpl implements UserScheduleService {
             Round round = (ad.getRoundId() != null)
                     ? roundRepository.findById(ad.getRoundId()).orElse(null)
                     : null;
-            User candidate = (app != null)
-                    ? userRepository.findById(app.getUserId()).orElse(null)
-                    : null;
+            User candidate =
+                    (app != null) ? userRepository.findById(app.getUserId()).orElse(null) : null;
 
             String roundName = (round != null && round.getName() != null) ? round.getName() : "Vòng phỏng vấn";
             String jobTitle = (jd != null && jd.getTitle() != null) ? jd.getTitle() : "";
@@ -268,16 +269,18 @@ public class UserScheduleServiceImpl implements UserScheduleService {
                     + (!jobTitle.isEmpty() ? " - " + jobTitle : "")
                     + (!candidateName.isEmpty() ? " (Ứng viên: " + candidateName + ")" : "");
 
-            String meetingType = (ad.getSessionInfo() != null && ad.getSessionInfo().getMeetingType() != null)
-                    ? ad.getSessionInfo().getMeetingType().name()
-                    : "ONLINE";
+            String meetingType =
+                    (ad.getSessionInfo() != null && ad.getSessionInfo().getMeetingType() != null)
+                            ? ad.getSessionInfo().getMeetingType().name()
+                            : "ONLINE";
 
             UserScheduleEventDto event = UserScheduleEventDto.builder()
                     .id("APP_DETAIL_" + ad.getId())
                     .title(title)
-                    .description(round != null && round.getConfigData() != null
-                            ? round.getConfigData().getInstruction()
-                            : null)
+                    .description(
+                            round != null && round.getConfigData() != null
+                                    ? round.getConfigData().getInstruction()
+                                    : null)
                     .eventType("APPLICATION_ROUND")
                     .start(start)
                     .end(end)
@@ -308,20 +311,31 @@ public class UserScheduleServiceImpl implements UserScheduleService {
                             }
                             if (isWithinTimeRange(kbStart, kbEnd, startDate, endDate)) {
                                 Kiosk kiosk = (kb.getKioskId() != null)
-                                        ? kioskRepository.findById(kb.getKioskId()).orElse(null)
+                                        ? kioskRepository
+                                                .findById(kb.getKioskId())
+                                                .orElse(null)
                                         : null;
-                                String kioskName = (kiosk != null && kiosk.getName() != null) ? kiosk.getName() : "Trạm Kiosk";
-                                String kioskLocation = (kiosk != null && kiosk.getLocation() != null) ? kiosk.getLocation() : "";
-                                String locationStr = kioskName + (!kioskLocation.isEmpty() ? " (" + kioskLocation + ")" : "");
+                                String kioskName =
+                                        (kiosk != null && kiosk.getName() != null) ? kiosk.getName() : "Trạm Kiosk";
+                                String kioskLocation =
+                                        (kiosk != null && kiosk.getLocation() != null) ? kiosk.getLocation() : "";
+                                String locationStr =
+                                        kioskName + (!kioskLocation.isEmpty() ? " (" + kioskLocation + ")" : "");
 
                                 UserScheduleEventDto kbEvent = UserScheduleEventDto.builder()
                                         .id("KIOSK_BOOKING_" + kb.getId())
-                                        .title("Lịch phỏng vấn Kiosk - " + kioskName + (!candidateName.isEmpty() ? " (Ứng viên: " + candidateName + ")" : ""))
+                                        .title("Lịch phỏng vấn Kiosk - " + kioskName
+                                                + (!candidateName.isEmpty()
+                                                        ? " (Ứng viên: " + candidateName + ")"
+                                                        : ""))
                                         .description(kb.getNotes())
                                         .eventType("KIOSK_BOOKING")
                                         .start(kbStart)
                                         .end(kbEnd)
-                                        .status(kb.getStatus() != null ? kb.getStatus().name() : "CONFIRMED")
+                                        .status(
+                                                kb.getStatus() != null
+                                                        ? kb.getStatus().name()
+                                                        : "CONFIRMED")
                                         .meetingType("KIOSK")
                                         .location(locationStr)
                                         .color("#10B981") // Green badge
@@ -353,7 +367,8 @@ public class UserScheduleServiceImpl implements UserScheduleService {
                 continue;
             }
 
-            LocalDateTime start = rawStart.toInstant().atZone(ZoneId.systemDefault()).toLocalDateTime();
+            LocalDateTime start =
+                    rawStart.toInstant().atZone(ZoneId.systemDefault()).toLocalDateTime();
             Timestamp rawEnd = sess.getEndTime2();
             if (rawEnd == null) {
                 rawEnd = sess.getEndTime1();
@@ -371,7 +386,9 @@ public class UserScheduleServiceImpl implements UserScheduleService {
                 continue;
             }
 
-            User candidate = (sess.getUserId() > 0) ? userRepository.findById(sess.getUserId()).orElse(null) : null;
+            User candidate = (sess.getUserId() > 0)
+                    ? userRepository.findById(sess.getUserId()).orElse(null)
+                    : null;
             String candidateName = (candidate != null && candidate.getName() != null) ? candidate.getName() : "";
 
             UserScheduleEventDto event = UserScheduleEventDto.builder()

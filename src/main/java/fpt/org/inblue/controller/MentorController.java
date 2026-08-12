@@ -1,6 +1,5 @@
 package fpt.org.inblue.controller;
 
-import fpt.org.inblue.exception.CustomException;
 import fpt.org.inblue.model.dto.request.ChangeMentorPasswordRequest;
 import fpt.org.inblue.model.dto.request.CreateMentorRequest;
 import fpt.org.inblue.model.dto.request.UpdateMentorRequest;
@@ -18,7 +17,6 @@ import java.time.LocalDateTime;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.format.annotation.DateTimeFormat;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
