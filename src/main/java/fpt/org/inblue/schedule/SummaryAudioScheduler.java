@@ -1,6 +1,5 @@
 package fpt.org.inblue.schedule;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import fpt.org.inblue.cloudinary.CloudinaryService;
 import fpt.org.inblue.model.JourneySummary;
 import fpt.org.inblue.repository.JourneySummaryRepository;
@@ -24,6 +23,7 @@ public class SummaryAudioScheduler {
 
     @Value("${app.default-voice:Trúc Ly}")
     private String DEFAULT_VOICE;
+
     public void scheduleGenerateMissingAudio() {
         for (JourneySummary summary : journeySummaryRepository.findByAudioUrlIsNull()) {
             log.info("Generating audio for summary id={}", summary.getId());
