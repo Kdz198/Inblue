@@ -51,7 +51,7 @@ public class BackgroundScheduler {
         journeySummaryService.generateMissingScripts();
     }
 
-    @Scheduled(fixedDelay = 120000)
+    @Scheduled(cron = "0 0/25 * * * ?")
     public void scheduleGenerateMissingAudio() throws FileNotFoundException {
         log.info("Generating missing audio");
         summaryAudioScheduler.scheduleGenerateMissingAudio();
