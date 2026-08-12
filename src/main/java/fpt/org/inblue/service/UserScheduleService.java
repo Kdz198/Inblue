@@ -10,4 +10,10 @@ public interface UserScheduleService {
      * có hỗ trợ lọc theo khoảng thời gian startDate và endDate.
      */
     List<UserScheduleEventDto> getUserSchedule(int userId, LocalDateTime startDate, LocalDateTime endDate);
+
+    /**
+     * Lấy danh sách tất cả các sự kiện lịch (Application round, Kiosk booking, Mentor session) của Mentor,
+     * có hỗ trợ lọc theo khoảng thời gian startDate và endDate.
+     */
+    List<UserScheduleEventDto> getMentorSchedule(int mentorId, LocalDateTime startDate, LocalDateTime endDate);
 }

@@ -99,4 +99,6 @@ public interface ApplicationDetailRepository extends JpaRepository<ApplicationDe
             + "JOIN Application a ON a.id = ad.applicationId "
             + "WHERE a.userId = :userId AND a.isDeleted = false")
     List<ApplicationDetail> findAllByUserId(@Param("userId") int userId);
+
+    List<ApplicationDetail> findAllByMentorId(Integer mentorId);
 }

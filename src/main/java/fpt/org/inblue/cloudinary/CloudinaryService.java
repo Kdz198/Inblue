@@ -58,6 +58,7 @@ public class CloudinaryService {
 
     public String uploadAudio(File audioFile) {
         try {
+            System.out.println("Uploading audio file to Cloudinary: " + audioFile.getAbsolutePath());
             Map uploadResult = cloudinary
                     .uploader()
                     .upload(

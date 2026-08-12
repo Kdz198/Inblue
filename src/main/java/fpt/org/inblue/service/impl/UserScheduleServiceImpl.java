@@ -25,6 +25,8 @@ public class UserScheduleServiceImpl implements UserScheduleService {
     private final KioskBookingRepository kioskBookingRepository;
     private final KioskRepository kioskRepository;
     private final SessionRepository sessionRepository;
+    private final UserRepository userRepository;
+    private final MentorRepository mentorRepository;
 
     @Override
     public List<UserScheduleEventDto> getUserSchedule(int userId, LocalDateTime startDate, LocalDateTime endDate) {
@@ -153,10 +155,10 @@ public class UserScheduleServiceImpl implements UserScheduleService {
             events.add(event);
         }
 
-        // 3. Lấy thông tin các buổi họp 1:1 (Session)
-        List<Session> sessions = sessionRepository.findAllByUserIdOrUserId2(userId, userId);
+        // 3. Lấy thông tin các buổi họp 1:1 (Session) của Candidate (User) - Session.userId
+        List<Session> sessions = sessionRepository.findAllByUserId(userId);
         for (Session sess : sessions) {
-            Timestamp rawStart = (sess.getUserId() == userId) ? sess.getStartTime1() : sess.getStartTime2();
+            Timestamp rawStart = sess.getStartTime1();
             if (rawStart == null) {
                 rawStart = sess.getJoinTime();
             }
@@ -167,7 +169,7 @@ public class UserScheduleServiceImpl implements UserScheduleService {
 
             LocalDateTime start =
                     rawStart.toInstant().atZone(ZoneId.systemDefault()).toLocalDateTime();
-            Timestamp rawEnd = (sess.getUserId() == userId) ? sess.getEndTime1() : sess.getEndTime2();
+            Timestamp rawEnd = sess.getEndTime1();
             LocalDateTime end = null;
             if (rawEnd != null) {
                 end = rawEnd.toInstant().atZone(ZoneId.systemDefault()).toLocalDateTime();
@@ -181,9 +183,202 @@ public class UserScheduleServiceImpl implements UserScheduleService {
                 continue;
             }
 
+            Mentor mentor = (sess.getUserId2() > 0) ? mentorRepository.findById(sess.getUserId2()).orElse(null) : null;
+            String mentorName = (mentor != null && mentor.getName() != null) ? mentor.getName() : "";
+
             UserScheduleEventDto event = UserScheduleEventDto.builder()
                     .id("SESSION_" + sess.getId())
-                    .title("Phòng họp Mentor 1:1" + (sess.getRoomName() != null ? " - " + sess.getRoomName() : ""))
+                    .title("Phòng họp Mentor 1:1"
+                            + (sess.getRoomName() != null ? " - " + sess.getRoomName() : "")
+                            + (!mentorName.isEmpty() ? " với Mentor " + mentorName : ""))
+                    .description("Buổi trao đổi phỏng vấn/review trực tuyến")
+                    .eventType("MENTOR_SESSION")
+                    .start(start)
+                    .end(end)
+                    .status(sess.getStatus() != null ? sess.getStatus().name() : "SCHEDULED")
+                    .meetingType("ONLINE")
+                    .location(sess.getRoomUrl())
+                    .roomUrl(sess.getRoomUrl())
+                    .color("#8B5CF6") // Purple badge
+                    .sessionId(sess.getId())
+                    .sessionKey(sess.getSessionKey())
+                    .build();
+
+            events.add(event);
+        }
+
+        // Sắp xếp tăng dần theo thời gian bắt đầu (start)
+        events.sort(Comparator.comparing(UserScheduleEventDto::getStart));
+
+        return events;
+    }
+
+    @Override
+    public List<UserScheduleEventDto> getMentorSchedule(int mentorId, LocalDateTime startDate, LocalDateTime endDate) {
+        List<UserScheduleEventDto> events = new ArrayList<>();
+
+        // 1. Lấy thông tin các vòng phỏng vấn được gán cho Mentor (ApplicationDetail.mentorId)
+        List<ApplicationDetail> appDetails = applicationDetailRepository.findAllByMentorId(mentorId);
+        for (ApplicationDetail ad : appDetails) {
+            LocalDateTime start = null;
+            LocalDateTime end = null;
+
+            if (ad.getSessionInfo() != null) {
+                start = ad.getSessionInfo().getStartTime();
+                end = ad.getSessionInfo().getEndTime();
+            }
+
+            if (start == null && ad.getStartedAt() != null) {
+                start = ad.getStartedAt();
+            }
+            if (end == null && ad.getCompletedAt() != null) {
+                end = ad.getCompletedAt();
+            }
+
+            if (start == null) {
+                continue;
+            }
+
+            if (end == null) {
+                end = start.plusMinutes(60);
+            }
+
+            if (!isWithinTimeRange(start, end, startDate, endDate)) {
+                continue;
+            }
+
+            Application app = (ad.getApplicationId() != null)
+                    ? applicationRepository.findById(ad.getApplicationId()).orElse(null)
+                    : null;
+            JobDescription jd = (app != null && app.getJdId() != null)
+                    ? jobDescriptionRepository.findById(app.getJdId()).orElse(null)
+                    : null;
+            Round round = (ad.getRoundId() != null)
+                    ? roundRepository.findById(ad.getRoundId()).orElse(null)
+                    : null;
+            User candidate = (app != null)
+                    ? userRepository.findById(app.getUserId()).orElse(null)
+                    : null;
+
+            String roundName = (round != null && round.getName() != null) ? round.getName() : "Vòng phỏng vấn";
+            String jobTitle = (jd != null && jd.getTitle() != null) ? jd.getTitle() : "";
+            String candidateName = (candidate != null && candidate.getName() != null) ? candidate.getName() : "";
+
+            String title = roundName
+                    + (!jobTitle.isEmpty() ? " - " + jobTitle : "")
+                    + (!candidateName.isEmpty() ? " (Ứng viên: " + candidateName + ")" : "");
+
+            String meetingType = (ad.getSessionInfo() != null && ad.getSessionInfo().getMeetingType() != null)
+                    ? ad.getSessionInfo().getMeetingType().name()
+                    : "ONLINE";
+
+            UserScheduleEventDto event = UserScheduleEventDto.builder()
+                    .id("APP_DETAIL_" + ad.getId())
+                    .title(title)
+                    .description(round != null && round.getConfigData() != null
+                            ? round.getConfigData().getInstruction()
+                            : null)
+                    .eventType("APPLICATION_ROUND")
+                    .start(start)
+                    .end(end)
+                    .status(ad.getStatus() != null ? ad.getStatus().name() : "PENDING")
+                    .meetingType(meetingType)
+                    .location(meetingType)
+                    .color("#3B82F6") // Blue badge
+                    .applicationId(ad.getApplicationId())
+                    .applicationDetailId(ad.getId())
+                    .sessionId(ad.getSessionId())
+                    .jobTitle(jobTitle)
+                    .roundName(roundName)
+                    .build();
+
+            events.add(event);
+
+            // 2. Kiểm tra xem có KioskBooking nào thuộc ApplicationDetail này không
+            if (ad.getId() != null) {
+                java.util.Optional<KioskBooking> kbOpt = kioskBookingRepository.findByApplicationDetailId(ad.getId());
+                if (kbOpt.isPresent()) {
+                    KioskBooking kb = kbOpt.get();
+                    if (kb.getStatus() != BookingStatus.CANCELLED) {
+                        LocalDateTime kbStart = kb.getScheduledStart();
+                        LocalDateTime kbEnd = kb.getScheduledEnd();
+                        if (kbStart != null) {
+                            if (kbEnd == null) {
+                                kbEnd = kbStart.plusMinutes(60);
+                            }
+                            if (isWithinTimeRange(kbStart, kbEnd, startDate, endDate)) {
+                                Kiosk kiosk = (kb.getKioskId() != null)
+                                        ? kioskRepository.findById(kb.getKioskId()).orElse(null)
+                                        : null;
+                                String kioskName = (kiosk != null && kiosk.getName() != null) ? kiosk.getName() : "Trạm Kiosk";
+                                String kioskLocation = (kiosk != null && kiosk.getLocation() != null) ? kiosk.getLocation() : "";
+                                String locationStr = kioskName + (!kioskLocation.isEmpty() ? " (" + kioskLocation + ")" : "");
+
+                                UserScheduleEventDto kbEvent = UserScheduleEventDto.builder()
+                                        .id("KIOSK_BOOKING_" + kb.getId())
+                                        .title("Lịch phỏng vấn Kiosk - " + kioskName + (!candidateName.isEmpty() ? " (Ứng viên: " + candidateName + ")" : ""))
+                                        .description(kb.getNotes())
+                                        .eventType("KIOSK_BOOKING")
+                                        .start(kbStart)
+                                        .end(kbEnd)
+                                        .status(kb.getStatus() != null ? kb.getStatus().name() : "CONFIRMED")
+                                        .meetingType("KIOSK")
+                                        .location(locationStr)
+                                        .color("#10B981") // Green badge
+                                        .kioskId(kb.getKioskId())
+                                        .sessionKey(kb.getSessionKey())
+                                        .applicationDetailId(kb.getApplicationDetailId())
+                                        .build();
+
+                                events.add(kbEvent);
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        // 3. Lấy thông tin các buổi họp 1:1 (Session) của Mentor - Session.userId2 (bảng Mentor)
+        List<Session> sessions = sessionRepository.findAllByUserId2(mentorId);
+        for (Session sess : sessions) {
+            Timestamp rawStart = sess.getStartTime2();
+            if (rawStart == null) {
+                rawStart = sess.getStartTime1();
+            }
+            if (rawStart == null) {
+                rawStart = sess.getJoinTime();
+            }
+
+            if (rawStart == null) {
+                continue;
+            }
+
+            LocalDateTime start = rawStart.toInstant().atZone(ZoneId.systemDefault()).toLocalDateTime();
+            Timestamp rawEnd = sess.getEndTime2();
+            if (rawEnd == null) {
+                rawEnd = sess.getEndTime1();
+            }
+            LocalDateTime end = null;
+            if (rawEnd != null) {
+                end = rawEnd.toInstant().atZone(ZoneId.systemDefault()).toLocalDateTime();
+            } else if (sess.getDuration() != null && sess.getDuration() > 0) {
+                end = start.plusMinutes(sess.getDuration());
+            } else {
+                end = start.plusMinutes(60);
+            }
+
+            if (!isWithinTimeRange(start, end, startDate, endDate)) {
+                continue;
+            }
+
+            User candidate = (sess.getUserId() > 0) ? userRepository.findById(sess.getUserId()).orElse(null) : null;
+            String candidateName = (candidate != null && candidate.getName() != null) ? candidate.getName() : "";
+
+            UserScheduleEventDto event = UserScheduleEventDto.builder()
+                    .id("SESSION_" + sess.getId())
+                    .title("Phòng họp Mentor 1:1"
+                            + (sess.getRoomName() != null ? " - " + sess.getRoomName() : "")
+                            + (!candidateName.isEmpty() ? " với " + candidateName : ""))
                     .description("Buổi trao đổi phỏng vấn/review trực tuyến")
                     .eventType("MENTOR_SESSION")
                     .start(start)
