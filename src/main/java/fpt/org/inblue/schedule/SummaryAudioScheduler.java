@@ -20,9 +20,7 @@ public class SummaryAudioScheduler {
     private final SpeechService speechService;
     private final CloudinaryService cloudinaryService;
     private final ObjectMapper objectMapper;
-
-    @Value("${app.default-voice:Trúc Ly}")
-    private String DEFAULT_VOICE;
+    private final static String DEFAULT_VOICE = "Trúc Ly";
 
     public void scheduleGenerateMissingAudio() {
         for (JourneySummary summary : journeySummaryRepository.findByAudioUrlIsNull()) {
