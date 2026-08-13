@@ -18,6 +18,7 @@ public class TemplateDto {
         private String category;
         private String description;
         private LocalDateTime createdAt;
+        private Integer totalRounds;
     }
 
     // DTO dùng cho màn hình chi tiết để Autofill
