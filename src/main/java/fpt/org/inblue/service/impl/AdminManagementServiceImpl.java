@@ -408,6 +408,8 @@ public class AdminManagementServiceImpl implements AdminManagementService {
                 }
             }
 
+            Optional<Company> companyOpt = jdOpt.flatMap(jd -> companyRepository.findByJobDescriptionsId(jd.getId()));
+
             AdminApplicationDetailResponse response = AdminApplicationDetailResponse.builder()
                     .id(proj.getId())
                     .applicationId(proj.getApplicationId())
@@ -434,6 +436,8 @@ public class AdminManagementServiceImpl implements AdminManagementService {
                     .candidateName(userOpt.map(User::getName).orElse("N/A"))
                     .candidateEmail(userOpt.map(User::getEmail).orElse("N/A"))
                     .candidateAvatarUrl(userOpt.map(User::getAvatarUrl).orElse(null))
+                    .companyName(companyOpt.map(Company::getName).orElse("N/A"))
+                    .companyLogo(companyOpt.map(Company::getLogoUrl).orElse(null))
                     .build();
 
             result.add(response);
