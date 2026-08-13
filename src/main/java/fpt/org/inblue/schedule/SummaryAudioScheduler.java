@@ -7,7 +7,6 @@ import fpt.org.inblue.service.SpeechService;
 import java.io.*;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.ObjectMapper;
@@ -20,7 +19,7 @@ public class SummaryAudioScheduler {
     private final SpeechService speechService;
     private final CloudinaryService cloudinaryService;
     private final ObjectMapper objectMapper;
-    private final static String DEFAULT_VOICE = "Trúc Ly";
+    private static final String DEFAULT_VOICE = "Trúc Ly";
 
     public void scheduleGenerateMissingAudio() {
         for (JourneySummary summary : journeySummaryRepository.findByAudioUrlIsNull()) {
