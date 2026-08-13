@@ -2,7 +2,6 @@ package fpt.org.inblue.model.dto;
 
 import fpt.org.inblue.enums.RoundType;
 import fpt.org.inblue.model.Round.RoundConfig;
-
 import java.time.LocalDateTime;
 import java.util.List;
 import lombok.Builder;
