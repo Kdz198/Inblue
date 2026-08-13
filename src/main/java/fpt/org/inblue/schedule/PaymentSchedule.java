@@ -49,11 +49,8 @@ public class PaymentSchedule {
                         restTemplate.exchange(url, HttpMethod.GET, entity, PaymentStatusResponse.class);
 
                 if (response.getBody() != null) {
-                    String transactionCode = payment.getTransactionCode();
-                    String type = HelperUtil.getPrefix(transactionCode);
                     String status = response.getBody().getData().getStatus();
-                    if (type.equals("100")
-                            && ("CANCELLED".equals(status) || "EXPIRED".equals(status) || "PENDING".equals(status))) {
+                    if (("CANCELLED".equals(status) || "EXPIRED".equals(status) || "PENDING".equals(status))) {
                         payment.setStatus(PaymentStatus.FAILED);
                         paymentRepository.save(payment);
                         System.out.println("Auto-cancelled payment: " + payment.getId());

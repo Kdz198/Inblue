@@ -13,7 +13,7 @@ public interface JourneySummaryRepository extends JpaRepository<JourneySummary, 
 
     List<JourneySummary> findByScriptIsNull();
 
-    List<JourneySummary> findByAudioUrlIsNull();
+    List<JourneySummary> findByAudioUrlIsNullAndScriptIsNotNull();
 
     List<JourneySummary> findAllByApplicationIdIn(Collection<Long> applicationIds);
 }

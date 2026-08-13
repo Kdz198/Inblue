@@ -23,7 +23,7 @@ public class SummaryAudioScheduler {
     private final static String DEFAULT_VOICE = "Trúc Ly";
 
     public void scheduleGenerateMissingAudio() {
-        for (JourneySummary summary : journeySummaryRepository.findByAudioUrlIsNull()) {
+        for (JourneySummary summary : journeySummaryRepository.findByAudioUrlIsNullAndScriptIsNotNull()) {
             log.info("Generating audio for summary id={}", summary.getId());
             File tmp = null;
             try {

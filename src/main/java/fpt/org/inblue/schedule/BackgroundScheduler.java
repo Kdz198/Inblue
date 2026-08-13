@@ -18,11 +18,12 @@ public class BackgroundScheduler {
     private final JobDescriptionSchedule jobDescriptionSchedule;
     private final JourneySummaryService journeySummaryService;
     private final SummaryAudioScheduler summaryAudioScheduler;
+    private final PaymentSchedule paymentSchedule;
 
-    //    @Scheduled(fixedDelay = 300000)
-    //    public void scheduleCheckPaymentStatus() {
-    //        paymentSchedule.checkPaymentStatus();
-    //    }
+    @Scheduled(fixedDelay = 300000)
+        public void scheduleCheckPaymentStatus() {
+            paymentSchedule.checkPaymentStatus();
+        }
 
     @Scheduled(cron = "0 0 0 * * ?")
     public void scheduleSendTodayMeetingNotification() {
