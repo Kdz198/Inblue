@@ -17,7 +17,6 @@ public interface QuestionBankMapper {
     QuestionBank toEntity(CreateQuestionBankRequest request);
 
     @Mapping(target = "id", ignore = true)
-    @Mapping(target = "isDeleted", ignore = true)
     @Mapping(target = "questionCategory", ignore = true) // set thủ công từ questionCategoryId nếu có
     void updateQuestionBankFromRequest(UpdateQuestionBankRequest request, @MappingTarget QuestionBank questionBank);
 }
