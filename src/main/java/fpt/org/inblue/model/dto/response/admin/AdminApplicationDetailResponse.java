@@ -41,4 +41,6 @@ public class AdminApplicationDetailResponse {
     private String candidateName;
     private String candidateEmail;
     private String candidateAvatarUrl;
+    private String companyName;
+    private String companyLogo;
 }

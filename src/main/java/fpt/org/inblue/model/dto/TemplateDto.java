@@ -2,6 +2,7 @@ package fpt.org.inblue.model.dto;
 
 import fpt.org.inblue.enums.RoundType;
 import fpt.org.inblue.model.Round.RoundConfig;
+import java.time.LocalDateTime;
 import java.util.List;
 import lombok.Builder;
 import lombok.Data;
@@ -15,6 +16,8 @@ public class TemplateDto {
         private String name;
         private String category;
         private String description;
+        private LocalDateTime createdAt;
+        private Integer totalRounds;
     }
 
     // DTO dùng cho màn hình chi tiết để Autofill

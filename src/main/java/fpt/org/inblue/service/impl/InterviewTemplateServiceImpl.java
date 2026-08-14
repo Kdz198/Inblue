@@ -25,7 +25,9 @@ public class InterviewTemplateServiceImpl implements InterviewTemplateService {
                         .id(template.getId())
                         .name(template.getName())
                         .category(template.getCategory())
+                        .createdAt(template.getCreatedAt())
                         .description(template.getDescription())
+                        .totalRounds(template.getRounds().size())
                         .build())
                 .collect(Collectors.toList());
     }
