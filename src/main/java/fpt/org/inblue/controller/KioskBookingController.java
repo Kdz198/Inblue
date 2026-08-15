@@ -54,7 +54,8 @@ public class KioskBookingController {
             description =
                     "Máy Kiosk vật lý gửi sessionKey để xác thực. Hệ thống kiểm tra thời gian hợp lệ (±15 phút so với giờ hẹn) và gọi orchestrator để lấy AI Session.")
     @PostMapping("/api/kiosk/enter/{sessionKey}")
-    public ResponseEntity<KioskEnterDtoResponse> enterKiosk(@PathVariable String sessionKey, @RequestParam Long kioskId) {
+    public ResponseEntity<KioskEnterDtoResponse> enterKiosk(
+            @PathVariable String sessionKey, @RequestParam Long kioskId) {
         return ResponseEntity.ok(bookingService.enterKiosk(sessionKey, kioskId));
     }
 
