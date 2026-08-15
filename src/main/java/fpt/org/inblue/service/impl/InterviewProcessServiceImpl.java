@@ -298,11 +298,11 @@ public class InterviewProcessServiceImpl implements InterviewProcessService {
 
         InterviewResultDetail resultDetail = InterviewResultDetail.builder()
                 .history(gradedHistory)
-                .aiOverviewFeedback("Đã chấm điểm xong.")
+                .aiOverviewFeedback(genOverviewFeedback(gradedHistory))
                 .build();
 
         dbSession.setResultDetail(resultDetail);
-        dbSession.setOverallScore(avgScore);
+        dbSession.setOverallScore(avgScore*10);
         dbSession.setStatus(InterviewSession.SessionStatus.COMPLETED);
         dbSession.setResult(determineEvaluationResult(avgScore));
         dbSession.setCompletedAt(LocalDateTime.now());
