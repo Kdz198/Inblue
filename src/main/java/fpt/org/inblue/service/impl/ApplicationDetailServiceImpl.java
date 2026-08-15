@@ -7,11 +7,7 @@ import fpt.org.inblue.model.dto.request.InterviewSetupRequest;
 import fpt.org.inblue.model.dto.request.OrchestratorRequest;
 import fpt.org.inblue.model.dto.response.MentorResponse;
 import fpt.org.inblue.model.dto.response.ReviewerApplicationDetailResponseDto;
-import fpt.org.inblue.repository.ApplicationDetailRepository;
-import fpt.org.inblue.repository.CandidateProfileRepository;
-import fpt.org.inblue.repository.JobDescriptionRepository;
-import fpt.org.inblue.repository.RoundRepository;
-import fpt.org.inblue.repository.UserRepository;
+import fpt.org.inblue.repository.*;
 import fpt.org.inblue.security.JwtUtils;
 import fpt.org.inblue.service.ApplicationDetailService;
 import fpt.org.inblue.service.ApplicationService;
@@ -37,7 +33,7 @@ public class ApplicationDetailServiceImpl implements ApplicationDetailService {
     private final UserRepository userRepository;
     private final CandidateProfileRepository candidateProfileRepository;
     private final InterviewSessionService interviewSessionService;
-    private final fpt.org.inblue.repository.InterviewSessionRepository interviewSessionRepository;
+    private final InterviewSessionRepository interviewSessionRepository;
     private final MentorService mentorService;
     private final JwtUtils jwtUtils;
 
@@ -319,8 +315,11 @@ public class ApplicationDetailServiceImpl implements ApplicationDetailService {
         }
 
         Integer duration = round.getConfigData() != null ? round.getConfigData().getTimeLimitMinutes() : 45;
-        if (duration == null) duration = 45;
         configData.setDurationMinutes(duration);
+        configData.setEvaluationCriteria(
+                round.getConfigData() != null ? round.getConfigData().getEvaluationCriteria() : null);
+        configData.setAdditionalInstructions(
+                round.getConfigData() != null ? round.getConfigData().getAiSystemPrompt() : null);
 
         InterviewSetupRequest setupRequest = InterviewSetupRequest.builder()
                 .userId(applicant.getId())

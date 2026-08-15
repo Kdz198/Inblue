@@ -43,6 +43,10 @@ public class OrchestratorRequest {
 
         @JsonProperty("domain")
         private InterviewEnums.JobDomain domain;
+
+        private String evaluationCriteria;
+
+        private String additionalInstructions;
     }
 
     @Data
