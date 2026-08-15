@@ -63,6 +63,16 @@ public class KioskServiceImpl implements KioskService {
         if (!kioskRepository.existsById(schedule.getKioskId())) {
             throw new CustomException("Kiosk not found with id: " + schedule.getKioskId(), HttpStatus.NOT_FOUND);
         }
+        LocalTime maxAllowedCloseTime = LocalTime.of(22, 0); // 22:00:00
+        if (schedule.getCloseTime() != null && schedule.getCloseTime().isAfter(maxAllowedCloseTime)) {
+            throw new CustomException("Giờ đóng cửa không được sau 22:00", HttpStatus.BAD_REQUEST);
+        }
+
+        // 3. (Khuyến nghị) Đảm bảo giờ mở cửa phải trước giờ đóng cửa
+        if (schedule.getOpenTime() != null && schedule.getCloseTime() != null
+                && !schedule.getOpenTime().isBefore(schedule.getCloseTime())) {
+            throw new CustomException("Giờ mở cửa phải trước giờ đóng cửa", HttpStatus.BAD_REQUEST);
+        }
         return kioskScheduleRepository.save(schedule);
     }
 
@@ -133,12 +143,26 @@ public class KioskServiceImpl implements KioskService {
 
     @Override
     public KioskSchedule updateSchedule(Long id, KioskSchedule schedule) {
+        // 1. Tìm bản ghi lịch cũ theo ID
         KioskSchedule existing = kioskScheduleRepository
                 .findById(id)
                 .orElseThrow(() -> new CustomException("KioskSchedule not found with id: " + id, HttpStatus.NOT_FOUND));
 
+        // 2. Kiểm tra Kiosk có tồn tại hay không
         if (!kioskRepository.existsById(schedule.getKioskId())) {
             throw new CustomException("Kiosk not found with id: " + schedule.getKioskId(), HttpStatus.NOT_FOUND);
+        }
+
+        // 3. Chặn giờ đóng cửa sau 22:00
+        LocalTime maxAllowedCloseTime = LocalTime.of(22, 0); // 22:00:00
+        if (schedule.getCloseTime() != null && schedule.getCloseTime().isAfter(maxAllowedCloseTime)) {
+            throw new CustomException("Giờ đóng cửa không được sau 22:00", HttpStatus.BAD_REQUEST);
+        }
+
+        // 4. Đảm bảo giờ mở cửa phải trước giờ đóng cửa
+        if (schedule.getOpenTime() != null && schedule.getCloseTime() != null
+                && !schedule.getOpenTime().isBefore(schedule.getCloseTime())) {
+            throw new CustomException("Giờ mở cửa phải trước giờ đóng cửa", HttpStatus.BAD_REQUEST);
         }
 
         existing.setKioskId(schedule.getKioskId());
