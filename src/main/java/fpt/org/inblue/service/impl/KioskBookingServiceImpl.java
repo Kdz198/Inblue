@@ -170,8 +170,7 @@ public class KioskBookingServiceImpl implements KioskBookingService {
 
         int durationMinutes = round.getConfigData().getTimeLimitMinutes();
 
-        return KioskEnterDtoResponse
-                .builder()
+        return KioskEnterDtoResponse.builder()
                 .aiSessionKey(aiSessionKey)
                 .durationMinutes(durationMinutes)
                 .build();

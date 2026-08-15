@@ -316,8 +316,10 @@ public class ApplicationDetailServiceImpl implements ApplicationDetailService {
 
         Integer duration = round.getConfigData() != null ? round.getConfigData().getTimeLimitMinutes() : 45;
         configData.setDurationMinutes(duration);
-        configData.setEvaluationCriteria(round.getConfigData() != null ? round.getConfigData().getEvaluationCriteria() : null);
-        configData.setAdditionalInstructions(round.getConfigData() != null ? round.getConfigData().getAiSystemPrompt() : null);
+        configData.setEvaluationCriteria(
+                round.getConfigData() != null ? round.getConfigData().getEvaluationCriteria() : null);
+        configData.setAdditionalInstructions(
+                round.getConfigData() != null ? round.getConfigData().getAiSystemPrompt() : null);
 
         InterviewSetupRequest setupRequest = InterviewSetupRequest.builder()
                 .userId(applicant.getId())
