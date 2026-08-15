@@ -302,7 +302,7 @@ public class InterviewProcessServiceImpl implements InterviewProcessService {
                 .build();
 
         dbSession.setResultDetail(resultDetail);
-        dbSession.setOverallScore(avgScore*10);
+        dbSession.setOverallScore(avgScore * 10);
         dbSession.setStatus(InterviewSession.SessionStatus.COMPLETED);
         dbSession.setResult(determineEvaluationResult(avgScore));
         dbSession.setCompletedAt(LocalDateTime.now());
