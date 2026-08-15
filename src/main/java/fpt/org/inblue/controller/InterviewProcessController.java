@@ -33,6 +33,12 @@ public class InterviewProcessController {
         return interviewService.submitAnswer(request);
     }
 
+    // FE gọi cái này khi hết thời gian phỏng vấn (Timeout)
+    @PostMapping("/timeout/{sessionKey}")
+    public QuestionResponse timeoutInterview(@PathVariable String sessionKey) {
+        return interviewService.timeoutSession(sessionKey);
+    }
+
     public record TtsRequest(String text, String voiceId) {}
 
     @PostMapping("/tts")
