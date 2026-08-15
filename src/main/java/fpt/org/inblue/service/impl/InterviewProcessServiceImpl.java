@@ -2,6 +2,7 @@ package fpt.org.inblue.service.impl;
 
 import fpt.org.inblue.constants.ApiPath;
 import fpt.org.inblue.enums.ApplicationDetailStatus;
+import fpt.org.inblue.enums.BookingStatus;
 import fpt.org.inblue.enums.PythonService;
 import fpt.org.inblue.model.ApplicationDetail;
 import fpt.org.inblue.model.InterviewResultDetail;
@@ -12,7 +13,6 @@ import fpt.org.inblue.model.dto.request.SubmitAnswerRequest;
 import fpt.org.inblue.model.dto.response.GradingResponse;
 import fpt.org.inblue.model.dto.response.OrchestratorAnalysisResponse;
 import fpt.org.inblue.model.dto.response.QuestionResponse;
-import fpt.org.inblue.enums.BookingStatus;
 import fpt.org.inblue.repository.ApplicationDetailRepository;
 import fpt.org.inblue.repository.InterviewSessionRepository;
 import fpt.org.inblue.repository.KioskBookingRepository;
@@ -146,9 +146,7 @@ public class InterviewProcessServiceImpl implements InterviewProcessService {
 
     @Override
     public QuestionResponse timeoutSession(String sessionKey) {
-        InterviewSessionRedis session = redisRepository
-                .findById(sessionKey)
-                .orElse(null);
+        InterviewSessionRedis session = redisRepository.findById(sessionKey).orElse(null);
 
         if (session != null) {
             finishSession(session, sessionKey);
@@ -325,7 +323,8 @@ public class InterviewProcessServiceImpl implements InterviewProcessService {
                 applicationDetailRepository.save(appDetail);
             }
 
-            kioskBookingRepository.findByApplicationDetailId(dbSession.getApplicationDetailId())
+            kioskBookingRepository
+                    .findByApplicationDetailId(dbSession.getApplicationDetailId())
                     .ifPresent(booking -> {
                         booking.setStatus(BookingStatus.COMPLETED);
                         kioskBookingRepository.save(booking);
