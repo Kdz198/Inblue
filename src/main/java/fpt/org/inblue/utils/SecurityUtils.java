@@ -40,7 +40,8 @@ public class SecurityUtils {
         }
         return roles.stream()
                 .map(role -> role != null && role.startsWith("ROLE_") ? role.substring("ROLE_".length()) : role)
-                .filter(role -> Role.USER.name().equals(role) || Role.MENTOR.name().equals(role))
+                .filter(role ->
+                        Role.USER.name().equals(role) || Role.MENTOR.name().equals(role))
                 .findFirst()
                 .map(Role::valueOf)
                 .orElseThrow(() -> new CustomException("Only USER or MENTOR can do this action", HttpStatus.FORBIDDEN));

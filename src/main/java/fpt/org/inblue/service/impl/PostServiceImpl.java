@@ -206,10 +206,8 @@ public class PostServiceImpl implements PostService {
         if (alreadyLiked) {
             throw new RuntimeException("User đã like bài viết này rồi");
         }
-        PostLike postLike = PostLike.builder()
-                .user(actor.user())
-                .mentor(actor.mentor())
-                .build();
+        PostLike postLike =
+                PostLike.builder().user(actor.user()).mentor(actor.mentor()).build();
 
         post.getLikes().add(postLike);
         postRepository.save(post);
@@ -397,9 +395,8 @@ public class PostServiceImpl implements PostService {
             return new Actor(userService.getById(actorId), null);
         }
         if (role == Role.MENTOR) {
-            Mentor mentor = mentorRepository
-                    .findById(actorId)
-                    .orElseThrow(() -> new RuntimeException("Mentor not found"));
+            Mentor mentor =
+                    mentorRepository.findById(actorId).orElseThrow(() -> new RuntimeException("Mentor not found"));
             return new Actor(null, mentor);
         }
         throw new RuntimeException("Only USER or MENTOR can do this action");
@@ -407,10 +404,12 @@ public class PostServiceImpl implements PostService {
 
     private boolean isSameActor(PostLike like, Actor actor) {
         if (actor.user() != null) {
-            return like.getUser() != null && like.getUser().getId() == actor.user().getId();
+            return like.getUser() != null
+                    && like.getUser().getId() == actor.user().getId();
         }
         if (actor.mentor() != null) {
-            return like.getMentor() != null && like.getMentor().getId().equals(actor.mentor().getId());
+            return like.getMentor() != null
+                    && like.getMentor().getId().equals(actor.mentor().getId());
         }
         return false;
     }
