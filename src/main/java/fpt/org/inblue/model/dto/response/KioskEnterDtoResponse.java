@@ -10,5 +10,6 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 @NoArgsConstructor
 public class KioskEnterDtoResponse {
-    private String aiSessionKey; // For AI Interview
+    private String aiSessionKey;
+    private int durationMinutes;
 }
