@@ -1,5 +1,6 @@
 package fpt.org.inblue.model;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import fpt.org.inblue.enums.Role;
 import jakarta.persistence.*;
 import java.time.LocalDateTime;
@@ -22,6 +23,8 @@ public class Mentor {
 
     private String name;
     private String email;
+
+    @JsonProperty(access = JsonProperty.Access.WRITE_ONLY)
     private String password;
     private Role role;
     private boolean isActive;

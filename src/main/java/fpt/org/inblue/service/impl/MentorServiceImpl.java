@@ -81,8 +81,7 @@ public class MentorServiceImpl implements MentorService {
                 .orElseThrow(() -> new CustomException("Mentor Not Found", HttpStatus.NOT_FOUND));
 
         if (request.getOldPassword() != null && !request.getOldPassword().isEmpty()) {
-            if (!passwordEncoder.matches(request.getOldPassword(), mentor.getPassword())
-                    && !mentor.getPassword().equals(request.getOldPassword())) {
+            if (!passwordEncoder.matches(request.getOldPassword(), mentor.getPassword())) {
                 throw new CustomException("Mật khẩu cũ không đúng", HttpStatus.BAD_REQUEST);
             }
         }

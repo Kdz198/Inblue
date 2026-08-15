@@ -26,6 +26,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.retry.annotation.Backoff;
 import org.springframework.retry.annotation.Recover;
 import org.springframework.retry.annotation.Retryable;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
@@ -40,6 +41,7 @@ public class UserServiceImpl implements UserService {
     private final ApiClient ApiClient;
     private final CandidateProfileService candidateProfileService;
     private final SecurityUtils securityUtils;
+    private final PasswordEncoder passwordEncoder;
 
     @Override
     public List<User> getAll() {
@@ -61,7 +63,7 @@ public class UserServiceImpl implements UserService {
             User userBuilder = User.builder()
                     .name(user.getName())
                     .email(user.getEmail())
-                    .password(user.getPassword())
+                    .password(encodePasswordIfPresent(user.getPassword()))
                     .role(user.getRole())
                     .phone(user.getPhone())
                     .address(user.getAddress())
@@ -88,7 +90,9 @@ public class UserServiceImpl implements UserService {
             updateUser.setRole(user.getRole());
             updateUser.setName(user.getName());
             updateUser.setEmail(user.getEmail());
-            updateUser.setPassword(user.getPassword());
+            if (hasText(user.getPassword())) {
+                updateUser.setPassword(encodePasswordIfPresent(user.getPassword()));
+            }
             updateUser.setPhone(user.getPhone());
             updateUser.setAddress(user.getAddress());
             updateUser.setLinkedInUrl(user.getLinkedInUrl());
@@ -276,10 +280,13 @@ public class UserServiceImpl implements UserService {
     public UserResponse changePassword(String oldPass, String newPass) {
         int id = securityUtils.getCurrentUserId();
         User user = userRepository.findById(id).orElseThrow(() -> new RuntimeException("User Not Found"));
-        if (!user.getPassword().equals(oldPass)) {
+        if (!passwordEncoder.matches(oldPass, user.getPassword())) {
             throw new CustomException("Mật khẩu cũ không đúng", HttpStatus.BAD_REQUEST);
         }
-        user.setPassword(newPass);
+        if (!hasText(newPass)) {
+            throw new CustomException("New password must not be empty", HttpStatus.BAD_REQUEST);
+        }
+        user.setPassword(passwordEncoder.encode(newPass));
         userRepository.save(user);
         return UserResponse.builder()
                 .id(user.getId())
@@ -293,5 +300,23 @@ public class UserServiceImpl implements UserService {
                 .cv_public_id(user.getCv_public_id())
                 .candidates(user.getCandidates())
                 .build();
+    }
+
+    private String encodePasswordIfPresent(String rawPassword) {
+        if (!hasText(rawPassword)) {
+            return rawPassword;
+        }
+        if (isBcryptHash(rawPassword)) {
+            return rawPassword;
+        }
+        return passwordEncoder.encode(rawPassword);
+    }
+
+    private boolean isBcryptHash(String password) {
+        return password != null && password.matches("^\\$2[aby]\\$\\d{2}\\$.{53}$");
+    }
+
+    private boolean hasText(String value) {
+        return value != null && !value.trim().isEmpty();
     }
 }

@@ -66,6 +66,10 @@ public class PasswordResetServiceImpl implements PasswordResetService {
 
     @Override
     public void resetPassword(String email, String otp, String newPassword) {
+        if (newPassword == null || newPassword.trim().isEmpty()) {
+            throw new CustomException("New password must not be empty", HttpStatus.BAD_REQUEST);
+        }
+
         String redisKey = OTP_KEY_PREFIX + email;
         String savedOtp = (String) redisTemplate.opsForValue().get(redisKey);
 
