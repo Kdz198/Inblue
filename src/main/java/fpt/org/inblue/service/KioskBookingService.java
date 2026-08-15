@@ -11,5 +11,5 @@ public interface KioskBookingService {
 
     void cancelBooking(Long bookingId, int userId);
 
-    KioskEnterDtoResponse enterKiosk(String sessionKey);
+    KioskEnterDtoResponse enterKiosk(String sessionKey, Long kioskId);
 }
