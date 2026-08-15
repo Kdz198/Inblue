@@ -21,8 +21,12 @@ public class PostComment {
     int id;
 
     @ManyToOne
-    @JoinColumn(name = "user_id", nullable = false)
+    @JoinColumn(name = "user_id")
     User user;
+
+    @ManyToOne
+    @JoinColumn(name = "mentor_id")
+    Mentor mentor;
 
     @Column(columnDefinition = "TEXT")
     String content;

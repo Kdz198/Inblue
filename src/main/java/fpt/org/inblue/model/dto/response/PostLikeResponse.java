@@ -11,6 +11,8 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 @NoArgsConstructor
 public class PostLikeResponse implements Serializable {
+    Integer userId;
+    String role;
     String userName;
     String userAvatar;
 }

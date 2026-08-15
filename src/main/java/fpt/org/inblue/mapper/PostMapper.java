@@ -9,5 +9,6 @@ import org.mapstruct.Mapping;
 public interface PostMapper {
     @Mapping(target = "postId", ignore = true)
     @Mapping(target = "author", ignore = true)
+    @Mapping(target = "authorMentor", ignore = true)
     Post toEntity(PostCreateRequest dto);
 }

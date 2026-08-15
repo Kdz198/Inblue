@@ -12,7 +12,6 @@ import lombok.experimental.FieldDefaults;
 @FieldDefaults(level = AccessLevel.PRIVATE)
 public class PostCommentRequest {
     int postId;
-    int userId;
     String content;
     Integer parentCommentId; // null nếu là comment gốc, có giá trị nếu là reply
 }

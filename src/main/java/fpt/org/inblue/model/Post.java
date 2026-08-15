@@ -41,6 +41,10 @@ public class Post {
     @ManyToOne(fetch = FetchType.LAZY)
     User author;
 
+    @JoinColumn(name = "mentor_id")
+    @ManyToOne(fetch = FetchType.LAZY)
+    Mentor authorMentor;
+
     @CreationTimestamp
     Instant creationDate;
 

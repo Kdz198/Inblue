@@ -28,9 +28,9 @@ public interface PostService {
     // Like
     PostLike likePost(PostLikeRequest request);
 
-    void unlikePost(int postId, int userId);
+    void unlikePost(int postId);
 
-    boolean isLiked(int postId, int userId);
+    boolean isLiked(int postId);
 
     // Comment
     PostComment createComment(PostCommentRequest request);

@@ -61,17 +61,17 @@ public class PostController {
         return ResponseEntity.ok(postService.likePost(request));
     }
 
-    @DeleteMapping("/likes/{postId}/{userId}")
+    @DeleteMapping("/likes/{postId}")
     @Operation(summary = "Unlike bài viết", description = "User unlike một bài viết")
-    public ResponseEntity<Map<String, String>> unlikePost(@PathVariable int postId, @PathVariable int userId) {
-        postService.unlikePost(postId, userId);
+    public ResponseEntity<Map<String, String>> unlikePost(@PathVariable int postId) {
+        postService.unlikePost(postId);
         return ResponseEntity.ok(Map.of("message", "Unlike thành công"));
     }
 
-    @GetMapping("/likes/{postId}/check/{userId}")
+    @GetMapping("/likes/{postId}/check")
     @Operation(summary = "Kiểm tra user đã like bài viết chưa")
-    public ResponseEntity<Map<String, String>> checkLiked(@PathVariable int postId, @PathVariable int userId) {
-        return ResponseEntity.ok(Map.of("isLiked", postService.isLiked(postId, userId) ? "true" : "false"));
+    public ResponseEntity<Map<String, String>> checkLiked(@PathVariable int postId) {
+        return ResponseEntity.ok(Map.of("isLiked", postService.isLiked(postId) ? "true" : "false"));
     }
 
     @PostMapping("/comments")

@@ -29,6 +29,8 @@ public class PostDetailResponse implements Serializable {
     @AllArgsConstructor
     @NoArgsConstructor
     public static class AuthorResponse implements Serializable {
+        Integer id;
+        String role;
         String name;
         String avatar;
     }

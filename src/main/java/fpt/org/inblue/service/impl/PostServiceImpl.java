@@ -2,7 +2,9 @@ package fpt.org.inblue.service.impl;
 
 import fpt.org.inblue.cloudinary.CloudinaryService;
 import fpt.org.inblue.enums.PostStatus;
+import fpt.org.inblue.enums.Role;
 import fpt.org.inblue.mapper.PostMapper;
+import fpt.org.inblue.model.Mentor;
 import fpt.org.inblue.model.Post;
 import fpt.org.inblue.model.PostComment;
 import fpt.org.inblue.model.PostLike;
@@ -14,9 +16,11 @@ import fpt.org.inblue.model.dto.response.PostCommentResponse;
 import fpt.org.inblue.model.dto.response.PostDetailResponse;
 import fpt.org.inblue.model.dto.response.PostLikeResponse;
 import fpt.org.inblue.model.dto.response.PostResponse;
+import fpt.org.inblue.repository.MentorRepository;
 import fpt.org.inblue.repository.PostRepository;
 import fpt.org.inblue.service.PostService;
 import fpt.org.inblue.service.UserService;
+import fpt.org.inblue.utils.SecurityUtils;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
@@ -36,21 +40,24 @@ import org.springframework.transaction.annotation.Transactional;
 public class PostServiceImpl implements PostService {
     private final PostMapper postMapper;
     private final PostRepository postRepository;
+    private final MentorRepository mentorRepository;
     private final CloudinaryService cloudinaryService;
     private final UserService userService;
+    private final SecurityUtils securityUtils;
 
     // TODO OPTIMIZE - tránh n+1 query khi lấy post, like, comment SẼ LÀM SAU NÀY
 
     @Override
     public Post createPost(PostCreateRequest post) throws IOException {
-        User user = userService.getById(post.getAuthorId());
+        Actor actor = resolveCurrentActor();
         Map<String, String> uploadResult = cloudinaryService.uploadImg(post.getCoverImg());
         String url = uploadResult.get("secure_url");
         String public_id = uploadResult.get("public_id");
         Post saved = postMapper.toEntity(post);
         saved.setPublic_id(public_id);
         saved.setCoverImgUrl(url);
-        saved.setAuthor(user);
+        saved.setAuthor(actor.user());
+        saved.setAuthorMentor(actor.mentor());
         return postRepository.save(saved);
     }
 
@@ -89,13 +96,7 @@ public class PostServiceImpl implements PostService {
                 .lastModifiedDate(post.getLastModifiedDate())
                 .coverImgUrl(post.getCoverImgUrl())
                 .tags(post.getTags())
-                .author(
-                        post.getAuthor() != null
-                                ? PostDetailResponse.AuthorResponse.builder()
-                                        .name(post.getAuthor().getName())
-                                        .avatar(post.getAuthor().getAvatarUrl())
-                                        .build()
-                                : null)
+                .author(mapPostAuthor(post))
                 .build();
         response.setPost(detailResponse);
         response.setLikeCount(post.getLikes() != null ? post.getLikes().size() : 0);
@@ -103,11 +104,7 @@ public class PostServiceImpl implements PostService {
         List<PostLikeResponse> likeResponses = new ArrayList<>();
         if (post.getLikes() != null) {
             for (PostLike like : post.getLikes()) {
-                PostLikeResponse likeResponse = PostLikeResponse.builder()
-                        .userName(like.getUser().getName())
-                        .userAvatar(like.getUser().getAvatarUrl())
-                        .build();
-                likeResponses.add(likeResponse);
+                likeResponses.add(mapLikeToResponse(like));
             }
         }
         response.setPostLikes(likeResponses);
@@ -140,13 +137,7 @@ public class PostServiceImpl implements PostService {
                     .lastModifiedDate(post.getLastModifiedDate())
                     .coverImgUrl(post.getCoverImgUrl())
                     .tags(post.getTags())
-                    .author(
-                            post.getAuthor() != null
-                                    ? PostDetailResponse.AuthorResponse.builder()
-                                            .name(post.getAuthor().getName())
-                                            .avatar(post.getAuthor().getAvatarUrl())
-                                            .build()
-                                    : null)
+                    .author(mapPostAuthor(post))
                     .build();
 
             response.setPost(postDetail);
@@ -158,11 +149,7 @@ public class PostServiceImpl implements PostService {
             List<PostLikeResponse> likeResponses = new ArrayList<>();
             if (post.getLikes() != null) {
                 for (PostLike like : post.getLikes()) {
-                    PostLikeResponse likeResponse = PostLikeResponse.builder()
-                            .userName(like.getUser().getName())
-                            .userAvatar(like.getUser().getAvatarUrl())
-                            .build();
-                    likeResponses.add(likeResponse);
+                    likeResponses.add(mapLikeToResponse(like));
                 }
             }
             response.setPostLikes(likeResponses);
@@ -206,12 +193,12 @@ public class PostServiceImpl implements PostService {
     @Transactional
     public PostLike likePost(PostLikeRequest request) {
         Post post = getPostById(request.getPostId());
-        User user = userService.getById(request.getUserId());
+        Actor actor = resolveCurrentActor();
 
         // Kiểm tra user đã like chưa
         boolean alreadyLiked = false;
         for (PostLike like : post.getLikes()) {
-            if (like.getUser().getId() == request.getUserId()) {
+            if (isSameActor(like, actor)) {
                 alreadyLiked = true;
                 break;
             }
@@ -219,7 +206,10 @@ public class PostServiceImpl implements PostService {
         if (alreadyLiked) {
             throw new RuntimeException("User đã like bài viết này rồi");
         }
-        PostLike postLike = PostLike.builder().user(user).build();
+        PostLike postLike = PostLike.builder()
+                .user(actor.user())
+                .mentor(actor.mentor())
+                .build();
 
         post.getLikes().add(postLike);
         postRepository.save(post);
@@ -229,11 +219,12 @@ public class PostServiceImpl implements PostService {
 
     @Override
     @Transactional
-    public void unlikePost(int postId, int userId) {
+    public void unlikePost(int postId) {
         Post post = getPostById(postId);
+        Actor actor = resolveCurrentActor();
         PostLike toRemove = null;
         for (PostLike like : post.getLikes()) {
-            if (like.getUser().getId() == userId) {
+            if (isSameActor(like, actor)) {
                 toRemove = like;
                 break;
             }
@@ -248,10 +239,11 @@ public class PostServiceImpl implements PostService {
     }
 
     @Override
-    public boolean isLiked(int postId, int userId) {
+    public boolean isLiked(int postId) {
         Post post = getPostById(postId);
+        Actor actor = resolveCurrentActor();
         for (PostLike like : post.getLikes()) {
-            if (like.getUser().getId() == userId) {
+            if (isSameActor(like, actor)) {
                 return true;
             }
         }
@@ -262,10 +254,11 @@ public class PostServiceImpl implements PostService {
     @Transactional
     public PostComment createComment(PostCommentRequest request) {
         Post post = getPostById(request.getPostId());
-        User user = userService.getById(request.getUserId());
+        Actor actor = resolveCurrentActor();
 
         PostComment comment = new PostComment();
-        comment.setUser(user);
+        comment.setUser(actor.user());
+        comment.setMentor(actor.mentor());
         comment.setContent(request.getContent());
 
         // Nếu là reply - set parentCommentId
@@ -330,15 +323,103 @@ public class PostServiceImpl implements PostService {
         throw new RuntimeException("Comment không tồn tại");
     }
 
+    private PostDetailResponse.AuthorResponse mapPostAuthor(Post post) {
+        if (post.getAuthor() != null) {
+            User user = post.getAuthor();
+            return PostDetailResponse.AuthorResponse.builder()
+                    .id(user.getId())
+                    .role(Role.USER.name())
+                    .name(user.getName())
+                    .avatar(user.getAvatarUrl())
+                    .build();
+        }
+        if (post.getAuthorMentor() != null) {
+            Mentor mentor = post.getAuthorMentor();
+            return PostDetailResponse.AuthorResponse.builder()
+                    .id(mentor.getId())
+                    .role(Role.MENTOR.name())
+                    .name(mentor.getName())
+                    .avatar(mentor.getAvatarUrl())
+                    .build();
+        }
+        return null;
+    }
+
+    private PostLikeResponse mapLikeToResponse(PostLike like) {
+        if (like.getUser() != null) {
+            User user = like.getUser();
+            return PostLikeResponse.builder()
+                    .userId(user.getId())
+                    .role(Role.USER.name())
+                    .userName(user.getName())
+                    .userAvatar(user.getAvatarUrl())
+                    .build();
+        }
+        if (like.getMentor() != null) {
+            Mentor mentor = like.getMentor();
+            return PostLikeResponse.builder()
+                    .userId(mentor.getId())
+                    .role(Role.MENTOR.name())
+                    .userName(mentor.getName())
+                    .userAvatar(mentor.getAvatarUrl())
+                    .build();
+        }
+        return PostLikeResponse.builder().build();
+    }
+
     private PostCommentResponse mapCommentToResponse(PostComment comment) {
         PostCommentResponse response = new PostCommentResponse();
         response.setId(comment.getId());
-        response.setUserName(comment.getUser().getName());
-        response.setUserAvatar(comment.getUser().getAvatarUrl());
+        if (comment.getUser() != null) {
+            response.setUserId(comment.getUser().getId());
+            response.setRole(Role.USER.name());
+            response.setUserName(comment.getUser().getName());
+            response.setUserAvatar(comment.getUser().getAvatarUrl());
+        } else if (comment.getMentor() != null) {
+            response.setUserId(comment.getMentor().getId());
+            response.setRole(Role.MENTOR.name());
+            response.setUserName(comment.getMentor().getName());
+            response.setUserAvatar(comment.getMentor().getAvatarUrl());
+        }
         response.setContent(comment.getContent());
         response.setParentCommentId(comment.getParentCommentId());
         response.setCreatedAt(comment.getCreatedAt());
         response.setUpdatedAt(comment.getUpdatedAt());
         return response;
+    }
+
+    private Actor resolveCurrentActor() {
+        return resolveActor(securityUtils.getCurrentUserId(), securityUtils.getCurrentRole());
+    }
+
+    private Actor resolveActor(int actorId, Role role) {
+        if (role == Role.USER) {
+            return new Actor(userService.getById(actorId), null);
+        }
+        if (role == Role.MENTOR) {
+            Mentor mentor = mentorRepository
+                    .findById(actorId)
+                    .orElseThrow(() -> new RuntimeException("Mentor not found"));
+            return new Actor(null, mentor);
+        }
+        throw new RuntimeException("Only USER or MENTOR can do this action");
+    }
+
+    private boolean isSameActor(PostLike like, Actor actor) {
+        if (actor.user() != null) {
+            return like.getUser() != null && like.getUser().getId() == actor.user().getId();
+        }
+        if (actor.mentor() != null) {
+            return like.getMentor() != null && like.getMentor().getId().equals(actor.mentor().getId());
+        }
+        return false;
+    }
+
+    private record Actor(User user, Mentor mentor) {
+        private Actor {
+            if ((user == null && mentor == null) || (user != null && mentor != null)) {
+                throw new RuntimeException("Invalid post actor");
+            }
+        }
     }
 }

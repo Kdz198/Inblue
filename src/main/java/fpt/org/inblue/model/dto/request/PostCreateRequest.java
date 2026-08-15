@@ -20,9 +20,6 @@ public class PostCreateRequest {
     @Schema
     private String summary;
 
-    @Schema
-    private int authorId;
-
     @Schema(type = "string", format = "binary")
     private MultipartFile coverImg;
 

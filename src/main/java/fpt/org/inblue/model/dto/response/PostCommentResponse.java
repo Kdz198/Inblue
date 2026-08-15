@@ -16,6 +16,8 @@ import lombok.experimental.FieldDefaults;
 @FieldDefaults(level = AccessLevel.PRIVATE)
 public class PostCommentResponse implements Serializable {
     int id;
+    Integer userId;
+    String role;
     String userName;
     String userAvatar;
     String content;

@@ -11,7 +11,11 @@ import org.hibernate.annotations.CreationTimestamp;
 @AllArgsConstructor
 @NoArgsConstructor
 @Data
-@Table(uniqueConstraints = @UniqueConstraint(columnNames = {"post_id", "user_id"}))
+@Table(
+        uniqueConstraints = {
+            @UniqueConstraint(columnNames = {"post_id", "user_id"}),
+            @UniqueConstraint(columnNames = {"post_id", "mentor_id"})
+        })
 @Builder
 // unique chỉ đc 1 value cho mỗi cột trong bảng còn dùng uniqueConstraint thì kết hợp nhiều cột với nhau để tạo thành 1
 // giá trị duy nhất
@@ -21,8 +25,12 @@ public class PostLike {
     int id;
 
     @ManyToOne
-    @JoinColumn(name = "user_id", nullable = false)
+    @JoinColumn(name = "user_id")
     User user;
+
+    @ManyToOne
+    @JoinColumn(name = "mentor_id")
+    Mentor mentor;
 
     @CreationTimestamp
     Timestamp createdAt;
