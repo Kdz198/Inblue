@@ -4,7 +4,6 @@ import fpt.org.inblue.enums.ApplicationDetailStatus;
 import fpt.org.inblue.enums.ApplicationStatus;
 import fpt.org.inblue.enums.JdPurchaseStatus;
 import fpt.org.inblue.enums.RoundType;
-import fpt.org.inblue.event.AllRoundsCompletedEvent;
 import fpt.org.inblue.exception.CustomException;
 import fpt.org.inblue.model.Application;
 import fpt.org.inblue.model.ApplicationDetail;
