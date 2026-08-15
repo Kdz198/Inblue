@@ -6,8 +6,11 @@ import fpt.org.inblue.enums.PythonService;
 import fpt.org.inblue.model.dto.request.EnhanceTranscriptRequest;
 import fpt.org.inblue.service.ApiClient;
 import fpt.org.inblue.service.SpeechService;
+import java.io.ByteArrayOutputStream;
 import java.io.OutputStream;
+import java.net.URI;
 import java.net.http.WebSocket;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -25,9 +28,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.util.StreamUtils;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.client.RestTemplate;
-import java.io.ByteArrayOutputStream;
-import java.net.URI;
-import java.nio.charset.StandardCharsets;
 import org.springframework.web.util.UriComponentsBuilder;
 
 @Service
@@ -149,8 +149,7 @@ public class SpeechServiceImpl implements SpeechService {
             ByteArrayOutputStream output = new ByteArrayOutputStream();
 
             for (String chunk : splitTextForGoogleTts(text, GOOGLE_TTS_MAX_CHARS)) {
-                URI uri = UriComponentsBuilder
-                        .fromUriString("https://translate.google.com/translate_tts")
+                URI uri = UriComponentsBuilder.fromUriString("https://translate.google.com/translate_tts")
                         .queryParam("ie", "UTF-8")
                         .queryParam("tl", "vi")
                         .queryParam("client", "tw-ob")
@@ -192,9 +191,7 @@ public class SpeechServiceImpl implements SpeechService {
                 continue;
             }
 
-            int nextLength = current.length() == 0
-                    ? sentence.length()
-                    : current.length() + 1 + sentence.length();
+            int nextLength = current.length() == 0 ? sentence.length() : current.length() + 1 + sentence.length();
 
             if (nextLength <= maxChars) {
                 if (current.length() > 0) {
