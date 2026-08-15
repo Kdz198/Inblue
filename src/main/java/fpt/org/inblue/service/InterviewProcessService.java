@@ -7,4 +7,6 @@ public interface InterviewProcessService {
     QuestionResponse getCurrentQuestion(String sessionKey);
 
     QuestionResponse submitAnswer(SubmitAnswerRequest request);
+
+    QuestionResponse timeoutSession(String sessionKey);
 }

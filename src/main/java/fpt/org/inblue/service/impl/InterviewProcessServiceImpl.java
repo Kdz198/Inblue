@@ -2,6 +2,7 @@ package fpt.org.inblue.service.impl;
 
 import fpt.org.inblue.constants.ApiPath;
 import fpt.org.inblue.enums.ApplicationDetailStatus;
+import fpt.org.inblue.enums.BookingStatus;
 import fpt.org.inblue.enums.PythonService;
 import fpt.org.inblue.model.ApplicationDetail;
 import fpt.org.inblue.model.InterviewResultDetail;
@@ -14,6 +15,7 @@ import fpt.org.inblue.model.dto.response.OrchestratorAnalysisResponse;
 import fpt.org.inblue.model.dto.response.QuestionResponse;
 import fpt.org.inblue.repository.ApplicationDetailRepository;
 import fpt.org.inblue.repository.InterviewSessionRepository;
+import fpt.org.inblue.repository.KioskBookingRepository;
 import fpt.org.inblue.repository.caching.InterviewSessionRedisRepository;
 import fpt.org.inblue.service.ApiClient;
 import fpt.org.inblue.service.InterviewProcessService;
@@ -38,6 +40,7 @@ public class InterviewProcessServiceImpl implements InterviewProcessService {
     private final ApiClient ApiClient;
     private final ProctoringService proctoringService;
     private final ApplicationDetailRepository applicationDetailRepository;
+    private final KioskBookingRepository kioskBookingRepository;
 
     @Override
     public QuestionResponse getCurrentQuestion(String sessionKey) {
@@ -139,6 +142,21 @@ public class InterviewProcessServiceImpl implements InterviewProcessService {
 
         redisRepository.save(session);
         return buildQuestionResponse(session);
+    }
+
+    @Override
+    public QuestionResponse timeoutSession(String sessionKey) {
+        InterviewSessionRedis session = redisRepository.findById(sessionKey).orElse(null);
+
+        if (session != null) {
+            finishSession(session, sessionKey);
+        }
+
+        return QuestionResponse.builder()
+                .sessionKey(sessionKey)
+                .isFinished(true)
+                .questionContent("Buổi phỏng vấn đã hết thời gian quy định.")
+                .build();
     }
 
     // ======================================================================
@@ -280,11 +298,11 @@ public class InterviewProcessServiceImpl implements InterviewProcessService {
 
         InterviewResultDetail resultDetail = InterviewResultDetail.builder()
                 .history(gradedHistory)
-                .aiOverviewFeedback("Đã chấm điểm xong.")
+                .aiOverviewFeedback(genOverviewFeedback(gradedHistory))
                 .build();
 
         dbSession.setResultDetail(resultDetail);
-        dbSession.setOverallScore(avgScore);
+        dbSession.setOverallScore(avgScore * 10);
         dbSession.setStatus(InterviewSession.SessionStatus.COMPLETED);
         dbSession.setResult(determineEvaluationResult(avgScore));
         dbSession.setCompletedAt(LocalDateTime.now());
@@ -304,6 +322,13 @@ public class InterviewProcessServiceImpl implements InterviewProcessService {
                 appDetail.setStatus(ApplicationDetailStatus.AI_EVALUATED);
                 applicationDetailRepository.save(appDetail);
             }
+
+            kioskBookingRepository
+                    .findByApplicationDetailId(dbSession.getApplicationDetailId())
+                    .ifPresent(booking -> {
+                        booking.setStatus(BookingStatus.COMPLETED);
+                        kioskBookingRepository.save(booking);
+                    });
         }
     }
 
