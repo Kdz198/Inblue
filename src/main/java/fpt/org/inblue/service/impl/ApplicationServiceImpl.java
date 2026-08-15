@@ -18,6 +18,7 @@ import fpt.org.inblue.repository.JdPurchaseRepository;
 import fpt.org.inblue.repository.JobDescriptionRepository;
 import fpt.org.inblue.repository.UserRepository;
 import fpt.org.inblue.service.ApplicationService;
+import fpt.org.inblue.service.JourneySummaryService;
 import fpt.org.inblue.utils.SecurityUtils;
 import java.time.LocalDateTime;
 import java.util.List;
@@ -43,6 +44,8 @@ public class ApplicationServiceImpl implements ApplicationService {
     private final JdPurchaseRepository jdPurchaseRepository;
     private final UserRepository userRepository;
     private final ApplicationEventPublisher applicationEventPublisher;
+    private final JourneySummaryService journeySummaryService;
+    private final JourneySummaryServiceImpl journeySummaryServiceImpl;
 
     @Override
     public Application applyForJob(Long jdId) {
@@ -316,7 +319,7 @@ public class ApplicationServiceImpl implements ApplicationService {
                         details.size());
                 if (!wasFinished && allRoundsCompleted) {
                     log.info("Publishing AllRoundsCompletedEvent for applicationId={}", currentApplication.getId());
-                    applicationEventPublisher.publishEvent(new AllRoundsCompletedEvent(currentApplication.getId()));
+                    journeySummaryServiceImpl.generate(currentApplication.getId());
                 } else {
                     log.info(
                             "Skip publishing AllRoundsCompletedEvent for applicationId={}. wasFinished={}, allRoundsCompleted={}",
