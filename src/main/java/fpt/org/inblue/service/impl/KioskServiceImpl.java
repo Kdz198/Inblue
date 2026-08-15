@@ -69,7 +69,8 @@ public class KioskServiceImpl implements KioskService {
         }
 
         // 3. (Khuyến nghị) Đảm bảo giờ mở cửa phải trước giờ đóng cửa
-        if (schedule.getOpenTime() != null && schedule.getCloseTime() != null
+        if (schedule.getOpenTime() != null
+                && schedule.getCloseTime() != null
                 && !schedule.getOpenTime().isBefore(schedule.getCloseTime())) {
             throw new CustomException("Giờ mở cửa phải trước giờ đóng cửa", HttpStatus.BAD_REQUEST);
         }
@@ -160,7 +161,8 @@ public class KioskServiceImpl implements KioskService {
         }
 
         // 4. Đảm bảo giờ mở cửa phải trước giờ đóng cửa
-        if (schedule.getOpenTime() != null && schedule.getCloseTime() != null
+        if (schedule.getOpenTime() != null
+                && schedule.getCloseTime() != null
                 && !schedule.getOpenTime().isBefore(schedule.getCloseTime())) {
             throw new CustomException("Giờ mở cửa phải trước giờ đóng cửa", HttpStatus.BAD_REQUEST);
         }
