@@ -30,7 +30,7 @@ public class BackgroundScheduler {
         sessionSchedule.sendTodayMeetingNotification();
     }
 
-    @Scheduled(fixedDelay = 300000)
+    @Scheduled(fixedDelay = 60000)
     public void scheduleFetchEmails() {
         emailSubmissionService.fetchEmails();
     }
