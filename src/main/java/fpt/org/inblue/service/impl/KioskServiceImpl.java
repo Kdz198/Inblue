@@ -63,9 +63,9 @@ public class KioskServiceImpl implements KioskService {
         if (!kioskRepository.existsById(schedule.getKioskId())) {
             throw new CustomException("Kiosk not found with id: " + schedule.getKioskId(), HttpStatus.NOT_FOUND);
         }
-        LocalTime maxAllowedCloseTime = LocalTime.of(22, 0); // 22:00:00
+        LocalTime maxAllowedCloseTime = LocalTime.of(23, 0);
         if (schedule.getCloseTime() != null && schedule.getCloseTime().isAfter(maxAllowedCloseTime)) {
-            throw new CustomException("Giờ đóng cửa không được sau 22:00", HttpStatus.BAD_REQUEST);
+            throw new CustomException("Giờ đóng cửa không được sau 23:00", HttpStatus.BAD_REQUEST);
         }
 
         // 3. (Khuyến nghị) Đảm bảo giờ mở cửa phải trước giờ đóng cửa
