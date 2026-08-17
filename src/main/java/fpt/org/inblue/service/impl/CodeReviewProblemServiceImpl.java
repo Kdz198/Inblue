@@ -26,6 +26,7 @@ public class CodeReviewProblemServiceImpl implements CodeReviewProblemService {
 
     @Override
     public CodeReviewProblem save(CodeReviewProblem codeReviewProblem) {
+        codeReviewProblem.setIsDeleted(false);
         return codeReviewProblemsRepository.save(codeReviewProblem);
     }
 
