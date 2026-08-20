@@ -1,0 +1,321 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TopDev JD Import Preview</title>
+    <style>
+        :root {
+            font-family: Arial, sans-serif;
+            color: #1f2937;
+            background: #f3f4f6;
+        }
+
+        * { box-sizing: border-box; }
+
+        body {
+            margin: 0;
+            padding: 32px;
+        }
+
+        .container {
+            max-width: 1100px;
+            margin: auto;
+        }
+
+        h1 { margin-bottom: 8px; }
+        .subtitle { color: #6b7280; margin-top: 0; }
+
+        .panel, .job-card {
+            background: white;
+            border: 1px solid #e5e7eb;
+            border-radius: 12px;
+            padding: 20px;
+            box-shadow: 0 2px 8px rgba(15, 23, 42, 0.05);
+        }
+
+        .form-grid {
+            display: grid;
+            grid-template-columns: 2fr 1fr 2fr auto;
+            gap: 12px;
+            align-items: end;
+        }
+
+        label {
+            display: block;
+            font-size: 13px;
+            font-weight: bold;
+            margin-bottom: 6px;
+        }
+
+        input, select, button {
+            width: 100%;
+            height: 40px;
+            border: 1px solid #d1d5db;
+            border-radius: 8px;
+            padding: 0 12px;
+            font-size: 14px;
+        }
+
+        button {
+            width: auto;
+            min-width: 120px;
+            cursor: pointer;
+            color: white;
+            border: none;
+            background: #2563eb;
+        }
+
+        button:disabled { opacity: 0.6; cursor: wait; }
+
+        .job-select { width: auto; height: auto; margin-right: 8px; }
+        .job-actions { margin-top: 18px; display: flex; justify-content: flex-end; }
+        .import-button { background: #059669; }
+
+        #message {
+            margin: 18px 0;
+            color: #4b5563;
+        }
+
+        .results {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+            gap: 16px;
+        }
+
+        .job-card h2 {
+            font-size: 18px;
+            margin: 0 0 10px;
+        }
+
+        .company-header {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin: 12px 0;
+        }
+
+        .company-logo, .company-logo-placeholder {
+            width: 48px;
+            height: 48px;
+            border-radius: 8px;
+            object-fit: contain;
+            border: 1px solid #e5e7eb;
+            background: #f9fafb;
+        }
+
+        .company-logo-placeholder {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #2563eb;
+            font-weight: bold;
+            font-size: 18px;
+        }
+
+        .meta { color: #4b5563; font-size: 14px; line-height: 1.6; }
+        .exists { color: #b45309; font-weight: 700; }
+        .skills { color: #1d4ed8; font-size: 14px; margin-top: 10px; }
+        .description {
+            margin-top: 12px;
+            line-height: 1.5;
+            color: #374151;
+            max-height: 120px;
+            overflow: hidden;
+        }
+
+        .source {
+            display: inline-block;
+            margin-top: 14px;
+            color: #2563eb;
+            text-decoration: none;
+            font-size: 14px;
+        }
+
+        @media (max-width: 800px) {
+            body { padding: 16px; }
+            .form-grid { grid-template-columns: 1fr; }
+            button { width: 100%; }
+        }
+    </style>
+</head>
+<body>
+<main class="container">
+    <h1>TopDev JD Import Preview</h1>
+    <p class="subtitle">Search and preview job descriptions before importing them into the system.</p>
+
+    <section class="panel">
+        <form id="searchForm" class="form-grid">
+            <div>
+                <label for="keyword">Keyword / Job title</label>
+                <input id="keyword" placeholder="Optional: e.g. software developer">
+            </div>
+            <div>
+                <label for="level">Level</label>
+                <select id="level">
+                    <option value="">All levels</option>
+                    <option value="INTERN">Intern</option>
+                    <option value="FRESHER" selected>Fresher</option>
+                    <option value="JUNIOR">Junior</option>
+                    <option value="MIDDLE">Middle</option>
+                </select>
+            </div>
+            <div>
+                <label for="category">TopDev category</label>
+                <select id="category">
+                    <option value="2" selected>Software Developer</option>
+                </select>
+            </div>
+            <button id="searchButton" type="submit">Search JD</button>
+        </form>
+    </section>
+
+    <div id="message">Enter a keyword and click Search JD.</div>
+    <div class="job-actions">
+        <button id="importButton" class="import-button" type="button" disabled>Import selected</button>
+    </div>
+    <section id="results" class="results"></section>
+</main>
+
+<script>
+    const form = document.getElementById('searchForm');
+    const category = document.getElementById('category');
+    const results = document.getElementById('results');
+    const message = document.getElementById('message');
+    const searchButton = document.getElementById('searchButton');
+    const importButton = document.getElementById('importButton');
+    let crawledJobs = [];
+
+    async function loadCategories() {
+        try {
+            const response = await fetch('/api/admin/job-import/topdev/categories');
+            if (!response.ok) return;
+            const categories = await response.json();
+            const categoryItems = Array.isArray(categories)
+                ? categories
+                : (categories.data || categories.content || categories.results || []);
+            category.innerHTML = categoryItems
+                .map(item => {
+                    if (typeof item === 'string') {
+                        return `<option value="">${item}</option>`;
+                    }
+                    return `<option value="${item.id}">${item.displayName} (ID: ${item.id})</option>`;
+                })
+                .join('');
+            category.value = '2';
+        } catch (error) {
+            console.warn('Could not load categories', error);
+        }
+    }
+
+    function escapeHtml(value) {
+        return String(value ?? '')
+            .replaceAll('&', '&amp;')
+            .replaceAll('<', '&lt;')
+            .replaceAll('>', '&gt;')
+            .replaceAll('"', '&quot;')
+            .replaceAll("'", '&#039;');
+    }
+
+    function renderJobs(payload) {
+        const jobs = Array.isArray(payload)
+            ? payload
+            : (payload.data || payload.content || payload.results || []);
+
+        if (!Array.isArray(jobs)) {
+            throw new Error('Unexpected response format');
+        }
+
+        crawledJobs = jobs;
+        importButton.disabled = jobs.length === 0;
+        results.innerHTML = jobs.map((job, index) => `
+            <article class="job-card">
+                <label>
+                    <input class="job-select" type="checkbox" data-index="${index}" ${job.isExist ? 'disabled' : ''}>
+                    ${job.isExist ? '<span class="exists">Already imported</span>' : 'Select for import'}
+                </label>
+                <h2>${escapeHtml(job.title || 'Untitled JD')}</h2>
+                <div class="company-header">
+                    ${job.companyLogo
+                        ? `<img class="company-logo" src="${escapeHtml(job.companyLogo)}" alt="Company logo" onerror="this.style.display='none'">`
+                        : `<div class="company-logo-placeholder">${escapeHtml((job.companyName || '?').charAt(0).toUpperCase())}</div>`}
+                    <div class="meta"><strong>${escapeHtml(job.companyName || 'Unknown company')}</strong></div>
+                </div>
+                <div class="meta">${escapeHtml(job.location || 'Location not provided')}</div>
+                <div class="meta">Posted: ${escapeHtml(job.postedAt || 'Unknown')}</div>
+                <div class="meta">Salary: ${escapeHtml(job.salary || 'Not provided')}</div>
+                <div class="skills">Skills: ${escapeHtml(job.skills || 'Not provided')}</div>
+                ${job.sourceJobId ? `<div class="meta">TopDev Job ID: ${escapeHtml(job.sourceJobId)}</div>` : ''}
+                <div class="description">${escapeHtml(job.description || 'No description')}</div>
+                <a class="source" href="${escapeHtml(job.sourceUrl)}" target="_blank" rel="noreferrer">Open source JD</a>
+            </article>
+        `).join('');
+    }
+
+    importButton.addEventListener('click', async () => {
+        const selectedIndexes = [...document.querySelectorAll('.job-select:checked')]
+            .map(input => Number(input.dataset.index));
+
+        if (selectedIndexes.length === 0) {
+            message.textContent = 'Please select at least one JD.';
+            return;
+        }
+
+        importButton.disabled = true;
+        message.textContent = 'Importing selected JD(s)...';
+        const imported = [];
+
+        try {
+            for (const index of selectedIndexes) {
+                const response = await fetch('/api/admin/job-import/topdev/import', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(crawledJobs[index])
+                });
+                const body = await response.json();
+                if (!response.ok) throw new Error(body.message || 'Import failed');
+                imported.push(body.data || body);
+            }
+            message.textContent = `Imported ${imported.length} JD(s) as DRAFT.`;
+        } catch (error) {
+            message.textContent = `Import error: ${error.message}`;
+        } finally {
+            importButton.disabled = false;
+        }
+    });
+
+    form.addEventListener('submit', async (event) => {
+        event.preventDefault();
+        searchButton.disabled = true;
+        results.innerHTML = '';
+        message.textContent = 'Crawling TopDev job listings...';
+
+        const params = new URLSearchParams({
+            jobCategoriesIds: category.value,
+            page: '1',
+            limit: '5'
+        });
+
+        const keyword = document.getElementById('keyword').value.trim();
+        if (keyword) params.set('keyword', keyword);
+
+        const level = document.getElementById('level').value;
+        if (level) params.set('level', level);
+
+        try {
+            const response = await fetch(`/api/admin/job-import/topdev/search?${params}`);
+            const body = await response.json();
+            if (!response.ok) throw new Error(body.message || 'Request failed');
+            renderJobs(body);
+            message.textContent = `${body.length} job(s) found.`;
+        } catch (error) {
+            message.textContent = `Error: ${error.message}`;
+        } finally {
+            searchButton.disabled = false;
+        }
+    });
+
+    loadCategories();
+</script>
+</body>
+</html>
