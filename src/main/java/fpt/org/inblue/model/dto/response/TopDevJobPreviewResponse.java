@@ -2,7 +2,6 @@ package fpt.org.inblue.model.dto.response;
 
 import fpt.org.inblue.enums.TargetLevel;
 import java.time.LocalDate;
-import java.util.List;
 import lombok.Builder;
 import lombok.Data;
 

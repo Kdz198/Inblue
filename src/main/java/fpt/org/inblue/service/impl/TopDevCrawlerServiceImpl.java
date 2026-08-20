@@ -1,9 +1,7 @@
 package fpt.org.inblue.service.impl;
 
-import tools.jackson.databind.JsonNode;
-import tools.jackson.databind.ObjectMapper;
-import fpt.org.inblue.enums.TargetLevel;
 import fpt.org.inblue.enums.JobDescriptionStatus;
+import fpt.org.inblue.enums.TargetLevel;
 import fpt.org.inblue.exception.CustomException;
 import fpt.org.inblue.model.Company;
 import fpt.org.inblue.model.JobDescription;
@@ -33,6 +31,8 @@ import org.jsoup.select.Elements;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.ObjectMapper;
 
 @Service
 public class TopDevCrawlerServiceImpl implements TopDevCrawlerService {
@@ -68,7 +68,8 @@ public class TopDevCrawlerServiceImpl implements TopDevCrawlerService {
         if (request.getCompanyName() == null || request.getCompanyName().isBlank()) {
             throw new CustomException("Company name không được để trống", HttpStatus.BAD_REQUEST);
         }
-        if (request.getSourceJobId() != null && !request.getSourceJobId().isBlank()
+        if (request.getSourceJobId() != null
+                && !request.getSourceJobId().isBlank()
                 && jobDescriptionRepository
                         .findFirstBySourceJobIdAndIsDeletedFalse(request.getSourceJobId())
                         .isPresent()) {
@@ -76,19 +77,24 @@ public class TopDevCrawlerServiceImpl implements TopDevCrawlerService {
         }
 
         String companyName = request.getCompanyName().trim();
-        Company company = companyRepository.findFirstByNameIgnoreCaseAndIsDeletedFalse(companyName).orElse(null);
+        Company company = companyRepository
+                .findFirstByNameIgnoreCaseAndIsDeletedFalse(companyName)
+                .orElse(null);
         boolean companyCreated = false;
 
         if (company == null) {
             CreateCompanyRequest companyRequest = new CreateCompanyRequest();
             companyRequest.setName(companyName);
-            companyRequest.setDescription("Imported from " + (request.getSource() == null ? "external source" : request.getSource()));
+            companyRequest.setDescription(
+                    "Imported from " + (request.getSource() == null ? "external source" : request.getSource()));
             companyRequest.setStatus("ACTIVE");
             company = new Company();
             company.setName(companyRequest.getName());
-            company.setDescription(request.getCompanyDescription() != null && !request.getCompanyDescription().isBlank()
-                    ? request.getCompanyDescription()
-                    : companyRequest.getDescription());
+            company.setDescription(
+                    request.getCompanyDescription() != null
+                                    && !request.getCompanyDescription().isBlank()
+                            ? request.getCompanyDescription()
+                            : companyRequest.getDescription());
             company.setLogoUrl(request.getCompanyLogo());
             company.setStatus(companyRequest.getStatus());
             company.setIsDeleted(false);
@@ -154,9 +160,8 @@ public class TopDevCrawlerServiceImpl implements TopDevCrawlerService {
             throw new CustomException("Limit phải nằm trong khoảng từ 1 đến 5", HttpStatus.BAD_REQUEST);
         }
 
-        List<Integer> categories = jobCategoryIds == null || jobCategoryIds.isEmpty()
-                ? List.of(DEFAULT_CATEGORY_ID)
-                : jobCategoryIds;
+        List<Integer> categories =
+                jobCategoryIds == null || jobCategoryIds.isEmpty() ? List.of(DEFAULT_CATEGORY_ID) : jobCategoryIds;
 
         String normalizedKeyword = keyword == null ? "" : keyword.trim();
         String searchKeyword = level == null || level.name().isBlank()
@@ -186,28 +191,25 @@ public class TopDevCrawlerServiceImpl implements TopDevCrawlerService {
 
             return results;
         } catch (IOException exception) {
-            throw new CustomException(
-                    "Không thể crawl dữ liệu việc làm từ TopDev", HttpStatus.BAD_GATEWAY);
+            throw new CustomException("Không thể crawl dữ liệu việc làm từ TopDev", HttpStatus.BAD_GATEWAY);
         }
     }
 
     private String buildSearchUrl(String keyword, List<Integer> categoryIds, int page) {
-        String categories = categoryIds.stream().map(String::valueOf).reduce((a, b) -> a + "," + b).orElse("2");
-        String url = TOPDEV_SEARCH_URL
-                + "?job_categories_ids="
-                + categories
-                + "&page="
-                + page;
+        String categories = categoryIds.stream()
+                .map(String::valueOf)
+                .reduce((a, b) -> a + "," + b)
+                .orElse("2");
+        String url = TOPDEV_SEARCH_URL + "?job_categories_ids=" + categories + "&page=" + page;
         if (keyword != null && !keyword.isBlank()) {
-            url += "&keyword="
-                    + java.net.URLEncoder.encode(keyword, java.nio.charset.StandardCharsets.UTF_8);
+            url += "&keyword=" + java.net.URLEncoder.encode(keyword, java.nio.charset.StandardCharsets.UTF_8);
         }
         return url;
     }
 
     private Set<String> extractDetailUrls(Document searchDocument) {
         Set<String> urls = new LinkedHashSet<>();
-        for (Element link : searchDocument.select("a[href*=/detail-jobs/]") ) {
+        for (Element link : searchDocument.select("a[href*=/detail-jobs/]")) {
             String href = link.absUrl("href");
             if (href != null && !href.isBlank()) {
                 urls.add(href.split("\\?")[0]);
@@ -233,12 +235,9 @@ public class TopDevCrawlerServiceImpl implements TopDevCrawlerService {
         String companyUrl = textOrNull(organization, "sameAs");
         String fallbackCompanyDescription = cleanHtml(textOrNull(organization, "description"));
         CompanyPageData companyPageData = crawlCompanyPage(companyUrl);
-        String companyDescription = companyPageData.description() == null
-                ? fallbackCompanyDescription
-                : companyPageData.description();
-        String companyLogo = companyPageData.logo() == null
-                ? textOrNull(organization, "logo")
-                : companyPageData.logo();
+        String companyDescription =
+                companyPageData.description() == null ? fallbackCompanyDescription : companyPageData.description();
+        String companyLogo = companyPageData.logo() == null ? textOrNull(organization, "logo") : companyPageData.logo();
         String rawJobDescription = textOrNull(jobPosting, "description");
         JobSections jobSections = fetchFullJobSections(detailUrl);
         if (jobSections.isEmpty()) {
@@ -263,9 +262,8 @@ public class TopDevCrawlerServiceImpl implements TopDevCrawlerService {
                 .companyLogo(companyLogo)
                 .companyDescription(companyDescription)
                 .location(extractLocation(location))
-                .description(jobSections.description() == null
-                        ? cleanHtml(rawJobDescription)
-                        : jobSections.description())
+                .description(
+                        jobSections.description() == null ? cleanHtml(rawJobDescription) : jobSections.description())
                 .requirements(jobSections.requirements())
                 .benefits(jobSections.benefits())
                 .skills(textOrNull(jobPosting, "skills"))
@@ -396,7 +394,8 @@ public class TopDevCrawlerServiceImpl implements TopDevCrawlerService {
                     .get();
 
             Element overviewTitle = companyDocument.select("span").stream()
-                    .filter(element -> "Company Overview".equalsIgnoreCase(element.text().trim()))
+                    .filter(element ->
+                            "Company Overview".equalsIgnoreCase(element.text().trim()))
                     .findFirst()
                     .orElse(null);
 
@@ -410,8 +409,7 @@ public class TopDevCrawlerServiceImpl implements TopDevCrawlerService {
                     description = overviewContent.text().trim();
                 }
             }
-            String logo = companyDocument.select("img[alt*=company-image][class*=object-contain]")
-                    .stream()
+            String logo = companyDocument.select("img[alt*=company-image][class*=object-contain]").stream()
                     .map(image -> image.absUrl("src"))
                     .filter(url -> url != null && url.startsWith("https://salt.topdev.vn/"))
                     .findFirst()
@@ -445,7 +443,8 @@ public class TopDevCrawlerServiceImpl implements TopDevCrawlerService {
             return new JobSections(null, null, null);
         }
 
-        String text = Jsoup.parse(rawHtml.replaceAll("(?i)<br\\s*/?>", "\n")).text().trim();
+        String text =
+                Jsoup.parse(rawHtml.replaceAll("(?i)<br\\s*/?>", "\n")).text().trim();
         Pattern headingPattern = Pattern.compile(
                 "(?i)Your\\s+role\\s*&\\s*responsibilities|Your\\s+skills\\s*&\\s*qualifications|Benefits(?:\\s+for\\s+you)?");
         Matcher matcher = headingPattern.matcher(text);
