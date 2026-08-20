@@ -141,7 +141,7 @@ public class CompanyServiceImpl implements CompanyService {
 
     @Override
     public List<Company> getAll() {
-        return companyRepository.findAll();
+        return companyRepository.findAll().reversed();
     }
 
     @Override
