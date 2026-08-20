@@ -45,7 +45,7 @@ public class JobDescriptionServiceImpl implements JobDescriptionService {
 
     @Override
     public List<JobDescription> getAll() {
-        return jobDescriptionRepository.findAll();
+        return jobDescriptionRepository.findAll().reversed();
     }
 
     @Override
