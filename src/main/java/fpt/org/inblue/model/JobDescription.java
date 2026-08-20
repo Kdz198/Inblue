@@ -33,6 +33,9 @@ public class JobDescription {
     @Column(columnDefinition = "TEXT")
     private String benefits;
 
+    @Column(length = 100, unique = true)
+    private String sourceJobId;
+
     // Phân loại cấp bậc (Intern, Fresher, Junior, Middle, Senior)
     @Column(length = 50)
     @Enumerated(EnumType.STRING)

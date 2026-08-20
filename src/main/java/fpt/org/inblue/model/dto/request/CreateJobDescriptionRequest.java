@@ -17,6 +17,7 @@ public class CreateJobDescriptionRequest {
     private String description;
     private String requirements;
     private String benefits;
+    private String sourceJobId;
     private TargetLevel level; // Intern, Fresher, Junior, Middle, Senior
     private Double salaryMin;
     private Double salaryMax;

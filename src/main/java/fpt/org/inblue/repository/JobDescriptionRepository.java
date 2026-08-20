@@ -4,6 +4,7 @@ import fpt.org.inblue.enums.JobDescriptionStatus;
 import fpt.org.inblue.model.JobDescription;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Optional;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 
@@ -15,4 +16,6 @@ public interface JobDescriptionRepository
     List<JobDescription> findByStatusAndIsDeletedFalse(JobDescriptionStatus status);
 
     List<JobDescription> findByIsDeletedFalse();
+
+    Optional<JobDescription> findFirstBySourceJobIdAndIsDeletedFalse(String sourceJobId);
 }
