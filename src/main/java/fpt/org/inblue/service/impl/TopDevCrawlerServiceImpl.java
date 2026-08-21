@@ -156,9 +156,6 @@ public class TopDevCrawlerServiceImpl implements TopDevCrawlerService {
         if (page < 1) {
             throw new CustomException("Page phải lớn hơn hoặc bằng 1", HttpStatus.BAD_REQUEST);
         }
-        if (limit < 1 || limit > 5) {
-            throw new CustomException("Limit phải nằm trong khoảng từ 1 đến 5", HttpStatus.BAD_REQUEST);
-        }
 
         List<Integer> categories =
                 jobCategoryIds == null || jobCategoryIds.isEmpty() ? List.of(DEFAULT_CATEGORY_ID) : jobCategoryIds;
