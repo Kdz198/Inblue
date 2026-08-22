@@ -7,6 +7,7 @@ import fpt.org.inblue.model.Round;
 import fpt.org.inblue.model.dto.WhiteboardQuestionDto;
 import fpt.org.inblue.model.dto.request.SetupJdRoundsRequest;
 import fpt.org.inblue.model.dto.request.UpdateJdRoundRequest;
+import fpt.org.inblue.model.dto.response.RoundPlanGenerationResponse;
 import fpt.org.inblue.service.ApiClient;
 import fpt.org.inblue.service.RoundService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -46,6 +47,12 @@ public class RoundController {
             @PathVariable Long jdId, @RequestBody UpdateJdRoundRequest request) {
         List<Round> rounds = roundService.updateRoundForJd(jdId, request);
         return ResponseEntity.ok(rounds);
+    }
+
+    @PostMapping("/jd/{jdId}/generate-round-plan")
+    @Operation(summary = "Generate a draft round plan from a Job Description via AnythingLLM")
+    public ResponseEntity<RoundPlanGenerationResponse> generateRoundPlan(@PathVariable Long jdId) {
+        return ResponseEntity.ok(roundService.generateRoundPlan(jdId));
     }
 
     @PostMapping("/generate-whiteboard-question")

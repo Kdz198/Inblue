@@ -12,4 +12,5 @@ public interface TopDevCrawlerService {
             String keyword, TargetLevel level, List<Integer> jobCategoryIds, int page, int limit);
 
     TopDevJobImportResponse importJob(TopDevJobImportRequest request);
+
 }

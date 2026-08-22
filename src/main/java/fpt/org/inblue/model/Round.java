@@ -75,6 +75,9 @@ public class Round {
         // về OOP" hoặc "Thiết kế DB cho hệ thống quản lý thư viện")
         private String evaluationCriteria;
 
+        // Bộ tiêu chí đánh giá có cấu trúc riêng cho từng round.
+        private EvaluationPlan evaluationPlan;
+
         // --- FIELD CHO VÒNG QUIZ ---
         private List<QuizQuestion> quizQuestions = new ArrayList<>();
         private List<CodingProblemSnapshot> codingProblems =
@@ -83,6 +86,30 @@ public class Round {
         private List<CodeReviewProblemSnapshot> codeReviewProblems = new ArrayList<>();
         // Dành cho vòng mentor interview
         MentorInterviewDto mentorInterview;
+    }
+
+    @Data
+    @NoArgsConstructor
+    @AllArgsConstructor
+    @Builder
+    public static class EvaluationPlan {
+        private List<EvaluationMetric> metrics = new ArrayList<>();
+        private String scoringInstruction;
+        private String passRule;
+    }
+
+    @Data
+    @NoArgsConstructor
+    @AllArgsConstructor
+    @Builder
+    public static class EvaluationMetric {
+        private String code;
+        private String name;
+        private String description;
+        private Double weight;
+        private Double maxScore;
+        private Boolean required;
+        private Double minimumScore;
     }
 
     @Data

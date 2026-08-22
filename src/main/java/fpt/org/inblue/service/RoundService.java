@@ -4,6 +4,7 @@ import fpt.org.inblue.enums.RoundType;
 import fpt.org.inblue.model.Round;
 import fpt.org.inblue.model.dto.request.SetupJdRoundsRequest;
 import fpt.org.inblue.model.dto.request.UpdateJdRoundRequest;
+import fpt.org.inblue.model.dto.response.RoundPlanGenerationResponse;
 import java.util.List;
 
 public interface RoundService {
@@ -16,4 +17,6 @@ public interface RoundService {
     List<RoundType> getAllRoundTypes();
 
     Round getRoundByOrder(Long applicationId);
+
+    RoundPlanGenerationResponse generateRoundPlan(Long jdId);
 }

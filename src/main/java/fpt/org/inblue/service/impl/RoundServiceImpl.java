@@ -1,14 +1,19 @@
 package fpt.org.inblue.service.impl;
 
 import fpt.org.inblue.enums.RoundType;
+import fpt.org.inblue.enums.AnythingLlmWorkspace;
 import fpt.org.inblue.exception.CustomException;
 import fpt.org.inblue.model.*;
+import fpt.org.inblue.model.dto.request.RoundPlanGenerationRequest;
 import fpt.org.inblue.model.dto.request.SetupJdRoundsRequest;
 import fpt.org.inblue.model.dto.request.UpdateJdRoundRequest;
+import fpt.org.inblue.model.dto.response.RoundPlanGenerationResponse;
 import fpt.org.inblue.repository.CodeReviewProblemsRepository;
 import fpt.org.inblue.repository.CodingProblemsRepository;
+import fpt.org.inblue.repository.CompanyRepository;
 import fpt.org.inblue.repository.JobDescriptionRepository;
 import fpt.org.inblue.repository.RoundRepository;
+import fpt.org.inblue.service.ApiClient;
 import fpt.org.inblue.service.ApplicationService;
 import fpt.org.inblue.service.JobDescriptionService;
 import fpt.org.inblue.service.RoundService;
@@ -26,6 +31,8 @@ public class RoundServiceImpl implements RoundService {
     private final ApplicationService applicationService;
     private final JobDescriptionService jobDescriptionService;
     private final CodeReviewProblemsRepository codeReviewProblemsRepository;
+    private final CompanyRepository companyRepository;
+    private final ApiClient apiClient;
 
     public RoundServiceImpl(
             RoundRepository roundRepository,
@@ -33,13 +40,17 @@ public class RoundServiceImpl implements RoundService {
             CodingProblemsRepository codingProblemsRepository,
             ApplicationService applicationService,
             JobDescriptionService jobDescriptionService,
-            CodeReviewProblemsRepository codeReviewProblemsRepository) {
+            CodeReviewProblemsRepository codeReviewProblemsRepository,
+            CompanyRepository companyRepository,
+            ApiClient apiClient) {
         this.roundRepository = roundRepository;
         this.jobDescriptionRepository = jobDescriptionRepository;
         this.codingProblemsRepository = codingProblemsRepository;
         this.applicationService = applicationService;
         this.jobDescriptionService = jobDescriptionService;
         this.codeReviewProblemsRepository = codeReviewProblemsRepository;
+        this.companyRepository = companyRepository;
+        this.apiClient = apiClient;
     }
 
     @Override
@@ -263,5 +274,68 @@ public class RoundServiceImpl implements RoundService {
         Round currentRound = jobDescriptionService.getRoundByOrder(
                 currentApplication.getJdId(), currentApplication.getCurrentRoundOrder());
         return currentRound;
+    }
+
+    @Override
+    public RoundPlanGenerationResponse generateRoundPlan(Long jdId) {
+        JobDescription jobDescription = jobDescriptionRepository
+                .findById(jdId)
+                .filter(jd -> !Boolean.TRUE.equals(jd.getIsDeleted()))
+                .orElseThrow(() -> new CustomException("Job Description không tồn tại", HttpStatus.NOT_FOUND));
+
+        Company company = companyRepository.findByJobDescriptionsId(jdId).orElse(null);
+        RoundPlanGenerationRequest payload = RoundPlanGenerationRequest.builder()
+                .company(RoundPlanGenerationRequest.CompanyContext.builder()
+                        .name(company != null ? company.getName() : jobDescription.getCompanyName())
+                        .description(company != null ? company.getDescription() : null)
+                        .logoUrl(company != null ? company.getLogoUrl() : jobDescription.getCompanyLogo())
+                        .build())
+                .jobDescription(RoundPlanGenerationRequest.JobDescriptionContext.builder()
+                        .id(jobDescription.getId())
+                        .title(jobDescription.getTitle())
+                        .description(jobDescription.getDescription())
+                        .requirements(jobDescription.getRequirements())
+                        .benefits(jobDescription.getBenefits())
+                        .level(jobDescription.getLevel())
+                        .build())
+                .outputFormat(RoundPlanGenerationRequest.OutputFormat.builder()
+                        .rounds("List of round drafts")
+                        .roundFields(List.of("name", "roundOrder", "roundType", "passThreshold", "configData"))
+                        .configDataFields(List.of(
+                                "instruction",
+                                "submissionFormat",
+                                "timeLimitMinutes",
+                                "maxScore",
+                                "aiSystemPrompt",
+                                "evaluationCriteria",
+                                "evaluationPlan"))
+                        .evaluationMetricFields(List.of(
+                                "code",
+                                "name",
+                                "description",
+                                "weight",
+                                "maxScore",
+                                "required",
+                                "minimumScore"))
+                        .build())
+                .rules(List.of(
+                        "Return valid JSON only. Do not wrap the response in Markdown.",
+                        "Suggest rounds and metrics based on the JD, but do not treat them as approved configuration.",
+                        "Keep the sum of metric weights equal to 100 for each round.",
+                        "Pass thresholds are suggestions for Admin review."))
+                .build();
+
+        RoundPlanGenerationResponse response = apiClient.sendChatToAnythingLlm(
+                AnythingLlmWorkspace.PIPELINE_GEN,
+                payload,
+                "jd-pipeline-" + jdId,
+                true,
+                null,
+                RoundPlanGenerationResponse.class);
+
+        if (response == null || response.getRounds() == null) {
+            throw new CustomException("AnythingLLM không trả về pipeline hợp lệ", HttpStatus.BAD_GATEWAY);
+        }
+        return response;
     }
 }
