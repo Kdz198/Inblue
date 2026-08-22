@@ -1,7 +1,7 @@
 package fpt.org.inblue.service.impl;
 
-import fpt.org.inblue.enums.RoundType;
 import fpt.org.inblue.enums.AnythingLlmWorkspace;
+import fpt.org.inblue.enums.RoundType;
 import fpt.org.inblue.exception.CustomException;
 import fpt.org.inblue.model.*;
 import fpt.org.inblue.model.dto.request.RoundPlanGenerationRequest;
@@ -310,13 +310,7 @@ public class RoundServiceImpl implements RoundService {
                                 "evaluationCriteria",
                                 "evaluationPlan"))
                         .evaluationMetricFields(List.of(
-                                "code",
-                                "name",
-                                "description",
-                                "weight",
-                                "maxScore",
-                                "required",
-                                "minimumScore"))
+                                "code", "name", "description", "weight", "maxScore", "required", "minimumScore"))
                         .build())
                 .rules(List.of(
                         "Return valid JSON only. Do not wrap the response in Markdown.",
