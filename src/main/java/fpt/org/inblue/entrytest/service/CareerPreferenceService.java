@@ -6,6 +6,8 @@ import fpt.org.inblue.entrytest.dto.request.UpsertCareerPreferenceRequest;
 public interface CareerPreferenceService {
     UserCareerPreference getCurrentPreference(Integer userId);
 
+    boolean hasCurrentPreference(Integer userId);
+
     UserCareerPreference upsertPreference(Integer userId, UpsertCareerPreferenceRequest request);
 
     UserCareerPreference skipPreference(Integer userId);

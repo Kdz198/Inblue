@@ -24,6 +24,12 @@ public class CareerPreferenceServiceImpl implements CareerPreferenceService {
     }
 
     @Override
+    @Transactional(readOnly = true)
+    public boolean hasCurrentPreference(Integer userId) {
+        return preferenceRepository.existsByUserIdAndIsActiveTrue(userId);
+    }
+
+    @Override
     @Transactional
     public UserCareerPreference upsertPreference(Integer userId, UpsertCareerPreferenceRequest request) {
         if (request.getTargetRole() == null) {

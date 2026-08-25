@@ -20,6 +20,11 @@ public class CareerPreferenceController {
         return ResponseEntity.ok(careerPreferenceService.getCurrentPreference(securityUtils.getCurrentUserId()));
     }
 
+    @GetMapping("/exists")
+    public ResponseEntity<Boolean> hasCurrentPreference() {
+        return ResponseEntity.ok(careerPreferenceService.hasCurrentPreference(securityUtils.getCurrentUserId()));
+    }
+
     @PutMapping
     public ResponseEntity<UserCareerPreference> upsertPreference(
             @RequestBody UpsertCareerPreferenceRequest request) {
