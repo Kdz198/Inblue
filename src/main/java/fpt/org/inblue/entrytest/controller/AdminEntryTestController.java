@@ -1,7 +1,7 @@
 package fpt.org.inblue.entrytest.controller;
 
 import fpt.org.inblue.entrytest.dto.request.UpsertEntryTestRequest;
-import fpt.org.inblue.entrytest.entity.EntryTest;
+import fpt.org.inblue.entrytest.model.EntryTest;
 import fpt.org.inblue.entrytest.service.AdminEntryTestService;
 import java.util.List;
 import lombok.RequiredArgsConstructor;

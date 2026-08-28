@@ -1,11 +1,12 @@
 package fpt.org.inblue.entrytest.service.impl;
 
 import fpt.org.inblue.exception.CustomException;
-import fpt.org.inblue.entrytest.entity.UserCareerPreference;
+import fpt.org.inblue.entrytest.model.UserCareerPreference;
 import fpt.org.inblue.entrytest.dto.request.UpsertCareerPreferenceRequest;
 import fpt.org.inblue.entrytest.repository.UserCareerPreferenceRepository;
 import fpt.org.inblue.entrytest.service.CareerPreferenceService;
 import java.util.Objects;
+import java.util.Optional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
@@ -36,15 +37,14 @@ public class CareerPreferenceServiceImpl implements CareerPreferenceService {
             throw new CustomException("targetRole is required", HttpStatus.BAD_REQUEST);
         }
 
-        UserCareerPreference preference = preferenceRepository
-                .findByUserIdAndIsActiveTrue(userId)
-                .orElseGet(() -> UserCareerPreference.builder()
-                        .userId(userId)
-                        .isActive(true)
-                        .needRetest(true)
-                        .build());
+        Optional<UserCareerPreference> existingPreference = preferenceRepository.findById(userId);
+        UserCareerPreference preference = existingPreference.orElseGet(() -> UserCareerPreference.builder()
+                .userId(userId)
+                .isActive(true)
+                .needRetest(true)
+                .build());
 
-        boolean changedMainDirection = preference.getId() == null
+        boolean changedMainDirection = existingPreference.isEmpty()
                 || !Objects.equals(preference.getTargetRole(), request.getTargetRole())
                 || !Objects.equals(preference.getLanguagesJson(), request.getLanguagesJson());
 
@@ -52,6 +52,7 @@ public class CareerPreferenceServiceImpl implements CareerPreferenceService {
         preference.setLanguagesJson(request.getLanguagesJson());
         preference.setCareerGoal(request.getCareerGoal());
         preference.setTargetLevel(request.getTargetLevel());
+        preference.setIsActive(true);
         if (changedMainDirection) {
             preference.setNeedRetest(true);
         }
@@ -63,12 +64,13 @@ public class CareerPreferenceServiceImpl implements CareerPreferenceService {
     @Transactional
     public UserCareerPreference skipPreference(Integer userId) {
         UserCareerPreference preference = preferenceRepository
-                .findByUserIdAndIsActiveTrue(userId)
+                .findById(userId)
                 .orElseGet(() -> UserCareerPreference.builder()
                         .userId(userId)
                         .isActive(true)
                         .needRetest(true)
                         .build());
+        preference.setIsActive(true);
         preference.setNeedRetest(true);
         return preferenceRepository.save(preference);
     }

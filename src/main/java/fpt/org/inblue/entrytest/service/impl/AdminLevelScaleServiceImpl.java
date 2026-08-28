@@ -2,11 +2,12 @@ package fpt.org.inblue.entrytest.service.impl;
 
 import fpt.org.inblue.entrytest.dto.request.UpsertLevelScaleRequest;
 import fpt.org.inblue.entrytest.dto.request.UpsertLevelScaleSetRequest;
-import fpt.org.inblue.entrytest.entity.LevelScale;
+import fpt.org.inblue.entrytest.model.LevelScale;
 import fpt.org.inblue.entrytest.repository.LevelScaleRepository;
 import fpt.org.inblue.entrytest.service.AdminLevelScaleService;
 import fpt.org.inblue.exception.CustomException;
 import fpt.org.inblue.enums.TargetLevel;
+import fpt.org.inblue.mapper.LevelScaleMapper;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
@@ -20,6 +21,7 @@ import org.springframework.transaction.annotation.Transactional;
 @RequiredArgsConstructor
 public class AdminLevelScaleServiceImpl implements AdminLevelScaleService {
     private final LevelScaleRepository levelScaleRepository;
+    private final LevelScaleMapper levelScaleMapper;
 
     @Override
     public List<LevelScale> getAllLevelScales() {
@@ -37,38 +39,14 @@ public class AdminLevelScaleServiceImpl implements AdminLevelScaleService {
     @Transactional
     public LevelScale createLevelScale(UpsertLevelScaleRequest request) {
         validate(request);
-        return levelScaleRepository.save(LevelScale.builder()
-                .targetRole(request.getTargetRole())
-                .level(request.getLevel())
-                .minScore(request.getMinScore())
-                .maxScore(request.getMaxScore())
-                .minCodingScore(request.getMinCodingScore())
-                .isActive(request.getIsActive() == null || request.getIsActive())
-                .build());
+        return levelScaleRepository.save(levelScaleMapper.toEntity(request));
     }
 
     @Override
     @Transactional
     public LevelScale updateLevelScale(Long id, UpsertLevelScaleRequest request) {
         LevelScale levelScale = getLevelScale(id);
-        if (request.getTargetRole() != null) {
-            levelScale.setTargetRole(request.getTargetRole());
-        }
-        if (request.getLevel() != null) {
-            levelScale.setLevel(request.getLevel());
-        }
-        if (request.getMinScore() != null) {
-            levelScale.setMinScore(request.getMinScore());
-        }
-        if (request.getMaxScore() != null) {
-            levelScale.setMaxScore(request.getMaxScore());
-        }
-        if (request.getMinCodingScore() != null) {
-            levelScale.setMinCodingScore(request.getMinCodingScore());
-        }
-        if (request.getIsActive() != null) {
-            levelScale.setIsActive(request.getIsActive());
-        }
+        levelScaleMapper.updateFromRequest(request, levelScale);
         validate(levelScale);
         return levelScaleRepository.save(levelScale);
     }
@@ -97,18 +75,11 @@ public class AdminLevelScaleServiceImpl implements AdminLevelScaleService {
         List<LevelScale> upserted = request.getScales().stream()
                 .map(scaleRequest -> {
                     validate(scaleRequest);
-                    LevelScale scale = existingByLevel.getOrDefault(
-                            scaleRequest.getLevel(),
-                            LevelScale.builder()
-                                    .targetRole(request.getTargetRole())
-                                    .level(scaleRequest.getLevel())
-                                    .build());
-                    scale.setTargetRole(request.getTargetRole());
-                    scale.setLevel(scaleRequest.getLevel());
-                    scale.setMinScore(scaleRequest.getMinScore());
-                    scale.setMaxScore(scaleRequest.getMaxScore());
-                    scale.setMinCodingScore(scaleRequest.getMinCodingScore());
-                    scale.setIsActive(scaleRequest.getIsActive() == null || scaleRequest.getIsActive());
+                    LevelScale scale = existingByLevel.get(scaleRequest.getLevel());
+                    if (scale == null) {
+                        return levelScaleMapper.toEntityForSet(scaleRequest, request.getTargetRole());
+                    }
+                    levelScaleMapper.updateFromSetRequest(scaleRequest, request.getTargetRole(), scale);
                     return scale;
                 })
                 .toList();

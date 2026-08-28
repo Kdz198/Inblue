@@ -1,4 +1,4 @@
-package fpt.org.inblue.entrytest.entity;
+package fpt.org.inblue.entrytest.model;
 
 import jakarta.persistence.*;
 import java.time.LocalDateTime;
@@ -20,9 +20,6 @@ public class EntryTest {
     private Long id;
 
     private String name;
-
-    @Builder.Default
-    private Integer version = 1;
 
     @Builder.Default
     private Double totalScore = 100.0;

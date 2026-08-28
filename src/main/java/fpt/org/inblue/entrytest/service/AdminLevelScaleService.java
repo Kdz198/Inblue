@@ -2,7 +2,7 @@ package fpt.org.inblue.entrytest.service;
 
 import fpt.org.inblue.entrytest.dto.request.UpsertLevelScaleRequest;
 import fpt.org.inblue.entrytest.dto.request.UpsertLevelScaleSetRequest;
-import fpt.org.inblue.entrytest.entity.LevelScale;
+import fpt.org.inblue.entrytest.model.LevelScale;
 import java.util.List;
 
 public interface AdminLevelScaleService {

@@ -1,4 +1,4 @@
-package fpt.org.inblue.entrytest.entity;
+package fpt.org.inblue.entrytest.model;
 
 import fpt.org.inblue.enums.TargetLevel;
 import fpt.org.inblue.entrytest.enums.TargetRole;

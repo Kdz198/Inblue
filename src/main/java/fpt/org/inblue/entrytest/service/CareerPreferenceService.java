@@ -1,6 +1,6 @@
 package fpt.org.inblue.entrytest.service;
 
-import fpt.org.inblue.entrytest.entity.UserCareerPreference;
+import fpt.org.inblue.entrytest.model.UserCareerPreference;
 import fpt.org.inblue.entrytest.dto.request.UpsertCareerPreferenceRequest;
 
 public interface CareerPreferenceService {

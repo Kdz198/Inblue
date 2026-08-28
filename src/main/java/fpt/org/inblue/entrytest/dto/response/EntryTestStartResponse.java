@@ -1,7 +1,7 @@
 package fpt.org.inblue.entrytest.dto.response;
 
-import fpt.org.inblue.entrytest.entity.EntryTest;
-import fpt.org.inblue.entrytest.entity.EntryTestAttempt;
+import fpt.org.inblue.entrytest.model.EntryTest;
+import fpt.org.inblue.entrytest.model.EntryTestAttempt;
 import java.util.List;
 import lombok.AllArgsConstructor;
 import lombok.Builder;

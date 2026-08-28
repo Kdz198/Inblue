@@ -4,10 +4,10 @@ import fpt.org.inblue.enums.CompilerLanguage;
 import fpt.org.inblue.entrytest.enums.TargetRole;
 import fpt.org.inblue.exception.CustomException;
 import fpt.org.inblue.model.CodingProblem;
-import fpt.org.inblue.entrytest.entity.EntryTest;
-import fpt.org.inblue.entrytest.entity.EntryTestAttempt;
+import fpt.org.inblue.entrytest.model.EntryTest;
+import fpt.org.inblue.entrytest.model.EntryTestAttempt;
 import fpt.org.inblue.model.QuestionBank;
-import fpt.org.inblue.entrytest.entity.UserCareerPreference;
+import fpt.org.inblue.entrytest.model.UserCareerPreference;
 import fpt.org.inblue.model.dto.request.CompilerRequestDto;
 import fpt.org.inblue.entrytest.dto.request.EntryTestSubmitRequest;
 import fpt.org.inblue.model.dto.response.CompilerResponseDto;
@@ -66,7 +66,7 @@ public class EntryTestServiceImpl implements EntryTestService {
 
         EntryTestAttempt attempt = attemptRepository.save(EntryTestAttempt.builder()
                 .userId(userId)
-                .careerPreferenceId(preference.getId())
+                .careerPreferenceId(preference.getUserId())
                 .entryTestId(entryTest.getId())
                 .selectedLanguagesJson(preference.getLanguagesJson())
                 .commonQuizItemsJson(commonItems)
@@ -167,10 +167,9 @@ public class EntryTestServiceImpl implements EntryTestService {
     }
 
     private EntryTest getOrCreateActiveEntryTest() {
-        return entryTestRepository.findFirstByIsActiveTrueOrderByVersionDesc().orElseGet(() -> entryTestRepository.save(
+        return entryTestRepository.findFirstByIsActiveTrueOrderByUpdatedAtDesc().orElseGet(() -> entryTestRepository.save(
                 EntryTest.builder()
                         .name("Software Engineer Entry Test")
-                        .version(1)
                         .totalScore(100.0)
                         .timeLimitMinutes(60)
                         .isActive(true)

@@ -1,6 +1,6 @@
 package fpt.org.inblue.entrytest.repository;
 
-import fpt.org.inblue.entrytest.entity.EntryTestAttempt;
+import fpt.org.inblue.entrytest.model.EntryTestAttempt;
 import java.util.List;
 import org.springframework.data.jpa.repository.JpaRepository;
 

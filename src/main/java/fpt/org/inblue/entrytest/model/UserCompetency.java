@@ -1,4 +1,4 @@
-package fpt.org.inblue.entrytest.entity;
+package fpt.org.inblue.entrytest.model;
 
 import fpt.org.inblue.enums.TargetLevel;
 import fpt.org.inblue.entrytest.enums.TargetRole;
@@ -23,7 +23,7 @@ public class UserCompetency {
     private Long id;
 
     private Integer userId;
-    private Long careerPreferenceId;
+    private Integer careerPreferenceId;
 
     @Enumerated(EnumType.STRING)
     private TargetRole targetRole;

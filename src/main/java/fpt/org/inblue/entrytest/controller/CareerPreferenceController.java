@@ -1,6 +1,6 @@
 package fpt.org.inblue.entrytest.controller;
 
-import fpt.org.inblue.entrytest.entity.UserCareerPreference;
+import fpt.org.inblue.entrytest.model.UserCareerPreference;
 import fpt.org.inblue.entrytest.dto.request.UpsertCareerPreferenceRequest;
 import fpt.org.inblue.entrytest.service.CareerPreferenceService;
 import fpt.org.inblue.utils.SecurityUtils;
@@ -20,7 +20,7 @@ public class CareerPreferenceController {
         return ResponseEntity.ok(careerPreferenceService.getCurrentPreference(securityUtils.getCurrentUserId()));
     }
 
-    @GetMapping("/exists")
+     @GetMapping("/exists")
     public ResponseEntity<Boolean> hasCurrentPreference() {
         return ResponseEntity.ok(careerPreferenceService.hasCurrentPreference(securityUtils.getCurrentUserId()));
     }

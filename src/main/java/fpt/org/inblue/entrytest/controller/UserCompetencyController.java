@@ -1,6 +1,6 @@
 package fpt.org.inblue.entrytest.controller;
 
-import fpt.org.inblue.entrytest.entity.UserCompetency;
+import fpt.org.inblue.entrytest.model.UserCompetency;
 import fpt.org.inblue.entrytest.service.UserCompetencyService;
 import fpt.org.inblue.utils.SecurityUtils;
 import lombok.RequiredArgsConstructor;

@@ -1,7 +1,7 @@
 package fpt.org.inblue.entrytest.service;
 
-import fpt.org.inblue.entrytest.entity.EntryTestAttempt;
-import fpt.org.inblue.entrytest.entity.UserCompetency;
+import fpt.org.inblue.entrytest.model.EntryTestAttempt;
+import fpt.org.inblue.entrytest.model.UserCompetency;
 
 public interface UserCompetencyService {
     UserCompetency updateAfterEntryTest(EntryTestAttempt attempt);

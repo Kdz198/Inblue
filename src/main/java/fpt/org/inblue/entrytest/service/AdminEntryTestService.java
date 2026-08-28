@@ -1,7 +1,7 @@
 package fpt.org.inblue.entrytest.service;
 
 import fpt.org.inblue.entrytest.dto.request.UpsertEntryTestRequest;
-import fpt.org.inblue.entrytest.entity.EntryTest;
+import fpt.org.inblue.entrytest.model.EntryTest;
 import java.util.List;
 
 public interface AdminEntryTestService {

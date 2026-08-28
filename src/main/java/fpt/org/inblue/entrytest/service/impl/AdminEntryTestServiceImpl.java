@@ -1,10 +1,11 @@
 package fpt.org.inblue.entrytest.service.impl;
 
 import fpt.org.inblue.entrytest.dto.request.UpsertEntryTestRequest;
-import fpt.org.inblue.entrytest.entity.EntryTest;
+import fpt.org.inblue.entrytest.model.EntryTest;
 import fpt.org.inblue.entrytest.repository.EntryTestRepository;
 import fpt.org.inblue.entrytest.service.AdminEntryTestService;
 import fpt.org.inblue.exception.CustomException;
+import fpt.org.inblue.mapper.EntryTestMapper;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -15,6 +16,7 @@ import org.springframework.transaction.annotation.Transactional;
 @RequiredArgsConstructor
 public class AdminEntryTestServiceImpl implements AdminEntryTestService {
     private final EntryTestRepository entryTestRepository;
+    private final EntryTestMapper entryTestMapper;
 
     @Override
     public List<EntryTest> getAllEntryTests() {
@@ -31,21 +33,14 @@ public class AdminEntryTestServiceImpl implements AdminEntryTestService {
     @Override
     public EntryTest getActiveEntryTest() {
         return entryTestRepository
-                .findFirstByIsActiveTrueOrderByVersionDesc()
+                .findFirstByIsActiveTrueOrderByUpdatedAtDesc()
                 .orElseThrow(() -> new CustomException("Active entry test not found", HttpStatus.NOT_FOUND));
     }
 
     @Override
     @Transactional
     public EntryTest createEntryTest(UpsertEntryTestRequest request) {
-        EntryTest entryTest = EntryTest.builder()
-                .name(request.getName())
-                .version(request.getVersion())
-                .totalScore(request.getTotalScore())
-                .timeLimitMinutes(request.getTimeLimitMinutes())
-                .sectionConfigs(request.getSectionConfigs())
-                .isActive(request.getIsActive() == null || request.getIsActive())
-                .build();
+        EntryTest entryTest = entryTestMapper.toEntity(request);
         return entryTestRepository.save(entryTest);
     }
 
@@ -53,24 +48,7 @@ public class AdminEntryTestServiceImpl implements AdminEntryTestService {
     @Transactional
     public EntryTest updateEntryTest(Long id, UpsertEntryTestRequest request) {
         EntryTest entryTest = getEntryTest(id);
-        if (request.getName() != null) {
-            entryTest.setName(request.getName());
-        }
-        if (request.getVersion() != null) {
-            entryTest.setVersion(request.getVersion());
-        }
-        if (request.getTotalScore() != null) {
-            entryTest.setTotalScore(request.getTotalScore());
-        }
-        if (request.getTimeLimitMinutes() != null) {
-            entryTest.setTimeLimitMinutes(request.getTimeLimitMinutes());
-        }
-        if (request.getSectionConfigs() != null) {
-            entryTest.setSectionConfigs(request.getSectionConfigs());
-        }
-        if (request.getIsActive() != null) {
-            entryTest.setIsActive(request.getIsActive());
-        }
+        entryTestMapper.updateFromRequest(request, entryTest);
         return entryTestRepository.save(entryTest);
     }
 

@@ -1,6 +1,6 @@
 package fpt.org.inblue.entrytest.service;
 
-import fpt.org.inblue.entrytest.entity.EntryTestAttempt;
+import fpt.org.inblue.entrytest.model.EntryTestAttempt;
 import fpt.org.inblue.entrytest.dto.request.EntryTestSubmitRequest;
 import fpt.org.inblue.entrytest.dto.response.EntryTestStartResponse;
 

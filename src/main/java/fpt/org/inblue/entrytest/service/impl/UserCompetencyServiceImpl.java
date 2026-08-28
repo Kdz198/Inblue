@@ -3,10 +3,10 @@ package fpt.org.inblue.entrytest.service.impl;
 import fpt.org.inblue.enums.TargetLevel;
 import fpt.org.inblue.entrytest.enums.TargetRole;
 import fpt.org.inblue.exception.CustomException;
-import fpt.org.inblue.entrytest.entity.EntryTestAttempt;
-import fpt.org.inblue.entrytest.entity.LevelScale;
-import fpt.org.inblue.entrytest.entity.UserCareerPreference;
-import fpt.org.inblue.entrytest.entity.UserCompetency;
+import fpt.org.inblue.entrytest.model.EntryTestAttempt;
+import fpt.org.inblue.entrytest.model.LevelScale;
+import fpt.org.inblue.entrytest.model.UserCareerPreference;
+import fpt.org.inblue.entrytest.model.UserCompetency;
 import fpt.org.inblue.entrytest.repository.LevelScaleRepository;
 import fpt.org.inblue.entrytest.repository.UserCareerPreferenceRepository;
 import fpt.org.inblue.entrytest.repository.UserCompetencyRepository;
@@ -39,10 +39,10 @@ public class UserCompetencyServiceImpl implements fpt.org.inblue.entrytest.servi
                 value(attempt.getSpecificCodingScore()));
 
         UserCompetency competency = competencyRepository
-                .findByUserIdAndCareerPreferenceId(attempt.getUserId(), preference.getId())
+                .findByUserIdAndCareerPreferenceId(attempt.getUserId(), preference.getUserId())
                 .orElseGet(() -> UserCompetency.builder()
                         .userId(attempt.getUserId())
-                        .careerPreferenceId(preference.getId())
+                        .careerPreferenceId(preference.getUserId())
                         .build());
 
         competency.setTargetRole(preference.getTargetRole());

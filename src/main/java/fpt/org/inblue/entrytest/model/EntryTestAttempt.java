@@ -1,4 +1,4 @@
-package fpt.org.inblue.entrytest.entity;
+package fpt.org.inblue.entrytest.model;
 
 import fpt.org.inblue.model.CodingProblem;
 import jakarta.persistence.*;
@@ -22,7 +22,7 @@ public class EntryTestAttempt {
     private Long id;
 
     private Integer userId;
-    private Long careerPreferenceId;
+    private Integer careerPreferenceId;
     private Long entryTestId;
 
     @JdbcTypeCode(SqlTypes.JSON)

@@ -1,4 +1,4 @@
-package fpt.org.inblue.entrytest.entity;
+package fpt.org.inblue.entrytest.model;
 
 import fpt.org.inblue.enums.TargetLevel;
 import fpt.org.inblue.entrytest.enums.TargetRole;
@@ -18,9 +18,6 @@ import org.hibernate.type.SqlTypes;
 @Builder
 public class UserCareerPreference {
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
-
     private Integer userId;
 
     @Enumerated(EnumType.STRING)
