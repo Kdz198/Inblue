@@ -1,10 +1,11 @@
 package fpt.org.inblue.entrytest.controller;
 
-import fpt.org.inblue.entrytest.model.EntryTestAttempt;
 import fpt.org.inblue.entrytest.dto.request.EntryTestRunCodeRequest;
 import fpt.org.inblue.entrytest.dto.request.EntryTestSubmitRequest;
+import fpt.org.inblue.entrytest.dto.response.EntryTestAttemptResponse;
 import fpt.org.inblue.entrytest.dto.response.EntryTestStartResponse;
 import fpt.org.inblue.entrytest.service.EntryTestService;
+import fpt.org.inblue.mapper.EntryTestResponseMapper;
 import fpt.org.inblue.model.dto.response.CompilerResponseDto;
 import fpt.org.inblue.utils.SecurityUtils;
 import jakarta.validation.Valid;
@@ -18,6 +19,7 @@ import org.springframework.web.bind.annotation.*;
 public class EntryTestController {
     private final EntryTestService entryTestService;
     private final SecurityUtils securityUtils;
+    private final EntryTestResponseMapper responseMapper;
 
     @PostMapping("/start")
     public ResponseEntity<EntryTestStartResponse> startEntryTest() {
@@ -32,14 +34,15 @@ public class EntryTestController {
     }
 
     @PostMapping("/{attemptId}/submit")
-    public ResponseEntity<EntryTestAttempt> submitEntryTest(
+    public ResponseEntity<EntryTestAttemptResponse> submitEntryTest(
             @PathVariable Long attemptId, @RequestBody EntryTestSubmitRequest request) {
-        return ResponseEntity.ok(entryTestService.submitEntryTest(
-                securityUtils.getCurrentUserId(), attemptId, request));
+        return ResponseEntity.ok(responseMapper.toAttemptResponse(entryTestService.submitEntryTest(
+                securityUtils.getCurrentUserId(), attemptId, request)));
     }
 
     @GetMapping("/attempts/{attemptId}/result")
-    public ResponseEntity<EntryTestAttempt> getAttemptResult(@PathVariable Long attemptId) {
-        return ResponseEntity.ok(entryTestService.getAttempt(securityUtils.getCurrentUserId(), attemptId));
+    public ResponseEntity<EntryTestAttemptResponse> getAttemptResult(@PathVariable Long attemptId) {
+        return ResponseEntity.ok(responseMapper.toAttemptResponse(
+                entryTestService.getAttempt(securityUtils.getCurrentUserId(), attemptId)));
     }
 }

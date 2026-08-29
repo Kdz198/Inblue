@@ -18,7 +18,7 @@ public class EntryTestStartResponse {
     private Integer timeLimitMinutes;
     private List<String> selectedLanguagesJson;
     private List<EntryTest.EntryTestSectionConfig> sectionConfigs;
-    private List<EntryTestAttempt.QuestionItemSnapshot> commonQuizItemsJson;
-    private List<EntryTestAttempt.QuestionItemSnapshot> specificQuizItemsJson;
+    private List<EntryTestQuestionResponse> commonQuizItemsJson;
+    private List<EntryTestQuestionResponse> specificQuizItemsJson;
     private List<EntryTestAttempt.CodingProblemItemSnapshot> specificCodingItemsJson;
 }

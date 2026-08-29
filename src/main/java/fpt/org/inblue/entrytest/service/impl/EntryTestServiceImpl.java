@@ -4,6 +4,7 @@ import fpt.org.inblue.enums.CompilerLanguage;
 import fpt.org.inblue.entrytest.enums.TargetRole;
 import fpt.org.inblue.exception.CustomException;
 import fpt.org.inblue.model.CodingProblem;
+import fpt.org.inblue.model.User;
 import fpt.org.inblue.entrytest.model.EntryTest;
 import fpt.org.inblue.entrytest.model.EntryTestAttempt;
 import fpt.org.inblue.model.QuestionBank;
@@ -13,10 +14,12 @@ import fpt.org.inblue.entrytest.dto.request.EntryTestRunCodeRequest;
 import fpt.org.inblue.entrytest.dto.request.EntryTestSubmitRequest;
 import fpt.org.inblue.model.dto.response.CompilerResponseDto;
 import fpt.org.inblue.entrytest.dto.response.EntryTestStartResponse;
+import fpt.org.inblue.mapper.EntryTestResponseMapper;
 import fpt.org.inblue.repository.CodingProblemsRepository;
 import fpt.org.inblue.entrytest.repository.EntryTestAttemptRepository;
 import fpt.org.inblue.entrytest.repository.EntryTestRepository;
 import fpt.org.inblue.repository.QuestionBankRepository;
+import fpt.org.inblue.repository.UserRepository;
 import fpt.org.inblue.entrytest.repository.UserCareerPreferenceRepository;
 import fpt.org.inblue.service.ApiClient;
 import fpt.org.inblue.entrytest.service.EntryTestService;
@@ -42,6 +45,8 @@ public class EntryTestServiceImpl implements EntryTestService {
     private final CodingProblemsRepository codingProblemsRepository;
     private final ApiClient apiClient;
     private final UserCompetencyService userCompetencyService;
+    private final UserRepository userRepository;
+    private final EntryTestResponseMapper responseMapper;
 
     @Override
     @Transactional
@@ -49,6 +54,9 @@ public class EntryTestServiceImpl implements EntryTestService {
         UserCareerPreference preference = preferenceRepository
                 .findByUserIdAndIsActiveTrue(userId)
                 .orElseThrow(() -> new CustomException("Career preference not found", HttpStatus.BAD_REQUEST));
+        User user = userRepository
+                .findById(userId)
+                .orElseThrow(() -> new CustomException("User not found", HttpStatus.NOT_FOUND));
 
         EntryTest entryTest = getOrCreateActiveEntryTest();
         List<String> languages = normalizeLanguages(preference.getLanguagesJson());
@@ -65,8 +73,8 @@ public class EntryTestServiceImpl implements EntryTestService {
             }
         }
 
-        EntryTestAttempt attempt = attemptRepository.save(EntryTestAttempt.builder()
-                .userId(userId)
+        EntryTestAttempt attempt = EntryTestAttempt.builder()
+                .user(user)
                 .careerPreferenceId(preference.getUserId())
                 .entryTestId(entryTest.getId())
                 .selectedLanguagesJson(preference.getLanguagesJson())
@@ -75,7 +83,9 @@ public class EntryTestServiceImpl implements EntryTestService {
                 .specificCodingItemsJson(codingItems)
                 .status(EntryTestAttempt.AttemptStatus.IN_PROGRESS)
                 .startedAt(LocalDateTime.now())
-                .build());
+                .build();
+        user.addEntryTestAttempt(attempt);
+        attempt = attemptRepository.save(attempt);
 
         return EntryTestStartResponse.builder()
                 .attemptId(attempt.getId())
@@ -83,8 +93,8 @@ public class EntryTestServiceImpl implements EntryTestService {
                 .timeLimitMinutes(entryTest.getTimeLimitMinutes())
                 .selectedLanguagesJson(attempt.getSelectedLanguagesJson())
                 .sectionConfigs(entryTest.getSectionConfigs())
-                .commonQuizItemsJson(commonItems)
-                .specificQuizItemsJson(specificItems)
+                .commonQuizItemsJson(responseMapper.toQuestionResponses(commonItems))
+                .specificQuizItemsJson(responseMapper.toQuestionResponses(specificItems))
                 .specificCodingItemsJson(codingItems)
                 .build();
     }
@@ -221,7 +231,7 @@ public class EntryTestServiceImpl implements EntryTestService {
         EntryTestAttempt attempt = attemptRepository
                 .findById(attemptId)
                 .orElseThrow(() -> new CustomException("Entry test attempt not found", HttpStatus.NOT_FOUND));
-        if (!Objects.equals(attempt.getUserId(), userId)) {
+        if (!Objects.equals(attempt.getUser().getId(), userId)) {
             throw new CustomException("Entry test attempt does not belong to current user", HttpStatus.FORBIDDEN);
         }
         return attempt;

@@ -10,6 +10,7 @@ import fpt.org.inblue.entrytest.model.UserCompetency;
 import fpt.org.inblue.entrytest.repository.LevelScaleRepository;
 import fpt.org.inblue.entrytest.repository.UserCareerPreferenceRepository;
 import fpt.org.inblue.entrytest.repository.UserCompetencyRepository;
+import fpt.org.inblue.model.User;
 import java.time.LocalDateTime;
 import java.util.Comparator;
 import java.util.LinkedHashMap;
@@ -37,11 +38,12 @@ public class UserCompetencyServiceImpl implements fpt.org.inblue.entrytest.servi
                 preference.getTargetRole(),
                 value(attempt.getFinalScore()),
                 value(attempt.getSpecificCodingScore()));
+        User user = attempt.getUser();
 
         UserCompetency competency = competencyRepository
-                .findByUserIdAndCareerPreferenceId(attempt.getUserId(), preference.getUserId())
+                .findByUser_IdAndCareerPreferenceId(user.getId(), preference.getUserId())
                 .orElseGet(() -> UserCompetency.builder()
-                        .userId(attempt.getUserId())
+                        .user(user)
                         .careerPreferenceId(preference.getUserId())
                         .build());
 
@@ -76,7 +78,7 @@ public class UserCompetencyServiceImpl implements fpt.org.inblue.entrytest.servi
     @Override
     public UserCompetency getCurrentCompetency(Integer userId) {
         return competencyRepository
-                .findFirstByUserIdOrderByUpdatedAtDesc(userId)
+                .findFirstByUser_IdOrderByUpdatedAtDesc(userId)
                 .orElseThrow(() -> new CustomException("User competency not found", HttpStatus.NOT_FOUND));
     }
 
