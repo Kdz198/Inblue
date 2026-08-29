@@ -196,7 +196,6 @@ public class SecurityConfig {
                                 "/api/applications/**",
                                 "/api/application-details/submit",
                                 "/api/application-details/*/select-mentor",
-                                "/api/coding-problems/**",
                                 "/api/code-review-problems/**",
                                 "/api/interview-sessions/**",
                                 "/api/v1/interview/**",
