@@ -78,7 +78,10 @@ class EntryTestAssociationTest {
 
     @Test
     void startEntryTestMaintainsBothSidesOfUserAttemptAssociation() {
-        User user = User.builder().id(7).entryTestAttempts(new java.util.ArrayList<>()).build();
+        User user = User.builder()
+                .id(7)
+                .entryTestAttempts(new java.util.ArrayList<>())
+                .build();
         UserCareerPreference preference = UserCareerPreference.builder()
                 .userId(7)
                 .languagesJson(List.of("JAVA"))
@@ -131,7 +134,10 @@ class EntryTestAssociationTest {
 
     @Test
     void removeEntryTestAttemptMaintainsBothSides() {
-        User user = User.builder().id(7).entryTestAttempts(new java.util.ArrayList<>()).build();
+        User user = User.builder()
+                .id(7)
+                .entryTestAttempts(new java.util.ArrayList<>())
+                .build();
         EntryTestAttempt attempt = EntryTestAttempt.builder().build();
         user.addEntryTestAttempt(attempt);
 

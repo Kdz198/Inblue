@@ -1,7 +1,7 @@
 package fpt.org.inblue.entrytest.repository;
 
-import fpt.org.inblue.entrytest.model.LevelScale;
 import fpt.org.inblue.entrytest.enums.TargetRole;
+import fpt.org.inblue.entrytest.model.LevelScale;
 import java.util.List;
 import org.springframework.data.jpa.repository.JpaRepository;
 

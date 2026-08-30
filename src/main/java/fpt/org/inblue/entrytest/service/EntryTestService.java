@@ -1,9 +1,9 @@
 package fpt.org.inblue.entrytest.service;
 
-import fpt.org.inblue.entrytest.model.EntryTestAttempt;
 import fpt.org.inblue.entrytest.dto.request.EntryTestRunCodeRequest;
 import fpt.org.inblue.entrytest.dto.request.EntryTestSubmitRequest;
 import fpt.org.inblue.entrytest.dto.response.EntryTestStartResponse;
+import fpt.org.inblue.entrytest.model.EntryTestAttempt;
 import fpt.org.inblue.model.dto.response.CompilerResponseDto;
 
 public interface EntryTestService {

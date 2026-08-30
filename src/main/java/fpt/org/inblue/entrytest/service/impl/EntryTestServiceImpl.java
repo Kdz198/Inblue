@@ -1,29 +1,29 @@
 package fpt.org.inblue.entrytest.service.impl;
 
-import fpt.org.inblue.enums.CompilerLanguage;
-import fpt.org.inblue.entrytest.enums.TargetRole;
-import fpt.org.inblue.exception.CustomException;
-import fpt.org.inblue.model.CodingProblem;
-import fpt.org.inblue.model.User;
-import fpt.org.inblue.entrytest.model.EntryTest;
-import fpt.org.inblue.entrytest.model.EntryTestAttempt;
-import fpt.org.inblue.model.QuestionBank;
-import fpt.org.inblue.entrytest.model.UserCareerPreference;
-import fpt.org.inblue.model.dto.request.CompilerRequestDto;
 import fpt.org.inblue.entrytest.dto.request.EntryTestRunCodeRequest;
 import fpt.org.inblue.entrytest.dto.request.EntryTestSubmitRequest;
-import fpt.org.inblue.model.dto.response.CompilerResponseDto;
 import fpt.org.inblue.entrytest.dto.response.EntryTestStartResponse;
-import fpt.org.inblue.mapper.EntryTestResponseMapper;
-import fpt.org.inblue.repository.CodingProblemsRepository;
+import fpt.org.inblue.entrytest.enums.TargetRole;
+import fpt.org.inblue.entrytest.model.EntryTest;
+import fpt.org.inblue.entrytest.model.EntryTestAttempt;
+import fpt.org.inblue.entrytest.model.UserCareerPreference;
 import fpt.org.inblue.entrytest.repository.EntryTestAttemptRepository;
 import fpt.org.inblue.entrytest.repository.EntryTestRepository;
-import fpt.org.inblue.repository.QuestionBankRepository;
-import fpt.org.inblue.repository.UserRepository;
 import fpt.org.inblue.entrytest.repository.UserCareerPreferenceRepository;
-import fpt.org.inblue.service.ApiClient;
 import fpt.org.inblue.entrytest.service.EntryTestService;
 import fpt.org.inblue.entrytest.service.UserCompetencyService;
+import fpt.org.inblue.enums.CompilerLanguage;
+import fpt.org.inblue.exception.CustomException;
+import fpt.org.inblue.mapper.EntryTestResponseMapper;
+import fpt.org.inblue.model.CodingProblem;
+import fpt.org.inblue.model.QuestionBank;
+import fpt.org.inblue.model.User;
+import fpt.org.inblue.model.dto.request.CompilerRequestDto;
+import fpt.org.inblue.model.dto.response.CompilerResponseDto;
+import fpt.org.inblue.repository.CodingProblemsRepository;
+import fpt.org.inblue.repository.QuestionBankRepository;
+import fpt.org.inblue.repository.UserRepository;
+import fpt.org.inblue.service.ApiClient;
 import java.time.LocalDateTime;
 import java.util.*;
 import java.util.stream.Collectors;
@@ -68,8 +68,10 @@ public class EntryTestServiceImpl implements EntryTestService {
         for (EntryTest.EntryTestSectionConfig config : orderedConfigs(entryTest)) {
             switch (config.getSectionType()) {
                 case COMMON_QUIZ -> commonItems.addAll(pickCommonQuestions(config));
-                case SPECIFIC_QUIZ -> specificItems.addAll(pickSpecificQuestions(config, preference.getTargetRole(), languages));
-                case SPECIFIC_CODING -> codingItems.addAll(pickSpecificCodingProblems(config, preference.getTargetRole(), languages));
+                case SPECIFIC_QUIZ -> specificItems.addAll(
+                        pickSpecificQuestions(config, preference.getTargetRole(), languages));
+                case SPECIFIC_CODING -> codingItems.addAll(
+                        pickSpecificCodingProblems(config, preference.getTargetRole(), languages));
             }
         }
 
@@ -100,8 +102,7 @@ public class EntryTestServiceImpl implements EntryTestService {
     }
 
     @Override
-    public CompilerResponseDto runCode(
-            Integer userId, Long attemptId, EntryTestRunCodeRequest request) {
+    public CompilerResponseDto runCode(Integer userId, Long attemptId, EntryTestRunCodeRequest request) {
         EntryTestAttempt attempt = getAttempt(userId, attemptId);
         if (attempt.getStatus() != EntryTestAttempt.AttemptStatus.IN_PROGRESS) {
             throw new CustomException("Entry test attempt is not in progress", HttpStatus.BAD_REQUEST);
@@ -109,8 +110,8 @@ public class EntryTestServiceImpl implements EntryTestService {
 
         EntryTestAttempt.CodingProblemItemSnapshot item = Optional.ofNullable(
                         indexCodingItems(attempt.getSpecificCodingItemsJson()).get(request.getItemId()))
-                .orElseThrow(() -> new CustomException(
-                        "Coding item does not belong to this attempt", HttpStatus.BAD_REQUEST));
+                .orElseThrow(() ->
+                        new CustomException("Coding item does not belong to this attempt", HttpStatus.BAD_REQUEST));
         validateSourceCode(request.getSourceCode());
 
         CompilerRequestDto compilerRequest = CompilerRequestDto.builder()
@@ -161,22 +162,17 @@ public class EntryTestServiceImpl implements EntryTestService {
         for (EntryTestSubmitRequest.Answer submitted : submittedAnswers) {
             if (commonByItemId.containsKey(submitted.getItemId())) {
                 EntryTestAttempt.EntryTestAnswerSnapshot answer = gradeQuestionAnswer(
-                        submitted,
-                        commonByItemId.get(submitted.getItemId()),
-                        EntryTest.SectionType.COMMON_QUIZ);
+                        submitted, commonByItemId.get(submitted.getItemId()), EntryTest.SectionType.COMMON_QUIZ);
                 commonScore += value(answer.getScore());
                 answers.add(answer);
             } else if (specificByItemId.containsKey(submitted.getItemId())) {
                 EntryTestAttempt.EntryTestAnswerSnapshot answer = gradeQuestionAnswer(
-                        submitted,
-                        specificByItemId.get(submitted.getItemId()),
-                        EntryTest.SectionType.SPECIFIC_QUIZ);
+                        submitted, specificByItemId.get(submitted.getItemId()), EntryTest.SectionType.SPECIFIC_QUIZ);
                 specificScore += value(answer.getScore());
                 answers.add(answer);
             } else if (codingByItemId.containsKey(submitted.getItemId())) {
-                EntryTestAttempt.EntryTestAnswerSnapshot answer = gradeCodingAnswer(
-                        submitted,
-                        codingByItemId.get(submitted.getItemId()));
+                EntryTestAttempt.EntryTestAnswerSnapshot answer =
+                        gradeCodingAnswer(submitted, codingByItemId.get(submitted.getItemId()));
                 codingScore += value(answer.getScore());
                 answers.add(answer);
             }
@@ -214,7 +210,9 @@ public class EntryTestServiceImpl implements EntryTestService {
 
         Set<String> submittedItemIds = new HashSet<>();
         for (EntryTestSubmitRequest.Answer answer : submittedAnswers) {
-            if (answer == null || answer.getItemId() == null || answer.getItemId().isBlank()) {
+            if (answer == null
+                    || answer.getItemId() == null
+                    || answer.getItemId().isBlank()) {
                 throw new CustomException("Each answer must contain itemId", HttpStatus.BAD_REQUEST);
             }
             if (!validItemIds.contains(answer.getItemId())) {
@@ -238,8 +236,9 @@ public class EntryTestServiceImpl implements EntryTestService {
     }
 
     private EntryTest getOrCreateActiveEntryTest() {
-        return entryTestRepository.findFirstByIsActiveTrueOrderByUpdatedAtDesc().orElseGet(() -> entryTestRepository.save(
-                EntryTest.builder()
+        return entryTestRepository
+                .findFirstByIsActiveTrueOrderByUpdatedAtDesc()
+                .orElseGet(() -> entryTestRepository.save(EntryTest.builder()
                         .name("Software Engineer Entry Test")
                         .totalScore(100.0)
                         .timeLimitMinutes(60)
@@ -249,13 +248,14 @@ public class EntryTestServiceImpl implements EntryTestService {
 
     private List<EntryTest.EntryTestSectionConfig> orderedConfigs(EntryTest entryTest) {
         return Optional.ofNullable(entryTest.getSectionConfigs()).orElse(List.of()).stream()
-                .sorted(Comparator.comparing(config -> Optional.ofNullable(config.getDisplayOrder()).orElse(0)))
+                .sorted(Comparator.comparing(
+                        config -> Optional.ofNullable(config.getDisplayOrder()).orElse(0)))
                 .toList();
     }
 
     private List<EntryTestAttempt.QuestionItemSnapshot> pickCommonQuestions(EntryTest.EntryTestSectionConfig config) {
-        List<QuestionBank> questions = questionBankRepository.findRandomByCategoryName(
-                COMMON_CATEGORY, PageRequest.of(0, count(config)));
+        List<QuestionBank> questions =
+                questionBankRepository.findRandomByCategoryName(COMMON_CATEGORY, PageRequest.of(0, count(config)));
         ensureEnoughItems(questions.size(), count(config), EntryTest.SectionType.COMMON_QUIZ.name());
         return snapshotQuestionItems("COMMON", questions, scorePerItem(config));
     }
@@ -263,8 +263,8 @@ public class EntryTestServiceImpl implements EntryTestService {
     private List<EntryTestAttempt.QuestionItemSnapshot> pickSpecificQuestions(
             EntryTest.EntryTestSectionConfig config, TargetRole role, List<String> languages) {
         Set<String> categoryNames = buildSpecificCategoryNames(role, languages);
-        List<QuestionBank> questions = questionBankRepository.findRandomByCategoryNames(
-                categoryNames, PageRequest.of(0, count(config)));
+        List<QuestionBank> questions =
+                questionBankRepository.findRandomByCategoryNames(categoryNames, PageRequest.of(0, count(config)));
         ensureEnoughItems(questions.size(), count(config), EntryTest.SectionType.SPECIFIC_QUIZ.name());
         return snapshotQuestionItems("SPECIFIC", questions, scorePerItem(config));
     }
@@ -300,8 +300,7 @@ public class EntryTestServiceImpl implements EntryTestService {
     }
 
     private EntryTestAttempt.EntryTestAnswerSnapshot gradeCodingAnswer(
-            EntryTestSubmitRequest.Answer submitted,
-            EntryTestAttempt.CodingProblemItemSnapshot item) {
+            EntryTestSubmitRequest.Answer submitted, EntryTestAttempt.CodingProblemItemSnapshot item) {
         double score = scoreSubmittedCode(submitted.getAnswerJson(), item);
         return EntryTestAttempt.EntryTestAnswerSnapshot.builder()
                 .itemId(submitted.getItemId())
@@ -314,14 +313,12 @@ public class EntryTestServiceImpl implements EntryTestService {
                 .build();
     }
 
-    private double scoreSubmittedCode(
-            Map<String, Object> answerJson, EntryTestAttempt.CodingProblemItemSnapshot item) {
+    private double scoreSubmittedCode(Map<String, Object> answerJson, EntryTestAttempt.CodingProblemItemSnapshot item) {
         if (answerJson == null) {
             throw new CustomException("Coding answer is required", HttpStatus.BAD_REQUEST);
         }
         if (!answerJson.containsKey("language") || !answerJson.containsKey("sourceCode")) {
-            throw new CustomException(
-                    "Coding answer must contain language and sourceCode", HttpStatus.BAD_REQUEST);
+            throw new CustomException("Coding answer must contain language and sourceCode", HttpStatus.BAD_REQUEST);
         }
         return scoreByCompiler(answerJson, item);
     }
@@ -337,7 +334,8 @@ public class EntryTestServiceImpl implements EntryTestService {
         CompilerRequestDto compilerRequest = CompilerRequestDto.builder()
                 .language(resolveCompilerLanguage(String.valueOf(answerJson.get("language"))))
                 .sourceCode(sourceCode)
-                .timeLimitMs(Optional.ofNullable(problem.getExecutionTimeLimitMs()).orElse(1000))
+                .timeLimitMs(
+                        Optional.ofNullable(problem.getExecutionTimeLimitMs()).orElse(1000))
                 .memoryLimitMb(Optional.ofNullable(problem.getMemoryLimitMb()).orElse(256))
                 .paramTypes(problem.getParamTypes())
                 .returnType(problem.getReturnType())
@@ -369,10 +367,14 @@ public class EntryTestServiceImpl implements EntryTestService {
                     .questionText(question.getQuestionText())
                     .options(question.getOptions())
                     .correctAnswer(question.getCorrectAnswer())
-                    .categoryName(question.getQuestionCategory() != null
-                            ? question.getQuestionCategory().getName()
-                            : null)
-                    .difficulty(question.getQuestionLevel() != null ? question.getQuestionLevel().name() : null)
+                    .categoryName(
+                            question.getQuestionCategory() != null
+                                    ? question.getQuestionCategory().getName()
+                                    : null)
+                    .difficulty(
+                            question.getQuestionLevel() != null
+                                    ? question.getQuestionLevel().name()
+                                    : null)
                     .maxScore(maxScore)
                     .displayOrder(i + 1)
                     .build());
@@ -389,7 +391,10 @@ public class EntryTestServiceImpl implements EntryTestService {
                     .itemId("CODING-" + (i + 1))
                     .codingProblemId(problem.getId())
                     .title(problem.getTitle())
-                    .difficulty(problem.getDifficulty() != null ? problem.getDifficulty().name() : null)
+                    .difficulty(
+                            problem.getDifficulty() != null
+                                    ? problem.getDifficulty().name()
+                                    : null)
                     .problemStatement(problem.getProblemStatement())
                     .rulesAndConstraints(problem.getRulesAndConstraints())
                     .visibleExamples(problem.getVisibleExamples())
@@ -464,12 +469,14 @@ public class EntryTestServiceImpl implements EntryTestService {
     }
 
     private String normalizeCategory(String value) {
-        return value == null ? "" : value.trim()
-                .replace("#", "SHARP")
-                .replace(".", "")
-                .replace("-", "_")
-                .replace(" ", "_")
-                .toUpperCase(Locale.ROOT);
+        return value == null
+                ? ""
+                : value.trim()
+                        .replace("#", "SHARP")
+                        .replace(".", "")
+                        .replace("-", "_")
+                        .replace(" ", "_")
+                        .toUpperCase(Locale.ROOT);
     }
 
     private CompilerLanguage resolveCompilerLanguage(String language) {
@@ -498,8 +505,9 @@ public class EntryTestServiceImpl implements EntryTestService {
     }
 
     private void validateSourceCode(List<String> sourceCode) {
-        if (sourceCode == null || sourceCode.isEmpty() || sourceCode.stream().allMatch(
-                line -> line == null || line.isBlank())) {
+        if (sourceCode == null
+                || sourceCode.isEmpty()
+                || sourceCode.stream().allMatch(line -> line == null || line.isBlank())) {
             throw new CustomException("sourceCode cannot be empty", HttpStatus.BAD_REQUEST);
         }
     }

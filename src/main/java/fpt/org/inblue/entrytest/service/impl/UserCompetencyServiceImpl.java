@@ -1,8 +1,6 @@
 package fpt.org.inblue.entrytest.service.impl;
 
-import fpt.org.inblue.enums.TargetLevel;
 import fpt.org.inblue.entrytest.enums.TargetRole;
-import fpt.org.inblue.exception.CustomException;
 import fpt.org.inblue.entrytest.model.EntryTestAttempt;
 import fpt.org.inblue.entrytest.model.LevelScale;
 import fpt.org.inblue.entrytest.model.UserCareerPreference;
@@ -10,6 +8,8 @@ import fpt.org.inblue.entrytest.model.UserCompetency;
 import fpt.org.inblue.entrytest.repository.LevelScaleRepository;
 import fpt.org.inblue.entrytest.repository.UserCareerPreferenceRepository;
 import fpt.org.inblue.entrytest.repository.UserCompetencyRepository;
+import fpt.org.inblue.enums.TargetLevel;
+import fpt.org.inblue.exception.CustomException;
 import fpt.org.inblue.model.User;
 import java.time.LocalDateTime;
 import java.util.Comparator;
@@ -35,9 +35,7 @@ public class UserCompetencyServiceImpl implements fpt.org.inblue.entrytest.servi
                 .orElseThrow(() -> new CustomException("Career preference not found", HttpStatus.NOT_FOUND));
 
         TargetLevel level = resolveLevel(
-                preference.getTargetRole(),
-                value(attempt.getFinalScore()),
-                value(attempt.getSpecificCodingScore()));
+                preference.getTargetRole(), value(attempt.getFinalScore()), value(attempt.getSpecificCodingScore()));
         User user = attempt.getUser();
 
         UserCompetency competency = competencyRepository
@@ -88,7 +86,8 @@ public class UserCompetencyServiceImpl implements fpt.org.inblue.entrytest.servi
         UserCompetency competency = getCurrentCompetency(userId);
         double oldScore = value(competency.getCurrentScore());
         double newScore = oldScore * 0.7 + value(jdScore) * 0.3;
-        TargetLevel newLevel = resolveLevel(competency.getTargetRole(), newScore, value(competency.getSpecificCodingScore()));
+        TargetLevel newLevel =
+                resolveLevel(competency.getTargetRole(), newScore, value(competency.getSpecificCodingScore()));
 
         competency.setCurrentScore(round(newScore));
         competency.setCurrentLevel(newLevel);
@@ -103,8 +102,8 @@ public class UserCompetencyServiceImpl implements fpt.org.inblue.entrytest.servi
                 .filter(scale -> scale.getMinCodingScore() == null || codingScore >= scale.getMinCodingScore())
                 .max(Comparator.comparing(scale -> value(scale.getMinScore())))
                 .map(LevelScale::getLevel)
-                .orElseThrow(() -> new CustomException(
-                        "Level scale is not configured for this score", HttpStatus.BAD_REQUEST));
+                .orElseThrow(() ->
+                        new CustomException("Level scale is not configured for this score", HttpStatus.BAD_REQUEST));
     }
 
     private Map<String, Object> buildSnapshot(EntryTestAttempt attempt, TargetLevel level) {

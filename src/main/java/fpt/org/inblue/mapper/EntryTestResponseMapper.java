@@ -11,8 +11,7 @@ import org.mapstruct.Mapping;
 public interface EntryTestResponseMapper {
     EntryTestQuestionResponse toQuestionResponse(EntryTestAttempt.QuestionItemSnapshot question);
 
-    List<EntryTestQuestionResponse> toQuestionResponses(
-            List<EntryTestAttempt.QuestionItemSnapshot> questions);
+    List<EntryTestQuestionResponse> toQuestionResponses(List<EntryTestAttempt.QuestionItemSnapshot> questions);
 
     @Mapping(target = "userId", source = "user.id")
     EntryTestAttemptResponse toAttemptResponse(EntryTestAttempt attempt);

@@ -1,7 +1,7 @@
 package fpt.org.inblue.entrytest.dto.response;
 
-import fpt.org.inblue.enums.TargetLevel;
 import fpt.org.inblue.entrytest.enums.TargetRole;
+import fpt.org.inblue.enums.TargetLevel;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;

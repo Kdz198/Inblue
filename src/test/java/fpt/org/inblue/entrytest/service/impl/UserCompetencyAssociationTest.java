@@ -8,7 +8,6 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import fpt.org.inblue.enums.TargetLevel;
 import fpt.org.inblue.entrytest.dto.response.UserCompetencyResponse;
 import fpt.org.inblue.entrytest.enums.TargetRole;
 import fpt.org.inblue.entrytest.model.EntryTestAttempt;
@@ -18,6 +17,7 @@ import fpt.org.inblue.entrytest.model.UserCompetency;
 import fpt.org.inblue.entrytest.repository.LevelScaleRepository;
 import fpt.org.inblue.entrytest.repository.UserCareerPreferenceRepository;
 import fpt.org.inblue.entrytest.repository.UserCompetencyRepository;
+import fpt.org.inblue.enums.TargetLevel;
 import fpt.org.inblue.mapper.UserCompetencyMapper;
 import fpt.org.inblue.model.User;
 import java.util.List;
@@ -45,10 +45,7 @@ class UserCompetencyAssociationTest {
 
     @BeforeEach
     void setUp() {
-        service = new UserCompetencyServiceImpl(
-                competencyRepository,
-                preferenceRepository,
-                levelScaleRepository);
+        service = new UserCompetencyServiceImpl(competencyRepository, preferenceRepository, levelScaleRepository);
         mapper = Mappers.getMapper(UserCompetencyMapper.class);
     }
 
@@ -77,10 +74,8 @@ class UserCompetencyAssociationTest {
 
         when(preferenceRepository.findById(7)).thenReturn(Optional.of(preference));
         when(levelScaleRepository.findAllByIsActiveTrue()).thenReturn(List.of(levelScale));
-        when(competencyRepository.findByUser_IdAndCareerPreferenceId(7, 7))
-                .thenReturn(Optional.empty());
-        when(competencyRepository.save(any(UserCompetency.class)))
-                .thenAnswer(invocation -> invocation.getArgument(0));
+        when(competencyRepository.findByUser_IdAndCareerPreferenceId(7, 7)).thenReturn(Optional.empty());
+        when(competencyRepository.save(any(UserCompetency.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
         UserCompetency result = service.updateAfterEntryTest(attempt);
 

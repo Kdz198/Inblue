@@ -1,7 +1,7 @@
 package fpt.org.inblue.entrytest.dto.request;
 
-import fpt.org.inblue.enums.TargetLevel;
 import fpt.org.inblue.entrytest.enums.TargetRole;
+import fpt.org.inblue.enums.TargetLevel;
 import java.util.List;
 import lombok.AllArgsConstructor;
 import lombok.Builder;

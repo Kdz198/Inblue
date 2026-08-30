@@ -1,7 +1,7 @@
 package fpt.org.inblue.entrytest.model;
 
-import fpt.org.inblue.enums.TargetLevel;
 import fpt.org.inblue.entrytest.enums.TargetRole;
+import fpt.org.inblue.enums.TargetLevel;
 import jakarta.persistence.*;
 import java.time.LocalDateTime;
 import lombok.*;

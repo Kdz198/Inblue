@@ -54,11 +54,7 @@ public class User {
     @OneToMany(
             mappedBy = "user",
             fetch = FetchType.LAZY,
-            cascade = {
-                    CascadeType.PERSIST,
-                    CascadeType.MERGE
-            }
-    )
+            cascade = {CascadeType.PERSIST, CascadeType.MERGE})
     @Builder.Default
     @JsonIgnore
     @ToString.Exclude
@@ -82,5 +78,4 @@ public class User {
             attempt.setUser(null);
         }
     }
-
 }

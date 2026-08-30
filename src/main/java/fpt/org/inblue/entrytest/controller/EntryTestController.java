@@ -29,15 +29,14 @@ public class EntryTestController {
     @PostMapping("/{attemptId}/coding/run")
     public ResponseEntity<CompilerResponseDto> runCode(
             @PathVariable Long attemptId, @Valid @RequestBody EntryTestRunCodeRequest request) {
-        return ResponseEntity.ok(entryTestService.runCode(
-                securityUtils.getCurrentUserId(), attemptId, request));
+        return ResponseEntity.ok(entryTestService.runCode(securityUtils.getCurrentUserId(), attemptId, request));
     }
 
     @PostMapping("/{attemptId}/submit")
     public ResponseEntity<EntryTestAttemptResponse> submitEntryTest(
             @PathVariable Long attemptId, @RequestBody EntryTestSubmitRequest request) {
-        return ResponseEntity.ok(responseMapper.toAttemptResponse(entryTestService.submitEntryTest(
-                securityUtils.getCurrentUserId(), attemptId, request)));
+        return ResponseEntity.ok(responseMapper.toAttemptResponse(
+                entryTestService.submitEntryTest(securityUtils.getCurrentUserId(), attemptId, request)));
     }
 
     @GetMapping("/attempts/{attemptId}/result")

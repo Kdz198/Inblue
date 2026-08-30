@@ -1,10 +1,10 @@
 package fpt.org.inblue.entrytest.service.impl;
 
-import fpt.org.inblue.exception.CustomException;
-import fpt.org.inblue.entrytest.model.UserCareerPreference;
 import fpt.org.inblue.entrytest.dto.request.UpsertCareerPreferenceRequest;
+import fpt.org.inblue.entrytest.model.UserCareerPreference;
 import fpt.org.inblue.entrytest.repository.UserCareerPreferenceRepository;
 import fpt.org.inblue.entrytest.service.CareerPreferenceService;
+import fpt.org.inblue.exception.CustomException;
 import java.util.Objects;
 import java.util.Optional;
 import lombok.RequiredArgsConstructor;

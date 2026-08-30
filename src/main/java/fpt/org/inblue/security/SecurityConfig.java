@@ -75,10 +75,7 @@ public class SecurityConfig {
                         .permitAll()
                         .requestMatchers(HttpMethod.POST, "/api/users")
                         .permitAll()
-                        .requestMatchers(
-                                HttpMethod.GET,
-                                "/api/job-descriptions/toggle/**",
-                                "/api/companies/toggle/**")
+                        .requestMatchers(HttpMethod.GET, "/api/job-descriptions/toggle/**", "/api/companies/toggle/**")
                         .hasRole(ADMIN)
                         .requestMatchers(
                                 "/api/users/schedule",
@@ -91,9 +88,7 @@ public class SecurityConfig {
                                 "/api/sessions/check-webhook",
                                 "/api/sessions/reactivate-webhook")
                         .hasRole(ADMIN)
-                        .requestMatchers(
-                                "/api/mentors/schedule",
-                                "/api/mentors/*/change-password")
+                        .requestMatchers("/api/mentors/schedule", "/api/mentors/*/change-password")
                         .hasRole(MENTOR)
                         .requestMatchers(HttpMethod.GET, "/api/job-descriptions", "/api/job-descriptions/**")
                         .permitAll()
@@ -154,20 +149,11 @@ public class SecurityConfig {
                         .hasAnyRole(STAFF, ADMIN)
                         .requestMatchers(HttpMethod.GET, "/api/posts/feed", "/api/posts/*")
                         .hasAnyRole(USER, MENTOR, STAFF)
-                        .requestMatchers(
-                                HttpMethod.POST,
-                                "/api/posts",
-                                "/api/posts/likes",
-                                "/api/posts/comments")
+                        .requestMatchers(HttpMethod.POST, "/api/posts", "/api/posts/likes", "/api/posts/comments")
                         .hasAnyRole(USER, MENTOR, STAFF)
-                        .requestMatchers(
-                                HttpMethod.PUT,
-                                "/api/posts/comments/**")
+                        .requestMatchers(HttpMethod.PUT, "/api/posts/comments/**")
                         .hasAnyRole(USER, MENTOR, STAFF)
-                        .requestMatchers(
-                                HttpMethod.DELETE,
-                                "/api/posts/likes/**",
-                                "/api/posts/comments/**")
+                        .requestMatchers(HttpMethod.DELETE, "/api/posts/likes/**", "/api/posts/comments/**")
                         .hasAnyRole(USER, MENTOR, STAFF)
                         .requestMatchers("/api/messages/**", "/api/mentor-feedbacks/**")
                         .hasAnyRole(USER, MENTOR)
@@ -180,14 +166,9 @@ public class SecurityConfig {
                                 "/api/sessions/*",
                                 "/api/sessions/*/by-user")
                         .hasAnyRole(USER, MENTOR)
-                        .requestMatchers(
-                                HttpMethod.PUT,
-                                "/api/sessions")
+                        .requestMatchers(HttpMethod.PUT, "/api/sessions")
                         .hasAnyRole(USER, MENTOR)
-                        .requestMatchers(
-                                HttpMethod.POST,
-                                "/api/sessions/join-session",
-                                "/api/mentor-reviews")
+                        .requestMatchers(HttpMethod.POST, "/api/sessions/join-session", "/api/mentor-reviews")
                         .hasAnyRole(USER, MENTOR)
                         .requestMatchers(HttpMethod.PUT, "/api/mentor-reviews")
                         .hasAnyRole(USER, MENTOR)

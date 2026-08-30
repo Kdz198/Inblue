@@ -24,10 +24,7 @@ public class EntryTestAttempt {
     private Long id;
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
-    @JoinColumn(
-            name = "user_id",
-            nullable = false,
-            foreignKey = @ForeignKey(name = "fk_entry_test_attempt_user"))
+    @JoinColumn(name = "user_id", nullable = false, foreignKey = @ForeignKey(name = "fk_entry_test_attempt_user"))
     @JsonIgnore
     @ToString.Exclude
     @EqualsAndHashCode.Exclude
