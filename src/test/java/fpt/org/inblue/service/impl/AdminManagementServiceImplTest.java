@@ -1,28 +1,28 @@
-//package fpt.org.inblue.service.impl;
+// package fpt.org.inblue.service.impl;
 //
-//import static org.junit.jupiter.api.Assertions.assertEquals;
-//import static org.mockito.ArgumentMatchers.any;
-//import static org.mockito.Mockito.verify;
-//import static org.mockito.Mockito.when;
+// import static org.junit.jupiter.api.Assertions.assertEquals;
+// import static org.mockito.ArgumentMatchers.any;
+// import static org.mockito.Mockito.verify;
+// import static org.mockito.Mockito.when;
 //
-//import fpt.org.inblue.enums.ApplicationDetailStatus;
-//import fpt.org.inblue.enums.ApplicationStatus;
-//import fpt.org.inblue.enums.RoundType;
-//import fpt.org.inblue.model.dto.response.admin.AdminDashboardOverviewResponse;
-//import fpt.org.inblue.model.dto.response.admin.AdminDashboardOverviewResponse.JobTrendItem;
-//import fpt.org.inblue.repository.*;
-//import fpt.org.inblue.repository.projection.AdminAnalyticsProjection;
-//import fpt.org.inblue.service.MentorService;
-//import java.util.List;
-//import org.junit.jupiter.api.BeforeEach;
-//import org.junit.jupiter.api.Test;
-//import org.junit.jupiter.api.extension.ExtendWith;
-//import org.mockito.Mock;
-//import org.mockito.junit.jupiter.MockitoExtension;
-//import org.springframework.data.domain.Pageable;
+// import fpt.org.inblue.enums.ApplicationDetailStatus;
+// import fpt.org.inblue.enums.ApplicationStatus;
+// import fpt.org.inblue.enums.RoundType;
+// import fpt.org.inblue.model.dto.response.admin.AdminDashboardOverviewResponse;
+// import fpt.org.inblue.model.dto.response.admin.AdminDashboardOverviewResponse.JobTrendItem;
+// import fpt.org.inblue.repository.*;
+// import fpt.org.inblue.repository.projection.AdminAnalyticsProjection;
+// import fpt.org.inblue.service.MentorService;
+// import java.util.List;
+// import org.junit.jupiter.api.BeforeEach;
+// import org.junit.jupiter.api.Test;
+// import org.junit.jupiter.api.extension.ExtendWith;
+// import org.mockito.Mock;
+// import org.mockito.junit.jupiter.MockitoExtension;
+// import org.springframework.data.domain.Pageable;
 //
-//@ExtendWith(MockitoExtension.class)
-//class AdminManagementServiceImplTest {
+// @ExtendWith(MockitoExtension.class)
+// class AdminManagementServiceImplTest {
 //
 //    @Mock
 //    private JobDescriptionRepository jobDescriptionRepository;
@@ -144,4 +144,4 @@
 //        verify(applicationRepository).findApplicationTrendsByJob(any(Pageable.class));
 //        verify(candidateProfileRepository).findApplicationTrendsByPosition(any(Pageable.class));
 //    }
-//}
+// }

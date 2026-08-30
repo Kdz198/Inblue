@@ -1,35 +1,35 @@
-//package fpt.org.inblue.service.impl;
+// package fpt.org.inblue.service.impl;
 //
-//import static org.junit.jupiter.api.Assertions.assertEquals;
-//import static org.mockito.ArgumentMatchers.any;
-//import static org.mockito.ArgumentMatchers.eq;
-//import static org.mockito.Mockito.never;
-//import static org.mockito.Mockito.verify;
-//import static org.mockito.Mockito.when;
+// import static org.junit.jupiter.api.Assertions.assertEquals;
+// import static org.mockito.ArgumentMatchers.any;
+// import static org.mockito.ArgumentMatchers.eq;
+// import static org.mockito.Mockito.never;
+// import static org.mockito.Mockito.verify;
+// import static org.mockito.Mockito.when;
 //
-//import fpt.org.inblue.repository.ApplicationDetailRepository;
-//import fpt.org.inblue.repository.ApplicationRepository;
-//import fpt.org.inblue.repository.MentorFeedbackRepository;
-//import fpt.org.inblue.repository.MentorReviewRepository;
-//import fpt.org.inblue.repository.SessionRepository;
-//import fpt.org.inblue.service.PaymentService;
-//import java.util.Collections;
-//import java.util.List;
-//import java.util.Map;
-//import org.junit.jupiter.api.BeforeEach;
-//import org.junit.jupiter.api.Test;
-//import org.junit.jupiter.api.extension.ExtendWith;
-//import org.mockito.Mock;
-//import org.mockito.junit.jupiter.MockitoExtension;
-//import org.springframework.core.ParameterizedTypeReference;
-//import org.springframework.http.HttpEntity;
-//import org.springframework.http.HttpMethod;
-//import org.springframework.http.HttpStatus;
-//import org.springframework.http.ResponseEntity;
-//import org.springframework.web.client.RestTemplate;
+// import fpt.org.inblue.repository.ApplicationDetailRepository;
+// import fpt.org.inblue.repository.ApplicationRepository;
+// import fpt.org.inblue.repository.MentorFeedbackRepository;
+// import fpt.org.inblue.repository.MentorReviewRepository;
+// import fpt.org.inblue.repository.SessionRepository;
+// import fpt.org.inblue.service.PaymentService;
+// import java.util.Collections;
+// import java.util.List;
+// import java.util.Map;
+// import org.junit.jupiter.api.BeforeEach;
+// import org.junit.jupiter.api.Test;
+// import org.junit.jupiter.api.extension.ExtendWith;
+// import org.mockito.Mock;
+// import org.mockito.junit.jupiter.MockitoExtension;
+// import org.springframework.core.ParameterizedTypeReference;
+// import org.springframework.http.HttpEntity;
+// import org.springframework.http.HttpMethod;
+// import org.springframework.http.HttpStatus;
+// import org.springframework.http.ResponseEntity;
+// import org.springframework.web.client.RestTemplate;
 //
-//@ExtendWith(MockitoExtension.class)
-//class SessionServiceImplTest {
+// @ExtendWith(MockitoExtension.class)
+// class SessionServiceImplTest {
 //    private static final String DAILY_API_URL = "https://api.daily.co/v1";
 //    private static final String DAILY_WEBHOOKS_URL = DAILY_API_URL + "/webhooks";
 //    private static final String WEBHOOK_URL = "https://api.kdz.asia/api/sessions/webhooks/dailyco";
@@ -112,4 +112,4 @@
 //
 //        assertEquals("created", result);
 //    }
-//}
+// }

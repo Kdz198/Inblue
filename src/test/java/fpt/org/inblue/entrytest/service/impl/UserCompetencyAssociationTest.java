@@ -1,36 +1,36 @@
-//package fpt.org.inblue.entrytest.service.impl;
+// package fpt.org.inblue.entrytest.service.impl;
 //
-//import static org.junit.jupiter.api.Assertions.assertEquals;
-//import static org.junit.jupiter.api.Assertions.assertFalse;
-//import static org.junit.jupiter.api.Assertions.assertSame;
-//import static org.mockito.ArgumentMatchers.any;
-//import static org.mockito.Mockito.verify;
-//import static org.mockito.Mockito.when;
+// import static org.junit.jupiter.api.Assertions.assertEquals;
+// import static org.junit.jupiter.api.Assertions.assertFalse;
+// import static org.junit.jupiter.api.Assertions.assertSame;
+// import static org.mockito.ArgumentMatchers.any;
+// import static org.mockito.Mockito.verify;
+// import static org.mockito.Mockito.when;
 //
-//import com.fasterxml.jackson.databind.ObjectMapper;
-//import fpt.org.inblue.entrytest.dto.response.UserCompetencyResponse;
-//import fpt.org.inblue.entrytest.enums.TargetRole;
-//import fpt.org.inblue.entrytest.model.EntryTestAttempt;
-//import fpt.org.inblue.entrytest.model.LevelScale;
-//import fpt.org.inblue.entrytest.model.UserCareerPreference;
-//import fpt.org.inblue.entrytest.model.UserCompetency;
-//import fpt.org.inblue.entrytest.repository.LevelScaleRepository;
-//import fpt.org.inblue.entrytest.repository.UserCareerPreferenceRepository;
-//import fpt.org.inblue.entrytest.repository.UserCompetencyRepository;
-//import fpt.org.inblue.enums.TargetLevel;
-//import fpt.org.inblue.mapper.UserCompetencyMapper;
-//import fpt.org.inblue.model.User;
-//import java.util.List;
-//import java.util.Optional;
-//import org.junit.jupiter.api.BeforeEach;
-//import org.junit.jupiter.api.Test;
-//import org.junit.jupiter.api.extension.ExtendWith;
-//import org.mapstruct.factory.Mappers;
-//import org.mockito.Mock;
-//import org.mockito.junit.jupiter.MockitoExtension;
+// import com.fasterxml.jackson.databind.ObjectMapper;
+// import fpt.org.inblue.entrytest.dto.response.UserCompetencyResponse;
+// import fpt.org.inblue.entrytest.enums.TargetRole;
+// import fpt.org.inblue.entrytest.model.EntryTestAttempt;
+// import fpt.org.inblue.entrytest.model.LevelScale;
+// import fpt.org.inblue.entrytest.model.UserCareerPreference;
+// import fpt.org.inblue.entrytest.model.UserCompetency;
+// import fpt.org.inblue.entrytest.repository.LevelScaleRepository;
+// import fpt.org.inblue.entrytest.repository.UserCareerPreferenceRepository;
+// import fpt.org.inblue.entrytest.repository.UserCompetencyRepository;
+// import fpt.org.inblue.enums.TargetLevel;
+// import fpt.org.inblue.mapper.UserCompetencyMapper;
+// import fpt.org.inblue.model.User;
+// import java.util.List;
+// import java.util.Optional;
+// import org.junit.jupiter.api.BeforeEach;
+// import org.junit.jupiter.api.Test;
+// import org.junit.jupiter.api.extension.ExtendWith;
+// import org.mapstruct.factory.Mappers;
+// import org.mockito.Mock;
+// import org.mockito.junit.jupiter.MockitoExtension;
 //
-//@ExtendWith(MockitoExtension.class)
-//class UserCompetencyAssociationTest {
+// @ExtendWith(MockitoExtension.class)
+// class UserCompetencyAssociationTest {
 //    @Mock
 //    private UserCompetencyRepository competencyRepository;
 //
@@ -75,7 +75,8 @@
 //        when(preferenceRepository.findById(7)).thenReturn(Optional.of(preference));
 //        when(levelScaleRepository.findAllByIsActiveTrue()).thenReturn(List.of(levelScale));
 //        when(competencyRepository.findByUser_IdAndCareerPreferenceId(7, 7)).thenReturn(Optional.empty());
-//        when(competencyRepository.save(any(UserCompetency.class))).thenAnswer(invocation -> invocation.getArgument(0));
+//        when(competencyRepository.save(any(UserCompetency.class))).thenAnswer(invocation ->
+// invocation.getArgument(0));
 //
 //        UserCompetency result = service.updateAfterEntryTest(attempt);
 //
@@ -110,4 +111,4 @@
 //
 //        assertEquals(7, result.getUser().getId());
 //    }
-//}
+// }

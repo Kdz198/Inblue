@@ -1,39 +1,39 @@
-//package fpt.org.inblue.entrytest.service.impl;
+// package fpt.org.inblue.entrytest.service.impl;
 //
-//import static org.junit.jupiter.api.Assertions.assertEquals;
-//import static org.junit.jupiter.api.Assertions.assertFalse;
-//import static org.junit.jupiter.api.Assertions.assertNull;
-//import static org.junit.jupiter.api.Assertions.assertSame;
-//import static org.mockito.ArgumentMatchers.any;
-//import static org.mockito.Mockito.when;
+// import static org.junit.jupiter.api.Assertions.assertEquals;
+// import static org.junit.jupiter.api.Assertions.assertFalse;
+// import static org.junit.jupiter.api.Assertions.assertNull;
+// import static org.junit.jupiter.api.Assertions.assertSame;
+// import static org.mockito.ArgumentMatchers.any;
+// import static org.mockito.Mockito.when;
 //
-//import com.fasterxml.jackson.databind.ObjectMapper;
-//import fpt.org.inblue.entrytest.dto.response.EntryTestAttemptResponse;
-//import fpt.org.inblue.entrytest.dto.response.EntryTestStartResponse;
-//import fpt.org.inblue.entrytest.model.EntryTest;
-//import fpt.org.inblue.entrytest.model.EntryTestAttempt;
-//import fpt.org.inblue.entrytest.model.UserCareerPreference;
-//import fpt.org.inblue.entrytest.repository.EntryTestAttemptRepository;
-//import fpt.org.inblue.entrytest.repository.EntryTestRepository;
-//import fpt.org.inblue.entrytest.repository.UserCareerPreferenceRepository;
-//import fpt.org.inblue.entrytest.service.UserCompetencyService;
-//import fpt.org.inblue.mapper.EntryTestResponseMapper;
-//import fpt.org.inblue.model.User;
-//import fpt.org.inblue.repository.CodingProblemsRepository;
-//import fpt.org.inblue.repository.QuestionBankRepository;
-//import fpt.org.inblue.repository.UserRepository;
-//import fpt.org.inblue.service.ApiClient;
-//import java.util.List;
-//import java.util.Optional;
-//import org.junit.jupiter.api.BeforeEach;
-//import org.junit.jupiter.api.Test;
-//import org.junit.jupiter.api.extension.ExtendWith;
-//import org.mapstruct.factory.Mappers;
-//import org.mockito.Mock;
-//import org.mockito.junit.jupiter.MockitoExtension;
+// import com.fasterxml.jackson.databind.ObjectMapper;
+// import fpt.org.inblue.entrytest.dto.response.EntryTestAttemptResponse;
+// import fpt.org.inblue.entrytest.dto.response.EntryTestStartResponse;
+// import fpt.org.inblue.entrytest.model.EntryTest;
+// import fpt.org.inblue.entrytest.model.EntryTestAttempt;
+// import fpt.org.inblue.entrytest.model.UserCareerPreference;
+// import fpt.org.inblue.entrytest.repository.EntryTestAttemptRepository;
+// import fpt.org.inblue.entrytest.repository.EntryTestRepository;
+// import fpt.org.inblue.entrytest.repository.UserCareerPreferenceRepository;
+// import fpt.org.inblue.entrytest.service.UserCompetencyService;
+// import fpt.org.inblue.mapper.EntryTestResponseMapper;
+// import fpt.org.inblue.model.User;
+// import fpt.org.inblue.repository.CodingProblemsRepository;
+// import fpt.org.inblue.repository.QuestionBankRepository;
+// import fpt.org.inblue.repository.UserRepository;
+// import fpt.org.inblue.service.ApiClient;
+// import java.util.List;
+// import java.util.Optional;
+// import org.junit.jupiter.api.BeforeEach;
+// import org.junit.jupiter.api.Test;
+// import org.junit.jupiter.api.extension.ExtendWith;
+// import org.mapstruct.factory.Mappers;
+// import org.mockito.Mock;
+// import org.mockito.junit.jupiter.MockitoExtension;
 //
-//@ExtendWith(MockitoExtension.class)
-//class EntryTestAssociationTest {
+// @ExtendWith(MockitoExtension.class)
+// class EntryTestAssociationTest {
 //    @Mock
 //    private EntryTestRepository entryTestRepository;
 //
@@ -146,4 +146,4 @@
 //        assertEquals(0, user.getEntryTestAttempts().size());
 //        assertNull(attempt.getUser());
 //    }
-//}
+// }
