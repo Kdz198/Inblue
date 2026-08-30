@@ -1,10 +1,13 @@
 package fpt.org.inblue.model;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import fpt.org.inblue.entrytest.model.EntryTestAttempt;
 import fpt.org.inblue.enums.Role;
 import jakarta.persistence.*;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
 import lombok.*;
 
@@ -47,4 +50,37 @@ public class User {
     @OneToMany(mappedBy = "user")
     @JsonIgnoreProperties("user")
     private List<CandidateProfile> candidates;
+
+    @OneToMany(
+            mappedBy = "user",
+            fetch = FetchType.LAZY,
+            cascade = {
+                    CascadeType.PERSIST,
+                    CascadeType.MERGE
+            }
+    )
+    @Builder.Default
+    @JsonIgnore
+    @ToString.Exclude
+    @EqualsAndHashCode.Exclude
+    private List<EntryTestAttempt> entryTestAttempts = new ArrayList<>();
+
+    public void addEntryTestAttempt(EntryTestAttempt attempt) {
+        if (attempt == null) {
+            return;
+        }
+        entryTestAttempts.add(attempt);
+        attempt.setUser(this);
+    }
+
+    public void removeEntryTestAttempt(EntryTestAttempt attempt) {
+        if (attempt == null) {
+            return;
+        }
+        entryTestAttempts.remove(attempt);
+        if (attempt.getUser() == this) {
+            attempt.setUser(null);
+        }
+    }
+
 }
