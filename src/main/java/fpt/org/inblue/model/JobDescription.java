@@ -71,7 +71,6 @@ public class JobDescription {
     @Builder.Default
     private JobDescriptionStatus status = JobDescriptionStatus.DRAFT; // OPEN, CLOSED, DRAFT
 
-
     @JdbcTypeCode(SqlTypes.JSON)
     @Column(columnDefinition = "jsonb")
     private List<String> skillTags;
