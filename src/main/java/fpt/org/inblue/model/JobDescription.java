@@ -8,7 +8,9 @@ import java.util.ArrayList;
 import java.util.List;
 import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
+import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.annotations.UpdateTimestamp;
+import org.hibernate.type.SqlTypes;
 
 @Entity
 @Data
@@ -68,6 +70,11 @@ public class JobDescription {
     @Column(nullable = false, length = 50)
     @Builder.Default
     private JobDescriptionStatus status = JobDescriptionStatus.DRAFT; // OPEN, CLOSED, DRAFT
+
+
+    @JdbcTypeCode(SqlTypes.JSON)
+    @Column(columnDefinition = "jsonb")
+    private List<String> skillTags;
 
     @Builder.Default
     Boolean isDeleted = false;
