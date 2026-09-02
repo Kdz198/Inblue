@@ -156,7 +156,8 @@ public class TopDevCrawlerServiceImpl implements TopDevCrawlerService {
         // có thể không set company_id khi insert/merge riêng entity này.
         List<String> finalSkillTags = skillTags;
         company.getJobDescriptions().stream()
-                .filter(jd -> jobDescription.getId() != null && jobDescription.getId().equals(jd.getId()))
+                .filter(jd ->
+                        jobDescription.getId() != null && jobDescription.getId().equals(jd.getId()))
                 .findFirst()
                 .ifPresent(jd -> jd.setSkillTags(finalSkillTags));
         companyRepository.save(company);
