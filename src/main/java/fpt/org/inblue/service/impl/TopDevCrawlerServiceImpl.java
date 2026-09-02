@@ -127,11 +127,17 @@ public class TopDevCrawlerServiceImpl implements TopDevCrawlerService {
             }
         }
 
+        List<String> skillTags = extractSkillTagsFromAnythingLlm(request, company);
+        if (skillTags.isEmpty()) {
+            skillTags = parseTopDevSkillTags(request.getSkills());
+        }
+
         CreateJobDescriptionRequest jdRequest = CreateJobDescriptionRequest.builder()
                 .title(request.getTitle().trim())
                 .description(request.getDescription())
                 .requirements(request.getRequirements() == null ? request.getSkills() : request.getRequirements())
                 .benefits(request.getBenefits())
+                .skillTags(skillTags)
                 .level(request.getRequestedLevel())
                 .status(JobDescriptionStatus.DRAFT)
                 .companyId(company.getId())
@@ -145,21 +151,6 @@ public class TopDevCrawlerServiceImpl implements TopDevCrawlerService {
         } catch (java.io.IOException exception) {
             throw new CustomException("Không thể tạo Job Description từ dữ liệu TopDev", HttpStatus.BAD_GATEWAY);
         }
-
-        List<String> skillTags = extractSkillTagsFromAnythingLlm(request, company);
-        if (skillTags.isEmpty()) {
-            skillTags = parseTopDevSkillTags(request.getSkills());
-        }
-        jobDescription.setSkillTags(skillTags);
-        // JD được persist thông qua quan hệ Company -> jobDescriptions.
-        // Không save trực tiếp JobDescription vì mapping JoinColumn hiện tại
-        // có thể không set company_id khi insert/merge riêng entity này.
-        List<String> finalSkillTags = skillTags;
-        company.getJobDescriptions().stream()
-                .filter(jd -> jobDescription.getId() != null && jobDescription.getId().equals(jd.getId()))
-                .findFirst()
-                .ifPresent(jd -> jd.setSkillTags(finalSkillTags));
-        companyRepository.save(company);
 
         return TopDevJobImportResponse.builder()
                 .companyId(company.getId())

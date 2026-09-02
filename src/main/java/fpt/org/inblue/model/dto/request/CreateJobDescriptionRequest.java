@@ -3,6 +3,7 @@ package fpt.org.inblue.model.dto.request;
 import fpt.org.inblue.enums.JobDescriptionStatus;
 import fpt.org.inblue.enums.TargetLevel;
 import java.time.LocalDateTime;
+import java.util.List;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -17,6 +18,7 @@ public class CreateJobDescriptionRequest {
     private String description;
     private String requirements;
     private String benefits;
+    private List<String> skillTags;
     private String sourceJobId;
     private TargetLevel level; // Intern, Fresher, Junior, Middle, Senior
     private Double salaryMin;
