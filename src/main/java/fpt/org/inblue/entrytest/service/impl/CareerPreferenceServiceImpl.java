@@ -46,10 +46,10 @@ public class CareerPreferenceServiceImpl implements CareerPreferenceService {
 
         boolean changedMainDirection = existingPreference.isEmpty()
                 || !Objects.equals(preference.getTargetRole(), request.getTargetRole())
-                || !Objects.equals(preference.getLanguagesJson(), request.getLanguagesJson());
+                || !Objects.equals(preference.getSkills(), request.getLanguagesJson());
 
         preference.setTargetRole(request.getTargetRole());
-        preference.setLanguagesJson(request.getLanguagesJson());
+        preference.setSkills(request.getLanguagesJson());
         preference.setCareerGoal(request.getCareerGoal());
         preference.setTargetLevel(request.getTargetLevel());
         preference.setIsActive(true);

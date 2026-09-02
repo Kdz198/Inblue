@@ -44,6 +44,14 @@ public class ApplicationDetail {
     @Column(columnDefinition = "jsonb")
     private AiFeedback aiFeedback;
 
+    /**
+     * Feedback có cấu trúc theo evaluationPlan. Giữ song song với aiFeedback
+     * để không phá response contract cũ của frontend.
+     */
+    @JdbcTypeCode(SqlTypes.JSON)
+    @Column(columnDefinition = "jsonb")
+    private StructuredAiFeedback structuredAiFeedback;
+
     private Double hrScore;
 
     @Column(columnDefinition = "TEXT")
@@ -189,6 +197,34 @@ public class ApplicationDetail {
         private List<String> weaknesses; // Điểm cần cải thiện
         // Bỏ ngỏ một map để AI trả về các metrics linh hoạt (VD: "độ chuyên nghiệp": 8/10)
         private Map<String, Object> extraMetrics;
+    }
+
+    //Todo: Sau này sẽ replace AiFeedback bằng StructuredAiFeedback để có feedback có cấu trúc hơn, dễ hiển thị trên UI.
+    // Bây giờ tạm thời giữ cả 2 để ko làm hư contract trên FE, và chưa sửa anythingLLM response contract. Sau khi FE đã dùng StructuredAiFeedback thì sẽ bỏ AiFeedback đi.
+    @Data
+    @NoArgsConstructor
+    @AllArgsConstructor
+    @Builder
+    public static class StructuredAiFeedback {
+        private Double overallScore;
+        private List<MetricResult> metricResults;
+        private String overallFeedback;
+        private List<String> strengths;
+        private List<String> weaknesses;
+        private String improvementAdvice;
+
+        @Data
+        @NoArgsConstructor
+        @AllArgsConstructor
+        @Builder
+        public static class MetricResult {
+            private String code;
+            private Double score;
+            private Double weightedScore;
+            private Boolean passed;
+            private String evidence;
+            private String feedback;
+        }
     }
 
     public enum RoundResult {

@@ -126,6 +126,7 @@ public class ApplicationDetailServiceImpl implements ApplicationDetailService {
                     .submissionData(detail.getSubmissionData())
                     .aiScore(detail.getAiScore())
                     .aiFeedback(detail.getAiFeedback())
+                    .structuredAiFeedback(detail.getStructuredAiFeedback())
                     .hrScore(detail.getHrScore())
                     .hrNote(detail.getHrNote())
                     .finalResult(detail.getFinalResult())

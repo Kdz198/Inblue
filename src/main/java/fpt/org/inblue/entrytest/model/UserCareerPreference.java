@@ -25,7 +25,7 @@ public class UserCareerPreference {
 
     @JdbcTypeCode(SqlTypes.JSON)
     @Column(columnDefinition = "jsonb")
-    private List<String> languagesJson;
+    private List<String> skills;
 
     private String careerGoal;
 

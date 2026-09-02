@@ -323,6 +323,7 @@ public class AdminManagementServiceImpl implements AdminManagementService {
                     .status(detail.getStatus())
                     .aiScore(detail.getAiScore())
                     .aiFeedback(detail.getAiFeedback())
+                    .structuredAiFeedback(detail.getStructuredAiFeedback())
                     .hrScore(detail.getHrScore())
                     .hrNote(detail.getHrNote())
                     .finalScore(detail.getFinalScore())

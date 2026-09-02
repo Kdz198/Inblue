@@ -8,6 +8,7 @@ import fpt.org.inblue.entrytest.model.UserCompetency;
 import fpt.org.inblue.entrytest.repository.LevelScaleRepository;
 import fpt.org.inblue.entrytest.repository.UserCareerPreferenceRepository;
 import fpt.org.inblue.entrytest.repository.UserCompetencyRepository;
+import fpt.org.inblue.entrytest.service.UserCompetencyService;
 import fpt.org.inblue.enums.TargetLevel;
 import fpt.org.inblue.exception.CustomException;
 import fpt.org.inblue.model.User;
@@ -22,7 +23,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 @Service
 @RequiredArgsConstructor
-public class UserCompetencyServiceImpl implements fpt.org.inblue.entrytest.service.UserCompetencyService {
+public class UserCompetencyServiceImpl implements UserCompetencyService {
     private final UserCompetencyRepository competencyRepository;
     private final UserCareerPreferenceRepository preferenceRepository;
     private final LevelScaleRepository levelScaleRepository;
@@ -46,7 +47,7 @@ public class UserCompetencyServiceImpl implements fpt.org.inblue.entrytest.servi
                         .build());
 
         competency.setTargetRole(preference.getTargetRole());
-        competency.setLanguagesJson(preference.getLanguagesJson());
+        competency.setLanguagesJson(preference.getSkills());
         competency.setCurrentLevel(level);
         competency.setCurrentScore(value(attempt.getFinalScore()));
         competency.setCommonQuizScore(value(attempt.getCommonQuizScore()));

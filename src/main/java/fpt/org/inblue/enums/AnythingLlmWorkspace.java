@@ -14,6 +14,7 @@ public enum AnythingLlmWorkspace {
     CODE_REVIEW_GEN("code-review-generator"), // Workspace chuyên sinh đề Code Review
     QUIZ_GEN("quiz-generator"), // Workspace chuyên sinh đề Quiz
     PIPELINE_GEN("pipeline-generator"), // Workspace đề xuất pipeline và evaluation plan từ JD
+    SKILL_TAGS("skill-tag-extractor"), // Workspace trích xuất và chuẩn hóa skill từ JD
     ENHANCE_TRANSCRIPT("enhance-transcript"), // Workspace refine transcripts cho AI interview)
     SUMMARY_SCRIPT_GEN("summary-script-gen"), // Workspace chuyên sinh script tóm tắt
     SUMMARY_REPORT("summary-report-gen"); // Workspace chuyên sinh báo cáo tóm tắt

@@ -31,6 +31,7 @@ public class AdminRoundDetailDto {
     private ApplicationDetailStatus status;
     private Double aiScore;
     private ApplicationDetail.AiFeedback aiFeedback;
+    private ApplicationDetail.StructuredAiFeedback structuredAiFeedback;
 
     private Double hrScore;
     private String hrNote;

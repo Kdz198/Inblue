@@ -23,6 +23,7 @@ public class ReviewerApplicationDetailResponseDto {
     private ApplicationDetail.SubmissionData submissionData;
     private Double aiScore;
     private Object aiFeedback;
+    private ApplicationDetail.StructuredAiFeedback structuredAiFeedback;
     private Double hrScore;
     private String hrNote;
     private ApplicationDetail.RoundResult finalResult;

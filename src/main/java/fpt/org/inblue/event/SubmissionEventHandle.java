@@ -272,6 +272,7 @@ public class SubmissionEventHandle {
             applicationDetail.setSubmissionData(submissionData);
             applicationDetail.setAiScore(response.getScore());
             applicationDetail.setAiFeedback(parseRawMetrics(response.getExtraMetrics()));
+            applicationDetail.setStructuredAiFeedback(response.getStructuredAiFeedback());
             applicationDetailRepository.save(applicationDetail);
 
             submission.setStatus(EmailSubmission.EmailStatus.PROCESSED);
@@ -359,6 +360,7 @@ public class SubmissionEventHandle {
         applicationDetail.setSubmissionData(submissionData);
         applicationDetail.setAiScore(response.getScore());
         applicationDetail.setAiFeedback(parseRawMetrics(response.getExtraMetrics()));
+        applicationDetail.setStructuredAiFeedback(response.getStructuredAiFeedback());
         return saveApplicationDetail(applicationDetail);
     }
 
