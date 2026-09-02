@@ -151,7 +151,15 @@ public class TopDevCrawlerServiceImpl implements TopDevCrawlerService {
             skillTags = parseTopDevSkillTags(request.getSkills());
         }
         jobDescription.setSkillTags(skillTags);
-        jobDescriptionRepository.save(jobDescription);
+        // JD được persist thông qua quan hệ Company -> jobDescriptions.
+        // Không save trực tiếp JobDescription vì mapping JoinColumn hiện tại
+        // có thể không set company_id khi insert/merge riêng entity này.
+        List<String> finalSkillTags = skillTags;
+        company.getJobDescriptions().stream()
+                .filter(jd -> jobDescription.getId() != null && jobDescription.getId().equals(jd.getId()))
+                .findFirst()
+                .ifPresent(jd -> jd.setSkillTags(finalSkillTags));
+        companyRepository.save(company);
 
         return TopDevJobImportResponse.builder()
                 .companyId(company.getId())
