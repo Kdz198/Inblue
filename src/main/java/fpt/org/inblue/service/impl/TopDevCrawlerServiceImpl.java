@@ -1,22 +1,22 @@
 package fpt.org.inblue.service.impl;
 
+import fpt.org.inblue.enums.AnythingLlmWorkspace;
 import fpt.org.inblue.enums.JobDescriptionStatus;
 import fpt.org.inblue.enums.TargetLevel;
-import fpt.org.inblue.enums.AnythingLlmWorkspace;
 import fpt.org.inblue.exception.CustomException;
 import fpt.org.inblue.model.Company;
 import fpt.org.inblue.model.JobDescription;
 import fpt.org.inblue.model.dto.request.CreateCompanyRequest;
 import fpt.org.inblue.model.dto.request.CreateJobDescriptionRequest;
 import fpt.org.inblue.model.dto.request.TopDevJobImportRequest;
+import fpt.org.inblue.model.dto.response.SkillTagExtractionResponse;
 import fpt.org.inblue.model.dto.response.TopDevJobImportResponse;
 import fpt.org.inblue.model.dto.response.TopDevJobPreviewResponse;
-import fpt.org.inblue.model.dto.response.SkillTagExtractionResponse;
 import fpt.org.inblue.repository.CompanyRepository;
 import fpt.org.inblue.repository.JobDescriptionRepository;
+import fpt.org.inblue.service.ApiClient;
 import fpt.org.inblue.service.JobDescriptionService;
 import fpt.org.inblue.service.TopDevCrawlerService;
-import fpt.org.inblue.service.ApiClient;
 import java.io.IOException;
 import java.time.LocalDate;
 import java.util.ArrayList;
@@ -185,7 +185,8 @@ public class TopDevCrawlerServiceImpl implements TopDevCrawlerService {
             SkillTagExtractionResponse response = apiClient.sendChatToAnythingLlm(
                     AnythingLlmWorkspace.SKILL_TAGS,
                     payload,
-                    "topdev-skill-tags-" + (request.getSourceJobId() == null ? request.getTitle() : request.getSourceJobId()),
+                    "topdev-skill-tags-"
+                            + (request.getSourceJobId() == null ? request.getTitle() : request.getSourceJobId()),
                     true,
                     null,
                     SkillTagExtractionResponse.class);

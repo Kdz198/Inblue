@@ -199,8 +199,10 @@ public class ApplicationDetail {
         private Map<String, Object> extraMetrics;
     }
 
-    //Todo: Sau này sẽ replace AiFeedback bằng StructuredAiFeedback để có feedback có cấu trúc hơn, dễ hiển thị trên UI.
-    // Bây giờ tạm thời giữ cả 2 để ko làm hư contract trên FE, và chưa sửa anythingLLM response contract. Sau khi FE đã dùng StructuredAiFeedback thì sẽ bỏ AiFeedback đi.
+    // Todo: Sau này sẽ replace AiFeedback bằng StructuredAiFeedback để có feedback có cấu trúc hơn, dễ hiển thị trên
+    // UI.
+    // Bây giờ tạm thời giữ cả 2 để ko làm hư contract trên FE, và chưa sửa anythingLLM response contract. Sau khi FE đã
+    // dùng StructuredAiFeedback thì sẽ bỏ AiFeedback đi.
     @Data
     @NoArgsConstructor
     @AllArgsConstructor
