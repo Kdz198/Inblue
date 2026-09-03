@@ -47,8 +47,8 @@ public class CareerPreferenceServiceImpl implements CareerPreferenceService {
                 .needRetest(true)
                 .build());
 
-        boolean changedSkills = existingPreference.isEmpty()
-                || !Objects.equals(preference.getSkills(), request.getLanguagesJson());
+        boolean changedSkills =
+                existingPreference.isEmpty() || !Objects.equals(preference.getSkills(), request.getLanguagesJson());
 
         boolean changedMainDirection = existingPreference.isEmpty()
                 || !Objects.equals(preference.getTargetRole(), request.getTargetRole())

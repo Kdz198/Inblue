@@ -6,7 +6,6 @@ import fpt.org.inblue.model.dto.response.PineconeEmbeddingResponse;
 import fpt.org.inblue.service.EmbeddingService;
 import java.util.List;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
@@ -46,10 +45,12 @@ public class PineconeEmbeddingServiceImpl implements EmbeddingService {
                         .truncate("END")
                         .dimension(embeddingDimension)
                         .build())
-                .inputs(List.of(PineconeEmbeddingRequest.Input.builder().text(text).build()))
+                .inputs(List.of(
+                        PineconeEmbeddingRequest.Input.builder().text(text).build()))
                 .build();
 
-        PineconeEmbeddingResponse response = restClient.post()
+        PineconeEmbeddingResponse response = restClient
+                .post()
                 .header("Api-Key", apiKey)
                 .header("X-Pinecone-Api-Version", "2026-04")
                 .contentType(MediaType.APPLICATION_JSON)

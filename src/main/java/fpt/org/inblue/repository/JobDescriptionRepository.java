@@ -22,7 +22,8 @@ public interface JobDescriptionRepository
     Optional<JobDescription> findFirstBySourceJobIdAndIsDeletedFalse(String sourceJobId);
 
     @Query(
-            value = """
+            value =
+                    """
             SELECT *
             FROM jobdescription
             WHERE isdeleted = false
@@ -32,7 +33,5 @@ public interface JobDescriptionRepository
             LIMIT :limit
             """,
             nativeQuery = true)
-    List<JobDescription> findTopRecommendedJobs(
-            @Param("vectorStr") String vectorStr,
-            @Param("limit") int limit);
+    List<JobDescription> findTopRecommendedJobs(@Param("vectorStr") String vectorStr, @Param("limit") int limit);
 }

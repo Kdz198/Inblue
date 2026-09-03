@@ -23,6 +23,7 @@ public class PineconeEmbeddingRequest {
     public static class Parameters {
         @JsonProperty("input_type")
         private String inputType;
+
         private String truncate;
         private Integer dimension;
     }
