@@ -75,6 +75,7 @@ public class RoundServiceImpl implements RoundService {
             roundConfig.setMaxScore(item.getConfigData().getMaxScore());
             roundConfig.setAiSystemPrompt(item.getConfigData().getAiSystemPrompt());
             roundConfig.setEvaluationCriteria(item.getConfigData().getEvaluationCriteria());
+            roundConfig.setEvaluationPlan(item.getConfigData().getEvaluationPlan());
             List<Round.QuizQuestion> quizQuestions = new ArrayList<>();
             if (item.getConfigData().getQuizQuestions() != null) {
                 for (int i = 0; i < item.getConfigData().getQuizQuestions().size(); i++) {
@@ -179,6 +180,7 @@ public class RoundServiceImpl implements RoundService {
             roundConfig.setMaxScore(item.getConfigData().getMaxScore());
             roundConfig.setAiSystemPrompt(item.getConfigData().getAiSystemPrompt());
             roundConfig.setEvaluationCriteria(item.getConfigData().getEvaluationCriteria());
+            roundConfig.setEvaluationPlan(item.getConfigData().getEvaluationPlan());
 
             List<Round.QuizQuestion> quizQuestions = new ArrayList<>();
             if (item.getConfigData().getQuizQuestions() != null) {
@@ -298,25 +300,6 @@ public class RoundServiceImpl implements RoundService {
                         .benefits(jobDescription.getBenefits())
                         .level(jobDescription.getLevel())
                         .build())
-                .outputFormat(RoundPlanGenerationRequest.OutputFormat.builder()
-                        .rounds("List of round drafts")
-                        .roundFields(List.of("name", "roundOrder", "roundType", "passThreshold", "configData"))
-                        .configDataFields(List.of(
-                                "instruction",
-                                "submissionFormat",
-                                "timeLimitMinutes",
-                                "maxScore",
-                                "aiSystemPrompt",
-                                "evaluationCriteria",
-                                "evaluationPlan"))
-                        .evaluationMetricFields(List.of(
-                                "code", "name", "description", "weight", "maxScore", "required", "minimumScore"))
-                        .build())
-                .rules(List.of(
-                        "Return valid JSON only. Do not wrap the response in Markdown.",
-                        "Suggest rounds and metrics based on the JD, but do not treat them as approved configuration.",
-                        "Keep the sum of metric weights equal to 100 for each round.",
-                        "Pass thresholds are suggestions for Admin review."))
                 .build();
 
         RoundPlanGenerationResponse response = apiClient.sendChatToAnythingLlm(
