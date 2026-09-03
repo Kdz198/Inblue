@@ -5,6 +5,8 @@ import fpt.org.inblue.entrytest.model.UserCareerPreference;
 import fpt.org.inblue.entrytest.repository.UserCareerPreferenceRepository;
 import fpt.org.inblue.entrytest.service.CareerPreferenceService;
 import fpt.org.inblue.exception.CustomException;
+import fpt.org.inblue.service.EmbeddingService;
+import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 import lombok.RequiredArgsConstructor;
@@ -16,6 +18,7 @@ import org.springframework.transaction.annotation.Transactional;
 @RequiredArgsConstructor
 public class CareerPreferenceServiceImpl implements CareerPreferenceService {
     private final UserCareerPreferenceRepository preferenceRepository;
+    private final EmbeddingService embeddingService;
 
     @Override
     public UserCareerPreference getCurrentPreference(Integer userId) {
@@ -44,9 +47,12 @@ public class CareerPreferenceServiceImpl implements CareerPreferenceService {
                 .needRetest(true)
                 .build());
 
+        boolean changedSkills = existingPreference.isEmpty()
+                || !Objects.equals(preference.getSkills(), request.getLanguagesJson());
+
         boolean changedMainDirection = existingPreference.isEmpty()
                 || !Objects.equals(preference.getTargetRole(), request.getTargetRole())
-                || !Objects.equals(preference.getSkills(), request.getLanguagesJson());
+                || changedSkills;
 
         preference.setTargetRole(request.getTargetRole());
         preference.setSkills(request.getLanguagesJson());
@@ -55,6 +61,23 @@ public class CareerPreferenceServiceImpl implements CareerPreferenceService {
         preference.setIsActive(true);
         if (changedMainDirection) {
             preference.setNeedRetest(true);
+        }
+
+        if (changedSkills || preference.getSkillEmbedding() == null) {
+            List<String> languages = request.getLanguagesJson();
+            if (languages != null && !languages.isEmpty()) {
+                List<String> cleanLanguages = languages.stream()
+                        .filter(s -> s != null && !s.isBlank())
+                        .map(String::trim)
+                        .toList();
+                if (!cleanLanguages.isEmpty()) {
+                    preference.setSkillEmbedding(embeddingService.generateEmbedding(String.join(", ", cleanLanguages)));
+                } else {
+                    preference.setSkillEmbedding(null);
+                }
+            } else {
+                preference.setSkillEmbedding(null);
+            }
         }
 
         return preferenceRepository.save(preference);

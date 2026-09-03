@@ -75,6 +75,10 @@ public class JobDescription {
     @Column(columnDefinition = "jsonb")
     private List<String> skillTags;
 
+    @JdbcTypeCode(SqlTypes.VECTOR)
+    @Column(name = "skill_embedding", columnDefinition = "vector(384)")
+    private float[] skillEmbedding;
+
     @Builder.Default
     Boolean isDeleted = false;
 

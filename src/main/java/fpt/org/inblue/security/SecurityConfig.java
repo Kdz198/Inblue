@@ -59,6 +59,12 @@ public class SecurityConfig {
                 .authorizeHttpRequests(auth -> auth.requestMatchers(HttpMethod.OPTIONS, "/**")
                         .permitAll()
                         .requestMatchers(
+                                "/topdev-import.html",
+                                "/text-to-speech.html",
+                                "/voices/**",
+                                "/api/admin/job-import/topdev/**")
+                        .permitAll()
+                        .requestMatchers(
                                 "/api/auth/**",
                                 "/oauth2/**",
                                 "/login/oauth2/**",

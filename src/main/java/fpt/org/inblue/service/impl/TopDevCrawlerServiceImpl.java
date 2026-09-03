@@ -15,6 +15,7 @@ import fpt.org.inblue.model.dto.response.TopDevJobPreviewResponse;
 import fpt.org.inblue.repository.CompanyRepository;
 import fpt.org.inblue.repository.JobDescriptionRepository;
 import fpt.org.inblue.service.ApiClient;
+import fpt.org.inblue.service.EmbeddingService;
 import fpt.org.inblue.service.JobDescriptionService;
 import fpt.org.inblue.service.TopDevCrawlerService;
 import java.io.IOException;
@@ -51,18 +52,21 @@ public class TopDevCrawlerServiceImpl implements TopDevCrawlerService {
     private final JobDescriptionRepository jobDescriptionRepository;
     private final JobDescriptionService jobDescriptionService;
     private final ApiClient apiClient;
+    private final EmbeddingService embeddingService;
 
     public TopDevCrawlerServiceImpl(
             ObjectMapper objectMapper,
             CompanyRepository companyRepository,
             JobDescriptionRepository jobDescriptionRepository,
             JobDescriptionService jobDescriptionService,
-            ApiClient apiClient) {
+            ApiClient apiClient,
+            EmbeddingService embeddingService) {
         this.objectMapper = objectMapper;
         this.companyRepository = companyRepository;
         this.jobDescriptionRepository = jobDescriptionRepository;
         this.jobDescriptionService = jobDescriptionService;
         this.apiClient = apiClient;
+        this.embeddingService = embeddingService;
     }
 
     @Override
@@ -132,12 +136,18 @@ public class TopDevCrawlerServiceImpl implements TopDevCrawlerService {
             skillTags = parseTopDevSkillTags(request.getSkills());
         }
 
+        float[] skillEmbedding = null;
+        if (!skillTags.isEmpty()) {
+            skillEmbedding = embeddingService.generateEmbedding(String.join(", ", skillTags));
+        }
+
         CreateJobDescriptionRequest jdRequest = CreateJobDescriptionRequest.builder()
                 .title(request.getTitle().trim())
                 .description(request.getDescription())
                 .requirements(request.getRequirements() == null ? request.getSkills() : request.getRequirements())
                 .benefits(request.getBenefits())
                 .skillTags(skillTags)
+                .skillEmbedding(skillEmbedding)
                 .level(request.getRequestedLevel())
                 .status(JobDescriptionStatus.DRAFT)
                 .companyId(company.getId())

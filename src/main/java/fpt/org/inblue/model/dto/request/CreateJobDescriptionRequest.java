@@ -28,4 +28,5 @@ public class CreateJobDescriptionRequest {
     private LocalDateTime deadlineAt;
     private Long companyId;
     private Long price;
+    private float[] skillEmbedding;
 }

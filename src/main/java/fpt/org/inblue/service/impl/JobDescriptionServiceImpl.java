@@ -74,7 +74,7 @@ public class JobDescriptionServiceImpl implements JobDescriptionService {
         jobDescription.setCompanyLogo(company.getLogoUrl());
         jobDescription.setCompanyName(company.getName());
         company.getJobDescriptions().add(jobDescription);
-        companyRepository.save(company);
+        companyRepository.saveAndFlush(company);
         return jobDescription;
     }
 
