@@ -59,7 +59,7 @@ public class EntryTestServiceImpl implements EntryTestService {
                 .orElseThrow(() -> new CustomException("User not found", HttpStatus.NOT_FOUND));
 
         EntryTest entryTest = getOrCreateActiveEntryTest();
-        List<String> languages = normalizeLanguages(preference.getLanguagesJson());
+        List<String> languages = normalizeLanguages(preference.getSkills());
 
         List<EntryTestAttempt.QuestionItemSnapshot> commonItems = new ArrayList<>();
         List<EntryTestAttempt.QuestionItemSnapshot> specificItems = new ArrayList<>();
@@ -79,7 +79,7 @@ public class EntryTestServiceImpl implements EntryTestService {
                 .user(user)
                 .careerPreferenceId(preference.getUserId())
                 .entryTestId(entryTest.getId())
-                .selectedLanguagesJson(preference.getLanguagesJson())
+                .selectedLanguagesJson(preference.getSkills())
                 .commonQuizItemsJson(commonItems)
                 .specificQuizItemsJson(specificItems)
                 .specificCodingItemsJson(codingItems)

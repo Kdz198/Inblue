@@ -25,7 +25,11 @@ public class UserCareerPreference {
 
     @JdbcTypeCode(SqlTypes.JSON)
     @Column(columnDefinition = "jsonb")
-    private List<String> languagesJson;
+    private List<String> skills;
+
+    @JdbcTypeCode(SqlTypes.VECTOR)
+    @Column(name = "skill_embedding", columnDefinition = "vector(384)")
+    private float[] skillEmbedding;
 
     private String careerGoal;
 

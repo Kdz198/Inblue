@@ -1,5 +1,6 @@
 package fpt.org.inblue.service.impl;
 
+import fpt.org.inblue.enums.AnythingLlmWorkspace;
 import fpt.org.inblue.enums.JobDescriptionStatus;
 import fpt.org.inblue.enums.TargetLevel;
 import fpt.org.inblue.exception.CustomException;
@@ -8,10 +9,13 @@ import fpt.org.inblue.model.JobDescription;
 import fpt.org.inblue.model.dto.request.CreateCompanyRequest;
 import fpt.org.inblue.model.dto.request.CreateJobDescriptionRequest;
 import fpt.org.inblue.model.dto.request.TopDevJobImportRequest;
+import fpt.org.inblue.model.dto.response.SkillTagExtractionResponse;
 import fpt.org.inblue.model.dto.response.TopDevJobImportResponse;
 import fpt.org.inblue.model.dto.response.TopDevJobPreviewResponse;
 import fpt.org.inblue.repository.CompanyRepository;
 import fpt.org.inblue.repository.JobDescriptionRepository;
+import fpt.org.inblue.service.ApiClient;
+import fpt.org.inblue.service.EmbeddingService;
 import fpt.org.inblue.service.JobDescriptionService;
 import fpt.org.inblue.service.TopDevCrawlerService;
 import java.io.IOException;
@@ -47,16 +51,22 @@ public class TopDevCrawlerServiceImpl implements TopDevCrawlerService {
     private final CompanyRepository companyRepository;
     private final JobDescriptionRepository jobDescriptionRepository;
     private final JobDescriptionService jobDescriptionService;
+    private final ApiClient apiClient;
+    private final EmbeddingService embeddingService;
 
     public TopDevCrawlerServiceImpl(
             ObjectMapper objectMapper,
             CompanyRepository companyRepository,
             JobDescriptionRepository jobDescriptionRepository,
-            JobDescriptionService jobDescriptionService) {
+            JobDescriptionService jobDescriptionService,
+            ApiClient apiClient,
+            EmbeddingService embeddingService) {
         this.objectMapper = objectMapper;
         this.companyRepository = companyRepository;
         this.jobDescriptionRepository = jobDescriptionRepository;
         this.jobDescriptionService = jobDescriptionService;
+        this.apiClient = apiClient;
+        this.embeddingService = embeddingService;
     }
 
     @Override
@@ -121,11 +131,23 @@ public class TopDevCrawlerServiceImpl implements TopDevCrawlerService {
             }
         }
 
+        List<String> skillTags = extractSkillTagsFromAnythingLlm(request, company);
+        if (skillTags.isEmpty()) {
+            skillTags = parseTopDevSkillTags(request.getSkills());
+        }
+
+        float[] skillEmbedding = null;
+        if (!skillTags.isEmpty()) {
+            skillEmbedding = embeddingService.generateEmbedding(String.join(", ", skillTags));
+        }
+
         CreateJobDescriptionRequest jdRequest = CreateJobDescriptionRequest.builder()
                 .title(request.getTitle().trim())
                 .description(request.getDescription())
                 .requirements(request.getRequirements() == null ? request.getSkills() : request.getRequirements())
                 .benefits(request.getBenefits())
+                .skillTags(skillTags)
+                .skillEmbedding(skillEmbedding)
                 .level(request.getRequestedLevel())
                 .status(JobDescriptionStatus.DRAFT)
                 .companyId(company.getId())
@@ -148,6 +170,63 @@ public class TopDevCrawlerServiceImpl implements TopDevCrawlerService {
                 .jobDescriptionStatus(jobDescription.getStatus())
                 .companyCreated(companyCreated)
                 .build();
+    }
+
+    private List<String> extractSkillTagsFromAnythingLlm(TopDevJobImportRequest request, Company company) {
+        TopDevJobPreviewResponse payload = TopDevJobPreviewResponse.builder()
+                .source(request.getSource())
+                .sourceUrl(request.getSourceUrl())
+                .sourceJobId(request.getSourceJobId())
+                .title(request.getTitle())
+                .companyName(company.getName())
+                .companyLogo(company.getLogoUrl())
+                .companyDescription(company.getDescription())
+                .location(request.getLocation())
+                .description(request.getDescription())
+                .requirements(request.getRequirements())
+                .benefits(request.getBenefits())
+                .skills(request.getSkills())
+                .salary(request.getSalary())
+                .requestedLevel(request.getRequestedLevel())
+                .build();
+
+        try {
+            SkillTagExtractionResponse response = apiClient.sendChatToAnythingLlm(
+                    AnythingLlmWorkspace.SKILL_TAGS,
+                    payload,
+                    "topdev-skill-tags-"
+                            + (request.getSourceJobId() == null ? request.getTitle() : request.getSourceJobId()),
+                    true,
+                    null,
+                    SkillTagExtractionResponse.class);
+            return normalizeSkillTags(response == null ? null : response.getSkillTags());
+        } catch (Exception exception) {
+            return List.of();
+        }
+    }
+
+    private List<String> parseTopDevSkillTags(String skills) {
+        if (skills == null || skills.isBlank()) {
+            return List.of();
+        }
+        return normalizeSkillTags(List.of(skills.split("[,;|\\n]")));
+    }
+
+    private List<String> normalizeSkillTags(List<String> skillTags) {
+        if (skillTags == null || skillTags.isEmpty()) {
+            return List.of();
+        }
+        Set<String> normalized = new LinkedHashSet<>();
+        for (String skill : skillTags) {
+            if (skill == null) {
+                continue;
+            }
+            String value = skill.trim().replaceAll("\\s+", " ");
+            if (!value.isBlank()) {
+                normalized.add(value);
+            }
+        }
+        return new ArrayList<>(normalized);
     }
 
     @Override

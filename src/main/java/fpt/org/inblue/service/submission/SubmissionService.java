@@ -123,6 +123,7 @@ public class SubmissionService {
         detail.setAiScore(response.getScore());
         detail.setFinalScore(response.getScore());
         detail.setAiFeedback(SubmissionEventHandle.parseRawMetrics(response.getExtraMetrics()));
+        detail.setStructuredAiFeedback(response.getStructuredAiFeedback());
         detail.setStatus(ApplicationDetailStatus.AI_EVALUATED);
 
         ApplicationDetail.RoundResult roundResult = response.getScore() >= currentRound.getPassThreshold()
