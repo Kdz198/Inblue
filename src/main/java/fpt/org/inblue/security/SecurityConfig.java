@@ -1,6 +1,7 @@
 package fpt.org.inblue.security;
 
 import java.util.Arrays;
+
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
@@ -79,8 +80,8 @@ public class SecurityConfig {
                                 "/api/payments/webhook",
                                 "/api/sessions/webhooks/dailyco")
                         .permitAll()
-                        //                        .requestMatchers(HttpMethod.POST, "/api/users")
-                        //                        .permitAll()
+                        .requestMatchers(HttpMethod.POST, "/api/users")
+                        .permitAll()
                         //                        .requestMatchers(HttpMethod.GET, "/api/job-descriptions/toggle/**",
                         // "/api/companies/toggle/**")
                         //                        .hasRole(ADMIN)
