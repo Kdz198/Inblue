@@ -1,7 +1,6 @@
 package fpt.org.inblue.security;
 
 import java.util.Arrays;
-
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
