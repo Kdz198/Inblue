@@ -3,14 +3,18 @@ package fpt.org.inblue.controller;
 import fpt.org.inblue.enums.ApplicationDetailStatus;
 import fpt.org.inblue.enums.JobDescriptionStatus;
 import fpt.org.inblue.model.dto.request.AdminJdApplicationsResponseDto;
+import fpt.org.inblue.model.dto.request.UpdateJobRecommendationThresholdRequest;
+import fpt.org.inblue.model.dto.response.JobRecommendationThresholdResponse;
 import fpt.org.inblue.model.dto.response.admin.AdminApplicationDetailResponse;
 import fpt.org.inblue.model.dto.response.admin.AdminApplicationFullDetailResponseDto;
 import fpt.org.inblue.model.dto.response.admin.AdminApplicationsPerUserResponse;
 import fpt.org.inblue.model.dto.response.admin.AdminDashboardOverviewResponse;
 import fpt.org.inblue.model.dto.response.admin.AdminOpenJdResponseDto;
 import fpt.org.inblue.service.AdminManagementService;
+import fpt.org.inblue.service.JobRecommendationService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.Valid;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -26,6 +30,14 @@ import org.springframework.web.bind.annotation.*;
 public class AdminManagementController {
 
     private final AdminManagementService adminManagementService;
+    private final JobRecommendationService jobRecommendationService;
+
+    @PutMapping("/job-recommendation-threshold")
+    @Operation(summary = "Update the global job recommendation match threshold")
+    public ResponseEntity<JobRecommendationThresholdResponse> updateJobRecommendationThreshold(
+            @Valid @RequestBody UpdateJobRecommendationThresholdRequest request) {
+        return ResponseEntity.ok(jobRecommendationService.updateThreshold(request.getThresholdPercent()));
+    }
 
     @GetMapping("/open-jds")
     @Operation(

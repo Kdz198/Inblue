@@ -5,7 +5,10 @@ import fpt.org.inblue.enums.TargetLevel;
 import fpt.org.inblue.model.JobDescription;
 import fpt.org.inblue.model.dto.request.CreateJobDescriptionRequest;
 import fpt.org.inblue.model.dto.request.UpdateJobDescriptionRequest;
+import fpt.org.inblue.model.dto.response.JobRecommendationResponse;
 import fpt.org.inblue.service.JobDescriptionService;
+import fpt.org.inblue.service.JobRecommendationService;
+import fpt.org.inblue.utils.SecurityUtils;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import java.io.IOException;
@@ -23,12 +26,21 @@ import org.springframework.web.bind.annotation.*;
 public class JobDescriptionController {
 
     private final JobDescriptionService jobDescriptionService;
+    private final JobRecommendationService jobRecommendationService;
+    private final SecurityUtils securityUtils;
 
     @GetMapping
     @Operation(summary = "Get all job descriptions")
     public ResponseEntity<List<JobDescription>> getAll() {
         List<JobDescription> jobDescriptions = jobDescriptionService.getAll();
         return ResponseEntity.ok(jobDescriptions);
+    }
+
+    @GetMapping("/recommendations")
+    @Operation(summary = "Get recommended job descriptions for the current user")
+    public ResponseEntity<List<JobRecommendationResponse>> getRecommendations() {
+        int userId = securityUtils.getCurrentUserId();
+        return ResponseEntity.ok(jobRecommendationService.getRecommendations(userId));
     }
 
     @GetMapping("/{id}")

@@ -1,4 +1,4 @@
-package fpt.org.inblue.model.dto.request;
+package fpt.org.inblue.model.dto.response;
 
 import fpt.org.inblue.enums.JobDescriptionStatus;
 import fpt.org.inblue.enums.TargetLevel;
@@ -13,18 +13,21 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class UpdateJobDescriptionRequest {
+public class JobRecommendationResponse {
     private Long id;
     private String title;
     private String description;
     private String requirements;
     private String benefits;
-    private List<String> skillTags;
-    private TargetLevel level; // Intern, Fresher, Junior, Middle, Senior
+    private TargetLevel level;
     private Double salaryMin;
     private Double salaryMax;
-    private String currency;
-    private JobDescriptionStatus status; // OPEN, CLOSED, DRAFT
-    private LocalDateTime deadlineAt;
     private Long price;
+    private String currency;
+    private List<String> skillTags;
+    private String companyName;
+    private String companyLogo;
+    private JobDescriptionStatus status;
+    private LocalDateTime deadlineAt;
+    private Integer appliedCount;
 }

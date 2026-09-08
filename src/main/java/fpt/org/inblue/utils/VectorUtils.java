@@ -38,6 +38,7 @@ public final class VectorUtils {
         double clamped = Math.max(0.0, Math.min(1.0, similarity));
 
         // Quy đổi ra phần trăm và làm tròn 2 chữ số thập phân (ví dụ: 0.8565 -> 85.65)
+        System.out.println("Cosine similarity (clamped): " + Math.round(clamped * 10000.0) / 100.0);
         return Math.round(clamped * 10000.0) / 100.0;
     }
 }
