@@ -12,6 +12,7 @@ import fpt.org.inblue.model.dto.request.UpdateJobDescriptionRequest;
 import fpt.org.inblue.repository.CompanyRepository;
 import fpt.org.inblue.repository.JobDescriptionRepository;
 import fpt.org.inblue.repository.JobDescriptionSpecification;
+import fpt.org.inblue.service.EmbeddingService;
 import fpt.org.inblue.service.JobDescriptionService;
 import java.io.IOException;
 import java.time.LocalDateTime;
@@ -31,6 +32,8 @@ public class JobDescriptionServiceImpl implements JobDescriptionService {
     private final CompanyRepository companyRepository;
 
     private final JobDescriptionMapper jobDescriptionMapper;
+
+    private final EmbeddingService embeddingService;
 
     @Override
     public JobDescription getById(Long id) {
@@ -87,6 +90,11 @@ public class JobDescriptionServiceImpl implements JobDescriptionService {
                 .orElseThrow(() -> new CustomException(
                         "Không tìm thấy mô tả công việc với ID: " + jobDescriptionId, HttpStatus.NOT_FOUND));
         jobDescriptionMapper.updateJobDescriptionFromRequest(request, jobDescription);
+
+        if (!jobDescription.getSkillTags().isEmpty()) {
+            jobDescription.setSkillEmbedding(embeddingService.generateEmbedding(String.join(", ", jobDescription.getSkillTags())));
+        }
+
         JobDescription updated = jobDescriptionRepository.save(jobDescription);
         return updated;
     }

@@ -7,6 +7,7 @@ import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import lombok.*;
+import net.minidev.json.annotate.JsonIgnore;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.annotations.UpdateTimestamp;
@@ -77,6 +78,7 @@ public class JobDescription {
 
     @JdbcTypeCode(SqlTypes.VECTOR)
     @Column(name = "skill_embedding", columnDefinition = "vector(384)")
+    @JsonIgnore
     private float[] skillEmbedding;
 
     @Builder.Default
