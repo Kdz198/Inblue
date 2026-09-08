@@ -92,7 +92,8 @@ public class JobDescriptionServiceImpl implements JobDescriptionService {
         jobDescriptionMapper.updateJobDescriptionFromRequest(request, jobDescription);
 
         if (!jobDescription.getSkillTags().isEmpty()) {
-            jobDescription.setSkillEmbedding(embeddingService.generateEmbedding(String.join(", ", jobDescription.getSkillTags())));
+            jobDescription.setSkillEmbedding(
+                    embeddingService.generateEmbedding(String.join(", ", jobDescription.getSkillTags())));
         }
 
         JobDescription updated = jobDescriptionRepository.save(jobDescription);
