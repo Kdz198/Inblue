@@ -106,8 +106,7 @@ public class JobRecommendationServiceImpl implements JobRecommendationService {
                 threshold);
 
         List<JobRecommendationResponse> recommendations = scoredJobs.stream()
-                .filter(scoredJob ->
-                        scoredJob.eligible() && scoredJob.levelMatched() && scoredJob.score() >= threshold)
+                .filter(scoredJob -> scoredJob.eligible() && scoredJob.levelMatched() && scoredJob.score() >= threshold)
                 .sorted(Comparator.comparingDouble(ScoredJob::score).reversed())
                 .map(this::toResponse)
                 .toList();
