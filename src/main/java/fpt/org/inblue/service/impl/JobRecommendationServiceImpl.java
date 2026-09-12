@@ -1,8 +1,11 @@
 package fpt.org.inblue.service.impl;
 
 import fpt.org.inblue.entrytest.model.UserCareerPreference;
+import fpt.org.inblue.entrytest.model.UserCompetency;
 import fpt.org.inblue.entrytest.repository.UserCareerPreferenceRepository;
+import fpt.org.inblue.entrytest.repository.UserCompetencyRepository;
 import fpt.org.inblue.enums.JobDescriptionStatus;
+import fpt.org.inblue.enums.TargetLevel;
 import fpt.org.inblue.mapper.JobRecommendationMapper;
 import fpt.org.inblue.model.JobDescription;
 import fpt.org.inblue.model.JobRecommendationConfig;
@@ -15,6 +18,7 @@ import fpt.org.inblue.utils.VectorUtils;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
@@ -27,7 +31,10 @@ import org.springframework.transaction.annotation.Transactional;
 @RequiredArgsConstructor
 @Slf4j
 public class JobRecommendationServiceImpl implements JobRecommendationService {
+    private static final int RECOMMENDATION_CANDIDATE_LIMIT = 100;
+
     private final UserCareerPreferenceRepository preferenceRepository;
+    private final UserCompetencyRepository competencyRepository;
     private final JobDescriptionRepository jobDescriptionRepository;
     private final JobRecommendationConfigRepository configRepository;
     private final JobRecommendationMapper jobRecommendationMapper;
@@ -48,24 +55,33 @@ public class JobRecommendationServiceImpl implements JobRecommendationService {
             return List.of();
         }
 
-        float[] preferenceVector = preferenceOptional.get().getSkillEmbedding();
+        UserCareerPreference preference = preferenceOptional.get();
+        float[] preferenceVector = preference.getSkillEmbedding();
         if (preferenceVector == null || preferenceVector.length == 0) {
             log.info("Job recommendations unavailable: userId={} has no skill embedding", userId);
             return List.of();
         }
+        Optional<UserCompetency> competencyOptional =
+                competencyRepository.findByUser_IdAndCareerPreferenceId(userId, preference.getUserId());
+        if (competencyOptional.isEmpty() || competencyOptional.get().getCurrentLevel() == null) {
+            log.info(
+                    "Job recommendations unavailable: userId={} hasCurrentCompetency={}, hasCurrentLevel={}",
+                    userId,
+                    competencyOptional.isPresent(),
+                    competencyOptional.map(UserCompetency::getCurrentLevel).isPresent());
+            return List.of();
+        }
+        TargetLevel currentLevel = competencyOptional.get().getCurrentLevel();
 
         double threshold = configOptional.get().getMatchThresholdPercent().doubleValue();
         LocalDateTime now = LocalDateTime.now();
-        List<JobDescription> openJobs =
-                jobDescriptionRepository.findByStatusAndIsDeletedFalse(JobDescriptionStatus.OPEN);
+        String vectorStr = Arrays.toString(preferenceVector);
+        List<JobDescription> candidateJobs =
+                jobDescriptionRepository.findTopRecommendedJobs(vectorStr, RECOMMENDATION_CANDIDATE_LIMIT);
         List<ScoredJob> scoredJobs = new ArrayList<>();
-        int eligibleJobCount = 0;
 
-        for (JobDescription job : openJobs) {
+        for (JobDescription job : candidateJobs) {
             boolean eligible = isEligible(job, now);
-            if (eligible) {
-                eligibleJobCount++;
-            }
 
             float[] jobVector = job.getSkillEmbedding();
             if (jobVector == null || jobVector.length == 0) {
@@ -79,22 +95,21 @@ public class JobRecommendationServiceImpl implements JobRecommendationService {
                 continue;
             }
 
-            scoredJobs.add(scoreJob(userId, job, preferenceVector, threshold, eligible));
+            scoredJobs.add(scoreJob(userId, job, preferenceVector, currentLevel, threshold, eligible));
         }
 
         log.info(
-                "Job recommendation candidates: userId={}, openJobCount={}, eligibleJobCount={}, scoredJobCount={}, thresholdPercent={}",
+                "Job recommendation candidates: userId={}, candidateJobCount={}, scoredJobCount={}, thresholdPercent={}",
                 userId,
-                openJobs.size(),
-                eligibleJobCount,
+                candidateJobs.size(),
                 scoredJobs.size(),
                 threshold);
 
         List<JobRecommendationResponse> recommendations = scoredJobs.stream()
-                .filter(scoredJob -> scoredJob.eligible() && scoredJob.score() >= threshold)
+                .filter(scoredJob ->
+                        scoredJob.eligible() && scoredJob.levelMatched() && scoredJob.score() >= threshold)
                 .sorted(Comparator.comparingDouble(ScoredJob::score).reversed())
-                .map(ScoredJob::job)
-                .map(jobRecommendationMapper::toResponse)
+                .map(this::toResponse)
                 .toList();
         log.info(
                 "Job recommendations completed: userId={}, matchedJobCount={}", userId, recommendations.size());
@@ -123,7 +138,12 @@ public class JobRecommendationServiceImpl implements JobRecommendationService {
     }
 
     private ScoredJob scoreJob(
-            int userId, JobDescription job, float[] preferenceVector, double threshold, boolean eligible) {
+            int userId,
+            JobDescription job,
+            float[] preferenceVector,
+            TargetLevel currentLevel,
+            double threshold,
+            boolean eligible) {
         log.info(
                 "Bắt đầu so sánh vector: userId={}, jdId={}, userVectorDimension={}, jdVectorDimension={}",
                 userId,
@@ -131,19 +151,27 @@ public class JobRecommendationServiceImpl implements JobRecommendationService {
                 preferenceVector.length,
                 job.getSkillEmbedding().length);
         double score = VectorUtils.cosineSimilarity(preferenceVector, job.getSkillEmbedding());
+        boolean levelMatched = job.getLevel() != null && job.getLevel() == currentLevel;
         log.info(
-                "Kết quả matching JD: userId={}, jdId={}, title='{}', status={}, deadlineAt={}, matchPercent={}%, thresholdPercent={}%, eligible={}, matched={}",
+                "Kết quả matching JD: userId={}, jdId={}, title='{}', currentLevel={}, jobLevel={}, levelMatched={}, status={}, deadlineAt={}, matchPercent={}%, thresholdPercent={}%, eligible={}, matched={}",
                 userId,
                 job.getId(),
                 job.getTitle(),
+                currentLevel,
+                job.getLevel(),
+                levelMatched,
                 job.getStatus(),
                 job.getDeadlineAt(),
                 score,
                 threshold,
                 eligible,
-                eligible && score >= threshold);
-        return new ScoredJob(job, score, eligible);
+                eligible && levelMatched && score >= threshold);
+        return new ScoredJob(job, score, eligible, levelMatched);
     }
 
-    private record ScoredJob(JobDescription job, double score, boolean eligible) {}
+    private JobRecommendationResponse toResponse(ScoredJob scoredJob) {
+        return jobRecommendationMapper.toResponse(scoredJob.job(), scoredJob.score());
+    }
+
+    private record ScoredJob(JobDescription job, double score, boolean eligible, boolean levelMatched) {}
 }

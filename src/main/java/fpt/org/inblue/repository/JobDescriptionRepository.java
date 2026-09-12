@@ -27,7 +27,7 @@ public interface JobDescriptionRepository
             SELECT *
             FROM jobdescription
             WHERE isdeleted = false
-              AND status != 'CLOSED'
+              AND status = 'OPEN'
               AND skill_embedding IS NOT NULL
             ORDER BY skill_embedding <=> cast(:vectorStr as vector) ASC
             LIMIT :limit

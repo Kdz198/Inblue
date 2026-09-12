@@ -30,4 +30,5 @@ public class JobRecommendationResponse {
     private JobDescriptionStatus status;
     private LocalDateTime deadlineAt;
     private Integer appliedCount;
+    private Double matchPercent;
 }
