@@ -26,4 +26,20 @@ public class EmailSubmissionController {
     public ResponseEntity<List<EmailSubmission>> getAll() {
         return ResponseEntity.ok(emailSubmissionService.getAll());
     }
+
+    // Kích hoạt thủ công logic của scheduleFetchEmails (BackgroundScheduler) để test/debug
+    // mà không cần chờ tick @Scheduled(fixedDelay = 60000).
+    @PostMapping("/fetch")
+    public ResponseEntity<String> triggerFetchEmails() {
+        emailSubmissionService.fetchEmails();
+        return ResponseEntity.ok("Đã chạy fetchEmails() (quét mail IMAP mới về, tạo các bản ghi PENDING).");
+    }
+
+    // Kích hoạt thủ công logic của scheduleProcessPendingEmails (BackgroundScheduler) để test/debug
+    // mà không cần chờ tick @Scheduled(fixedDelay = 60000).
+    @PostMapping("/process-pending")
+    public ResponseEntity<String> triggerProcessPendingEmails() {
+        emailSubmissionService.processEmailSchedule();
+        return ResponseEntity.ok("Đã chạy processEmailSchedule() (xử lý các email đang PENDING).");
+    }
 }
