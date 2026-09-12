@@ -111,8 +111,7 @@ public class JobRecommendationServiceImpl implements JobRecommendationService {
                 .sorted(Comparator.comparingDouble(ScoredJob::score).reversed())
                 .map(this::toResponse)
                 .toList();
-        log.info(
-                "Job recommendations completed: userId={}, matchedJobCount={}", userId, recommendations.size());
+        log.info("Job recommendations completed: userId={}, matchedJobCount={}", userId, recommendations.size());
         return recommendations;
     }
 
