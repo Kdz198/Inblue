@@ -215,6 +215,20 @@ public class SubmissionEventHandle {
             return;
         }
         EmailSubmission submission = submissions.get(0);
+        gradeEmailSubmission(dto, submission);
+    }
+
+    /**
+     * Chấm điểm email ĐỒNG BỘ - được gọi trực tiếp từ SubmissionService#submitEmailRoundSync
+     * (nhánh scheduler quét email PENDING), KHÔNG qua @Async/event, để exception được ném
+     * ngược về cho caller (scheduler) bắt và xử lý ngay, thay vì im lặng biến mất trên 1 thread khác.
+     */
+    public void processEmailSubmissionSync(ProcessDto dto, EmailSubmission submission) {
+        gradeEmailSubmission(dto, submission);
+    }
+
+    private void gradeEmailSubmission(ProcessDto dto, EmailSubmission submission) {
+        Long applicationId = dto.getApplication().getId();
 
         try {
             Round round = dto.getRound();

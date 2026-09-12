@@ -161,13 +161,20 @@ public class EmailSubmissionServiceImpl implements EmailSubmissionService {
                     SubmitRequest submitRequest = SubmitRequest.builder()
                             .applicationId(email.getApplicationId())
                             .build();
-                    submissionService.submitRound(submitRequest);
+                    // Xử lý chấm điểm ĐỒNG BỘ ngay tại đây (không còn publish event rồi để @Async
+                    // xử lý ngầm nữa) để exception (nếu có) được bắt trực tiếp ở catch bên dưới
+                    // và email không bao giờ bị "kẹt" mãi ở trạng thái PROCESSED.
                     log.info(
-                            "Successfully triggered email evaluation for email submission ID: {}, applicationId: {}",
+                            "Start grading email submission ID: {}, applicationId: {}",
+                            email.getId(),
+                            email.getApplicationId());
+                    submissionService.submitEmailRoundSync(submitRequest, email);
+                    log.info(
+                            "Successfully processed email submission ID: {}, applicationId: {}",
                             email.getId(),
                             email.getApplicationId());
                 } catch (Exception e) {
-                    log.error("Error triggering email evaluation for email submission ID: " + email.getId(), e);
+                    log.error("Error processing email submission ID: " + email.getId(), e);
                     email.setStatus(EmailSubmission.EmailStatus.ERROR);
                     email.setErrorMessage(e.getMessage());
                     emailSubmissionRepository.save(email);

@@ -7,6 +7,7 @@ import fpt.org.inblue.event.SubmissionEventHandle;
 import fpt.org.inblue.exception.CustomException;
 import fpt.org.inblue.model.Application;
 import fpt.org.inblue.model.ApplicationDetail;
+import fpt.org.inblue.model.EmailSubmission;
 import fpt.org.inblue.model.Round;
 import fpt.org.inblue.model.dto.ProcessDto;
 import fpt.org.inblue.model.dto.request.CodeReviewEvaluationRequest;
@@ -34,6 +35,7 @@ public class SubmissionService {
     private final JobDescriptionService jobDescriptionService;
     private final ApiClient apiClient;
     private final ApplicationDetailRepository applicationDetailRepository;
+    private final SubmissionEventHandle submissionEventHandle;
 
     @Transactional
     public ApplicationDetail evaluateCodeReview(CodeReviewSubmitRequest request) {
@@ -158,5 +160,22 @@ public class SubmissionService {
         //            applicationService.moveToNextRound(currentApplication);
         //        }
         return submissionResult;
+    }
+
+    /**
+     * Chấm điểm email ĐỒNG BỘ (không qua @Async/event như EmailRoundProcessor).
+     * Dùng bởi scheduler khi quét các email PENDING (EmailSubmissionServiceImpl#processEmailSchedule)
+     * để lỗi được ném thẳng về cho scheduler bắt và set trạng thái ERROR kịp thời,
+     * thay vì bị "mất tích" trong một thread @Async tách rời.
+     */
+    public void submitEmailRoundSync(SubmitRequest detail, EmailSubmission emailSubmission) {
+        Application currentApplication = applicationService.getApplicationById(detail.getApplicationId());
+        Round currentRound = jobDescriptionService.getRoundByOrder(
+                currentApplication.getJdId(), currentApplication.getCurrentRoundOrder());
+        ProcessDto processDto = new ProcessDto();
+        processDto.setApplication(currentApplication);
+        processDto.setRound(currentRound);
+        processDto.setRoundType(currentRound.getRoundType());
+        submissionEventHandle.processEmailSubmissionSync(processDto, emailSubmission);
     }
 }
