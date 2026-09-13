@@ -60,7 +60,8 @@ public class MentorServiceImpl implements MentorService {
         } else {
             mentor.setPricePerMinute(0);
         }
-        float[] skillEmbedding = embeddingService.generateEmbedding(data.getProfileData().getSkills().toString());
+        float[] skillEmbedding = embeddingService.generateEmbedding(
+                data.getProfileData().getSkills().toString());
         mentor.setSkillEmbedding(skillEmbedding);
         mentor = mentorRepository.save(mentor);
         processAndPublishFileEvent(mentor, avatar, "avatar");
@@ -74,7 +75,8 @@ public class MentorServiceImpl implements MentorService {
                 .orElseThrow(() -> new CustomException("Mentor Not Found", HttpStatus.NOT_FOUND));
 
         mentorMapper.updateMentorFromDto(data, mentor);
-        float[] skillEmbedding = embeddingService.generateEmbedding(data.getProfileData().getSkills().toString());
+        float[] skillEmbedding = embeddingService.generateEmbedding(
+                data.getProfileData().getSkills().toString());
         mentor.setSkillEmbedding(skillEmbedding);
         mentor = mentorRepository.save(mentor);
         if (avatar != null && !avatar.isEmpty()) {
@@ -166,7 +168,8 @@ public class MentorServiceImpl implements MentorService {
         return mentors.stream()
                 .map(mentor -> {
                     MentorResponse response = toMentorResponse(mentor);
-                    response.setMatchPercent(VectorUtils.cosineSimilarity(jdSkillEmbedding, mentor.getSkillEmbedding()));
+                    response.setMatchPercent(
+                            VectorUtils.cosineSimilarity(jdSkillEmbedding, mentor.getSkillEmbedding()));
                     return response;
                 })
                 .toList();
