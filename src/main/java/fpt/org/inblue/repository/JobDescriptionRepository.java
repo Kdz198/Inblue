@@ -34,4 +34,10 @@ public interface JobDescriptionRepository
             """,
             nativeQuery = true)
     List<JobDescription> findTopRecommendedJobs(@Param("vectorStr") String vectorStr, @Param("limit") int limit);
+
+    // Fetch JobDescription kèm luôn collection "rounds" (LEFT JOIN FETCH) trong CÙNG 1 query,
+    // để tránh org.hibernate.LazyInitializationException khi caller không có session/transaction
+    // đang mở (vd: gọi getRoundByOrder từ một method không @Transactional).
+    @Query("SELECT jd FROM JobDescription jd LEFT JOIN FETCH jd.rounds WHERE jd.id = :id")
+    Optional<JobDescription> findByIdWithRounds(@Param("id") Long id);
 }

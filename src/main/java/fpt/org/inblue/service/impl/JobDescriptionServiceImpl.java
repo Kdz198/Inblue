@@ -150,8 +150,10 @@ public class JobDescriptionServiceImpl implements JobDescriptionService {
 
     @Override
     public Round getRoundByOrder(Long jdId, int order) {
+        // Dùng findByIdWithRounds (LEFT JOIN FETCH rounds) thay vì findById() + lazy-load .getRounds()
+        // để không phụ thuộc việc caller có đang mở transaction/Hibernate session hay không.
         JobDescription jobDescription = jobDescriptionRepository
-                .findById(jdId)
+                .findByIdWithRounds(jdId)
                 .orElseThrow(() ->
                         new CustomException("Không tìm thấy mô tả công việc với ID: " + jdId, HttpStatus.NOT_FOUND));
 

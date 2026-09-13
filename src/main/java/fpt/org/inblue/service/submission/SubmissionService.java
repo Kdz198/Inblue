@@ -167,7 +167,10 @@ public class SubmissionService {
      * Dùng bởi scheduler khi quét các email PENDING (EmailSubmissionServiceImpl#processEmailSchedule)
      * để lỗi được ném thẳng về cho scheduler bắt và set trạng thái ERROR kịp thời,
      * thay vì bị "mất tích" trong một thread @Async tách rời.
+     * @Transactional để đảm bảo có Hibernate session xuyên suốt (tránh LazyInitializationException
+     * khi load Round/JobDescription), đồng nhất với submitRound()/evaluateCodeReview() hiện có.
      */
+    @Transactional
     public void submitEmailRoundSync(SubmitRequest detail, EmailSubmission emailSubmission) {
         Application currentApplication = applicationService.getApplicationById(detail.getApplicationId());
         Round currentRound = jobDescriptionService.getRoundByOrder(
