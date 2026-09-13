@@ -2,7 +2,9 @@ package fpt.org.inblue.mapper;
 
 import fpt.org.inblue.model.Mentor;
 import fpt.org.inblue.model.dto.request.CreateMentorRequest;
+import fpt.org.inblue.model.dto.request.MentorProfileRequest;
 import fpt.org.inblue.model.dto.request.UpdateMentorRequest;
+import fpt.org.inblue.model.dto.response.MentorProfileResponse;
 import fpt.org.inblue.model.dto.response.MentorResponse;
 import java.util.List;
 import org.mapstruct.Mapper;
@@ -20,6 +22,10 @@ public interface MentorMapper {
     Mentor toEntity(CreateMentorRequest request);
 
     void updateMentorFromDto(UpdateMentorRequest request, @MappingTarget Mentor mentor);
+
+    Mentor.MentorProfile toMentorProfile(MentorProfileRequest request);
+
+    MentorProfileResponse toMentorProfileResponse(Mentor.MentorProfile profile);
 
     default double roundTwoDecimals(double value) {
         if (Double.isNaN(value) || Double.isInfinite(value)) {

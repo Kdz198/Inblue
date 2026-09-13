@@ -129,4 +129,14 @@ public class MentorController {
         mentorService.toggleActive(id);
         return ResponseEntity.noContent().build();
     }
+
+    @GetMapping("/recommended")
+    @Operation(
+            summary = "Lấy danh sách Mentor được gợi ý dựa trên JD",
+            description =
+                    "Truyền jdId của Job Description, hệ thống sẽ lấy skill embedding của JD đó và trả về tối đa 20 Mentor có skill embedding gần nhất.")
+    public ResponseEntity<List<MentorResponse>> getTopRecommendedMentors(
+            @Parameter(description = "ID của Job Description dùng để gợi ý Mentor") @RequestParam Long jdId) {
+        return ResponseEntity.ok(mentorService.getTopRecommendedMentors(jdId));
+    }
 }

@@ -212,7 +212,7 @@ public class SecurityConfig {
                         // "/api/admin/job-recommendation-threshold")
                         //                        .hasRole(ADMIN)
                         .anyRequest()
-                        .authenticated())
+                        .permitAll())
                 .oauth2Login(
                         oauth2 -> oauth2.userInfoEndpoint(userInfo -> userInfo.userService(customOAuth2UserService))
                                 .successHandler(oauth2Handler))

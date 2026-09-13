@@ -20,4 +20,6 @@ public interface MentorService {
     List<MentorResponse> getAllMentors();
 
     void toggleActive(int id);
+
+    List<MentorResponse> getTopRecommendedMentors(Long jdId);
 }

@@ -23,4 +23,6 @@ public class MentorResponse {
     LocalDateTime createdAt;
     LocalDateTime updatedAt;
     List<MentorFeedbackResponse> feedbacks;
+    MentorProfileResponse profileData;
+    Double matchPercent;
 }

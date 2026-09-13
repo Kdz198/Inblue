@@ -19,4 +19,5 @@ public class CreateMentorRequest {
     private String linkedInUrl;
     private String currentCompany;
     private Integer pricePerMinute;
+    private MentorProfileRequest profileData;
 }

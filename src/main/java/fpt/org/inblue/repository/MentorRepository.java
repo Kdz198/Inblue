@@ -2,6 +2,7 @@ package fpt.org.inblue.repository;
 
 import fpt.org.inblue.model.Mentor;
 import jakarta.transaction.Transactional;
+import java.util.List;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
@@ -19,4 +20,17 @@ public interface MentorRepository extends JpaRepository<Mentor, Integer> {
     Mentor findByEmail(String email);
 
     int countMentorByIsActive(boolean active);
+
+    @Query(
+            value =
+                    """
+            SELECT *
+            FROM mentor
+            WHERE isactive = true
+              AND skill_embedding IS NOT NULL
+            ORDER BY skill_embedding <=> cast(:vectorStr as vector) ASC
+            LIMIT :limit
+            """,
+            nativeQuery = true)
+    List<Mentor> findTopRecommendedMentor(@Param("vectorStr") String vectorStr, @Param("limit") int limit);
 }

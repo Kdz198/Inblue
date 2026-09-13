@@ -8,8 +8,15 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import net.minidev.json.annotate.JsonIgnore;
 import org.hibernate.annotations.CreationTimestamp;
+import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.annotations.UpdateTimestamp;
+import org.hibernate.type.SqlTypes;
+
+import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
 
 @Entity
 @NoArgsConstructor
@@ -43,9 +50,33 @@ public class Mentor {
 
     private Integer pricePerMinute;
 
+    @JdbcTypeCode(SqlTypes.JSON)
+    @Column(columnDefinition = "jsonb")
+    private MentorProfile profileData;
+
+    @JdbcTypeCode(SqlTypes.VECTOR)
+    @Column(name = "skill_embedding", columnDefinition = "vector(384)")
+    @JsonIgnore
+    private float[] skillEmbedding;
+
     @CreationTimestamp
     LocalDateTime createdAt;
 
     @UpdateTimestamp
     LocalDateTime updatedAt;
+
+    @Data
+    @NoArgsConstructor
+    @AllArgsConstructor
+    @Builder
+    public static class MentorProfile {
+        private List<String> certifications = new ArrayList<>();
+        // Kỹ năng cụ thể — khác với "expertise" (tagline ngắn ở entity chính)
+        private List<String> skills = new ArrayList<>();
+        private String jobTitle;
+        private String education;
+        private List<String> languages = new ArrayList<>();
+        private String portfolioUrl;
+        private String githubUrl;
+    }
 }

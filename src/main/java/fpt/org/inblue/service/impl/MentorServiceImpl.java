@@ -4,6 +4,7 @@ import fpt.org.inblue.cloudinary.CloudinaryService;
 import fpt.org.inblue.enums.Role;
 import fpt.org.inblue.exception.CustomException;
 import fpt.org.inblue.mapper.MentorMapper;
+import fpt.org.inblue.model.JobDescription;
 import fpt.org.inblue.model.Mentor;
 import fpt.org.inblue.model.MentorFeedback;
 import fpt.org.inblue.model.dto.MentorEventDto;
@@ -12,12 +13,16 @@ import fpt.org.inblue.model.dto.request.CreateMentorRequest;
 import fpt.org.inblue.model.dto.request.UpdateMentorRequest;
 import fpt.org.inblue.model.dto.response.MentorFeedbackResponse;
 import fpt.org.inblue.model.dto.response.MentorResponse;
+import fpt.org.inblue.repository.JobDescriptionRepository;
 import fpt.org.inblue.repository.MentorFeedbackRepository;
 import fpt.org.inblue.repository.MentorRepository;
+import fpt.org.inblue.service.EmbeddingService;
 import fpt.org.inblue.service.MentorService;
 import fpt.org.inblue.utils.FileUtil;
+import fpt.org.inblue.utils.VectorUtils;
 import java.io.File;
 import java.io.IOException;
+import java.util.Arrays;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.ApplicationEventPublisher;
@@ -29,12 +34,16 @@ import org.springframework.web.multipart.MultipartFile;
 @Service
 @RequiredArgsConstructor
 public class MentorServiceImpl implements MentorService {
+    private static final int TOP_RECOMMENDED_MENTOR_LIMIT = 20;
+
     private final MentorRepository mentorRepository;
     private final MentorFeedbackRepository mentorFeedbackRepository;
+    private final JobDescriptionRepository jobDescriptionRepository;
     private final ApplicationEventPublisher applicationEventPublisher;
     private final CloudinaryService cloudinaryService;
     private final MentorMapper mentorMapper;
     private final PasswordEncoder passwordEncoder;
+    private final EmbeddingService embeddingService;
 
     @Override
     public MentorResponse createMentor(CreateMentorRequest data, MultipartFile avatar) throws IOException {
@@ -51,6 +60,8 @@ public class MentorServiceImpl implements MentorService {
         } else {
             mentor.setPricePerMinute(0);
         }
+        float[] skillEmbedding = embeddingService.generateEmbedding(data.getProfileData().getSkills().toString());
+        mentor.setSkillEmbedding(skillEmbedding);
         mentor = mentorRepository.save(mentor);
         processAndPublishFileEvent(mentor, avatar, "avatar");
         return toMentorResponse(mentor);
@@ -63,7 +74,8 @@ public class MentorServiceImpl implements MentorService {
                 .orElseThrow(() -> new CustomException("Mentor Not Found", HttpStatus.NOT_FOUND));
 
         mentorMapper.updateMentorFromDto(data, mentor);
-
+        float[] skillEmbedding = embeddingService.generateEmbedding(data.getProfileData().getSkills().toString());
+        mentor.setSkillEmbedding(skillEmbedding);
         mentor = mentorRepository.save(mentor);
         if (avatar != null && !avatar.isEmpty()) {
             if (mentor.getPublic_id() != null) {
@@ -136,6 +148,28 @@ public class MentorServiceImpl implements MentorService {
         } else {
             throw new CustomException("Mentor not found", HttpStatus.NOT_FOUND);
         }
+    }
+
+    @Override
+    public List<MentorResponse> getTopRecommendedMentors(Long jdId) {
+        JobDescription jobDescription = jobDescriptionRepository
+                .findById(jdId)
+                .orElseThrow(() -> new CustomException("Job Description Not Found", HttpStatus.NOT_FOUND));
+
+        float[] jdSkillEmbedding = jobDescription.getSkillEmbedding();
+        if (jdSkillEmbedding == null || jdSkillEmbedding.length == 0) {
+            return List.of();
+        }
+        String vectorStr = Arrays.toString(jdSkillEmbedding);
+        List<Mentor> mentors = mentorRepository.findTopRecommendedMentor(vectorStr, TOP_RECOMMENDED_MENTOR_LIMIT);
+
+        return mentors.stream()
+                .map(mentor -> {
+                    MentorResponse response = toMentorResponse(mentor);
+                    response.setMatchPercent(VectorUtils.cosineSimilarity(jdSkillEmbedding, mentor.getSkillEmbedding()));
+                    return response;
+                })
+                .toList();
     }
 
     private MentorResponse toMentorResponse(Mentor mentor) {
