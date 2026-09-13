@@ -205,10 +205,12 @@ public class SecurityConfig {
                         //                                "/api/sessions/create-for-round",
                         //                                "/api/sessions/make-payment")
                         //                        .hasRole(USER)
-//                        .requestMatchers(HttpMethod.GET, "/api/job-descriptions/recommendations")
-//                        .hasRole(USER)
-//                        .requestMatchers(HttpMethod.PUT, "/api/admin/job-recommendation-threshold")
-//                        .hasRole(ADMIN)
+                        //                        .requestMatchers(HttpMethod.GET,
+                        // "/api/job-descriptions/recommendations")
+                        //                        .hasRole(USER)
+                        //                        .requestMatchers(HttpMethod.PUT,
+                        // "/api/admin/job-recommendation-threshold")
+                        //                        .hasRole(ADMIN)
                         .anyRequest()
                         .authenticated())
                 .oauth2Login(
