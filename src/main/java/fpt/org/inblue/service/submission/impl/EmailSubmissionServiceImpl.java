@@ -151,6 +151,7 @@ public class EmailSubmissionServiceImpl implements EmailSubmissionService {
     public void processEmailSchedule() {
         List<EmailSubmission> pendingEmails =
                 emailSubmissionRepository.findByStatus(EmailSubmission.EmailStatus.PENDING);
+        pendingEmails.addAll(emailSubmissionRepository.findByStatus(EmailSubmission.EmailStatus.ERROR));
         for (EmailSubmission email : pendingEmails) {
             if (email.getApplicationId() != null) {
                 try {

@@ -272,7 +272,7 @@ public class SubmissionEventHandle {
                     AnythingLlmWorkspace.EMAIL,
                     emailEvaluationRequest,
                     "java-backend",
-                    false,
+                    true,
                     null,
                     CvEvaluationResponse.class);
 
