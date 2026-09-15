@@ -319,8 +319,7 @@ public class ApplicationDetailServiceImpl implements ApplicationDetailService {
 
         int currentMentorId = resolveCurrentMentorId();
         if (currentMentorId != applicationDetail.getMentorId()) {
-            throw new CustomException(
-                    "Bạn không phải mentor được gán cho vòng phỏng vấn này", HttpStatus.FORBIDDEN);
+            throw new CustomException("Bạn không phải mentor được gán cho vòng phỏng vấn này", HttpStatus.FORBIDDEN);
         }
 
         ApplicationDetail.RoundSessionInfo sessionInfo = applicationDetail.getSessionInfo();
@@ -339,9 +338,8 @@ public class ApplicationDetailServiceImpl implements ApplicationDetailService {
             } catch (Exception e) {
                 throw new CustomException("Lịch hẹn đang chờ duyệt không hợp lệ", HttpStatus.BAD_REQUEST);
             }
-            int duration = sessionInfo.getPendingDurationMinutes() != null
-                    ? sessionInfo.getPendingDurationMinutes()
-                    : 60;
+            int duration =
+                    sessionInfo.getPendingDurationMinutes() != null ? sessionInfo.getPendingDurationMinutes() : 60;
 
             Application application = applicationService.getApplicationById(applicationDetail.getApplicationId());
 
@@ -373,8 +371,7 @@ public class ApplicationDetailServiceImpl implements ApplicationDetailService {
         String trimmedReason = reason.trim();
         if (trimmedReason.length() > MAX_REJECT_REASON_LENGTH) {
             throw new CustomException(
-                    "Lý do từ chối không được vượt quá " + MAX_REJECT_REASON_LENGTH + " ký tự",
-                    HttpStatus.BAD_REQUEST);
+                    "Lý do từ chối không được vượt quá " + MAX_REJECT_REASON_LENGTH + " ký tự", HttpStatus.BAD_REQUEST);
         }
 
         int rejectedMentorId = applicationDetail.getMentorId();
