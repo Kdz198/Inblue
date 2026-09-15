@@ -112,7 +112,6 @@ public class TestController {
                                             })))
     public CvEvaluationResponse testCvEvaluation(
             @RequestPart("cvFile") MultipartFile cv,
-            @RequestPart("evaluationCriteria") CvEvaluationRequest.EvaluationCriteria criteria,
             @RequestPart("jobDescription") CvEvaluationRequest.JD jd) {
         CvEvaluationRequest cvEvaluationRequest = new CvEvaluationRequest();
         cvEvaluationRequest.setCvFile(cv);
