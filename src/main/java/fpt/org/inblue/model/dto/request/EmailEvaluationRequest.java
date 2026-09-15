@@ -13,7 +13,6 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 public class EmailEvaluationRequest {
     EmailContext emailContext;
-    EvaluationCriteria evaluationCriteria;
     Round.EvaluationPlan evaluationPlan;
 
     @Builder

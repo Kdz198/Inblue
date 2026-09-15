@@ -16,8 +16,6 @@ import org.springframework.web.multipart.MultipartFile;
 public class CvEvaluationRequest {
     @JsonIgnore
     MultipartFile cvFile;
-
-    EvaluationCriteria evaluationCriteria;
     JD jobDescription;
     Round.EvaluationPlan evaluationPlan;
 

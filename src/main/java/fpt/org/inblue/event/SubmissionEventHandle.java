@@ -336,7 +336,6 @@ public class SubmissionEventHandle {
                 .build();
         CvEvaluationRequest cvEvaluationRequest = CvEvaluationRequest.builder()
                 .cvFile(dto.getFile())
-                .evaluationCriteria(evaluation)
                 .jobDescription(jd)
                 .evaluationPlan(round.getConfigData().getEvaluationPlan())
                 .build();
