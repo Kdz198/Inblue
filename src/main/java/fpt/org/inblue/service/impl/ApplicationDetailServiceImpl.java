@@ -21,7 +21,10 @@ import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
+import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
@@ -416,27 +419,39 @@ public class ApplicationDetailServiceImpl implements ApplicationDetailService {
         List<ApplicationDetail> pendingDetails = applicationDetailRepository.findAllByMentorIdAndStatus(
                 mentorId, ApplicationDetailStatus.AWAITING_MENTOR_SCHEDULE_APPROVAL);
 
+        List<Long> applicationIds =
+                pendingDetails.stream().map(ApplicationDetail::getApplicationId).distinct().toList();
+        Map<Long, Application> applicationsById = applicationRepository.findAllById(applicationIds).stream()
+                .collect(Collectors.toMap(Application::getId, a -> a));
+
+        List<Integer> candidateUserIds =
+                applicationsById.values().stream().map(Application::getUserId).distinct().toList();
+        Map<Integer, User> candidatesByUserId = userRepository.findAllById(candidateUserIds).stream()
+                .collect(Collectors.toMap(User::getId, u -> u));
+
+        List<Long> jdIds = applicationsById.values().stream()
+                .map(Application::getJdId)
+                .filter(Objects::nonNull)
+                .distinct()
+                .toList();
+        Map<Long, String> jobTitlesByJdId = jobDescriptionRepository.findAllById(jdIds).stream()
+                .collect(Collectors.toMap(JobDescription::getId, JobDescription::getTitle));
+
+        List<Long> roundIds = pendingDetails.stream()
+                .map(ApplicationDetail::getRoundId)
+                .filter(Objects::nonNull)
+                .distinct()
+                .toList();
+        Map<Long, Round> roundsById = roundRepository.findAllById(roundIds).stream()
+                .collect(Collectors.toMap(Round::getId, r -> r));
+
         List<MentorPendingScheduleResponse> responses = new ArrayList<>();
         for (ApplicationDetail detail : pendingDetails) {
             ApplicationDetail.RoundSessionInfo sessionInfo = detail.getSessionInfo();
-
-            Application application =
-                    applicationRepository.findById(detail.getApplicationId()).orElse(null);
-            User candidate = null;
-            String jobTitle = null;
-            if (application != null) {
-                candidate = userRepository.findById(application.getUserId()).orElse(null);
-                if (application.getJdId() != null) {
-                    jobTitle = jobDescriptionRepository
-                            .findById(application.getJdId())
-                            .map(JobDescription::getTitle)
-                            .orElse(null);
-                }
-            }
-
-            Round round = detail.getRoundId() != null
-                    ? roundRepository.findById(detail.getRoundId()).orElse(null)
-                    : null;
+            Application application = applicationsById.get(detail.getApplicationId());
+            User candidate = application != null ? candidatesByUserId.get(application.getUserId()) : null;
+            String jobTitle = application != null ? jobTitlesByJdId.get(application.getJdId()) : null;
+            Round round = detail.getRoundId() != null ? roundsById.get(detail.getRoundId()) : null;
 
             responses.add(MentorPendingScheduleResponse.builder()
                     .applicationDetailId(detail.getId())

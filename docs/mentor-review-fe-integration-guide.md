@@ -192,7 +192,7 @@ Sau khi mentor từ chối lịch, hồ sơ sẽ quay lại 1 trong 2 trạng th
 2. **Step `SCHEDULE`**: form chọn thời gian + thời lượng + hình thức. Submit `POST /api/sessions/create-for-round`.
    - ONLINE → status chuyển `AWAITING_MENTOR_SCHEDULE_APPROVAL`, response trả về `id = 0`, `status = null` (chưa có session thật) → **không được dựa vào `response.id`**, hãy refetch application detail.
    - OFFLINE → tạo session ngay như cũ.
-3. **Step `AWAITING_SCHEDULE_APPROVAL`**: hiển thị giờ đã đề xuất lấy từ `sessionInfo.pendingJoinTime` / `pendingDurationMinutes`. Poll `GET /api/application-details/{id}` mỗi 30s cho tới khi status đổi.
+3. **Step `AWAITING_SCHEDULE_APPROVAL`**: hiển thị giờ đã đề xuất lấy từ `sessionInfo.pendingJoinTime` / `pendingDurationMinutes`. Không polling — refetch `GET /api/application-details/{id}` khi vào trang, khi tab lấy lại focus, hoặc khi ứng viên bấm nút "Làm mới".
 4. **Nếu bị từ chối**: status quay về `AWAITING_CANDIDATE_SELECT_MENTOR` hoặc `AWAITING_MENTOR`. Hiển thị banner cảnh báo lấy từ `sessionInfo.mentorRejectReason` + `mentorRejectedAt` ở cả 3 step `AWAITING_MENTOR`, `SELECT_MENTOR`, `SCHEDULE`.
 5. **Nếu được duyệt**: status về `PENDING` và đã có `sessionId` → FE tự nhảy sang step `WAITING`, lấy `roomUrl` từ `GET /api/sessions/{id}`.
 
@@ -214,7 +214,7 @@ Sau khi mentor từ chối lịch, hồ sơ sẽ quay lại 1 trong 2 trạng th
 
 ## 7. FE implementation notes
 
-- **Polling**: chỉ poll `GET /api/application-details/{id}` khi đang ở step `AWAITING_MENTOR` hoặc `AWAITING_SCHEDULE_APPROVAL` và chưa có `sessionId`. Khi đã có `sessionId` thì poll `GET /api/sessions/{id}` để bắt trạng thái `ONGOING`/`COMPLETED` từ webhook.
+- **Không polling định kỳ**: luồng này không có yêu cầu real-time nên FE không tự động gọi lại API theo interval (vd `setInterval` mỗi 30s). Thay vào đó, refetch `GET /api/application-details/{id}` (khi chưa có `sessionId`) hoặc `GET /api/sessions/{id}` (khi đã có `sessionId`, để lấy trạng thái `ONGOING`/`COMPLETED` từ webhook) tại các thời điểm: vào trang / mount component, tab lấy lại focus (`visibilitychange`), sau mỗi action ghi dữ liệu (xem invalidate ở 6.3.4), hoặc khi người dùng bấm nút "Làm mới" thủ công. Nút "Vào phòng" có thể tự enable theo giờ hẹn (`pendingJoinTime`/`sessionInfo.startTime` so với giờ local) thay vì chờ server báo `ONGOING`.
 - **Không tạo lại đề xuất khi đã có phòng**: backend trả 400 `"Vòng phỏng vấn này đã có phòng họp"` nếu `sessionId != null`. FE không nên hiện form đặt lịch ở trạng thái đó.
 - **Gửi lại đề xuất khi đang chờ duyệt** là hợp lệ (backend ghi đè đề xuất cũ), dùng cho trường hợp ứng viên đổi ý trước khi mentor kịp xử lý.
 - **Điều kiện hiện form đặt lịch** ở màn hình lịch sử ứng tuyển là `status === "PENDING" && sessionInfo.meetingType == null`. Vì vậy backend đã chủ động xoá `meetingType` khi mentor từ chối — FE không cần xử lý thêm.
