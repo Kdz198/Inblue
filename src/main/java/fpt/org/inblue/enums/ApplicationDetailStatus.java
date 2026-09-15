@@ -4,6 +4,7 @@ public enum ApplicationDetailStatus {
     PENDING, // Ứng viên đang làm bài / đã có mentor, đang chờ ứng viên chọn hình thức phỏng vấn
     AWAITING_MENTOR, // Vòng Mentor Review - đang chờ Admin gán mentor
     AWAITING_CANDIDATE_SELECT_MENTOR, // Vòng Mentor Review - Admin đã đề xuất nhiều mentor, chờ ứng viên chọn 1 mentor
+    AWAITING_MENTOR_SCHEDULE_APPROVAL, // Vòng Mentor Review - Ứng viên đã đề xuất lịch hẹn online, đang chờ mentor duyệt
     SLOT_PICKED, // Ứng viên đã chọn online và tạo phòng họp, đang chờ thực hiện
     SUBMITTED, // Đã nộp bài, hệ thống đang gọi AI
     AI_EVALUATED, // AI đã chấm điểm xong (Đang chờ HR duyệt)

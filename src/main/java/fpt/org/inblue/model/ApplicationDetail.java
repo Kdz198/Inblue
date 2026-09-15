@@ -113,6 +113,20 @@ public class ApplicationDetail {
             this.endTime = parseDateTime(val);
         }
 
+        // ===== Luồng mentor duyệt lịch hẹn (vòng Mentor Review, hình thức ONLINE) =====
+
+        // Lưu dạng chuỗi ISO-8601 (vd 2026-09-20T14:30) để không phụ thuộc vào việc
+        // ObjectMapper của Hibernate có đăng ký JavaTimeModule hay không khi ghi jsonb.
+        private String pendingJoinTime; // Giờ hẹn ứng viên đề xuất, đang chờ mentor duyệt
+
+        private Integer pendingDurationMinutes; // Thời lượng (phút) của lịch hẹn đang chờ duyệt
+
+        private String mentorRejectReason; // Lý do mentor từ chối lịch hẹn gần nhất
+
+        private String mentorRejectedAt; // Thời điểm mentor từ chối lịch hẹn gần nhất (ISO-8601)
+
+        private Integer rejectedMentorId; // Mentor đã từ chối lịch hẹn gần nhất
+
         private LocalDateTime parseDateTime(Object val) {
             if (val == null) return null;
             if (val instanceof Number) {
@@ -213,13 +227,14 @@ public class ApplicationDetail {
         private String overallFeedback;
         private List<String> strengths;
         private List<String> weaknesses;
-        private String improvementAdvice;
+        private List<String> improvementAdvice;
 
         @Data
         @NoArgsConstructor
         @AllArgsConstructor
         @Builder
         public static class MetricResult {
+            private String name;
             private String code;
             private Double score;
             private Double weightedScore;

@@ -3,7 +3,9 @@ package fpt.org.inblue.controller;
 import fpt.org.inblue.model.ApplicationDetail;
 import fpt.org.inblue.model.dto.request.AssignMentorsRequestDto;
 import fpt.org.inblue.model.dto.request.CodeReviewSubmitRequest;
+import fpt.org.inblue.model.dto.request.ScheduleDecisionRequest;
 import fpt.org.inblue.model.dto.request.SubmitRequest;
+import fpt.org.inblue.model.dto.response.MentorPendingScheduleResponse;
 import fpt.org.inblue.model.dto.response.MentorResponse;
 import fpt.org.inblue.service.ApplicationDetailService;
 import fpt.org.inblue.service.submission.SubmissionResult;
@@ -110,6 +112,27 @@ public class ApplicationDetailController {
     public ResponseEntity<List<MentorResponse>> getAssignedMentors(@PathVariable long id) {
         List<MentorResponse> mentors = applicationDetailService.getAssignedMentors(id);
         return ResponseEntity.ok(mentors);
+    }
+
+    @GetMapping("/mentor/pending-schedules")
+    @Operation(
+            summary = "Danh sách lịch hẹn đang chờ mentor hiện tại duyệt",
+            description =
+                    "Dành cho Mentor: lấy các vòng Mentor Review mà ứng viên đã đề xuất lịch hẹn online và đang chờ mentor duyệt.")
+    public ResponseEntity<List<MentorPendingScheduleResponse>> getPendingScheduleApprovals() {
+        return ResponseEntity.ok(applicationDetailService.getPendingScheduleApprovals());
+    }
+
+    @PostMapping("/{id}/schedule-decision")
+    @Operation(
+            summary = "Mentor duyệt hoặc từ chối lịch hẹn do ứng viên đề xuất",
+            description =
+                    "approved = true: tạo phòng họp Daily.co và chốt lịch. approved = false: bắt buộc nhập reason, ứng viên sẽ phải chọn lại mentor / chờ Admin gán mentor mới.")
+    public ResponseEntity<ApplicationDetail> scheduleDecision(
+            @PathVariable long id, @RequestBody ScheduleDecisionRequest request) {
+        ApplicationDetail updated =
+                applicationDetailService.scheduleDecision(id, request.isApproved(), request.getReason());
+        return ResponseEntity.ok(updated);
     }
 
     @PutMapping("/{id}/select-mentor")

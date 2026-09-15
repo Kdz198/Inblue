@@ -267,6 +267,8 @@ public class SubmissionEventHandle {
                     .emailContext(context)
                     .evaluationCriteria(evaluation)
                     .build();
+            Round.EvaluationPlan evaluationPlan = round.getConfigData().getEvaluationPlan();
+            emailEvaluationRequest.setEvaluationPlan(evaluationPlan);
             // Gọi LLM API để chấm điểm email
             CvEvaluationResponse response = ApiClient.sendChatToAnythingLlm(
                     AnythingLlmWorkspace.EMAIL,
@@ -336,6 +338,7 @@ public class SubmissionEventHandle {
                 .cvFile(dto.getFile())
                 .evaluationCriteria(evaluation)
                 .jobDescription(jd)
+                .evaluationPlan(round.getConfigData().getEvaluationPlan())
                 .build();
         List<MultipartFile> fileList = new ArrayList<>();
         if (dto.getFile() != null && !dto.getFile().isEmpty()) {
@@ -356,7 +359,7 @@ public class SubmissionEventHandle {
                         AnythingLlmWorkspace.CV_ANALYSIS,
                         cvEvaluationRequest,
                         "java-backend",
-                        false,
+                        true,
                         fileList,
                         CvEvaluationResponse.class));
 

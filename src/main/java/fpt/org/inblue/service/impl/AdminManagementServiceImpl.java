@@ -475,8 +475,10 @@ public class AdminManagementServiceImpl implements AdminManagementService {
                 candidateProfileRepository.findApplicationTrendsByPosition(topN);
         List<AdminAnalyticsProjection.ApplicationStatusCount> statusCounts =
                 applicationRepository.countApplicationsByStatus();
-        List<ApplicationDetailStatus> activeInterviewStatuses =
-                List.of(ApplicationDetailStatus.PENDING, ApplicationDetailStatus.SLOT_PICKED);
+        List<ApplicationDetailStatus> activeInterviewStatuses = List.of(
+                ApplicationDetailStatus.PENDING,
+                ApplicationDetailStatus.AWAITING_MENTOR_SCHEDULE_APPROVAL,
+                ApplicationDetailStatus.SLOT_PICKED);
         List<RoundType> interviewRoundTypes = List.of(RoundType.AI_INTERVIEW, RoundType.MENTROR_REVIEW);
         List<AdminAnalyticsProjection.ActiveInterview> activeInterviews =
                 applicationDetailRepository.findActiveInterviews(activeInterviewStatuses, interviewRoundTypes, topN);

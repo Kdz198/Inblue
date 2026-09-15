@@ -371,10 +371,6 @@ public class SessionServiceImpl implements SessionService {
                 .findById(request.getApplicationDetailId())
                 .orElseThrow(() -> new CustomException("Application detail not found", HttpStatus.NOT_FOUND));
 
-        if (appDetail.getStatus() != ApplicationDetailStatus.PENDING) {
-            throw new CustomException("Application detail status is not PENDING", HttpStatus.BAD_REQUEST);
-        }
-
         if (appDetail.getMentorId() == null) {
             throw new CustomException("Mentor has not been assigned to this round", HttpStatus.BAD_REQUEST);
         }
@@ -386,12 +382,18 @@ public class SessionServiceImpl implements SessionService {
         int userId = application.getUserId();
         int mentorId = appDetail.getMentorId();
         Timestamp startTime = request.getJoinTime();
+        if (startTime == null) {
+            throw new CustomException("Join time is required", HttpStatus.BAD_REQUEST);
+        }
         int duration = request.getDuration() != null ? request.getDuration() : 60;
 
-        Session session;
         if (request.isOffline()) {
-            // OFFLINE: tạo session offline trong db để lưu trữ và liên kết đánh giá sau này
-            session = new Session();
+            // OFFLINE: giữ nguyên luồng cũ - tạo session offline ngay, không cần mentor duyệt lịch
+            if (appDetail.getStatus() != ApplicationDetailStatus.PENDING) {
+                throw new CustomException("Application detail status is not PENDING", HttpStatus.BAD_REQUEST);
+            }
+
+            Session session = new Session();
             session.setUserId(userId);
             session.setUserId2(mentorId);
             session.setRoomUrl("OFFLINE");
@@ -407,52 +409,92 @@ public class SessionServiceImpl implements SessionService {
             }
             sessionInfo.setSessionId(session.getId());
             sessionInfo.setMeetingType(MeetingType.OFFLINE);
+            clearPendingSchedule(sessionInfo);
             appDetail.setSessionId(session.getId());
             appDetail.setSessionInfo(sessionInfo);
             // Giữ status là PENDING để chờ mentor review/feedback
             applicationDetailRepository.save(appDetail);
-        } else {
-            // ONLINE: dùng lại hàm createSession đã viết sẵn trong SessionService
-            SessionCreationRequest sessionReq = new SessionCreationRequest();
-            DailyCoCreationRequest dailyReq = new DailyCoCreationRequest();
-            dailyReq.setPrivacy("public");
-            DailyCoCreationRequest.Properties props = new DailyCoCreationRequest.Properties();
-            props.setMax_participants(2);
-            props.setStart_video_off(true);
-            props.setStart_audio_off(true);
-            props.setEnable_screenshare(true);
-            props.setEnable_recording("cloud");
-            dailyReq.setProperties(props);
 
-            sessionReq.setDailyCoCreationRequest(dailyReq);
-            sessionReq.setUserId(userId);
-            sessionReq.setMentorId(mentorId);
-            sessionReq.setJoinTime(startTime);
-            sessionReq.setDuration(duration);
-            sessionReq.setTotalPrice(0);
-
-            SessionResponse sessionResponse = createSession(sessionReq);
-            session = sessionRepository.findByRoomName(sessionResponse.getName());
-            if (session == null) {
-                throw new CustomException("Failed to retrieve created session", HttpStatus.INTERNAL_SERVER_ERROR);
-            }
-            session.setStatus(SessionStatus.SCHEDULED);
-            sessionRepository.save(session);
-
-            ApplicationDetail.RoundSessionInfo sessionInfo = appDetail.getSessionInfo();
-            if (sessionInfo == null) {
-                sessionInfo = new ApplicationDetail.RoundSessionInfo();
-            }
-            sessionInfo.setSessionId(session.getId());
-            sessionInfo.setMeetingType(MeetingType.ONLINE);
-            appDetail.setSessionId(session.getId());
-            appDetail.setSessionInfo(sessionInfo);
-            // Cập nhật status thành PENDING (theo yêu cầu của user)
-            appDetail.setStatus(ApplicationDetailStatus.PENDING);
-            applicationDetailRepository.save(appDetail);
+            return convertToDetailResponse(session);
         }
 
-        return convertToDetailResponse(session);
+        // ONLINE: ứng viên chỉ ĐỀ XUẤT lịch hẹn. Phòng Daily.co chỉ được tạo sau khi mentor duyệt
+        // (xem ApplicationDetailService.scheduleDecision) để tránh tạo phòng rác khi mentor từ chối.
+        if (appDetail.getStatus() != ApplicationDetailStatus.PENDING
+                && appDetail.getStatus() != ApplicationDetailStatus.AWAITING_MENTOR_SCHEDULE_APPROVAL) {
+            throw new CustomException("Application detail status is not PENDING", HttpStatus.BAD_REQUEST);
+        }
+        // Lịch đã được mentor duyệt (đã có phòng họp) thì không cho đề xuất đè lên
+        if (appDetail.getSessionId() != null) {
+            throw new CustomException("Vòng phỏng vấn này đã có phòng họp", HttpStatus.BAD_REQUEST);
+        }
+
+        ApplicationDetail.RoundSessionInfo sessionInfo = appDetail.getSessionInfo();
+        if (sessionInfo == null) {
+            sessionInfo = new ApplicationDetail.RoundSessionInfo();
+        }
+        sessionInfo.setMeetingType(MeetingType.ONLINE);
+        sessionInfo.setPendingJoinTime(startTime.toLocalDateTime().toString());
+        sessionInfo.setPendingDurationMinutes(duration);
+        // Đề xuất mới => xoá thông tin từ chối của lần trước
+        sessionInfo.setMentorRejectReason(null);
+        sessionInfo.setMentorRejectedAt(null);
+        sessionInfo.setRejectedMentorId(null);
+
+        appDetail.setSessionInfo(sessionInfo);
+        appDetail.setStatus(ApplicationDetailStatus.AWAITING_MENTOR_SCHEDULE_APPROVAL);
+        applicationDetailRepository.save(appDetail);
+
+        // Chưa có session thật -> trả về thông tin lịch hẹn đang chờ duyệt (id = 0, status = null)
+        return SessionDetailResponse.builder()
+                .userId(userId)
+                .mentorId(mentorId)
+                .joinTime(startTime)
+                .duration(duration)
+                .totalPrice(0)
+                .build();
+    }
+
+    /**
+     * Tạo phòng Daily.co thật cho lịch hẹn đã được mentor duyệt (vòng Mentor Review, ONLINE).
+     * Chỉ được gọi từ luồng mentor duyệt lịch - xem ApplicationDetailService.scheduleDecision.
+     */
+    @Override
+    @Transactional
+    public Session createRoomForApprovedSchedule(int userId, int mentorId, Timestamp joinTime, int durationMinutes) {
+        SessionCreationRequest sessionReq = new SessionCreationRequest();
+        DailyCoCreationRequest dailyReq = new DailyCoCreationRequest();
+        dailyReq.setPrivacy("public");
+        DailyCoCreationRequest.Properties props = new DailyCoCreationRequest.Properties();
+        props.setMax_participants(2);
+        props.setStart_video_off(true);
+        props.setStart_audio_off(true);
+        props.setEnable_screenshare(true);
+        props.setEnable_recording("cloud");
+        dailyReq.setProperties(props);
+
+        sessionReq.setDailyCoCreationRequest(dailyReq);
+        sessionReq.setUserId(userId);
+        sessionReq.setMentorId(mentorId);
+        sessionReq.setJoinTime(joinTime);
+        sessionReq.setDuration(durationMinutes);
+        sessionReq.setTotalPrice(0);
+
+        SessionResponse sessionResponse = createSession(sessionReq);
+        Session session = sessionRepository.findByRoomName(sessionResponse.getName());
+        if (session == null) {
+            throw new CustomException("Failed to retrieve created session", HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+        session.setStatus(SessionStatus.SCHEDULED);
+        return sessionRepository.save(session);
+    }
+
+    private void clearPendingSchedule(ApplicationDetail.RoundSessionInfo sessionInfo) {
+        sessionInfo.setPendingJoinTime(null);
+        sessionInfo.setPendingDurationMinutes(null);
+        sessionInfo.setMentorRejectReason(null);
+        sessionInfo.setMentorRejectedAt(null);
+        sessionInfo.setRejectedMentorId(null);
     }
 
     @Override

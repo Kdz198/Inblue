@@ -5,6 +5,7 @@ import fpt.org.inblue.exception.CustomException;
 import fpt.org.inblue.model.*;
 import fpt.org.inblue.model.dto.request.InterviewSetupRequest;
 import fpt.org.inblue.model.dto.request.OrchestratorRequest;
+import fpt.org.inblue.model.dto.response.MentorPendingScheduleResponse;
 import fpt.org.inblue.model.dto.response.MentorResponse;
 import fpt.org.inblue.model.dto.response.ReviewerApplicationDetailResponseDto;
 import fpt.org.inblue.repository.*;
@@ -13,7 +14,10 @@ import fpt.org.inblue.service.ApplicationDetailService;
 import fpt.org.inblue.service.ApplicationService;
 import fpt.org.inblue.service.InterviewSessionService;
 import fpt.org.inblue.service.MentorService;
+import fpt.org.inblue.service.SessionService;
 import fpt.org.inblue.utils.HelperUtil;
+import java.sql.Timestamp;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -26,7 +30,10 @@ import org.springframework.transaction.annotation.Transactional;
 @Service
 @RequiredArgsConstructor
 public class ApplicationDetailServiceImpl implements ApplicationDetailService {
+    private static final int MAX_REJECT_REASON_LENGTH = 1000;
+
     private final ApplicationDetailRepository applicationDetailRepository;
+    private final ApplicationRepository applicationRepository;
     private final ApplicationService applicationService;
     private final RoundRepository roundRepository;
     private final JobDescriptionRepository jobDescriptionRepository;
@@ -35,6 +42,8 @@ public class ApplicationDetailServiceImpl implements ApplicationDetailService {
     private final InterviewSessionService interviewSessionService;
     private final InterviewSessionRepository interviewSessionRepository;
     private final MentorService mentorService;
+    private final MentorRepository mentorRepository;
+    private final SessionService sessionService;
     private final JwtUtils jwtUtils;
 
     @Override
@@ -262,6 +271,192 @@ public class ApplicationDetailServiceImpl implements ApplicationDetailService {
             }
         }
         return mentorResponses;
+    }
+
+    /**
+     * Xác định Mentor.id của người đang đăng nhập.
+     * Khi mentor login, JWT subject chính là Mentor.id (xem CustomUserDetailService), nhưng nếu
+     * tài khoản đó đồng thời tồn tại ở bảng User thì subject sẽ là User.id -> fallback tra theo email.
+     */
+    private int resolveCurrentMentorId() {
+        String token = HelperUtil.getToke();
+        if (token == null || token.isBlank()) {
+            throw new CustomException("Missing Authorization token", HttpStatus.UNAUTHORIZED);
+        }
+        Integer tokenId = jwtUtils.getUserIdFromToken(token);
+        String email = jwtUtils.getEmailFromToken(token);
+
+        if (tokenId != null) {
+            Mentor byId = mentorRepository.getMentorById(tokenId);
+            if (byId != null && (email == null || email.equalsIgnoreCase(byId.getEmail()))) {
+                return byId.getId();
+            }
+        }
+        if (email != null && !email.isBlank()) {
+            Mentor byEmail = mentorRepository.findByEmail(email);
+            if (byEmail != null) {
+                return byEmail.getId();
+            }
+        }
+        throw new CustomException("Chỉ mentor mới được thực hiện thao tác này", HttpStatus.FORBIDDEN);
+    }
+
+    @Override
+    @Transactional
+    public ApplicationDetail scheduleDecision(long applicationDetailId, boolean approved, String reason) {
+        ApplicationDetail applicationDetail = getApplicationDetailById(applicationDetailId);
+
+        if (applicationDetail.getStatus() != ApplicationDetailStatus.AWAITING_MENTOR_SCHEDULE_APPROVAL) {
+            throw new CustomException(
+                    "Vòng phỏng vấn này không có lịch hẹn nào đang chờ duyệt", HttpStatus.BAD_REQUEST);
+        }
+        if (applicationDetail.getMentorId() == null) {
+            throw new CustomException("Mentor has not been assigned to this round", HttpStatus.BAD_REQUEST);
+        }
+
+        int currentMentorId = resolveCurrentMentorId();
+        if (currentMentorId != applicationDetail.getMentorId()) {
+            throw new CustomException(
+                    "Bạn không phải mentor được gán cho vòng phỏng vấn này", HttpStatus.FORBIDDEN);
+        }
+
+        ApplicationDetail.RoundSessionInfo sessionInfo = applicationDetail.getSessionInfo();
+        if (sessionInfo == null) {
+            sessionInfo = new ApplicationDetail.RoundSessionInfo();
+        }
+
+        if (approved) {
+            String pendingJoinTimeRaw = sessionInfo.getPendingJoinTime();
+            if (pendingJoinTimeRaw == null || pendingJoinTimeRaw.isBlank()) {
+                throw new CustomException("Không tìm thấy lịch hẹn đang chờ duyệt", HttpStatus.BAD_REQUEST);
+            }
+            LocalDateTime pendingJoinTime;
+            try {
+                pendingJoinTime = LocalDateTime.parse(pendingJoinTimeRaw);
+            } catch (Exception e) {
+                throw new CustomException("Lịch hẹn đang chờ duyệt không hợp lệ", HttpStatus.BAD_REQUEST);
+            }
+            int duration = sessionInfo.getPendingDurationMinutes() != null
+                    ? sessionInfo.getPendingDurationMinutes()
+                    : 60;
+
+            Application application = applicationService.getApplicationById(applicationDetail.getApplicationId());
+
+            Session session = sessionService.createRoomForApprovedSchedule(
+                    application.getUserId(),
+                    applicationDetail.getMentorId(),
+                    Timestamp.valueOf(pendingJoinTime),
+                    duration);
+
+            sessionInfo.setSessionId(session.getId());
+            sessionInfo.setMeetingType(fpt.org.inblue.enums.MeetingType.ONLINE);
+            sessionInfo.setPendingJoinTime(null);
+            sessionInfo.setPendingDurationMinutes(null);
+            sessionInfo.setMentorRejectReason(null);
+            sessionInfo.setMentorRejectedAt(null);
+            sessionInfo.setRejectedMentorId(null);
+
+            applicationDetail.setSessionId(session.getId());
+            applicationDetail.setSessionInfo(sessionInfo);
+            // Quay lại PENDING (đã có sessionId) -> ứng viên vào trạng thái chờ tới giờ phỏng vấn
+            applicationDetail.setStatus(ApplicationDetailStatus.PENDING);
+            return applicationDetailRepository.save(applicationDetail);
+        }
+
+        // ===== Mentor từ chối lịch hẹn =====
+        if (reason == null || reason.trim().isEmpty()) {
+            throw new CustomException("Vui lòng nhập lý do từ chối lịch hẹn", HttpStatus.BAD_REQUEST);
+        }
+        String trimmedReason = reason.trim();
+        if (trimmedReason.length() > MAX_REJECT_REASON_LENGTH) {
+            throw new CustomException(
+                    "Lý do từ chối không được vượt quá " + MAX_REJECT_REASON_LENGTH + " ký tự",
+                    HttpStatus.BAD_REQUEST);
+        }
+
+        int rejectedMentorId = applicationDetail.getMentorId();
+
+        sessionInfo.setPendingJoinTime(null);
+        sessionInfo.setPendingDurationMinutes(null);
+        // Xoá luôn hình thức họp đã chọn: ứng viên sẽ chọn lại từ đầu.
+        // (FE dùng điều kiện meetingType == null để cho phép đặt lại lịch)
+        sessionInfo.setMeetingType(null);
+        sessionInfo.setMentorRejectReason(trimmedReason);
+        sessionInfo.setMentorRejectedAt(LocalDateTime.now().toString());
+        sessionInfo.setRejectedMentorId(rejectedMentorId);
+
+        List<Integer> remainingMentorIds = new ArrayList<>();
+        if (applicationDetail.getAssignedMentorIds() != null) {
+            for (Integer assignedId : applicationDetail.getAssignedMentorIds()) {
+                if (assignedId != null && assignedId != rejectedMentorId) {
+                    remainingMentorIds.add(assignedId);
+                }
+            }
+        }
+
+        applicationDetail.setMentorId(null);
+        applicationDetail.setSessionInfo(sessionInfo);
+
+        if (!remainingMentorIds.isEmpty()) {
+            // Vẫn còn mentor khác do Admin đề xuất -> ứng viên chọn lại mentor
+            applicationDetail.setAssignedMentorIds(remainingMentorIds);
+            applicationDetail.setStatus(ApplicationDetailStatus.AWAITING_CANDIDATE_SELECT_MENTOR);
+        } else {
+            // Không còn ai để chọn -> quay lại hàng chờ Admin gán mentor mới
+            applicationDetail.setAssignedMentorIds(null);
+            applicationDetail.setStatus(ApplicationDetailStatus.AWAITING_MENTOR);
+        }
+
+        return applicationDetailRepository.save(applicationDetail);
+    }
+
+    @Override
+    public List<MentorPendingScheduleResponse> getPendingScheduleApprovals() {
+        int mentorId = resolveCurrentMentorId();
+        List<ApplicationDetail> pendingDetails = applicationDetailRepository.findAllByMentorIdAndStatus(
+                mentorId, ApplicationDetailStatus.AWAITING_MENTOR_SCHEDULE_APPROVAL);
+
+        List<MentorPendingScheduleResponse> responses = new ArrayList<>();
+        for (ApplicationDetail detail : pendingDetails) {
+            ApplicationDetail.RoundSessionInfo sessionInfo = detail.getSessionInfo();
+
+            Application application =
+                    applicationRepository.findById(detail.getApplicationId()).orElse(null);
+            User candidate = null;
+            String jobTitle = null;
+            if (application != null) {
+                candidate = userRepository.findById(application.getUserId()).orElse(null);
+                if (application.getJdId() != null) {
+                    jobTitle = jobDescriptionRepository
+                            .findById(application.getJdId())
+                            .map(JobDescription::getTitle)
+                            .orElse(null);
+                }
+            }
+
+            Round round = detail.getRoundId() != null
+                    ? roundRepository.findById(detail.getRoundId()).orElse(null)
+                    : null;
+
+            responses.add(MentorPendingScheduleResponse.builder()
+                    .applicationDetailId(detail.getId())
+                    .applicationId(detail.getApplicationId())
+                    .roundId(detail.getRoundId())
+                    .roundName(round != null ? round.getName() : null)
+                    .roundOrder(round != null ? round.getRoundOrder() : null)
+                    .jobTitle(jobTitle)
+                    .candidateUserId(application != null ? application.getUserId() : null)
+                    .candidateName(candidate != null ? candidate.getName() : null)
+                    .candidateEmail(candidate != null ? candidate.getEmail() : null)
+                    .candidateAvatarUrl(candidate != null ? candidate.getAvatarUrl() : null)
+                    .mentorId(detail.getMentorId())
+                    .meetingType(sessionInfo != null ? sessionInfo.getMeetingType() : null)
+                    .proposedJoinTime(sessionInfo != null ? sessionInfo.getPendingJoinTime() : null)
+                    .proposedDurationMinutes(sessionInfo != null ? sessionInfo.getPendingDurationMinutes() : null)
+                    .requestedAt(detail.getUpdatedAt())
+                    .build());
+        }
+        return responses;
     }
 
     @Override

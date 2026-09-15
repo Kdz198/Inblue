@@ -2,6 +2,8 @@ package fpt.org.inblue.model.dto.request;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import java.util.List;
+
+import fpt.org.inblue.model.Round;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -18,6 +20,8 @@ public class CvEvaluationRequest {
 
     EvaluationCriteria evaluationCriteria;
     JD jobDescription;
+    Round.EvaluationPlan evaluationPlan;
+
 
     @Builder
     @Data

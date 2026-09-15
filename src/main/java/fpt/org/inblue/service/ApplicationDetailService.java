@@ -1,6 +1,7 @@
 package fpt.org.inblue.service;
 
 import fpt.org.inblue.model.ApplicationDetail;
+import fpt.org.inblue.model.dto.response.MentorPendingScheduleResponse;
 import fpt.org.inblue.model.dto.response.MentorResponse;
 import fpt.org.inblue.model.dto.response.ReviewerApplicationDetailResponseDto;
 import java.util.List;
@@ -25,6 +26,12 @@ public interface ApplicationDetailService {
 
     // Lấy thông tin chi tiết các mentor được đề xuất cho ứng viên
     List<MentorResponse> getAssignedMentors(long applicationDetailId);
+
+    // Dành cho Mentor: duyệt / từ chối lịch hẹn do ứng viên đề xuất (vòng Mentor Review, ONLINE)
+    ApplicationDetail scheduleDecision(long applicationDetailId, boolean approved, String reason);
+
+    // Dành cho Mentor: danh sách lịch hẹn đang chờ mentor hiện tại duyệt
+    List<MentorPendingScheduleResponse> getPendingScheduleApprovals();
 
     // Bắt đầu vòng AI Interview (gọi từ Kiosk checkin hoặc web)
     String startAiInterview(long applicationDetailId);

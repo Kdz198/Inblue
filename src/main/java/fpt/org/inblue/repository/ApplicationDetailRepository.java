@@ -101,4 +101,6 @@ public interface ApplicationDetailRepository extends JpaRepository<ApplicationDe
     List<ApplicationDetail> findAllByUserId(@Param("userId") int userId);
 
     List<ApplicationDetail> findAllByMentorId(Integer mentorId);
+
+    List<ApplicationDetail> findAllByMentorIdAndStatus(Integer mentorId, ApplicationDetailStatus status);
 }
