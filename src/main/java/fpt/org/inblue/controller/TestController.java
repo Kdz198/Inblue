@@ -116,7 +116,6 @@ public class TestController {
             @RequestPart("jobDescription") CvEvaluationRequest.JD jd) {
         CvEvaluationRequest cvEvaluationRequest = new CvEvaluationRequest();
         cvEvaluationRequest.setCvFile(cv);
-        cvEvaluationRequest.setEvaluationCriteria(criteria);
         cvEvaluationRequest.setJobDescription(jd);
 
         List<MultipartFile> fileList = new ArrayList<>();

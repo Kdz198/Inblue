@@ -265,7 +265,6 @@ public class SubmissionEventHandle {
                     .build();
             EmailEvaluationRequest emailEvaluationRequest = EmailEvaluationRequest.builder()
                     .emailContext(context)
-                    .evaluationCriteria(evaluation)
                     .build();
             Round.EvaluationPlan evaluationPlan = round.getConfigData().getEvaluationPlan();
             emailEvaluationRequest.setEvaluationPlan(evaluationPlan);
