@@ -416,15 +416,19 @@ public class ApplicationDetailServiceImpl implements ApplicationDetailService {
         List<ApplicationDetail> pendingDetails = applicationDetailRepository.findAllByMentorIdAndStatus(
                 mentorId, ApplicationDetailStatus.AWAITING_MENTOR_SCHEDULE_APPROVAL);
 
-        List<Long> applicationIds =
-                pendingDetails.stream().map(ApplicationDetail::getApplicationId).distinct().toList();
+        List<Long> applicationIds = pendingDetails.stream()
+                .map(ApplicationDetail::getApplicationId)
+                .distinct()
+                .toList();
         Map<Long, Application> applicationsById = applicationRepository.findAllById(applicationIds).stream()
                 .collect(Collectors.toMap(Application::getId, a -> a));
 
-        List<Integer> candidateUserIds =
-                applicationsById.values().stream().map(Application::getUserId).distinct().toList();
-        Map<Integer, User> candidatesByUserId = userRepository.findAllById(candidateUserIds).stream()
-                .collect(Collectors.toMap(User::getId, u -> u));
+        List<Integer> candidateUserIds = applicationsById.values().stream()
+                .map(Application::getUserId)
+                .distinct()
+                .toList();
+        Map<Integer, User> candidatesByUserId =
+                userRepository.findAllById(candidateUserIds).stream().collect(Collectors.toMap(User::getId, u -> u));
 
         List<Long> jdIds = applicationsById.values().stream()
                 .map(Application::getJdId)
@@ -439,8 +443,8 @@ public class ApplicationDetailServiceImpl implements ApplicationDetailService {
                 .filter(Objects::nonNull)
                 .distinct()
                 .toList();
-        Map<Long, Round> roundsById = roundRepository.findAllById(roundIds).stream()
-                .collect(Collectors.toMap(Round::getId, r -> r));
+        Map<Long, Round> roundsById =
+                roundRepository.findAllById(roundIds).stream().collect(Collectors.toMap(Round::getId, r -> r));
 
         List<MentorPendingScheduleResponse> responses = new ArrayList<>();
         for (ApplicationDetail detail : pendingDetails) {
