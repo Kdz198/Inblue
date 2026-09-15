@@ -263,9 +263,8 @@ public class SubmissionEventHandle {
                     .level(String.valueOf(jobDescription.get().getLevel()))
                     .candidateEmail(submitDto)
                     .build();
-            EmailEvaluationRequest emailEvaluationRequest = EmailEvaluationRequest.builder()
-                    .emailContext(context)
-                    .build();
+            EmailEvaluationRequest emailEvaluationRequest =
+                    EmailEvaluationRequest.builder().emailContext(context).build();
             Round.EvaluationPlan evaluationPlan = round.getConfigData().getEvaluationPlan();
             emailEvaluationRequest.setEvaluationPlan(evaluationPlan);
             // Gọi LLM API để chấm điểm email
