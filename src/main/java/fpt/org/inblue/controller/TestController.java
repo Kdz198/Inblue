@@ -111,8 +111,7 @@ public class TestController {
                                                         contentType = MediaType.APPLICATION_JSON_VALUE)
                                             })))
     public CvEvaluationResponse testCvEvaluation(
-            @RequestPart("cvFile") MultipartFile cv,
-            @RequestPart("jobDescription") CvEvaluationRequest.JD jd) {
+            @RequestPart("cvFile") MultipartFile cv, @RequestPart("jobDescription") CvEvaluationRequest.JD jd) {
         CvEvaluationRequest cvEvaluationRequest = new CvEvaluationRequest();
         cvEvaluationRequest.setCvFile(cv);
         cvEvaluationRequest.setJobDescription(jd);
