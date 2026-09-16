@@ -16,6 +16,7 @@ import fpt.org.inblue.repository.ApplicationRepository;
 import fpt.org.inblue.repository.JdPurchaseRepository;
 import fpt.org.inblue.repository.JobDescriptionRepository;
 import fpt.org.inblue.repository.UserRepository;
+import fpt.org.inblue.service.ApplicationDetailService;
 import fpt.org.inblue.service.ApplicationService;
 import fpt.org.inblue.service.JourneySummaryService;
 import fpt.org.inblue.utils.SecurityUtils;
@@ -26,6 +27,7 @@ import java.util.Optional;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
@@ -45,6 +47,8 @@ public class ApplicationServiceImpl implements ApplicationService {
     private final ApplicationEventPublisher applicationEventPublisher;
     private final JourneySummaryService journeySummaryService;
     private final JourneySummaryServiceImpl journeySummaryServiceImpl;
+    // ObjectProvider để tránh circular dependency (ApplicationDetailServiceImpl -> ApplicationService)
+    private final ObjectProvider<ApplicationDetailService> applicationDetailServiceProvider;
 
     @Override
     public Application applyForJob(Long jdId) {
@@ -247,6 +251,17 @@ public class ApplicationServiceImpl implements ApplicationService {
                                 .sessionInfo(sessionInfo)
                                 .build();
                         applicationDetailRepository.save(nextDetail);
+
+                        if (nextRound.getRoundType() == RoundType.AI_INTERVIEW) {
+                            try {
+                                applicationDetailServiceProvider.getObject().startAiInterview(nextDetail.getId());
+                            } catch (Exception e) {
+                                log.error(
+                                        "Failed to auto-generate AI interview session for applicationDetailId={}",
+                                        nextDetail.getId(),
+                                        e);
+                            }
+                        }
                     }
                 }
 

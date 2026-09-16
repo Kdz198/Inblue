@@ -480,6 +480,15 @@ public class ApplicationDetailServiceImpl implements ApplicationDetailService {
             throw new CustomException("This round is already completed", HttpStatus.BAD_REQUEST);
         }
 
+        if (appDetail.getAiInterviewSessionId() != null) {
+            InterviewSession existingSession = interviewSessionRepository
+                    .findById(appDetail.getAiInterviewSessionId())
+                    .orElse(null);
+            if (existingSession != null) {
+                return existingSession.getSessionKey();
+            }
+        }
+
         Application application = applicationService.getApplicationById(appDetail.getApplicationId());
         User applicant = userRepository
                 .findById(application.getUserId())
