@@ -2,6 +2,8 @@ package fpt.org.inblue.model.dto.request;
 
 import fpt.org.inblue.model.ApplicationDetail;
 import java.util.List;
+
+import fpt.org.inblue.model.Round;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -12,10 +14,9 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 @NoArgsConstructor
 public class CodeReviewEvaluationRequest {
-    EvaluationCriteria evaluationCriteria;
     CodeReviewProblem codeReviewProblem;
     List<ApplicationDetail.CodeReviewSubmission> submissions;
-
+    Round.EvaluationPlan plan;
     @Builder
     @Data
     @AllArgsConstructor

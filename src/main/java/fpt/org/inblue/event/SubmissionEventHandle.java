@@ -47,7 +47,6 @@ public class SubmissionEventHandle {
     private final ApiClient ApiClient;
     private final CloudinaryService cloudinaryService;
     private final ApplicationDetailRepository applicationDetailRepository;
-    private final ObjectMapper objectMapper;
     private final CodingProblemsRepository codingProblemsRepository;
     private final ApiClient apiClient;
     private final ApplicationService applicationService;

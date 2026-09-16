@@ -62,23 +62,6 @@ public class SubmissionService {
             throw new CustomException("Bài đã được nộp cho vòng này", HttpStatus.CONFLICT);
         }
 
-        List<String> defaultMetrics = List.of(
-                CodeReviewMetricConstant.BUG_DETECTION,
-                CodeReviewMetricConstant.SECURITY_AWARENESS,
-                CodeReviewMetricConstant.PERFORMANCE_ANALYSIS,
-                CodeReviewMetricConstant.CODE_SMELL_DETECTION,
-                CodeReviewMetricConstant.SOLUTION_QUALITY,
-                CodeReviewMetricConstant.CLEAN_CODE_AWARENESS,
-                CodeReviewMetricConstant.STRENGTH,
-                CodeReviewMetricConstant.WEAKNESS,
-                CodeReviewMetricConstant.GENERAL_COMMENT,
-                CodeReviewMetricConstant.MISSED_ISSUES);
-        CodeReviewEvaluationRequest.EvaluationCriteria criteriaDto =
-                CodeReviewEvaluationRequest.EvaluationCriteria.builder()
-                        .maxScore(currentRound.getConfigData().getMaxScore())
-                        .aiSystemPrompt(currentRound.getConfigData().getAiSystemPrompt())
-                        .extraMetrics(defaultMetrics)
-                        .build();
 
         CodeReviewEvaluationRequest.CodeReviewProblem problemDto =
                 CodeReviewEvaluationRequest.CodeReviewProblem.builder()
@@ -94,16 +77,16 @@ public class SubmissionService {
                         .build();
 
         CodeReviewEvaluationRequest evaluationRequest = CodeReviewEvaluationRequest.builder()
-                .evaluationCriteria(criteriaDto)
                 .codeReviewProblem(problemDto)
                 .submissions(request.getSubmissions())
+                .plan(currentRound.getConfigData().getEvaluationPlan())
                 .build();
 
         CvEvaluationResponse response = apiClient.sendChatToAnythingLlm(
                 AnythingLlmWorkspace.CODE_REVIEW,
                 evaluationRequest,
                 "java-backend" + request.getApplicationId(),
-                false,
+                true,
                 null,
                 CvEvaluationResponse.class);
 
