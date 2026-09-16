@@ -1,6 +1,5 @@
 package fpt.org.inblue.service.submission;
 
-import fpt.org.inblue.constants.CodeReviewMetricConstant;
 import fpt.org.inblue.enums.AnythingLlmWorkspace;
 import fpt.org.inblue.enums.ApplicationDetailStatus;
 import fpt.org.inblue.event.SubmissionEventHandle;
@@ -19,7 +18,6 @@ import fpt.org.inblue.service.ApiClient;
 import fpt.org.inblue.service.ApplicationService;
 import fpt.org.inblue.service.JobDescriptionService;
 import java.io.IOException;
-import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
@@ -61,7 +59,6 @@ public class SubmissionService {
                 .isPresent()) {
             throw new CustomException("Bài đã được nộp cho vòng này", HttpStatus.CONFLICT);
         }
-
 
         CodeReviewEvaluationRequest.CodeReviewProblem problemDto =
                 CodeReviewEvaluationRequest.CodeReviewProblem.builder()

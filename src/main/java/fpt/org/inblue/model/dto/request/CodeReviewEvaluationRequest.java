@@ -1,9 +1,8 @@
 package fpt.org.inblue.model.dto.request;
 
 import fpt.org.inblue.model.ApplicationDetail;
-import java.util.List;
-
 import fpt.org.inblue.model.Round;
+import java.util.List;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -17,6 +16,7 @@ public class CodeReviewEvaluationRequest {
     CodeReviewProblem codeReviewProblem;
     List<ApplicationDetail.CodeReviewSubmission> submissions;
     Round.EvaluationPlan plan;
+
     @Builder
     @Data
     @AllArgsConstructor
