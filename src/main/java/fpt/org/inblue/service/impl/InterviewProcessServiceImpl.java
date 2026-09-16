@@ -60,8 +60,10 @@ public class InterviewProcessServiceImpl implements InterviewProcessService {
                     session.getBlueprint().getBlueprint().get(0).getQuestions().get(0);
             session.setCurrentQuestionText(firstQ.getQuestionText());
             session.setCurrentQuestionType(InterviewSessionRedis.QuestionType.BLUEPRINT);
-            redisRepository.save(session);
         }
+
+        // Refresh TTL mỗi lần gọi lại (resume) để tránh mất session khi user chỉ xem lại câu hỏi
+        redisRepository.save(session);
 
         return buildQuestionResponse(session);
     }
