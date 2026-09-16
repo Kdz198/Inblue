@@ -385,25 +385,16 @@ public class ApplicationDetailServiceImpl implements ApplicationDetailService {
         sessionInfo.setMentorRejectedAt(LocalDateTime.now().toString());
         sessionInfo.setRejectedMentorId(rejectedMentorId);
 
-        List<Integer> remainingMentorIds = new ArrayList<>();
-        if (applicationDetail.getAssignedMentorIds() != null) {
-            for (Integer assignedId : applicationDetail.getAssignedMentorIds()) {
-                if (assignedId != null && assignedId != rejectedMentorId) {
-                    remainingMentorIds.add(assignedId);
-                }
-            }
-        }
-
         applicationDetail.setMentorId(null);
         applicationDetail.setSessionInfo(sessionInfo);
 
-        if (!remainingMentorIds.isEmpty()) {
-            // Vẫn còn mentor khác do Admin đề xuất -> ứng viên chọn lại mentor
-            applicationDetail.setAssignedMentorIds(remainingMentorIds);
+        if (applicationDetail.getAssignedMentorIds() != null
+                && !applicationDetail.getAssignedMentorIds().isEmpty()) {
+            // Giữ nguyên danh sách mentor Admin đã đề xuất (kể cả mentor vừa từ chối)
+            // để ứng viên chọn lại, không loại rejectedMentorId ra khỏi danh sách nữa.
             applicationDetail.setStatus(ApplicationDetailStatus.AWAITING_CANDIDATE_SELECT_MENTOR);
         } else {
-            // Không còn ai để chọn -> quay lại hàng chờ Admin gán mentor mới
-            applicationDetail.setAssignedMentorIds(null);
+            // Vòng này được Admin gán thẳng 1 mentor (assign-mentor), không có danh sách để chọn lại
             applicationDetail.setStatus(ApplicationDetailStatus.AWAITING_MENTOR);
         }
 
