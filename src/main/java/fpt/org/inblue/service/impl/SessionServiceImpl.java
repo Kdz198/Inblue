@@ -436,10 +436,7 @@ public class SessionServiceImpl implements SessionService {
         sessionInfo.setMeetingType(MeetingType.ONLINE);
         sessionInfo.setPendingJoinTime(startTime.toLocalDateTime().toString());
         sessionInfo.setPendingDurationMinutes(duration);
-        // Đề xuất mới => xoá thông tin từ chối của lần trước
-        sessionInfo.setMentorRejectReason(null);
-        sessionInfo.setMentorRejectedAt(null);
-        sessionInfo.setRejectedMentorId(null);
+        // rejectionHistory KHÔNG bị xoá khi đề xuất lịch mới - đây là log lịch sử, giữ nguyên vĩnh viễn.
 
         appDetail.setSessionInfo(sessionInfo);
         appDetail.setStatus(ApplicationDetailStatus.AWAITING_MENTOR_SCHEDULE_APPROVAL);
@@ -492,9 +489,6 @@ public class SessionServiceImpl implements SessionService {
     private void clearPendingSchedule(ApplicationDetail.RoundSessionInfo sessionInfo) {
         sessionInfo.setPendingJoinTime(null);
         sessionInfo.setPendingDurationMinutes(null);
-        sessionInfo.setMentorRejectReason(null);
-        sessionInfo.setMentorRejectedAt(null);
-        sessionInfo.setRejectedMentorId(null);
     }
 
     @Override

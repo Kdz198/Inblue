@@ -59,7 +59,7 @@ Riêng các endpoint dành cho Mentor (`schedule-decision`, `mentor/pending-sche
 |---|---|---|
 | Khi ứng viên chọn lịch ONLINE | Tạo phòng Daily.co ngay, `Session = SCHEDULED`, status giữ `PENDING` | Chỉ **lưu đề xuất lịch**, status chuyển `AWAITING_MENTOR_SCHEDULE_APPROVAL`, **chưa** có phòng họp |
 | Mentor xác nhận lịch | Không có bước này | `POST /api/application-details/{id}/schedule-decision` |
-| Khi mentor từ chối | — | Ghi lý do, xoá mentorId, đẩy về `AWAITING_CANDIDATE_SELECT_MENTOR` (còn mentor khác) hoặc `AWAITING_MENTOR` (hết mentor) |
+| Khi mentor từ chối | — | Ghi lý do vào `rejectionHistory` (append, giữ lại lịch sử), xoá mentorId, đẩy về `AWAITING_CANDIDATE_SELECT_MENTOR` (nếu vòng có `assignedMentorIds` — **không loại mentor vừa từ chối khỏi danh sách**) hoặc `AWAITING_MENTOR` (vòng chỉ có 1 mentor duy nhất) |
 | Hình thức OFFLINE | Tạo session COMPLETED ngay | **Giữ nguyên**, không qua bước duyệt |
 
 ---
@@ -80,9 +80,9 @@ AWAITING_MENTOR_SCHEDULE_APPROVAL
    ├─ mentor DUYỆT   → tạo phòng Daily.co (Session=SCHEDULED)
    │                 → PENDING (đã có sessionId) → chờ tới giờ → ONGOING → COMPLETED
    │
-   └─ mentor TỪ CHỐI (bắt buộc lý do) → xoá mentorId, lưu lý do
-           ├─ còn mentor khác trong assignedMentorIds → AWAITING_CANDIDATE_SELECT_MENTOR
-           └─ hết mentor                              → AWAITING_MENTOR
+   └─ mentor TỪ CHỐI (bắt buộc lý do) → xoá mentorId, append lý do vào rejectionHistory
+           ├─ vòng có assignedMentorIds (giữ nguyên, không loại mentor vừa từ chối) → AWAITING_CANDIDATE_SELECT_MENTOR
+           └─ vòng chỉ gán 1 mentor duy nhất (assign-mentor)                       → AWAITING_MENTOR
 
 Sau khi Session = COMPLETED:
    mentor chấm ứng viên (POST /api/mentor-reviews)
@@ -119,6 +119,12 @@ Lưu ý thứ tự: điều kiện (1)-(3) dựa trên session phải được k
 ### `ApplicationDetail.sessionInfo` (jsonb)
 
 ```ts
+interface MentorRejection {
+  mentorId?: number | null;   // mentor đã từ chối lần này
+  reason?: string | null;     // lý do từ chối
+  rejectedAt?: string | null; // ISO-8601
+}
+
 interface RoundSessionInfo {
   sessionId?: number | null;
   meetingType?: "ONLINE" | "OFFLINE" | null;
@@ -128,17 +134,16 @@ interface RoundSessionInfo {
   // === Bổ sung cho luồng mentor duyệt lịch ===
   pendingJoinTime?: string | null;        // ISO-8601, giờ hẹn ứng viên đề xuất, đang chờ duyệt
   pendingDurationMinutes?: number | null; // thời lượng (phút) của đề xuất
-  mentorRejectReason?: string | null;     // lý do mentor từ chối gần nhất
-  mentorRejectedAt?: string | null;       // ISO-8601
-  rejectedMentorId?: number | null;       // mentor đã từ chối
+  rejectionHistory?: MentorRejection[];   // TOÀN BỘ lịch sử các lần bị từ chối (không chỉ lần gần nhất)
 }
 ```
 
 Quy tắc dữ liệu cần nhớ:
 
-- Khi ứng viên gửi đề xuất mới, backend **xoá** `mentorRejectReason` / `mentorRejectedAt` / `rejectedMentorId` → banner "bị từ chối" tự biến mất.
-- Khi mentor **duyệt**, backend xoá `pendingJoinTime` / `pendingDurationMinutes`, set `sessionId` + `meetingType = ONLINE`.
-- Khi mentor **từ chối**, backend xoá `pendingJoinTime`, `pendingDurationMinutes` và **cả `meetingType`** (để ứng viên chọn lại hình thức từ đầu), đồng thời set `mentorId = null`.
+- `rejectionHistory` là **log lịch sử, append-only**: mỗi lần mentor từ chối, backend thêm 1 phần tử mới vào cuối mảng. Mảng này **không bao giờ bị xoá** — kể cả khi ứng viên đề xuất lịch mới hay khi một lịch hẹn khác được mentor duyệt sau đó.
+- Để hiển thị banner "bị từ chối gần nhất", FE lấy **phần tử cuối cùng** của `rejectionHistory` (`rejectionHistory[rejectionHistory.length - 1]`). Muốn xem toàn bộ lịch sử thì render cả mảng.
+- Khi mentor **duyệt**, backend xoá `pendingJoinTime` / `pendingDurationMinutes`, set `sessionId` + `meetingType = ONLINE`. `rejectionHistory` giữ nguyên.
+- Khi mentor **từ chối**, backend xoá `pendingJoinTime`, `pendingDurationMinutes` và **cả `meetingType`** (để ứng viên chọn lại hình thức từ đầu), đồng thời set `mentorId = null`, và **không** loại mentor đó khỏi `assignedMentorIds` (ứng viên có thể chọn lại đúng mentor vừa từ chối).
 
 ### DTO của 2 endpoint mới
 
@@ -193,7 +198,7 @@ Sau khi mentor từ chối lịch, hồ sơ sẽ quay lại 1 trong 2 trạng th
    - ONLINE → status chuyển `AWAITING_MENTOR_SCHEDULE_APPROVAL`, response trả về `id = 0`, `status = null` (chưa có session thật) → **không được dựa vào `response.id`**, hãy refetch application detail.
    - OFFLINE → tạo session ngay như cũ.
 3. **Step `AWAITING_SCHEDULE_APPROVAL`**: hiển thị giờ đã đề xuất lấy từ `sessionInfo.pendingJoinTime` / `pendingDurationMinutes`. Không polling — refetch `GET /api/application-details/{id}` khi vào trang, khi tab lấy lại focus, hoặc khi ứng viên bấm nút "Làm mới".
-4. **Nếu bị từ chối**: status quay về `AWAITING_CANDIDATE_SELECT_MENTOR` hoặc `AWAITING_MENTOR`. Hiển thị banner cảnh báo lấy từ `sessionInfo.mentorRejectReason` + `mentorRejectedAt` ở cả 3 step `AWAITING_MENTOR`, `SELECT_MENTOR`, `SCHEDULE`.
+4. **Nếu bị từ chối**: status quay về `AWAITING_CANDIDATE_SELECT_MENTOR` (giữ nguyên `assignedMentorIds` gốc, kể cả mentor vừa từ chối) hoặc `AWAITING_MENTOR` (nếu vòng chỉ được gán 1 mentor duy nhất qua `assign-mentor`). Hiển thị banner cảnh báo lấy từ phần tử cuối của `sessionInfo.rejectionHistory` ở cả 3 step `AWAITING_MENTOR`, `SELECT_MENTOR`, `SCHEDULE`.
 5. **Nếu được duyệt**: status về `PENDING` và đã có `sessionId` → FE tự nhảy sang step `WAITING`, lấy `roomUrl` từ `GET /api/sessions/{id}`.
 
 ### 6.3 Mentor — duyệt/từ chối lịch

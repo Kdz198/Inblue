@@ -353,9 +353,7 @@ public class ApplicationDetailServiceImpl implements ApplicationDetailService {
             sessionInfo.setMeetingType(fpt.org.inblue.enums.MeetingType.ONLINE);
             sessionInfo.setPendingJoinTime(null);
             sessionInfo.setPendingDurationMinutes(null);
-            sessionInfo.setMentorRejectReason(null);
-            sessionInfo.setMentorRejectedAt(null);
-            sessionInfo.setRejectedMentorId(null);
+            // rejectionHistory KHÔNG bị xoá khi duyệt - đây là log lịch sử, giữ nguyên vĩnh viễn.
 
             applicationDetail.setSessionId(session.getId());
             applicationDetail.setSessionInfo(sessionInfo);
@@ -381,9 +379,17 @@ public class ApplicationDetailServiceImpl implements ApplicationDetailService {
         // Xoá luôn hình thức họp đã chọn: ứng viên sẽ chọn lại từ đầu.
         // (FE dùng điều kiện meetingType == null để cho phép đặt lại lịch)
         sessionInfo.setMeetingType(null);
-        sessionInfo.setMentorRejectReason(trimmedReason);
-        sessionInfo.setMentorRejectedAt(LocalDateTime.now().toString());
-        sessionInfo.setRejectedMentorId(rejectedMentorId);
+
+        List<ApplicationDetail.MentorRejection> rejectionHistory = sessionInfo.getRejectionHistory();
+        if (rejectionHistory == null) {
+            rejectionHistory = new ArrayList<>();
+        }
+        rejectionHistory.add(ApplicationDetail.MentorRejection.builder()
+                .mentorId(rejectedMentorId)
+                .reason(trimmedReason)
+                .rejectedAt(LocalDateTime.now().toString())
+                .build());
+        sessionInfo.setRejectionHistory(rejectionHistory);
 
         applicationDetail.setMentorId(null);
         applicationDetail.setSessionInfo(sessionInfo);

@@ -121,11 +121,9 @@ public class ApplicationDetail {
 
         private Integer pendingDurationMinutes; // Thời lượng (phút) của lịch hẹn đang chờ duyệt
 
-        private String mentorRejectReason; // Lý do mentor từ chối lịch hẹn gần nhất
-
-        private String mentorRejectedAt; // Thời điểm mentor từ chối lịch hẹn gần nhất (ISO-8601)
-
-        private Integer rejectedMentorId; // Mentor đã từ chối lịch hẹn gần nhất
+        // Lưu lại TOÀN BỘ lịch sử các lần mentor từ chối lịch hẹn (không chỉ lần gần nhất).
+        // Danh sách này không bị xoá khi ứng viên đề xuất lịch mới hoặc khi lịch được duyệt.
+        private List<MentorRejection> rejectionHistory;
 
         private LocalDateTime parseDateTime(Object val) {
             if (val == null) return null;
@@ -149,6 +147,17 @@ public class ApplicationDetail {
             }
             return null;
         }
+    }
+
+    /** Một lần mentor từ chối lịch hẹn do ứng viên đề xuất (vòng Mentor Review, ONLINE). */
+    @Data
+    @NoArgsConstructor
+    @AllArgsConstructor
+    @Builder
+    public static class MentorRejection {
+        private Integer mentorId; // Mentor đã từ chối
+        private String reason; // Lý do từ chối
+        private String rejectedAt; // Thời điểm từ chối (ISO-8601)
     }
 
     @Data
