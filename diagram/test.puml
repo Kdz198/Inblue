@@ -1,0 +1,58 @@
+@startuml SystemLogin_EmailPassword
+skinparam monochrome true
+skinparam shadowing false
+skinparam sequenceMessageAlign center
+skinparam maxMessageSize 220
+skinparam BoxPadding 10
+
+actor "Candidate / Mentor" as Candidate
+participant ":AuthController" as Controller
+participant ":AuthenticationManager" as AuthMgr
+participant ":DaoAuthenticationProvider" as Provider
+participant ":CustomUserDetailService" as UDS
+participant ":UserRepository" as UserRepo
+participant ":MentorRepository" as MentorRepo
+participant ":PasswordEncoder" as Encoder
+participant ":JwtUtils" as Jwt
+
+Candidate -> Controller ++ : POST /api/auth/login(loginRequest)
+Controller -> AuthMgr ++ : authenticate(\nUsernamePasswordAuthenticationToken(email, password))
+AuthMgr -> Provider ++ : authenticate(token)
+Provider -> UDS ++ : loadUserByUsername(email)
+
+UDS -> UserRepo ++ : findByEmail(email)
+UserRepo --> UDS -- : user
+
+opt [user == null || !user.isActive()]
+    UDS -> MentorRepo ++ : findByEmail(email)
+    MentorRepo --> UDS -- : mentor
+end
+
+alt [account found & active (User hoặc Mentor)]
+    UDS -> UDS : build CustomUserDetails(user/mentor)
+    UDS --> Provider -- : return CustomUserDetails
+    Provider -> Encoder ++ : matches(rawPassword, userDetails.getPassword())
+    Encoder --> Provider -- : matches : boolean
+
+    alt [matches == true]
+        Provider --> AuthMgr -- : return Authentication\n(principal = CustomUserDetails, authorities)
+        AuthMgr --> Controller -- : return Authentication
+        Controller -> Controller : SecurityContextHolder.getContext()\n.setAuthentication(auth)
+        Controller -> Jwt ++ : generateToken(auth)
+        Jwt -> Jwt : (CustomUserDetails) auth.getPrincipal()
+        Jwt -> Jwt : Jwts.builder()...signWith(secretKey).compact()
+        Jwt --> Controller -- : return token : String
+        Controller --> Candidate -- : 200 OK\nheader Authorization: Bearer <token>\nbody token
+    else [matches == false]
+        Provider --> AuthMgr -- : throws BadCredentialsException
+        AuthMgr --> Controller -- : throws AuthenticationException
+        Controller --> Candidate -- : error response (login failed)
+    end
+else [không tìm thấy account nào đang active]
+    UDS --> Provider -- : throws UsernameNotFoundException
+    Provider --> AuthMgr -- : throws AuthenticationException
+    AuthMgr --> Controller -- : throws AuthenticationException
+    Controller --> Candidate -- : error response (login failed)
+end
+
+@enduml
