@@ -33,6 +33,9 @@ public interface ApplicationDetailService {
     // Dành cho Mentor: danh sách lịch hẹn đang chờ mentor hiện tại duyệt
     List<MentorPendingScheduleResponse> getPendingScheduleApprovals();
 
+    // Dành cho Candidate: chủ động huỷ lịch hẹn đã đề xuất (dù mentor đã duyệt hay chưa)
+    ApplicationDetail cancelSchedule(long applicationDetailId, String reason);
+
     // Bắt đầu vòng AI Interview (gọi từ Kiosk checkin hoặc web)
     String startAiInterview(long applicationDetailId);
 }

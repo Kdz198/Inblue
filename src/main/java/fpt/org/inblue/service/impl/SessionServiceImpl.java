@@ -486,6 +486,28 @@ public class SessionServiceImpl implements SessionService {
         return sessionRepository.save(session);
     }
 
+    /**
+     * Huỷ 1 session đã được mentor duyệt (vòng Mentor Review, ONLINE) theo yêu cầu chủ động huỷ
+     * lịch của ứng viên - xem ApplicationDetailService.cancelSchedule. Xoá luôn phòng Daily.co
+     * thật để tránh phòng rác, và đánh dấu Session = CANCELED.
+     */
+    @Override
+    @Transactional
+    public void cancelApprovedSchedule(int sessionId) {
+        Session session = sessionRepository
+                .findById(sessionId)
+                .orElseThrow(() -> new CustomException("Session not found", HttpStatus.NOT_FOUND));
+        if (session.getStatus() == SessionStatus.ONGOING || session.getStatus() == SessionStatus.COMPLETED) {
+            throw new CustomException(
+                    "Không thể huỷ lịch đã bắt đầu hoặc đã hoàn thành", HttpStatus.BAD_REQUEST);
+        }
+        if (session.getRoomName() != null) {
+            deleteSession(session.getRoomName());
+        }
+        session.setStatus(SessionStatus.CANCELED);
+        sessionRepository.save(session);
+    }
+
     private void clearPendingSchedule(ApplicationDetail.RoundSessionInfo sessionInfo) {
         sessionInfo.setPendingJoinTime(null);
         sessionInfo.setPendingDurationMinutes(null);

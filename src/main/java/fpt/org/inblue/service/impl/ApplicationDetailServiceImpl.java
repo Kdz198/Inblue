@@ -1,6 +1,7 @@
 package fpt.org.inblue.service.impl;
 
 import fpt.org.inblue.enums.ApplicationDetailStatus;
+import fpt.org.inblue.enums.ScheduleEventType;
 import fpt.org.inblue.exception.CustomException;
 import fpt.org.inblue.model.*;
 import fpt.org.inblue.model.dto.request.InterviewSetupRequest;
@@ -353,7 +354,7 @@ public class ApplicationDetailServiceImpl implements ApplicationDetailService {
             sessionInfo.setMeetingType(fpt.org.inblue.enums.MeetingType.ONLINE);
             sessionInfo.setPendingJoinTime(null);
             sessionInfo.setPendingDurationMinutes(null);
-            // rejectionHistory KHÔNG bị xoá khi duyệt - đây là log lịch sử, giữ nguyên vĩnh viễn.
+            // scheduleHistory KHÔNG bị xoá khi duyệt - đây là log lịch sử, giữ nguyên vĩnh viễn.
 
             applicationDetail.setSessionId(session.getId());
             applicationDetail.setSessionInfo(sessionInfo);
@@ -380,28 +381,111 @@ public class ApplicationDetailServiceImpl implements ApplicationDetailService {
         // (FE dùng điều kiện meetingType == null để cho phép đặt lại lịch)
         sessionInfo.setMeetingType(null);
 
-        List<ApplicationDetail.MentorRejection> rejectionHistory = sessionInfo.getRejectionHistory();
-        if (rejectionHistory == null) {
-            rejectionHistory = new ArrayList<>();
+        List<ApplicationDetail.ScheduleHistoryEntry> scheduleHistory = sessionInfo.getScheduleHistory();
+        if (scheduleHistory == null) {
+            scheduleHistory = new ArrayList<>();
         }
-        rejectionHistory.add(ApplicationDetail.MentorRejection.builder()
+        scheduleHistory.add(ApplicationDetail.ScheduleHistoryEntry.builder()
+                .type(ScheduleEventType.MENTOR_REJECTED)
                 .mentorId(rejectedMentorId)
                 .reason(trimmedReason)
-                .rejectedAt(LocalDateTime.now().toString())
+                .occurredAt(LocalDateTime.now().toString())
                 .build());
-        sessionInfo.setRejectionHistory(rejectionHistory);
+        sessionInfo.setScheduleHistory(scheduleHistory);
 
-        applicationDetail.setMentorId(null);
         applicationDetail.setSessionInfo(sessionInfo);
 
         if (applicationDetail.getAssignedMentorIds() != null
                 && !applicationDetail.getAssignedMentorIds().isEmpty()) {
             // Giữ nguyên danh sách mentor Admin đã đề xuất (kể cả mentor vừa từ chối)
             // để ứng viên chọn lại, không loại rejectedMentorId ra khỏi danh sách nữa.
+            applicationDetail.setMentorId(null);
             applicationDetail.setStatus(ApplicationDetailStatus.AWAITING_CANDIDATE_SELECT_MENTOR);
         } else {
-            // Vòng này được Admin gán thẳng 1 mentor (assign-mentor), không có danh sách để chọn lại
-            applicationDetail.setStatus(ApplicationDetailStatus.AWAITING_MENTOR);
+            // Vòng này được Admin gán thẳng 1 mentor (assign-mentor) -> giữ nguyên mentorId,
+            // ứng viên đề xuất lịch mới ngay với cùng mentor mà không cần chọn lại.
+            applicationDetail.setStatus(ApplicationDetailStatus.PENDING);
+        }
+
+        return applicationDetailRepository.save(applicationDetail);
+    }
+
+    /**
+     * Xác định User.id của ứng viên đang đăng nhập. Không cần fallback theo email như mentor vì
+     * JWT subject của tài khoản User luôn là User.id (xem CustomUserDetailService).
+     */
+    private int resolveCurrentUserId() {
+        String token = HelperUtil.getToke();
+        if (token == null || token.isBlank()) {
+            throw new CustomException("Missing Authorization token", HttpStatus.UNAUTHORIZED);
+        }
+        return jwtUtils.getUserIdFromToken(token);
+    }
+
+    @Override
+    @Transactional
+    public ApplicationDetail cancelSchedule(long applicationDetailId, String reason) {
+        ApplicationDetail applicationDetail = getApplicationDetailById(applicationDetailId);
+        Application application = applicationService.getApplicationById(applicationDetail.getApplicationId());
+
+        int currentUserId = resolveCurrentUserId();
+        if (currentUserId != application.getUserId()) {
+            throw new CustomException("Bạn không phải ứng viên của vòng phỏng vấn này", HttpStatus.FORBIDDEN);
+        }
+
+        String trimmedReason = null;
+        if (reason != null && !reason.trim().isEmpty()) {
+            trimmedReason = reason.trim();
+            if (trimmedReason.length() > MAX_REJECT_REASON_LENGTH) {
+                throw new CustomException(
+                        "Lý do huỷ không được vượt quá " + MAX_REJECT_REASON_LENGTH + " ký tự",
+                        HttpStatus.BAD_REQUEST);
+            }
+        }
+
+        ApplicationDetail.RoundSessionInfo sessionInfo = applicationDetail.getSessionInfo();
+        if (sessionInfo == null) {
+            sessionInfo = new ApplicationDetail.RoundSessionInfo();
+        }
+        Integer canceledMentorId = applicationDetail.getMentorId();
+
+        if (applicationDetail.getStatus() == ApplicationDetailStatus.AWAITING_MENTOR_SCHEDULE_APPROVAL) {
+            // Case A: mentor chưa duyệt - chỉ mới có đề xuất, chưa có Session thật
+            sessionInfo.setPendingJoinTime(null);
+            sessionInfo.setPendingDurationMinutes(null);
+        } else if (applicationDetail.getStatus() == ApplicationDetailStatus.PENDING
+                && applicationDetail.getSessionId() != null
+                && sessionInfo.getMeetingType() == fpt.org.inblue.enums.MeetingType.ONLINE) {
+            // Case B: mentor đã duyệt - đã có Session thật, huỷ luôn phòng Daily.co
+            sessionService.cancelApprovedSchedule(applicationDetail.getSessionId());
+            applicationDetail.setSessionId(null);
+            sessionInfo.setSessionId(null);
+        } else {
+            throw new CustomException(
+                    "Vòng phỏng vấn này không có lịch hẹn online nào để huỷ", HttpStatus.BAD_REQUEST);
+        }
+
+        sessionInfo.setMeetingType(null);
+
+        List<ApplicationDetail.ScheduleHistoryEntry> scheduleHistory = sessionInfo.getScheduleHistory();
+        if (scheduleHistory == null) {
+            scheduleHistory = new ArrayList<>();
+        }
+        scheduleHistory.add(ApplicationDetail.ScheduleHistoryEntry.builder()
+                .type(ScheduleEventType.CANDIDATE_CANCELED)
+                .mentorId(canceledMentorId)
+                .reason(trimmedReason)
+                .occurredAt(LocalDateTime.now().toString())
+                .build());
+        sessionInfo.setScheduleHistory(scheduleHistory);
+        applicationDetail.setSessionInfo(sessionInfo);
+
+        if (applicationDetail.getAssignedMentorIds() != null
+                && !applicationDetail.getAssignedMentorIds().isEmpty()) {
+            applicationDetail.setMentorId(null);
+            applicationDetail.setStatus(ApplicationDetailStatus.AWAITING_CANDIDATE_SELECT_MENTOR);
+        } else {
+            applicationDetail.setStatus(ApplicationDetailStatus.PENDING);
         }
 
         return applicationDetailRepository.save(applicationDetail);

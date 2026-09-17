@@ -121,9 +121,10 @@ public class ApplicationDetail {
 
         private Integer pendingDurationMinutes; // Thời lượng (phút) của lịch hẹn đang chờ duyệt
 
-        // Lưu lại TOÀN BỘ lịch sử các lần mentor từ chối lịch hẹn (không chỉ lần gần nhất).
-        // Danh sách này không bị xoá khi ứng viên đề xuất lịch mới hoặc khi lịch được duyệt.
-        private List<MentorRejection> rejectionHistory;
+        // Lưu lại TOÀN BỘ lịch sử các lần mentor từ chối HOẶC ứng viên chủ động huỷ lịch hẹn
+        // (không chỉ lần gần nhất) để FE dựng timeline. Danh sách này append-only, không bị xoá
+        // khi ứng viên đề xuất lịch mới hoặc khi lịch được duyệt.
+        private List<ScheduleHistoryEntry> scheduleHistory;
 
         private LocalDateTime parseDateTime(Object val) {
             if (val == null) return null;
@@ -149,15 +150,20 @@ public class ApplicationDetail {
         }
     }
 
-    /** Một lần mentor từ chối lịch hẹn do ứng viên đề xuất (vòng Mentor Review, ONLINE). */
+    /**
+     * Một sự kiện trong lịch sử đặt lịch của vòng Mentor Review (ONLINE): mentor từ chối, hoặc
+     * ứng viên chủ động huỷ. Dùng chung 1 danh sách (RoundSessionInfo.scheduleHistory) để FE dựng
+     * timeline theo đúng thứ tự thời gian.
+     */
     @Data
     @NoArgsConstructor
     @AllArgsConstructor
     @Builder
-    public static class MentorRejection {
-        private Integer mentorId; // Mentor đã từ chối
-        private String reason; // Lý do từ chối
-        private String rejectedAt; // Thời điểm từ chối (ISO-8601)
+    public static class ScheduleHistoryEntry {
+        private fpt.org.inblue.enums.ScheduleEventType type; // MENTOR_REJECTED | CANDIDATE_CANCELED
+        private Integer mentorId; // Mentor liên quan (đã từ chối, hoặc mentor của lịch bị huỷ)
+        private String reason; // Lý do (bắt buộc với MENTOR_REJECTED, optional với CANDIDATE_CANCELED)
+        private String occurredAt; // Thời điểm xảy ra (ISO-8601)
     }
 
     @Data

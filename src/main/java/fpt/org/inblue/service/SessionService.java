@@ -36,6 +36,9 @@ public interface SessionService {
     // Tạo phòng Daily.co thật sau khi mentor duyệt lịch hẹn của vòng Mentor Review (ONLINE)
     Session createRoomForApprovedSchedule(int userId, int mentorId, java.sql.Timestamp joinTime, int durationMinutes);
 
+    // Huỷ 1 session đã được mentor duyệt (Mentor Review ONLINE): xoá phòng Daily.co thật + set CANCELED
+    void cancelApprovedSchedule(int sessionId);
+
     String reactivateWebhook();
 
     String checkWebhook();
