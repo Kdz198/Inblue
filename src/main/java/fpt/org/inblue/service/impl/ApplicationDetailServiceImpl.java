@@ -439,8 +439,7 @@ public class ApplicationDetailServiceImpl implements ApplicationDetailService {
             trimmedReason = reason.trim();
             if (trimmedReason.length() > MAX_REJECT_REASON_LENGTH) {
                 throw new CustomException(
-                        "Lý do huỷ không được vượt quá " + MAX_REJECT_REASON_LENGTH + " ký tự",
-                        HttpStatus.BAD_REQUEST);
+                        "Lý do huỷ không được vượt quá " + MAX_REJECT_REASON_LENGTH + " ký tự", HttpStatus.BAD_REQUEST);
             }
         }
 
@@ -462,8 +461,7 @@ public class ApplicationDetailServiceImpl implements ApplicationDetailService {
             applicationDetail.setSessionId(null);
             sessionInfo.setSessionId(null);
         } else {
-            throw new CustomException(
-                    "Vòng phỏng vấn này không có lịch hẹn online nào để huỷ", HttpStatus.BAD_REQUEST);
+            throw new CustomException("Vòng phỏng vấn này không có lịch hẹn online nào để huỷ", HttpStatus.BAD_REQUEST);
         }
 
         sessionInfo.setMeetingType(null);

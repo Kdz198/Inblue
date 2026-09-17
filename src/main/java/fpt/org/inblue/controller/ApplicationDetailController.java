@@ -139,10 +139,9 @@ public class ApplicationDetailController {
     @PostMapping("/{id}/cancel-schedule")
     @Operation(
             summary = "Ứng viên huỷ lịch hẹn đã đề xuất (dù mentor đã duyệt hay chưa)",
-            description =
-                    "Nếu mentor chưa duyệt: xoá đề xuất, quay lại chọn mentor/đặt lịch. "
-                            + "Nếu mentor đã duyệt: xoá luôn phòng Daily.co thật, set Session=CANCELED, "
-                            + "rồi quay lại chọn mentor/đặt lịch. Không cho huỷ nếu buổi phỏng vấn đã diễn ra/hoàn thành.")
+            description = "Nếu mentor chưa duyệt: xoá đề xuất, quay lại chọn mentor/đặt lịch. "
+                    + "Nếu mentor đã duyệt: xoá luôn phòng Daily.co thật, set Session=CANCELED, "
+                    + "rồi quay lại chọn mentor/đặt lịch. Không cho huỷ nếu buổi phỏng vấn đã diễn ra/hoàn thành.")
     public ResponseEntity<ApplicationDetail> cancelSchedule(
             @PathVariable long id, @RequestBody(required = false) CancelScheduleRequest request) {
         String reason = request != null ? request.getReason() : null;

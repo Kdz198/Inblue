@@ -498,8 +498,7 @@ public class SessionServiceImpl implements SessionService {
                 .findById(sessionId)
                 .orElseThrow(() -> new CustomException("Session not found", HttpStatus.NOT_FOUND));
         if (session.getStatus() == SessionStatus.ONGOING || session.getStatus() == SessionStatus.COMPLETED) {
-            throw new CustomException(
-                    "Không thể huỷ lịch đã bắt đầu hoặc đã hoàn thành", HttpStatus.BAD_REQUEST);
+            throw new CustomException("Không thể huỷ lịch đã bắt đầu hoặc đã hoàn thành", HttpStatus.BAD_REQUEST);
         }
         if (session.getRoomName() != null) {
             deleteSession(session.getRoomName());
