@@ -17,7 +17,8 @@ import org.hibernate.type.SqlTypes;
 @Entity
 @Table(
         name = "interview_session",
-        uniqueConstraints = @UniqueConstraint(name = "uk_interview_session_app_detail_id", columnNames = "application_detail_id"))
+        uniqueConstraints =
+                @UniqueConstraint(name = "uk_interview_session_app_detail_id", columnNames = "application_detail_id"))
 @Data
 @Builder
 @NoArgsConstructor
