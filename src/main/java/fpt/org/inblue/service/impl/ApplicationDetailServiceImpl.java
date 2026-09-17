@@ -28,6 +28,7 @@ import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 @Service
@@ -473,7 +474,7 @@ public class ApplicationDetailServiceImpl implements ApplicationDetailService {
     }
 
     @Override
-    @Transactional
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
     public String startAiInterview(long applicationDetailId) {
         ApplicationDetail appDetail = getApplicationDetailById(applicationDetailId);
         if (appDetail.getStatus() == ApplicationDetailStatus.COMPLETED) {
@@ -547,7 +548,16 @@ public class ApplicationDetailServiceImpl implements ApplicationDetailService {
                 .sessionConfig(configData)
                 .build();
 
-        String sessionKey = interviewSessionService.createSession(setupRequest);
+        String sessionKey;
+        try {
+            sessionKey = interviewSessionService.createSession(setupRequest);
+        } catch (org.springframework.dao.DataIntegrityViolationException e) {
+            // Đã có session khác được tạo song song cho cùng applicationDetailId (đụng unique constraint)
+            InterviewSession raceWinner = interviewSessionRepository
+                    .findFirstByApplicationDetailIdOrderByIdAsc(applicationDetailId)
+                    .orElseThrow(() -> e);
+            return raceWinner.getSessionKey();
+        }
 
         InterviewSession interviewSession = interviewSessionRepository.findBySessionKey(sessionKey);
         if (interviewSession != null) {
