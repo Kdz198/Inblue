@@ -1,0 +1,104 @@
+@startuml GoogleOAuth2Login
+skinparam monochrome true
+skinparam shadowing false
+
+' Do not repeat participant boxes at the bottom of the diagram
+hide footbox
+
+<style>
+sequenceDiagram {
+  groupHeader {
+    FontStyle plain
+  }
+}
+</style>
+
+actor "Candidate / Mentor" as User
+participant ":AuthController" as Controller
+participant ":OAuth2LoginAuthenticationFilter" as OAuthFilter
+participant "Google Authorization Server" as GoogleAuth
+participant "Google UserInfo Endpoint" as GoogleUserInfo
+participant ":CustomOAuth2UserService" as OAuthService
+participant ":UserRepository" as UserRepo
+participant ":MentorRepository" as MentorRepo
+participant ":Oauth2Handler" as Handler
+participant ":JwtUtils" as Jwt
+
+note right of OAuthFilter
+  Built-in Spring Security OAuth2 Client
+  filter chain (not custom application code)
+end note
+
+User -> Controller : GET /api/auth/login-with-google
+activate Controller
+Controller --> User : redirect to /oauth2/authorization/google
+
+User -> OAuthFilter : GET /oauth2/authorization/google
+activate OAuthFilter
+OAuthFilter --> User : redirect to Google authorization endpoint
+deactivate OAuthFilter
+
+User -> GoogleAuth : GET authorization endpoint (login & consent)
+activate GoogleAuth
+GoogleAuth --> User : redirect to /login/oauth2/code/google?code=...
+deactivate GoogleAuth
+
+User -> OAuthFilter : GET /login/oauth2/code/google?code=...
+activate OAuthFilter
+
+OAuthFilter -> GoogleAuth : exchange authorization code for access token
+activate GoogleAuth
+GoogleAuth --> OAuthFilter : access token
+deactivate GoogleAuth
+
+OAuthFilter -> OAuthService : loadUser(OAuth2UserRequest)
+activate OAuthService
+
+OAuthService -> GoogleUserInfo : GET userinfo(access token)
+activate GoogleUserInfo
+GoogleUserInfo --> OAuthService : attributes (email, name, picture, sub)
+deactivate GoogleUserInfo
+
+OAuthService -> MentorRepo : findByEmail(email)
+activate MentorRepo
+MentorRepo --> OAuthService : mentor
+deactivate MentorRepo
+
+alt [Mentor account exists and is active]
+    OAuthService -> OAuthService : build CustomOAuth2User(mentor)
+else [Mentor account does not exist or is not active]
+    OAuthService -> UserRepo : findByEmail(email)
+    activate UserRepo
+    UserRepo --> OAuthService : user
+    deactivate UserRepo
+
+    opt [User account does not exist]
+        OAuthService -> UserRepo : save(new User(email, name, role=USER))
+        activate UserRepo
+        UserRepo --> OAuthService : user
+        deactivate UserRepo
+    end
+
+    OAuthService -> OAuthService : build CustomOAuth2User(user)
+end
+
+OAuthService --> OAuthFilter : return CustomOAuth2User
+deactivate OAuthService
+
+OAuthFilter -> Handler : onAuthenticationSuccess(authentication)
+activate Handler
+
+Handler -> Handler : build CustomUserDetails(principal)
+
+Handler -> Jwt : generateToken(authentication)
+activate Jwt
+Jwt --> Handler : token : String
+deactivate Jwt
+
+Handler --> OAuthFilter : redirect prepared (frontendUrl/oauth2/callback?token=...)
+deactivate Handler
+
+OAuthFilter --> User : 302 redirect with JWT token
+deactivate OAuthFilter
+
+@enduml

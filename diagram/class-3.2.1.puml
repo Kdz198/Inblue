@@ -1,0 +1,449 @@
+@startuml AICvParsing_JobDescriptionMatching
+skinparam classAttributeIconSize 0
+skinparam monochrome true
+skinparam shadowing false
+hide circle
+
+skinparam linetype ortho
+skinparam nodesep 45
+skinparam ranksep 55
+
+' ================= CV PARSING (upload CV -> structured CandidateProfile) =================
+
+interface UserService {
+  + upCv(userId : int, applicationId : Long, cvFile : MultipartFile) : CandidateProfile
+}
+
+class UserServiceImpl {
+  - userRepository : UserRepository
+  - candidateProfileService : CandidateProfileService
+  - apiClient : ApiClient
+  - cloudinaryService : CloudinaryService
+  - applicationEventPublisher : ApplicationEventPublisher
+  --
+  + upCv(userId : int, applicationId : Long, cvFile : MultipartFile) : CandidateProfile
+}
+
+interface CandidateProfileService {
+  + createProfile(profile : CandidateProfile) : CandidateProfile
+  + getProfileByApplicationId(applicationId : Long) : CandidateProfile
+  + getProfileByUserIdAndApplicationIdIsNull(userId : int) : CandidateProfile
+  + getProfileByUserId(userId : int) : List<CandidateProfile>
+  + updateProfile(profile : CandidateProfile) : CandidateProfile
+  + deleteProfile(userId : int) : void
+}
+
+class CandidateProfileImpl {
+  - candidateProfileRepository : CandidateProfileRepository
+  --
+  + createProfile(profile : CandidateProfile) : CandidateProfile
+  + getProfileByApplicationId(applicationId : Long) : CandidateProfile
+}
+
+interface ApiClient {
+  + sendChatToAnythingLlm(workspace : AnythingLlmWorkspace, payload : Object, sessionId : String, reset : boolean, files : List<MultipartFile>, responseType : Class<T>) : T
+  + callApi(targetService : PythonService, endpoint : String, method : HttpMethod, requestBody : Object, responseType : Class<T>) : T
+  + executeCode(request : CompilerRequestDto) : CompilerResponseDto
+}
+
+class ApiClientImpl {
+  - restTemplate : RestTemplate
+  - chatLogService : LlmChatLogService
+  --
+  + sendChatToAnythingLlm(workspace, payload, sessionId, reset, files, responseType) : T
+  + callApi(targetService, endpoint, method, requestBody, responseType) : T
+  + executeCode(request : CompilerRequestDto) : CompilerResponseDto
+}
+
+enum AnythingLlmWorkspace {
+  CV_PARSE
+  CV_ANALYSIS
+  CODE_REVIEW
+  EMAIL
+  ' (other workspaces omitted - out of scope for this module)
+}
+
+class CVParserResponse {
+  - targetRole : String
+  - targetLevel : String
+  - introduction : String
+  - technicalSkills : List<String>
+  - softSkills : List<String>
+  - tools : List<String>
+  - certifications : List<String>
+  - achievements : List<String>
+  - educations : List<EducationDTO>
+  - workExperiences : List<WorkExperienceDTO>
+  - projects : List<ProjectDTO>
+}
+
+class EducationDTO {
+  - school : String
+  - major : String
+  - degree : String
+  - gpa : String
+  - startDate : String
+  - endDate : String
+}
+
+class WorkExperienceDTO {
+  - company : String
+  - position : String
+  - description : String
+  - startDate : String
+  - endDate : String
+}
+
+class ProjectDTO {
+  - name : String
+  - description : String
+  - role : String
+  - teamSize : Integer
+  - usedTools : List<String>
+  - outcome : String
+}
+
+class CandidateProfile {
+  - id : Integer
+  - applicationId : Long
+  - targetRole : String
+  - targetLevel : String
+  - introduction : String
+  - technicalSkills : List<String>
+  - softSkills : List<String>
+  - tools : List<String>
+  - certifications : List<String>
+  - achievements : List<String>
+  - projects : List<ProjectDetail>
+  - workExperiences : List<WorkExperience>
+  - educations : List<EducationEntry>
+  - createdAt : LocalDateTime
+  - updatedAt : LocalDateTime
+}
+
+class EducationEntry {
+  - school : String
+  - major : String
+  - degree : String
+  - gpa : String
+  - startDate : String
+  - endDate : String
+}
+
+class WorkExperience {
+  - company : String
+  - position : String
+  - description : String
+  - startDate : String
+  - endDate : String
+}
+
+class ProjectDetail {
+  - name : String
+  - description : String
+  - role : String
+  - teamSize : Integer
+  - usedTools : List<String>
+  - outcome : String
+}
+
+class User {
+  - id : Integer
+  - name : String
+  - email : String
+  .. (full detail in Authentication Module diagram) ..
+}
+
+' ================= CV SCREENING & MATCHING (AI scores a CV against a JD) =================
+
+class ProcessDto {
+  - application : Application
+  - round : Round
+  - file : MultipartFile
+  - roundType : RoundType
+  - textContent : String
+  - quizAnswers : Object
+  - compileRequest : List<CompileRequest>
+}
+
+interface RoundSubmissionProcessor {
+  + getSupportedType() : RoundType
+  + process(detail : ProcessDto) : SubmissionResult
+}
+
+class CVRoundProcessor {
+  - submissionEventHandle : SubmissionEventHandle
+  --
+  + getSupportedType() : RoundType
+  + process(dto : ProcessDto) : SubmissionResult
+}
+
+class RoundProcessorFactory {
+  - quizProcessor : QuizRoundProcessor
+  - emailProcessor : EmailRoundProcessor
+  - cvProcessor : CVRoundProcessor
+  - codeProcessor : CodeRoundProcessor
+  --
+  + getProcessor(type : RoundType) : RoundSubmissionProcessor
+}
+
+class SubmissionService {
+  - roundProcessorFactory : RoundProcessorFactory
+  - applicationService : ApplicationService
+  - jobDescriptionService : JobDescriptionService
+  - apiClient : ApiClient
+  - applicationDetailRepository : ApplicationDetailRepository
+  - submissionEventHandle : SubmissionEventHandle
+  --
+  + submitRound(detail : SubmitRequest) : SubmissionResult
+  + evaluateCodeReview(request : CodeReviewSubmitRequest) : ApplicationDetail
+}
+
+class SubmissionResult {
+  - status : Status
+  - applicationId : Long
+  - detail : ApplicationDetail
+  - message : String
+  - roundResult : ApplicationDetail.RoundResult
+  --
+  + completed(detail : ApplicationDetail) : SubmissionResult {static}
+  + pending(applicationId : Long) : SubmissionResult {static}
+}
+
+class SubmissionEventHandle {
+  - jobDescriptionRepository : JobDescriptionRepository
+  - apiClient : ApiClient
+  - cloudinaryService : CloudinaryService
+  - applicationDetailRepository : ApplicationDetailRepository
+  - userService : UserService
+  --
+  + processCvSubmission(dto : ProcessDto) : ApplicationDetail
+  + parseRawMetrics(rawMap : Map<String, Object>) : ApplicationDetail.AiFeedback {static}
+}
+
+class CvEvaluationRequest {
+  - cvFile : MultipartFile
+  - jobDescription : JD
+  - evaluationPlan : Round.EvaluationPlan
+}
+
+class JD {
+  - title : String
+  - description : String
+  - requirements : String
+  - level : String
+}
+
+class EvaluationCriteria {
+  - maxScore : Integer
+  - aiSystemPrompt : String
+  - extraMetrics : List<String>
+}
+
+class CvEvaluationResponse {
+  - score : Double
+  - extraMetrics : Map<String, Object>
+  - structuredAiFeedback : ApplicationDetail.StructuredAiFeedback
+}
+
+class ApplicationDetail {
+  - id : Long
+  - applicationId : Long
+  - roundId : Long
+  - status : ApplicationDetailStatus
+  - aiScore : Double
+  - finalScore : Double
+  - finalResult : RoundResult
+  - aiFeedback : AiFeedback
+  - structuredAiFeedback : StructuredAiFeedback
+  - submissionData : SubmissionData
+}
+
+interface ApplicationDetailRepository {
+  + findByApplicationIdAndRoundId(applicationId : Long, roundId : Long) : Optional<ApplicationDetail>
+  + findAllByApplicationId(applicationId : Long) : List<ApplicationDetail>
+}
+
+class CvMetricsConstant {
+  + SKILLS_MATCH_SCORE : String {static}
+  + EXPERIENCE_MATCH_SCORE : String {static}
+  + EDUCATION_MATCH_SCORE : String {static}
+  + CV_READABILITY_SCORE : String {static}
+  + KEYWORD_DENSITY : String {static}
+  + OVERALL_CV_MATCH : String {static}
+  + POTENTIAL_RED_FLAGS : String {static}
+}
+
+' ================= JOB RECOMMENDATION (embedding-based JD matching) =================
+
+interface JobRecommendationService {
+  + getRecommendations(userId : int) : List<JobRecommendationResponse>
+  + updateThreshold(thresholdPercent : BigDecimal) : JobRecommendationThresholdResponse
+}
+
+class JobRecommendationServiceImpl {
+  - preferenceRepository : UserCareerPreferenceRepository
+  - competencyRepository : UserCompetencyRepository
+  - jobDescriptionRepository : JobDescriptionRepository
+  - configRepository : JobRecommendationConfigRepository
+  - jobRecommendationMapper : JobRecommendationMapper
+  --
+  + getRecommendations(userId : int) : List<JobRecommendationResponse>
+  + updateThreshold(thresholdPercent : BigDecimal) : JobRecommendationThresholdResponse
+  - scoreJob(userId, job, preferenceVector, currentLevel, threshold, eligible) : ScoredJob
+}
+
+interface JobRecommendationMapper {
+  + toResponse(jobDescription : JobDescription, matchPercent : Double) : JobRecommendationResponse
+}
+
+class JobRecommendationResponse {
+  - id : Long
+  - title : String
+  - description : String
+  - requirements : String
+  - level : TargetLevel
+  - salaryMin : Double
+  - salaryMax : Double
+  - skillTags : List<String>
+  - status : JobDescriptionStatus
+  - deadlineAt : LocalDateTime
+  - appliedCount : Integer
+  - matchPercent : Double
+}
+
+class JobRecommendationConfig {
+  - id : Integer
+  - matchThresholdPercent : BigDecimal
+  - updatedAt : LocalDateTime
+}
+
+interface JobRecommendationConfigRepository {
+  + findById(id : Integer) : Optional<JobRecommendationConfig>
+}
+
+class UserCareerPreference {
+  - userId : Integer
+  - targetRole : TargetRole
+  - skills : List<String>
+  - skillEmbedding : float[]
+  - careerGoal : String
+  - targetLevel : TargetLevel
+  - isActive : Boolean
+}
+
+interface UserCareerPreferenceRepository {
+  + findByUserIdAndIsActiveTrue(userId : Integer) : Optional<UserCareerPreference>
+}
+
+class UserCompetency {
+  - id : Long
+  - careerPreferenceId : Integer
+  - targetRole : TargetRole
+  - currentLevel : TargetLevel
+  - currentScore : Double
+}
+
+interface UserCompetencyRepository {
+  + findByUser_IdAndCareerPreferenceId(userId : Integer, careerPreferenceId : Integer) : Optional<UserCompetency>
+}
+
+class VectorUtils {
+  + cosineSimilarity(vectorA : float[], vectorB : float[]) : double {static}
+}
+
+class JobDescription {
+  - id : Long
+  - title : String
+  - description : String
+  - requirements : String
+  - benefits : String
+  - level : TargetLevel
+  - salaryMin : Double
+  - salaryMax : Double
+  - status : JobDescriptionStatus
+  - skillTags : List<String>
+  - skillEmbedding : float[]
+  - appliedCount : Integer
+}
+
+interface JobDescriptionRepository {
+  + findTopRecommendedJobs(vectorStr : String, limit : int) : List<JobDescription>
+  + findByStatusAndIsDeletedFalse(status : JobDescriptionStatus) : List<JobDescription>
+}
+
+interface JpaRepository {
+  + save(entity) : T
+  + findById(id) : Optional<T>
+}
+
+' ================= RELATIONS =================
+
+' --- CV Parsing ---
+UserServiceImpl .up.|> UserService : implement
+CandidateProfileImpl .up.|> CandidateProfileService : implement
+ApiClientImpl .up.|> ApiClient : implement
+
+UserServiceImpl .down.> ApiClient : use
+UserServiceImpl .down.> AnythingLlmWorkspace : use
+UserServiceImpl .down.> CVParserResponse : use
+UserServiceImpl .down.> CandidateProfileService : use
+UserServiceImpl .down.> CandidateProfile : create
+
+CVParserResponse "1" *-down- "0..*" EducationDTO : contains
+CVParserResponse "1" *-down- "0..*" WorkExperienceDTO : contains
+CVParserResponse "1" *-down- "0..*" ProjectDTO : contains
+
+CandidateProfile "1" *-down- "0..*" EducationEntry : contains
+CandidateProfile "1" *-down- "0..*" WorkExperience : contains
+CandidateProfile "1" *-down- "0..*" ProjectDetail : contains
+CandidateProfile "0..*" -right-> "1" User : belongs to
+
+' --- CV Screening & Matching ---
+CVRoundProcessor .up.|> RoundSubmissionProcessor : implement
+
+RoundProcessorFactory .down.> CVRoundProcessor : use
+CVRoundProcessor .down.> SubmissionEventHandle : use
+CVRoundProcessor .down.> ProcessDto : use
+SubmissionService .down.> RoundProcessorFactory : use
+SubmissionService .down.> SubmissionResult : use
+SubmissionService .down.> ProcessDto : create
+SubmissionService .down.> ApiClient : use
+
+SubmissionEventHandle .down.> ApiClient : use
+SubmissionEventHandle .down.> AnythingLlmWorkspace : use
+SubmissionEventHandle .down.> UserService : use
+SubmissionEventHandle .down.> JobDescriptionRepository : use
+SubmissionEventHandle .down.> ApplicationDetailRepository : use
+SubmissionEventHandle .down.> CvMetricsConstant : use
+SubmissionEventHandle .down.> CvEvaluationRequest : create
+SubmissionEventHandle .down.> CvEvaluationResponse : use
+SubmissionEventHandle .down.> ApplicationDetail : create
+
+CvEvaluationRequest "1" *-down- "1" JD : contains
+CvEvaluationRequest "1" *-down- "0..1" EvaluationCriteria : contains
+
+' --- Job Recommendation ---
+JobRecommendationServiceImpl .up.|> JobRecommendationService : implement
+
+JobRecommendationServiceImpl .down.> UserCareerPreferenceRepository : use
+JobRecommendationServiceImpl .down.> UserCompetencyRepository : use
+JobRecommendationServiceImpl .down.> JobDescriptionRepository : use
+JobRecommendationServiceImpl .down.> JobRecommendationConfigRepository : use
+JobRecommendationServiceImpl .down.> JobRecommendationMapper : use
+JobRecommendationServiceImpl .down.> VectorUtils : use
+
+JobRecommendationMapper .down.> JobRecommendationResponse : create
+
+UserCareerPreferenceRepository .down.> UserCareerPreference : use
+UserCompetencyRepository .down.> UserCompetency : use
+JobRecommendationConfigRepository .down.> JobRecommendationConfig : use
+JobDescriptionRepository .down.> JobDescription : use
+
+UserCareerPreferenceRepository -up-|> JpaRepository : extend
+UserCompetencyRepository -up-|> JpaRepository : extend
+JobRecommendationConfigRepository -up-|> JpaRepository : extend
+JobDescriptionRepository -up-|> JpaRepository : extend
+ApplicationDetailRepository -up-|> JpaRepository : extend
+
+@enduml

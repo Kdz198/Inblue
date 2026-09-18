@@ -1,0 +1,59 @@
+@startuml SearchFilterJobDescriptionsByLevel
+skinparam monochrome true
+skinparam shadowing false
+
+' Do not repeat participant boxes at the bottom of the diagram
+hide footbox
+
+<style>
+sequenceDiagram {
+  groupHeader {
+    FontStyle plain
+  }
+}
+</style>
+
+actor "Candidate / Visitor" as Candidate
+participant ":JobDescriptionController" as Controller
+participant ":JobDescriptionServiceImpl" as Service
+participant "JobDescriptionSpecification" as Spec
+participant ":JobDescriptionRepository" as Repo
+
+Candidate -> Controller ++ : GET /api/job-descriptions/search?titleKeyword&status&level&salaryMin&salaryMax
+Controller -> Service ++ : searchJobs(titleKeyword, status, level, salaryMin, salaryMax)
+
+Service -> Spec ++ : isNotDeleted()
+Spec --> Service -- : Specification<JobDescription>
+
+opt [Title keyword is provided]
+    Service -> Spec ++ : titleContains(titleKeyword)
+    Spec --> Service -- : Specification<JobDescription>
+end
+
+opt [Status filter is provided]
+    Service -> Spec ++ : hasStatus(status)
+    Spec --> Service -- : Specification<JobDescription>
+end
+
+opt [Level filter is provided]
+    Service -> Spec ++ : levelEquals(level)
+    Spec --> Service -- : Specification<JobDescription>
+end
+
+opt [Minimum salary is provided]
+    Service -> Spec ++ : hasSalaryGreaterThanOrEqual(salaryMin)
+    Spec --> Service -- : Specification<JobDescription>
+end
+
+opt [Maximum salary is provided]
+    Service -> Spec ++ : hasSalaryLessThanOrEqual(salaryMax)
+    Spec --> Service -- : Specification<JobDescription>
+end
+
+Service -> Repo ++ : findAll(spec)
+Repo --> Service -- : List<JobDescription>
+
+Service --> Controller -- : List<JobDescription>
+Controller --> Candidate -- : 200 OK (matching job list)
+
+@enduml

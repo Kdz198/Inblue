@@ -1,0 +1,345 @@
+@startuml JobSearch_CompanyShowcase_PayOSCheckout
+skinparam classAttributeIconSize 0
+skinparam monochrome true
+skinparam shadowing false
+hide circle
+
+skinparam linetype ortho
+skinparam nodesep 45
+skinparam ranksep 55
+
+' ================= JOB SEARCH =================
+
+class JobDescriptionController {
+  - jobDescriptionService : JobDescriptionService
+  - jobRecommendationService : JobRecommendationService
+  - securityUtils : SecurityUtils
+  --
+  + getAll() : List<JobDescription>
+  + getById(id : Long) : JobDescription
+  + getByCompanyId(companyId : Long) : List<JobDescription>
+  + searchJobs(titleKeyword, status, level, salaryMin, salaryMax) : List<JobDescription>
+  + create(request : CreateJobDescriptionRequest) : JobDescription
+  + update(request : UpdateJobDescriptionRequest) : JobDescription
+  + softDelete(id : Long) : void
+  + toggleActive(id : Long) : void
+}
+
+interface JobDescriptionService {
+  + getAll() : List<JobDescription>
+  + getById(id : Long) : JobDescription
+  + getByCompanyId(companyId : Long) : List<JobDescription>
+  + searchJobs(keyword, status, level, salaryMin, salaryMax) : List<JobDescription>
+  + create(request : CreateJobDescriptionRequest) : JobDescription
+  + update(request : UpdateJobDescriptionRequest) : JobDescription
+  + softDelete(id : Long) : void
+  + toggleActive(id : Long) : void
+}
+
+class JobDescriptionServiceImpl {
+  - jobDescriptionRepository : JobDescriptionRepository
+  --
+  + searchJobs(keyword, status, level, salaryMin, salaryMax) : List<JobDescription>
+}
+
+class JobDescriptionSpecification {
+  + hasStatus(status : JobDescriptionStatus) : Specification<JobDescription> {static}
+  + titleContains(keyword : String) : Specification<JobDescription> {static}
+  + isNotDeleted() : Specification<JobDescription> {static}
+  + levelEquals(level : TargetLevel) : Specification<JobDescription> {static}
+  + hasSalaryGreaterThanOrEqual(salaryMin : Double) : Specification<JobDescription> {static}
+  + hasSalaryLessThanOrEqual(salaryMax : Double) : Specification<JobDescription> {static}
+}
+
+interface JobDescriptionRepository {
+  + findByStatusAndIsDeletedFalse(status : JobDescriptionStatus) : List<JobDescription>
+  + findByIsDeletedFalse() : List<JobDescription>
+  + findTopRecommendedJobs(vectorStr : String, limit : int) : List<JobDescription>
+}
+
+interface JpaSpecificationExecutor {
+  + findAll(spec : Specification<T>) : List<T>
+}
+
+class JobDescription {
+  - id : Long
+  - title : String
+  - description : String
+  - requirements : String
+  - benefits : String
+  - sourceJobId : String
+  - level : TargetLevel
+  - salaryMin : Double
+  - salaryMax : Double
+  - price : Long
+  - appliedCount : Integer
+  - currency : String
+  - status : JobDescriptionStatus
+  - skillTags : List<String>
+  - skillEmbedding : float[]
+  - isDeleted : Boolean
+  - deadlineAt : LocalDateTime
+  - companyName : String
+  - companyLogo : String
+}
+
+enum JobDescriptionStatus {
+  OPEN
+  CLOSED
+  DRAFT
+}
+
+interface JobRecommendationService {
+  .. (full detail in AI CV Parsing & Job Description Matching Module diagram) ..
+  + getRecommendations(userId : int) : List<JobRecommendationResponse>
+  + updateThreshold(thresholdPercent : BigDecimal) : JobRecommendationThresholdResponse
+}
+
+' ================= COMPANY SHOWCASE =================
+
+class CompanyController {
+  - companyService : CompanyService
+  --
+  + addCompany(request : CreateCompanyRequest, logo : MultipartFile, banner : MultipartFile) : Company
+  + updateCompany(request : UpdateCompanyRequest, logo : MultipartFile, banner : MultipartFile) : Company
+  + getCompanyById(id : Long) : Company
+  + getAllCompanies() : List<Company>
+  + deleteCompanyById(id : Long) : void
+  + toggleActive(id : Long) : void
+}
+
+interface CompanyService {
+  + getById(id : Long) : Company
+  + create(request : CreateCompanyRequest, logo, banner) : Company
+  + update(request : UpdateCompanyRequest, logo, banner) : Company
+  + getAll() : List<Company>
+  + deleteById(id : Long) : void
+  + toggleActive(id : Long) : void
+}
+
+class CompanyServiceImpl {
+  - companyRepository : CompanyRepository
+  - companyMapper : CompanyMapper
+  - cloudinaryService : CloudinaryService
+  --
+  + create(request, logo, banner) : Company
+  + update(request, logo, banner) : Company
+  + toggleActive(id : Long) : void
+  - extractPublicIdFromUrl(url : String) : String
+}
+
+interface CompanyMapper {
+  + toEntity(request : CreateCompanyRequest) : Company
+  + updateCompanyFromRequest(request : UpdateCompanyRequest, company : Company) : void
+}
+
+interface CompanyRepository {
+  + findByJobDescriptionsId(jdId : Long) : Optional<Company>
+  + findFirstByNameIgnoreCaseAndIsDeletedFalse(name : String) : Optional<Company>
+}
+
+class Company {
+  - id : Long
+  - name : String
+  - logoUrl : String
+  - bannerUrl : String
+  - description : String
+  - status : String
+  - isDeleted : Boolean
+  - jobDescriptions : List<JobDescription>
+  - createdAt : LocalDateTime
+  - updatedAt : LocalDateTime
+  - deletedAt : LocalDateTime
+}
+
+class CloudinaryService {
+  + uploadImg(file : MultipartFile) : Map<String, String>
+  + validate(file : MultipartFile) : boolean
+  + deleteImage(publicId : String) : void
+}
+
+' ================= PAYOS CHECKOUT =================
+
+class PaymentController {
+  - paymentService : PaymentService
+  --
+  + createPayment(jdId : Long) : String
+  + getPayment(id : int) : Payment
+  + getPayments() : List<Payment>
+  + cancelPayment(transactionCode : String) : Payment
+  + handlePayOsWebhook(body : Webhook) : void
+}
+
+interface PaymentService {
+  + createPayment(jdId : Long) : String
+  + createSessionPayment(amount : long) : String
+  + getPayment(id : int) : Payment
+  + getPayments() : List<Payment>
+  + handlePayOsWebhook(body : Webhook) : void
+  + cancelPayment(transactionCode : String) : Payment
+}
+
+class PaymentServiceImpl {
+  - paymentRepository : PaymentRepository
+  - payOS : PayOS
+  - userRepository : UserRepository
+  - jdPurchaseRepository : JdPurchaseRepository
+  - jobDescriptionRepository : JobDescriptionRepository
+  - securityUtils : SecurityUtils
+  - returnUrl : String
+  - cancelUrl : String
+  --
+  + createPayment(jdId : Long) : String
+  + createSessionPayment(amount : long) : String
+  + handlePayOsWebhook(body : Webhook) : void
+  + cancelPayment(transactionCode : String) : Payment
+  - createPayOSPayment(amount : long, transactionCode : long) : String
+}
+
+class PayOSConfig {
+  - clientId : String
+  - apiKey : String
+  - checksumKey : String
+  --
+  + payOS() : PayOS
+}
+
+class PayOS <<external library>> {
+  + paymentRequests() : PaymentRequestApi
+  + webhooks() : WebhookApi
+}
+
+class Webhook <<external library>> {
+  - data : WebhookData
+}
+
+interface PaymentRepository {
+  + findByTransactionCode(transactionCode : String) : Payment
+  + findAllByStatus(status : PaymentStatus) : List<Payment>
+  + findByStatusAndCreatedAtBefore(status : PaymentStatus, payAtBefore : LocalDateTime) : List<Payment>
+}
+
+class Payment {
+  - id : int
+  - amount : long
+  - description : String
+  - status : PaymentStatus
+  - createdAt : LocalDateTime
+  - transactionCode : String
+  - jdId : Long
+}
+
+enum PaymentStatus {
+  PENDING
+  COMPLETED
+  FAILED
+}
+
+interface JdPurchaseService {
+  + hasPurchased(jdId : Long) : boolean
+  + getPurchase(jdId : Long) : JdPurchase
+  + getMyPurchases() : List<MyJdPurchaseResponseDto>
+}
+
+class JdPurchaseServiceImpl {
+  - jdPurchaseRepository : JdPurchaseRepository
+  - jobDescriptionRepository : JobDescriptionRepository
+  - companyRepository : CompanyRepository
+  - paymentRepository : PaymentRepository
+  - securityUtils : SecurityUtils
+  --
+  + hasPurchased(jdId : Long) : boolean
+  + getPurchase(jdId : Long) : JdPurchase
+  + getMyPurchases() : List<MyJdPurchaseResponseDto>
+}
+
+interface JdPurchaseRepository {
+  + findByUserIdAndJdIdAndStatus(userId, jdId, status) : Optional<JdPurchase>
+  + existsByUserIdAndJdIdAndStatus(userId, jdId, status) : boolean
+  + findAllByUserId(userId : int) : List<JdPurchase>
+}
+
+class JdPurchase {
+  - id : Long
+  - userId : int
+  - jdId : Long
+  - paymentId : int
+  - status : JdPurchaseStatus
+  - purchasedAt : LocalDateTime
+  - usedAt : LocalDateTime
+}
+
+enum JdPurchaseStatus {
+  PURCHASED
+  USED
+  EXPIRED
+}
+
+class SecurityUtils {
+  + getCurrentUserId() : int {static}
+}
+
+class HelperUtil {
+  + generateUniqueOrderCode() : String {static}
+}
+
+class User {
+  - id : Integer
+  - name : String
+  - email : String
+  .. (full detail in Authentication Module diagram) ..
+}
+
+interface JpaRepository {
+  + save(entity) : T
+  + findById(id) : Optional<T>
+}
+
+' ================= RELATIONS =================
+
+' --- Job Search ---
+JobDescriptionServiceImpl .up.|> JobDescriptionService : implement
+JobDescriptionController .down.> JobDescriptionService : use
+JobDescriptionController .down.> JobRecommendationService : use
+JobDescriptionServiceImpl .down.> JobDescriptionRepository : use
+JobDescriptionServiceImpl .down.> JobDescriptionSpecification : use
+JobDescriptionRepository -up-|> JpaRepository : extend
+JobDescriptionRepository -up-|> JpaSpecificationExecutor : extend
+JobDescriptionSpecification .down.> JobDescription : use
+JobDescription .right.> JobDescriptionStatus : use
+
+' --- Company Showcase ---
+CompanyServiceImpl .up.|> CompanyService : implement
+CompanyController .down.> CompanyService : use
+CompanyServiceImpl .down.> CompanyRepository : use
+CompanyServiceImpl .down.> CompanyMapper : use
+CompanyServiceImpl .down.> CloudinaryService : use
+CompanyMapper .down.> Company : create
+CompanyRepository -up-|> JpaRepository : extend
+Company "1" *-down- "0..*" JobDescription : owns
+
+' --- PayOS Checkout ---
+PaymentServiceImpl .up.|> PaymentService : implement
+PaymentController .down.> PaymentService : use
+PaymentController .down.> Webhook : use
+PaymentServiceImpl .down.> PaymentRepository : use
+PaymentServiceImpl .down.> JdPurchaseRepository : use
+PaymentServiceImpl .down.> JobDescriptionRepository : use
+PaymentServiceImpl .down.> SecurityUtils : use
+PaymentServiceImpl .down.> HelperUtil : use
+PaymentServiceImpl .down.> PayOS : use
+PaymentServiceImpl .down.> Payment : create
+PaymentServiceImpl .down.> JdPurchase : create
+PayOSConfig .down.> PayOS : create
+PaymentRepository -up-|> JpaRepository : extend
+Payment "0..*" -right-> "1" User : belongs to
+
+JdPurchaseServiceImpl .up.|> JdPurchaseService : implement
+JdPurchaseServiceImpl .down.> JdPurchaseRepository : use
+JdPurchaseServiceImpl .down.> JobDescriptionRepository : use
+JdPurchaseServiceImpl .down.> CompanyRepository : use
+JdPurchaseServiceImpl .down.> PaymentRepository : use
+JdPurchaseServiceImpl .down.> SecurityUtils : use
+JdPurchaseRepository -up-|> JpaRepository : extend
+
+@enduml

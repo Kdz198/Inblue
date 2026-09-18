@@ -1,0 +1,277 @@
+@startuml AuthenticationModule
+skinparam classAttributeIconSize 0
+skinparam monochrome true
+skinparam shadowing false
+hide circle
+ 
+skinparam linetype ortho
+skinparam nodesep 45
+skinparam ranksep 55
+ 
+' ================= CLASS DEFINITIONS =================
+ 
+class LoginRequest {
+  - email : String
+  - password : String
+}
+ 
+class ForgotPasswordRequest {
+  - email : String
+}
+ 
+class ResetPasswordRequest {
+  - email : String
+  - otp : String
+  - newPassword : String
+}
+ 
+class AuthController {
+  - authenticationManager : AuthenticationManager
+  - jwtUtils : JwtUtils
+  - passwordResetService : PasswordResetService
+  --
+  + login(loginRequest : LoginRequest) : ResponseEntity<String>
+  + googleLogin() : RedirectView
+  + forgotPassword(request : ForgotPasswordRequest) : ResponseEntity<String>
+  + resetPassword(request : ResetPasswordRequest) : ResponseEntity<String>
+}
+ 
+class SecurityConfig {
+  - jwtAuthenticationFilter : JwtAuthenticationFilter
+  - oauth2Handler : Oauth2Handler
+  - customOAuth2UserService : CustomOAuth2UserService
+  - customUserDetailService : CustomUserDetailService
+  --
+  + securityFilterChain(http) : SecurityFilterChain
+  + daoAuthenticationProvider() : DaoAuthenticationProvider
+  + authenticationManager(config) : AuthenticationManager
+  + passwordEncoder() : PasswordEncoder
+}
+ 
+class JwtAuthenticationFilter {
+  - jwtUtils : JwtUtils
+  --
+  # doFilterInternal(request, response, chain) : void
+  - parseJwtToken(request) : String
+}
+ 
+abstract class OncePerRequestFilter {
+  # doFilterInternal(...) : void
+}
+ 
+class Oauth2Handler {
+  - jwtUtils : JwtUtils
+  - frontendUrl : String
+  --
+  + onAuthenticationSuccess(request, response, auth) : void
+}
+ 
+abstract class SimpleUrlAuthenticationSuccessHandler {
+  + onAuthenticationSuccess(...) : void
+}
+ 
+interface AuthenticationManager {
+  + authenticate(auth : Authentication) : Authentication
+}
+ 
+interface PasswordEncoder {
+  + encode(rawPassword) : String
+}
+ 
+class JwtUtils {
+  - secret : String
+  - expiration : int
+  --
+  + generateToken(auth : Authentication) : String
+  + getRolesFromToken(token) : List<String>
+  + getUserIdFromToken(token) : Integer
+  + getEmailFromToken(token) : String
+  + getNameFromToken(token) : String
+  + getAvatarUrlFromToken(token) : String
+  + validateToken(token) : boolean
+  - getClaimsFromToken(token) : Claims
+  - getSigningKey() : SecretKey
+}
+ 
+interface UserDetailsService {
+  + loadUserByUsername(email) : UserDetails
+}
+ 
+interface UserDetails {
+  + getAuthorities() : Collection<GrantedAuthority>
+  + getUsername() : String
+}
+ 
+class CustomUserDetails {
+  - userId : int
+  - email : String
+  - name : String
+  - avatarUrl : String
+  - password : String
+  - authorities : Collection<GrantedAuthority>
+  - active : boolean
+  --
+  + getAuthorities() : Collection<GrantedAuthority>
+  + getUsername() : String
+  + isEnabled() : boolean
+}
+ 
+class CustomUserDetailService {
+  - userRepository : UserRepository
+  - mentorRepository : MentorRepository
+  --
+  + loadUserByUsername(email) : UserDetails
+}
+ 
+interface OAuth2UserService {
+  + loadUser(userRequest) : OAuth2User
+}
+ 
+interface OAuth2User {
+  + getAttributes() : Map<String, Object>
+  + getAuthorities() : Collection<GrantedAuthority>
+}
+ 
+class CustomOAuth2User {
+  - oauth2User : OAuth2User
+  - id : int
+  - role : String
+  --
+  + getAttributes() : Map<String, Object>
+  + getAuthorities() : Collection<GrantedAuthority>
+  + getName() : String
+}
+ 
+class CustomOAuth2UserService {
+  - userRepository : UserRepository
+  - mentorRepository : MentorRepository
+  --
+  + loadUser(userRequest : OAuth2UserRequest) : OAuth2User
+  - linkUserAccount(email, name : String) : User
+}
+ 
+interface PasswordResetService {
+  + sendResetOtp(email : String) : void
+  + resetPassword(email, otp, newPassword : String) : void
+}
+ 
+class PasswordResetServiceImpl {
+  - userRepository : UserRepository
+  - mentorRepository : MentorRepository
+  - mailService : MailService
+  - redisTemplate : RedisTemplate
+  - passwordEncoder : PasswordEncoder
+  - OTP_KEY_PREFIX : String
+  - OTP_EXPIRY_MINUTES : long
+  --
+  + sendResetOtp(email : String) : void
+  + resetPassword(email, otp, newPassword : String) : void
+}
+ 
+class MailService {
+  + adminSendMail(to, subject, body) : void
+}
+ 
+class RedisTemplate {
+  + opsForValue() : ValueOperations
+  + delete(key : String) : Boolean
+}
+ 
+interface JpaRepository {
+  + save(entity) : User
+  + findById(id) : Optional<User>
+}
+ 
+interface UserRepository {
+  + findByEmail(email : String) : User
+  + existsByEmail(email : String) : boolean
+  + existsByEmailAndIdNot(email, id) : boolean
+  + countUserByRole(role : Role) : int
+}
+ 
+class MentorRepository {
+  + findByEmail(email : String) : Mentor
+}
+ 
+class User {
+  - id : Integer
+  - name : String
+  - email : String
+  - password : String
+  - role : Role
+  - isActive : Boolean
+  - avatarUrl : String
+  - createdAt : LocalDateTime
+  - updatedAt : LocalDateTime
+}
+ 
+enum Role {
+  MENTOR
+  ADMIN
+  STAFF
+  USER
+}
+ 
+' ================= RELATIONS =================
+ 
+' 1a. Generalization (kế thừa class/interface) - đường liền, tam giác rỗng
+JwtAuthenticationFilter -up-|> OncePerRequestFilter : extend
+Oauth2Handler -up-|> SimpleUrlAuthenticationSuccessHandler : extend
+UserRepository -down-|> JpaRepository : extend
+ 
+' 1b. Realization (hiện thực hoá interface) - đường đứt nét, tam giác rỗng
+CustomUserDetails .up.|> UserDetails : implement
+CustomOAuth2User .up.|> OAuth2User : implement
+PasswordResetServiceImpl .up.|> PasswordResetService : implement
+CustomUserDetailService .up.|> UserDetailsService : implement
+CustomOAuth2UserService .up.|> OAuth2UserService : implement
+ 
+' 2. Mũi tên phụ thuộc nét đứt (use / create)
+AuthController .down.> LoginRequest : use
+AuthController .down.> ForgotPasswordRequest : use
+AuthController .down.> ResetPasswordRequest : use
+AuthController .right.> AuthenticationManager : use
+AuthController .down.> JwtUtils : use
+AuthController .down.> PasswordResetService : use
+ 
+' Password Reset Flow
+PasswordResetServiceImpl .down.> MailService : use
+PasswordResetServiceImpl .down.> RedisTemplate : use
+PasswordResetServiceImpl .down.> PasswordEncoder : use
+PasswordResetServiceImpl .down.> UserRepository : use
+PasswordResetServiceImpl .down.> MentorRepository : use
+PasswordResetServiceImpl -down-> User : manages
+ 
+' Security Config
+SecurityConfig .down.> JwtAuthenticationFilter : use
+SecurityConfig .down.> Oauth2Handler : use
+SecurityConfig .down.> CustomOAuth2UserService : use
+SecurityConfig .down.> CustomUserDetailService : use
+SecurityConfig .down.> PasswordEncoder : use
+SecurityConfig .down.> AuthenticationManager : use
+ 
+' Filter & Auth Handlers
+JwtAuthenticationFilter .down.> JwtUtils : use
+JwtAuthenticationFilter .down.> CustomUserDetails : create
+Oauth2Handler .down.> JwtUtils : use
+Oauth2Handler .down.> CustomUserDetails : create
+Oauth2Handler .down.> CustomOAuth2User : use
+ 
+' JwtUtils đọc principal từ Authentication (ép kiểu CustomUserDetails) - quan hệ còn thiếu, đã bổ sung
+JwtUtils .down.> CustomUserDetails : use
+ 
+' User Details & OAuth2 Services
+CustomUserDetailService .down.> CustomUserDetails : create
+CustomUserDetailService .down.> UserRepository : use
+CustomUserDetailService .down.> MentorRepository : use
+ 
+CustomOAuth2UserService .down.> CustomOAuth2User : create
+CustomOAuth2UserService .down.> UserRepository : use
+CustomOAuth2UserService .down.> MentorRepository : use
+CustomOAuth2UserService .down.> User : create
+ 
+' Database & Entity
+UserRepository .down.> User : use
+User .down.> Role : use
+ 
+@enduml

@@ -1,0 +1,94 @@
+@startuml SystemLogin_EmailPassword
+skinparam monochrome true
+skinparam shadowing false
+
+' Do not repeat participant boxes at the bottom of the diagram
+hide footbox
+
+<style>
+sequenceDiagram {
+  groupHeader {
+    FontStyle plain
+  }
+}
+</style>
+
+actor "Candidate / Mentor" as Candidate
+participant ":AuthController" as Controller
+participant ":AuthenticationManager" as AuthMgr
+participant ":DaoAuthenticationProvider" as Provider
+participant ":CustomUserDetailService" as UDS
+participant ":UserRepository" as UserRepo
+participant ":MentorRepository" as MentorRepo
+participant ":PasswordEncoder" as Encoder
+participant ":JwtUtils" as Jwt
+
+Candidate -> Controller : POST /api/auth/login(loginRequest)
+activate Controller
+
+Controller -> AuthMgr : authenticate(\nUsernamePasswordAuthenticationToken(email, password))
+activate AuthMgr
+
+AuthMgr -> Provider : authenticate(token)
+activate Provider
+
+Provider -> UDS : loadUserByUsername(email)
+activate UDS
+
+UDS -> UserRepo : findByEmail(email)
+activate UserRepo
+UserRepo --> UDS : user
+deactivate UserRepo
+
+opt [Active user account is not found]
+    UDS -> MentorRepo : findByEmail(email)
+    activate MentorRepo
+    MentorRepo --> UDS : mentor
+    deactivate MentorRepo
+end
+
+alt [Account is found and active]
+    UDS -> UDS : build CustomUserDetails(user/mentor)
+    UDS --> Provider : return CustomUserDetails
+    deactivate UDS
+
+    Provider -> Encoder : matches(rawPassword, userDetails.getPassword())
+    activate Encoder
+    Encoder --> Provider : matches : boolean
+    deactivate Encoder
+
+    alt [Password is correct]
+        Provider --> AuthMgr : return Authentication\n(principal = CustomUserDetails, authorities)
+        deactivate Provider
+        AuthMgr --> Controller : return Authentication
+        deactivate AuthMgr
+
+        Controller -> Controller : SecurityContextHolder.getContext()\n.setAuthentication(auth)
+
+        Controller -> Jwt : generateToken(auth)
+        activate Jwt
+        Jwt -> Jwt : (CustomUserDetails) auth.getPrincipal()
+        Jwt -> Jwt : Jwts.builder()...signWith(secretKey).compact()
+        Jwt --> Controller : return token : String
+        deactivate Jwt
+
+        Controller --> Candidate : 200 OK\nheader Authorization: Bearer <token>\nbody token
+    else [Password is incorrect]
+        Provider --> AuthMgr : throws BadCredentialsException
+        deactivate Provider
+        AuthMgr --> Controller : throws AuthenticationException
+        deactivate AuthMgr
+        Controller --> Candidate : error response (login failed)
+    end
+else [Account is not found]
+    UDS --> Provider : throws UsernameNotFoundException
+    deactivate UDS
+    Provider --> AuthMgr : throws AuthenticationException
+    deactivate Provider
+    AuthMgr --> Controller : throws AuthenticationException
+    deactivate AuthMgr
+    Controller --> Candidate : error response (login failed)
+    deactivate Controller
+end
+
+@enduml

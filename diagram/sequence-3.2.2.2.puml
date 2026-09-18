@@ -1,0 +1,70 @@
+@startuml ATS_CVMatchScoreCalculation
+skinparam monochrome true
+skinparam shadowing false
+
+' Do not repeat participant boxes at the bottom of the diagram
+hide footbox
+
+<style>
+sequenceDiagram {
+  groupHeader {
+    FontStyle plain
+  }
+}
+</style>
+
+actor "Candidate" as Candidate
+participant ":ApplicationDetailController" as Controller
+participant ":SubmissionService" as SubmissionSvc
+participant ":RoundProcessorFactory" as Factory
+participant ":CVRoundProcessor" as CVProcessor
+participant ":SubmissionEventHandle" as EventHandle
+participant ":JobDescriptionRepository" as JdRepo
+participant ":UserService" as UserSvc
+participant ":ApiClient" as ApiClient
+participant "AnythingLLM (cv-processor)" as AnythingLLM
+participant ":CloudinaryService" as Cloudinary
+participant ":ApplicationDetailRepository" as DetailRepo
+
+Candidate -> Controller ++ : POST /api/application-details/submit (SubmitRequest: cvFile)
+Controller -> SubmissionSvc ++ : submitRound(submitRequest)
+
+SubmissionSvc -> Factory ++ : getProcessor(CV_SCREENING)
+Factory --> SubmissionSvc -- : cvRoundProcessor
+
+SubmissionSvc -> CVProcessor ++ : process(processDto)
+
+CVProcessor -> EventHandle ++ : processCvSubmission(processDto)
+
+EventHandle -> JdRepo ++ : findById(jdId)
+JdRepo --> EventHandle -- : jobDescription
+
+EventHandle -> EventHandle : build CvEvaluationRequest(cvFile, JD title/description/requirements/level, evaluationPlan)
+
+par [parse & save candidate profile]
+    EventHandle -> UserSvc ++ : upCv(userId, applicationId, cvFile)
+    UserSvc --> EventHandle -- : CandidateProfile
+else [calculate ATS match score]
+    EventHandle -> ApiClient ++ : sendChatToAnythingLlm(CV_ANALYSIS, cvEvaluationRequest, cvFile)
+    ApiClient -> AnythingLLM ++ : POST /workspace/cv-processor/chat
+    AnythingLLM --> ApiClient -- : textResponse (score, extraMetrics)
+    ApiClient --> EventHandle -- : CvEvaluationResponse
+end
+
+EventHandle -> Cloudinary ++ : uploadDocument(cvFile)
+Cloudinary --> EventHandle -- : cvUrl
+
+EventHandle -> EventHandle : build ApplicationDetail(aiScore, aiFeedback, structuredAiFeedback, fileUrl)
+
+EventHandle -> DetailRepo ++ : saveAndFlush(applicationDetail)
+DetailRepo --> EventHandle -- : savedDetail
+
+EventHandle --> CVProcessor -- : return ApplicationDetail
+
+CVProcessor --> SubmissionSvc -- : SubmissionResult.completed(detail)
+
+SubmissionSvc --> Controller -- : SubmissionResult
+
+Controller --> Candidate -- : 200 OK (aiScore, aiFeedback)
+
+@enduml

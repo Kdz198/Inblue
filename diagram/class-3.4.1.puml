@@ -1,0 +1,903 @@
+@startuml AssessmentEngine_QuizCodeReviewCodingEmail
+skinparam classAttributeIconSize 0
+skinparam monochrome true
+skinparam shadowing false
+hide circle
+
+skinparam linetype ortho
+skinparam nodesep 45
+skinparam ranksep 55
+
+' ================= SUBMISSION ENTRY POINT =================
+
+class ApplicationDetailController {
+  - submissionService : SubmissionService
+  - applicationDetailService : ApplicationDetailService
+  --
+  + submitApplicationDetail(submitRequest : SubmitRequest) : SubmissionResult
+  + evaluateCodeReview(request : CodeReviewSubmitRequest) : ApplicationDetail
+  + hrScore(applicationDetailId : int, isPass : boolean, note : String, score : double) : void
+  + getApplicationDetailById(id : long) : ApplicationDetail
+  + getApplicationDetailsByApplicationId(applicationId : long) : List<ApplicationDetail>
+  + getApplicationDetailsForReviewer() : List<ReviewerApplicationDetailResponseDto>
+  .. (Mentor Review scheduling endpoints: assignMentor, selectMentor,
+      scheduleDecision, cancelSchedule... see Mentor Review Module diagram) ..
+}
+
+class SubmissionService {
+  - roundProcessorFactory : RoundProcessorFactory
+  - applicationService : ApplicationService
+  - jobDescriptionService : JobDescriptionService
+  - apiClient : ApiClient
+  - applicationDetailRepository : ApplicationDetailRepository
+  - submissionEventHandle : SubmissionEventHandle
+  --
+  + evaluateCodeReview(request : CodeReviewSubmitRequest) : ApplicationDetail
+  + submitRound(detail : SubmitRequest) : SubmissionResult
+  + submitEmailRoundSync(detail : SubmitRequest, emailSubmission : EmailSubmission) : void
+}
+
+interface ApplicationDetailService {
+  + getApplicationDetailById(id : long) : ApplicationDetail
+  + getByApplicationId(applicationId : long) : List<ApplicationDetail>
+  + hrScore(applicationDetailId : long, isPass : boolean, note : String, score : double) : void
+  + getApplicationDetailsForReviewer() : List<ReviewerApplicationDetailResponseDto>
+  .. (assignMentor, selectMentor, scheduleDecision, cancelSchedule,
+      startAiInterview... see Mentor Review / AI Interview Module diagrams) ..
+}
+
+class ApplicationDetailServiceImpl {
+  - applicationDetailRepository : ApplicationDetailRepository
+  - applicationService : ApplicationService
+  --
+  + getApplicationDetailById(id : long) : ApplicationDetail
+  + getByApplicationId(applicationId : long) : List<ApplicationDetail>
+  + hrScore(applicationDetailId : long, isPass : boolean, note : String, score : double) : void
+  + getApplicationDetailsForReviewer() : List<ReviewerApplicationDetailResponseDto>
+  .. (also depends on Mentor/InterviewSession/Session services for the
+      methods above - see Mentor Review & AI Interview Module diagrams) ..
+}
+
+class SubmitRequest {
+  - applicationId : Long
+  - textContent : String
+  - file : MultipartFile
+  - quizAnswers : List<String>
+  - compileRequest : List<CompileRequest>
+}
+
+class CompileRequest {
+  - problemId : Long
+  - language : CompilerLanguage
+  - sourceCode : List<String>
+  - isTest : Boolean
+}
+
+class ProcessDto {
+  - application : Application
+  - round : Round
+  - textContent : String
+  - file : MultipartFile
+  - quizAnswers : List<String>
+  - roundType : RoundType
+  - compileRequest : List<CompileRequest>
+}
+
+class SubmissionResult {
+  - status : Status
+  - applicationId : Long
+  - detail : ApplicationDetail
+  - message : String
+  - roundResult : ApplicationDetail.RoundResult
+  - testCases : List<CompilerResponseDto.TestCaseResult>
+  --
+  + completed(detail : ApplicationDetail) : SubmissionResult {static}
+  + pending(applicationId : Long) : SubmissionResult {static}
+  + compileCode(compilerResponse : CompilerResponseDto) : SubmissionResult {static}
+}
+
+enum "SubmissionResult.Status" as SubmissionResultStatus {
+  PENDING
+  COMPLETED
+}
+
+' ================= ROUND SUBMISSION ENGINE (Strategy + Factory) =================
+' Note: CODE_REVIEW is NOT routed through this engine - it is graded directly
+' by SubmissionService.evaluateCodeReview() (see CODE REVIEW EVALUATION section).
+
+interface RoundSubmissionProcessor {
+  + getSupportedType() : RoundType
+  + process(detail : ProcessDto) : SubmissionResult
+}
+
+class RoundProcessorFactory {
+  - quizProcessor : QuizRoundProcessor
+  - emailProcessor : EmailRoundProcessor
+  - cvProcessor : CVRoundProcessor
+  - codeProcessor : CodeRoundProcessor
+  --
+  + getProcessor(type : RoundType) : RoundSubmissionProcessor
+}
+
+class QuizRoundProcessor {
+  - roundRepository : RoundRepository
+  - applicationDetailRepository : ApplicationDetailRepository
+  - applicationService : ApplicationService
+  --
+  + getSupportedType() : RoundType
+  + process(dto : ProcessDto) : SubmissionResult
+}
+
+class CodeRoundProcessor {
+  - apiClient : ApiClient
+  - codingProblemsRepository : CodingProblemsRepository
+  - submissionEventHandle : SubmissionEventHandle
+  --
+  + getSupportedType() : RoundType
+  + process(dto : ProcessDto) : SubmissionResult
+  .. (isTest=true -> compiles against visible examples only, no persistence;
+      isTest=false -> delegates to SubmissionEventHandle.processCodeSubmission) ..
+}
+
+class EmailRoundProcessor {
+  - applicationEventPublisher : ApplicationEventPublisher
+  --
+  + getSupportedType() : RoundType
+  + process(dto : ProcessDto) : SubmissionResult
+}
+
+class CVRoundProcessor {
+  - submissionEventHandle : SubmissionEventHandle
+  --
+  + getSupportedType() : RoundType
+  + process(dto : ProcessDto) : SubmissionResult
+  .. (CV parsing/matching detail in AI CV Parsing & Job Description
+      Matching Module diagram) ..
+}
+
+class ApplicationEventPublisher <<external library>> {
+  + publishEvent(event : Object) : void
+}
+
+' ================= CODE REVIEW EVALUATION (direct, no processor strategy) =================
+
+class CodeReviewSubmitRequest {
+  - applicationId : Long
+  - roundId : Long
+  - submissions : List<ApplicationDetail.CodeReviewSubmission>
+}
+
+class CodeReviewEvaluationRequest {
+  - codeReviewProblem : CodeReviewProblem (snapshot DTO, own nested type)
+  - submissions : List<ApplicationDetail.CodeReviewSubmission>
+  - plan : Round.EvaluationPlan
+}
+
+class CvEvaluationResponse {
+  - score : Double
+  - extraMetrics : Map<String, Object>
+  - structuredAiFeedback : ApplicationDetail.StructuredAiFeedback
+}
+
+' ================= EMAIL SIMULATOR (IMAP inbox + async grading) =================
+
+class EmailSubmissionController {
+  - emailSubmissionService : EmailSubmissionService
+  --
+  + getById(id : Long) : EmailSubmission
+  + getAll() : List<EmailSubmission>
+  + triggerFetchEmails() : String
+  + triggerProcessPendingEmails() : String
+}
+
+interface EmailSubmissionService {
+  + getById(id : Long) : Optional<EmailSubmission>
+  + getAll() : List<EmailSubmission>
+  + fetchEmails() : void
+  + processEmailSchedule() : void
+}
+
+class EmailSubmissionServiceImpl {
+  - emailSubmissionRepository : EmailSubmissionRepository
+  - cloudinaryService : CloudinaryService
+  - objectMapper : ObjectMapper
+  - submissionService : SubmissionService
+  - host : String
+  - username : String
+  - password : String
+  --
+  + getById(id : Long) : Optional<EmailSubmission>
+  + getAll() : List<EmailSubmission>
+  + fetchEmails() : void
+  + processEmailSchedule() : void
+  - extractContent(part : Part, bodyText : StringBuilder, attachmentUrls : List<String>) : void
+}
+
+class BackgroundScheduler {
+  - emailSubmissionService : EmailSubmissionService
+  --
+  + scheduleFetchEmails() : void
+  + scheduleProcessPendingEmails() : void
+  .. (also schedules payment status check, meeting notification, JD
+      expiry, journey summary & audio jobs - see their own modules) ..
+}
+
+class CloudinaryService {
+  + uploadDocument(bytes : byte[], fileName : String) : Map<String, String>
+  .. (full detail in Company Showcase / Job Search Module diagram) ..
+}
+
+' ================= AI-SCORING EVENT HANDLER (shared by CV, Coding, Email) =================
+
+class SubmissionEventHandle {
+  - jobDescriptionRepository : JobDescriptionRepository
+  - apiClient : ApiClient
+  - cloudinaryService : CloudinaryService
+  - applicationDetailRepository : ApplicationDetailRepository
+  - codingProblemsRepository : CodingProblemsRepository
+  - applicationService : ApplicationService
+  - emailSubmissionRepository : EmailSubmissionRepository
+  - userService : UserService
+  --
+  + handleEventSubmission(dto : ProcessDto) : void
+  + processCodeSubmission(dto : ProcessDto) : ApplicationDetail
+  + processCvSubmission(dto : ProcessDto) : ApplicationDetail
+  + processEmailSubmissionSync(dto : ProcessDto, submission : EmailSubmission) : void
+  - processEmailSubmission(dto : ProcessDto) : void
+  - gradeEmailSubmission(dto : ProcessDto, submission : EmailSubmission) : void
+  - ensureRoundHasNotBeenSubmitted(dto : ProcessDto) : void
+  - saveApplicationDetail(applicationDetail : ApplicationDetail) : ApplicationDetail
+  + parseRawMetrics(rawMap : Map<String, Object>) : ApplicationDetail.AiFeedback {static}
+}
+
+interface ApiClient {
+  + callApi(targetService : PythonService, endpoint : String, method : HttpMethod, requestBody : Object, responseType : Class<T>) : T
+  + sendChatToAnythingLlm(workspace : AnythingLlmWorkspace, payload : Object, sessionId : String, reset : boolean, files : List<MultipartFile>, responseType : Class<T>) : T
+  + executeCode(request : CompilerRequestDto) : CompilerResponseDto
+  + connectWebSocket(targetService : PythonService, endpoint : String, onMessage : Consumer<String>, onError : Consumer<Throwable>) : WebSocket
+}
+
+class CompilerRequestDto {
+  - language : CompilerLanguage
+  - sourceCode : List<String>
+  - timeLimitMs : int
+  - memoryLimitMb : int
+  - paramTypes : List<String>
+  - returnType : String
+  - testCases : List<CompilerRequestDto.TestCase>
+}
+
+class "CompilerRequestDto.TestCase" as CompilerRequestTestCase {
+  - inputs : List<String>
+  - expectedOutput : String
+}
+
+class CompilerResponseDto {
+  - status : String
+  - passedTestCases : int
+  - totalTestCases : int
+  - executionTimeMs : long
+  - errorMessage : String
+  - testCases : List<CompilerResponseDto.TestCaseResult>
+}
+
+class "CompilerResponseDto.TestCaseResult" as CompilerTestCaseResult {
+  - index : int
+  - status : String
+  - input : String
+  - expectedOutput : String
+  - actualOutput : String
+  - executionTimeMs : long
+  - errorMessage : String
+}
+
+enum CompilerLanguage {
+  JAVA
+  PYTHON
+  JS
+  CPP
+  CSHARP
+  C
+  TYPESCRIPT
+  GO
+  KOTLIN
+  SWIFT
+  RUST
+  RUBY
+  PHP
+  DART
+  SCALA
+  ELIXIR
+  ERLANG
+  RACKET
+}
+
+' ================= SUBMISSION DATA MODEL =================
+
+class ApplicationDetail {
+  - id : Long
+  - applicationId : Long
+  - roundId : Long
+  - status : ApplicationDetailStatus
+  - finalScore : Double
+  - submissionData : ApplicationDetail.SubmissionData
+  - aiScore : Double
+  - aiFeedback : ApplicationDetail.AiFeedback
+  - structuredAiFeedback : ApplicationDetail.StructuredAiFeedback
+  - hrScore : Double
+  - hrNote : String
+  - finalResult : ApplicationDetail.RoundResult
+  - startedAt : LocalDateTime
+  - completedAt : LocalDateTime
+  - createdAt : LocalDateTime
+  - updatedAt : LocalDateTime
+  .. (mentor/AI-interview scheduling fields: mentorReview, mentorId,
+      assignedMentorIds, sessionId, aiInterviewSessionId, sessionInfo -
+      see Mentor Review & AI Interview Module diagrams) ..
+}
+
+class "ApplicationDetail.SubmissionData" as SubmissionData {
+  - textContent : String
+  - fileUrl : String
+  - quizAnswers : List<ApplicationDetail.QuizAnswer>
+  - codeSubmissions : List<ApplicationDetail.CodeSubmission>
+  - codeReviewSubmissions : List<ApplicationDetail.CodeReviewSubmission>
+  - emailSubmissionId : Long
+}
+
+class "ApplicationDetail.QuizAnswer" as QuizAnswer {
+  - questionText : String
+  - selectedAnswer : String
+  - isCorrect : Boolean
+}
+
+class "ApplicationDetail.CodeSubmission" as CodeSubmission {
+  - problemId : long
+  - sourceCode : List<String>
+  - testCases : CompilerResponseDto
+}
+
+class "ApplicationDetail.CodeReviewSubmission" as CodeReviewSubmission {
+  - filename : String
+  - lineNumber : Integer
+  - severity : String
+  - description : String
+}
+
+class "ApplicationDetail.AiFeedback" as AiFeedback {
+  - generalComment : String
+  - strengths : List<String>
+  - weaknesses : List<String>
+  - extraMetrics : Map<String, Object>
+}
+
+class "ApplicationDetail.StructuredAiFeedback" as StructuredAiFeedback {
+  - overallScore : Double
+  - overallFeedback : String
+  - strengths : List<String>
+  - weaknesses : List<String>
+  - improvementAdvice : List<String>
+  .. (metricResults : List<MetricResult> omitted - WIP field,
+      not yet consumed by the round processors above) ..
+}
+
+enum "ApplicationDetail.RoundResult" as RoundResult {
+  PASSED
+  FAILED
+}
+
+enum ApplicationDetailStatus {
+  PENDING
+  AWAITING_MENTOR
+  AWAITING_CANDIDATE_SELECT_MENTOR
+  AWAITING_MENTOR_SCHEDULE_APPROVAL
+  SLOT_PICKED
+  SUBMITTED
+  AI_EVALUATED
+  COMPLETED
+}
+
+' ================= ROUND CONFIGURATION MODEL =================
+
+class Round {
+  - id : Long
+  - name : String
+  - roundOrder : Integer
+  - roundType : RoundType
+  - passThreshold : Double
+  - configData : Round.RoundConfig
+  - reviewerId : Integer
+  - isDeleted : Boolean
+  - isAuto : Boolean
+  - createdAt : LocalDateTime
+  - updatedAt : LocalDateTime
+}
+
+class "Round.RoundConfig" as RoundConfig {
+  - instruction : String
+  - submissionFormat : String
+  - timeLimitMinutes : Integer
+  - maxScore : Integer
+  - aiSystemPrompt : String
+  - evaluationCriteria : String
+  - evaluationPlan : Round.EvaluationPlan
+  - quizQuestions : List<Round.QuizQuestion>
+  - codingProblems : List<Round.CodingProblemSnapshot>
+  - codeReviewProblems : List<Round.CodeReviewProblemSnapshot>
+  .. (mentorInterview field - see Mentor Review Module diagram) ..
+}
+
+class "Round.QuizQuestion" as QuizQuestion {
+  - questionText : String
+  - options : List<String>
+  - correctAnswer : String
+  - points : Integer
+}
+
+class "Round.CodingProblemSnapshot" as CodingProblemSnapshot {
+  - problemId : Long
+  - title : String
+  - difficulty : CodingProblem.Difficulty
+  - problemStatement : String
+  - rulesAndConstraints : List<String>
+  - visibleExamples : List<CodingProblem.Example>
+  - executionTimeLimitMs : Integer
+  - memoryLimitMb : Integer
+  - codeStubs : Map<String, String>
+}
+
+class "Round.CodeReviewProblemSnapshot" as CodeReviewProblemSnapshot {
+  - problemId : Long
+  - title : String
+  - difficulty : CodingProblem.Difficulty
+  - language : String
+  - problemStatement : String
+  - files : List<CodeReviewProblem.CodeFile>
+  - expectedIssues : List<CodeReviewProblem.ExpectedIssue>
+}
+
+class "Round.EvaluationPlan" as EvaluationPlan {
+  - metrics : List<Round.EvaluationMetric>
+  - scoringInstruction : String
+  - passRule : String
+}
+
+class "Round.EvaluationMetric" as EvaluationMetric {
+  - code : String
+  - name : String
+  - description : String
+  - weight : Double
+  - maxScore : Double
+  - required : Boolean
+  - minimumScore : Double
+}
+
+interface RoundRepository {
+  .. (extends JpaRepository<Round, Long>, no custom query methods) ..
+}
+
+' ================= PROBLEM BANKS =================
+
+class CodingProblemController {
+  - codingProblemService : CodingProblemService
+  --
+  + getAllCodingProblems() : List<CodingProblem>
+  + getCodingProblemById(id : Long) : Optional<CodingProblem>
+  + createCodingProblem(codingProblem : CodingProblem) : CodingProblem
+  + generateCodingProblem(request : CodingProblemGenerateRequest) : CodingProblemGenerateResponse
+}
+
+interface CodingProblemService {
+  + findCodingProblemById(id : Long) : Optional<CodingProblem>
+  + save(codingProblem : CodingProblem) : CodingProblem
+  + findAllCodingProblems() : List<CodingProblem>
+  + generateCodingProblem(request : CodingProblemGenerateRequest) : CodingProblemGenerateResponse
+}
+
+class CodingProblemServiceImpl {
+  - codingProblemsRepository : CodingProblemsRepository
+  - apiClient : ApiClient
+  --
+  + findCodingProblemById(id : Long) : Optional<CodingProblem>
+  + save(codingProblem : CodingProblem) : CodingProblem
+  + findAllCodingProblems() : List<CodingProblem>
+  + generateCodingProblem(request : CodingProblemGenerateRequest) : CodingProblemGenerateResponse
+}
+
+interface CodingProblemsRepository {
+  + findById(id : Long) : Optional<CodingProblem>
+  + findAllByIsDeletedFalse() : List<CodingProblem>
+}
+
+class CodingProblem {
+  - id : Long
+  - title : String
+  - difficulty : CodingProblem.Difficulty
+  - problemStatement : String
+  - rulesAndConstraints : List<String>
+  - paramTypes : List<String>
+  - returnType : String
+  - visibleExamples : List<CodingProblem.Example>
+  - executionTimeLimitMs : Integer
+  - memoryLimitMb : Integer
+  - codeStubs : Map<String, String>
+  - hiddenTestCases : List<CodingProblem.TestCase>
+  - isDeleted : Boolean
+  - createdAt : LocalDateTime
+  - updatedAt : LocalDateTime
+}
+
+class "CodingProblem.Example" as CodingProblemExample {
+  - inputs : List<String>
+  - output : String
+  - explanation : String
+}
+
+class "CodingProblem.TestCase" as CodingProblemTestCase {
+  - inputs : List<String>
+  - expectedOutput : String
+  - weightPoints : Integer
+}
+
+enum "CodingProblem.Difficulty" as CodingProblemDifficulty {
+  EASY
+  MEDIUM
+  HARD
+}
+
+class CodeReviewProblemController {
+  - codeReviewProblemService : CodeReviewProblemService
+  --
+  + getAllCodeReviewProblems() : List<CodeReviewProblem>
+  + getCodeReviewProblemById(id : Long) : Optional<CodeReviewProblem>
+  + createCodeReviewProblem(problem : CodeReviewProblem) : CodeReviewProblem
+  + generateCodeReviewProblem(request : CodeReviewProblemGenerateRequest) : CodeReviewProblemGenerateResponse
+}
+
+interface CodeReviewProblemService {
+  + findCodeReviewProblemById(id : Long) : Optional<CodeReviewProblem>
+  + save(codeReviewProblem : CodeReviewProblem) : CodeReviewProblem
+  + findAllCodeReviewProblems() : List<CodeReviewProblem>
+  + generateCodeReviewProblem(request : CodeReviewProblemGenerateRequest) : CodeReviewProblemGenerateResponse
+}
+
+class CodeReviewProblemServiceImpl {
+  - codeReviewProblemsRepository : CodeReviewProblemsRepository
+  - apiClient : ApiClient
+  --
+  + findCodeReviewProblemById(id : Long) : Optional<CodeReviewProblem>
+  + save(codeReviewProblem : CodeReviewProblem) : CodeReviewProblem
+  + findAllCodeReviewProblems() : List<CodeReviewProblem>
+  + generateCodeReviewProblem(request : CodeReviewProblemGenerateRequest) : CodeReviewProblemGenerateResponse
+}
+
+interface CodeReviewProblemsRepository {
+  + findById(id : Long) : Optional<CodeReviewProblem>
+}
+
+class CodeReviewProblem {
+  - id : Long
+  - title : String
+  - difficulty : CodingProblem.Difficulty
+  - language : String
+  - problemStatement : String
+  - files : List<CodeReviewProblem.CodeFile>
+  - expectedIssues : List<CodeReviewProblem.ExpectedIssue>
+  - isDeleted : Boolean
+  - createdAt : LocalDateTime
+  - updatedAt : LocalDateTime
+}
+
+class "CodeReviewProblem.CodeFile" as CodeReviewProblemFile {
+  - filename : String
+  - content : String
+  - language : String
+}
+
+class "CodeReviewProblem.ExpectedIssue" as CodeReviewProblemExpectedIssue {
+  - filename : String
+  - lineNumber : Integer
+  - severity : String
+  - description : String
+}
+
+' ================= EMAIL INBOX MODEL =================
+
+interface EmailSubmissionRepository {
+  + findByStatus(status : EmailSubmission.EmailStatus) : List<EmailSubmission>
+  + findByStatusAndApplicationIdOrderByIdDesc(status : EmailSubmission.EmailStatus, applicationId : Long) : List<EmailSubmission>
+}
+
+class EmailSubmission {
+  - id : Long
+  - applicationId : Long
+  - senderEmail : String
+  - subject : String
+  - bodyText : String
+  - status : EmailSubmission.EmailStatus
+  - errorMessage : String
+  - attachmentUrls : String
+  - receivedAt : LocalDateTime
+  - createdAt : LocalDateTime
+}
+
+enum "EmailSubmission.EmailStatus" as EmailStatus {
+  PENDING
+  PROCESSED
+  ERROR
+  IGNORED
+}
+
+' ================= JOURNEY SUMMARY ENGINE (Strategy + Factory) =================
+
+interface RoundSummaryBuilder {
+  + buildSummary(detail : ApplicationDetail, roundConfig : Round) : AISummaryRequest.RoundSummaryInfo
+}
+
+class RoundSummaryFactory {
+  - summaryBuilders : Map<RoundType, RoundSummaryBuilder>
+  --
+  + getBuilder(roundType : RoundType) : RoundSummaryBuilder
+  + build(detail : ApplicationDetail, roundConfig : Round) : AISummaryRequest.RoundSummaryInfo
+  + buildSummary(roundType : RoundType, detail : ApplicationDetail) : AISummaryRequest.RoundSummaryInfo
+  .. (also wires CvSummaryBuilder, MentorReviewSummaryBuilder,
+      AiInterviewSummaryBuilder for CV_SCREENING, MENTROR_REVIEW,
+      AI_INTERVIEW - see their own module diagrams) ..
+}
+
+class QuizSummaryBuilder {
+  + buildSummary(detail : ApplicationDetail, roundConfig : Round) : AISummaryRequest.RoundSummaryInfo
+}
+
+class CodingSummaryBuilder {
+  - codingProblemService : CodingProblemService
+  --
+  + buildSummary(detail : ApplicationDetail, roundConfig : Round) : AISummaryRequest.RoundSummaryInfo
+  - resolveProblemTitle(submission : ApplicationDetail.CodeSubmission, roundConfig : Round, index : int) : String
+  - extractFirstFailReason(testCases : CompilerResponseDto) : String
+}
+
+class CodeReviewSummaryBuilder {
+  + buildSummary(detail : ApplicationDetail, roundConfig : Round) : AISummaryRequest.RoundSummaryInfo
+  - buildSubmissionSummary(submissions : List<ApplicationDetail.CodeReviewSubmission>) : String
+}
+
+class EmailSummaryBuilder {
+  - emailSubmissionRepository : EmailSubmissionRepository
+  --
+  + buildSummary(detail : ApplicationDetail, roundConfig : Round) : AISummaryRequest.RoundSummaryInfo
+  - resolveEmailContext(detail : ApplicationDetail) : String
+}
+
+class "AISummaryRequest.RoundSummaryInfo" as RoundSummaryInfo {
+  - roundName : String
+  - roundType : RoundType
+  - roundOrder : Integer
+  - score : Double
+  - maxScore : Double
+  - finalResult : String
+  - summary : String
+  - strengths : List<String>
+  - weaknesses : List<String>
+  - hrNote : String
+  - hrScore : Double
+}
+
+' ================= SHARED REPOSITORY INFRASTRUCTURE =================
+
+interface JpaRepository {
+  + save(entity) : T
+  + findById(id) : Optional<T>
+  + findAll() : List<T>
+}
+
+interface ApplicationDetailRepository {
+  + findByApplicationIdAndRoundId(applicationId : Long, roundId : Long) : Optional<ApplicationDetail>
+  + findAllByApplicationId(applicationId : Long) : List<ApplicationDetail>
+  + findAllByStatus(status : ApplicationDetailStatus) : List<ApplicationDetail>
+  .. (admin analytics projection queries omitted - see Admin
+      Analytics Module diagram) ..
+}
+
+enum RoundType {
+  CV_SCREENING
+  EMAIL_SIMULATOR
+  QUIZ
+  CODING
+  CODE_REVIEW
+  MENTROR_REVIEW
+  AI_INTERVIEW
+}
+
+' ================= OTHER MODULES (referenced, abbreviated) =================
+
+class Application {
+  - id : Long
+  - jdId : Long
+  - userId : int
+  - currentRoundOrder : Integer
+  .. (full detail in the Application / Recruitment Pipeline diagram) ..
+}
+
+interface ApplicationService {
+  + getApplicationById(id : Long) : Application
+  + moveToNextRound(currentApplication : Application) : void
+  .. (applyForJob, getAllApplications... see Recruitment Pipeline diagram) ..
+}
+
+interface JobDescriptionService {
+  + getRoundByOrder(jdId : Long, roundOrder : Integer) : Round
+  .. (full detail in Job Search Module diagram) ..
+}
+
+interface JobDescriptionRepository {
+  + findById(id : Long) : Optional<JobDescription>
+  .. (full detail in Job Search Module diagram) ..
+}
+
+class JobDescription {
+  - id : Long
+  - title : String
+  - level : TargetLevel
+  .. (full detail in Job Search Module diagram) ..
+}
+
+interface UserService {
+  + upCv(userId : int, applicationId : Long, file : MultipartFile) : void
+  .. (full detail in Authentication Module diagram) ..
+}
+
+' ================= RELATIONS =================
+
+' --- Submission entry point ---
+ApplicationDetailController .down.> SubmissionService : use
+ApplicationDetailController .down.> ApplicationDetailService : use
+ApplicationDetailController .down.> SubmitRequest : use
+ApplicationDetailController .down.> CodeReviewSubmitRequest : use
+ApplicationDetailServiceImpl .up.|> ApplicationDetailService : implement
+ApplicationDetailServiceImpl .down.> ApplicationDetailRepository : use
+ApplicationDetailServiceImpl .down.> ApplicationService : use
+SubmitRequest .down.> CompileRequest : use
+
+' --- Round submission engine ---
+SubmissionService .down.> RoundProcessorFactory : use
+SubmissionService .down.> ApplicationService : use
+SubmissionService .down.> JobDescriptionService : use
+SubmissionService .down.> ApiClient : use
+SubmissionService .down.> ApplicationDetailRepository : use
+SubmissionService .down.> SubmissionEventHandle : use
+SubmissionService .down.> ProcessDto : create
+SubmissionService .down.> CodeReviewEvaluationRequest : create
+SubmissionService .down.> CvEvaluationResponse : use
+RoundProcessorFactory .down.> QuizRoundProcessor : use
+RoundProcessorFactory .down.> EmailRoundProcessor : use
+RoundProcessorFactory .down.> CVRoundProcessor : use
+RoundProcessorFactory .down.> CodeRoundProcessor : use
+QuizRoundProcessor .up.|> RoundSubmissionProcessor : implement
+EmailRoundProcessor .up.|> RoundSubmissionProcessor : implement
+CVRoundProcessor .up.|> RoundSubmissionProcessor : implement
+CodeRoundProcessor .up.|> RoundSubmissionProcessor : implement
+RoundSubmissionProcessor .down.> ProcessDto : use
+RoundSubmissionProcessor .down.> SubmissionResult : use
+QuizRoundProcessor .down.> RoundRepository : use
+QuizRoundProcessor .down.> ApplicationDetailRepository : use
+QuizRoundProcessor .down.> ApplicationService : use
+CodeRoundProcessor .down.> ApiClient : use
+CodeRoundProcessor .down.> CodingProblemsRepository : use
+CodeRoundProcessor .down.> SubmissionEventHandle : use
+CVRoundProcessor .down.> SubmissionEventHandle : use
+EmailRoundProcessor .down.> ApplicationEventPublisher : use
+EmailRoundProcessor ..> ProcessDto : publish event
+SubmissionEventHandle ..> ProcessDto : "«EventListener»\nhandleEventSubmission"
+SubmissionResult .right.> SubmissionResultStatus : use
+SubmissionResult .down.> CompilerResponseDto : use
+SubmissionResult .down.> ApplicationDetail : use
+ProcessDto .down.> Application : use
+ProcessDto .down.> Round : use
+ProcessDto .down.> CompileRequest : use
+ProcessDto .down.> RoundType : use
+
+' --- Code Review direct evaluation ---
+CodeReviewSubmitRequest .down.> ApplicationDetail : use
+CodeReviewEvaluationRequest .down.> Round : use
+CodeReviewEvaluationRequest .down.> ApplicationDetail : use
+
+' --- Email simulator ---
+EmailSubmissionController .down.> EmailSubmissionService : use
+EmailSubmissionServiceImpl .up.|> EmailSubmissionService : implement
+EmailSubmissionServiceImpl .down.> EmailSubmissionRepository : use
+EmailSubmissionServiceImpl .down.> CloudinaryService : use
+EmailSubmissionServiceImpl .down.> SubmissionService : use
+EmailSubmissionServiceImpl .down.> EmailSubmission : create
+BackgroundScheduler .down.> EmailSubmissionService : use
+EmailSubmissionRepository -up-|> JpaRepository : extend
+
+' --- AI-scoring event handler ---
+SubmissionEventHandle .down.> ApiClient : use
+SubmissionEventHandle .down.> CloudinaryService : use
+SubmissionEventHandle .down.> ApplicationDetailRepository : use
+SubmissionEventHandle .down.> CodingProblemsRepository : use
+SubmissionEventHandle .down.> ApplicationService : use
+SubmissionEventHandle .down.> EmailSubmissionRepository : use
+SubmissionEventHandle .down.> UserService : use
+SubmissionEventHandle .down.> JobDescriptionRepository : use
+SubmissionEventHandle .down.> CodingProblem : use
+SubmissionEventHandle .down.> Round : use
+SubmissionEventHandle .down.> ApplicationDetail : create
+SubmissionEventHandle .down.> CvEvaluationResponse : use
+SubmissionEventHandle .down.> CompilerRequestDto : create
+SubmissionEventHandle .down.> CompilerResponseDto : use
+SubmissionEventHandle .down.> EmailSubmission : use
+JobDescriptionRepository .down.> JobDescription : use
+ApiClient .down.> CompilerRequestDto : use
+ApiClient .down.> CompilerResponseDto : use
+CompilerRequestDto "1" *-down- "0..*" CompilerRequestTestCase : owns
+CompilerRequestDto .right.> CompilerLanguage : use
+CompilerResponseDto "1" *-down- "0..*" CompilerTestCaseResult : owns
+
+' --- Submission data model composition ---
+ApplicationDetail "1" *-down- "0..1" SubmissionData : owns
+ApplicationDetail "1" *-down- "0..1" AiFeedback : owns
+ApplicationDetail "1" *-down- "0..1" StructuredAiFeedback : owns
+ApplicationDetail .right.> RoundResult : use
+ApplicationDetail .right.> ApplicationDetailStatus : use
+SubmissionData "1" *-down- "0..*" QuizAnswer : owns
+SubmissionData "1" *-down- "0..*" CodeSubmission : owns
+SubmissionData "1" *-down- "0..*" CodeReviewSubmission : owns
+CodeSubmission .down.> CompilerResponseDto : use
+
+' --- Round configuration model composition ---
+Round "1" *-down- "0..1" RoundConfig : owns
+Round .right.> RoundType : use
+RoundConfig "1" *-down- "0..*" QuizQuestion : owns
+RoundConfig "1" *-down- "0..*" CodingProblemSnapshot : owns
+RoundConfig "1" *-down- "0..*" CodeReviewProblemSnapshot : owns
+RoundConfig "1" *-down- "0..1" EvaluationPlan : owns
+EvaluationPlan "1" *-down- "0..*" EvaluationMetric : owns
+CodingProblemSnapshot .down.> CodingProblemDifficulty : use
+CodingProblemSnapshot .down.> CodingProblemExample : use
+CodeReviewProblemSnapshot .down.> CodingProblemDifficulty : use
+CodeReviewProblemSnapshot .down.> CodeReviewProblemFile : use
+CodeReviewProblemSnapshot .down.> CodeReviewProblemExpectedIssue : use
+RoundRepository -up-|> JpaRepository : extend
+
+' --- Coding problem bank ---
+CodingProblemController .down.> CodingProblemService : use
+CodingProblemServiceImpl .up.|> CodingProblemService : implement
+CodingProblemServiceImpl .down.> CodingProblemsRepository : use
+CodingProblemServiceImpl .down.> ApiClient : use
+CodingProblemsRepository -up-|> JpaRepository : extend
+CodingProblem "1" *-down- "0..*" CodingProblemExample : owns
+CodingProblem "1" *-down- "0..*" CodingProblemTestCase : owns
+CodingProblem .right.> CodingProblemDifficulty : use
+
+' --- Code review problem bank ---
+CodeReviewProblemController .down.> CodeReviewProblemService : use
+CodeReviewProblemServiceImpl .up.|> CodeReviewProblemService : implement
+CodeReviewProblemServiceImpl .down.> CodeReviewProblemsRepository : use
+CodeReviewProblemServiceImpl .down.> ApiClient : use
+CodeReviewProblemsRepository -up-|> JpaRepository : extend
+CodeReviewProblem "1" *-down- "0..*" CodeReviewProblemFile : owns
+CodeReviewProblem "1" *-down- "0..*" CodeReviewProblemExpectedIssue : owns
+CodeReviewProblem .right.> CodingProblemDifficulty : use
+
+' --- Email inbox model ---
+EmailSubmission .right.> EmailStatus : use
+ApplicationDetailRepository -up-|> JpaRepository : extend
+
+' --- Journey summary engine ---
+RoundSummaryFactory .down.> QuizSummaryBuilder : use
+RoundSummaryFactory .down.> CodingSummaryBuilder : use
+RoundSummaryFactory .down.> CodeReviewSummaryBuilder : use
+RoundSummaryFactory .down.> EmailSummaryBuilder : use
+RoundSummaryFactory .down.> ApplicationDetail : use
+RoundSummaryFactory .down.> Round : use
+QuizSummaryBuilder .up.|> RoundSummaryBuilder : implement
+CodingSummaryBuilder .up.|> RoundSummaryBuilder : implement
+CodeReviewSummaryBuilder .up.|> RoundSummaryBuilder : implement
+EmailSummaryBuilder .up.|> RoundSummaryBuilder : implement
+CodingSummaryBuilder .down.> CodingProblemService : use
+EmailSummaryBuilder .down.> EmailSubmissionRepository : use
+RoundSummaryBuilder .down.> RoundSummaryInfo : use
+
+@enduml
