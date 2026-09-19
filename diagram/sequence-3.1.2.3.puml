@@ -59,15 +59,15 @@ activate MentorRepo
 MentorRepo --> OAuthService : mentor
 deactivate MentorRepo
 
-alt [Mentor account exists and is active]
+alt Mentor account exists and is active
     OAuthService -> OAuthService : build CustomOAuth2User(mentor)
-else [Mentor account does not exist or is not active]
+else Mentor account does not exist or is not active
     OAuthService -> UserRepo : findByEmail(email)
     activate UserRepo
     UserRepo --> OAuthService : user
     deactivate UserRepo
 
-    opt [User account does not exist]
+    opt User account does not exist
         OAuthService -> UserRepo : save(new User(email, name, role=USER))
         activate UserRepo
         UserRepo --> OAuthService : user

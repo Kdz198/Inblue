@@ -5,14 +5,6 @@ skinparam shadowing false
 ' Do not repeat participant boxes at the bottom of the diagram
 hide footbox
 
-<style>
-sequenceDiagram {
-  groupHeader {
-    FontStyle plain
-  }
-}
-</style>
-
 actor "Candidate" as Candidate
 participant ":PaymentController" as Controller
 participant ":PaymentServiceImpl" as Service
@@ -42,11 +34,11 @@ activate Service
 Service -> SecUtils : getCurrentUserId()
 activate SecUtils
 
-SecUtils -> Helper : getToke()
+SecUtils -> Helper : getToken()
 activate Helper
 Helper --> SecUtils : token : String
 
-alt [Authorization token is present]
+alt Authorization token is present
     SecUtils -> Jwt : getUserIdFromToken(token)
     activate Jwt
     Jwt --> SecUtils : userId : int
@@ -61,8 +53,8 @@ alt [Authorization token is present]
     JdRepo --> Service : Optional<JobDescription>
     deactivate JdRepo
 
-    alt [Job description is found]
-        alt [Job description price is valid]
+    alt Job description is found
+        alt Job description price is valid
             Service -> Service : amount = jd.getPrice()
 
             Service -> Helper : generateUniqueOrderCode()
@@ -78,7 +70,7 @@ alt [Authorization token is present]
             UserRepo --> Service : Optional<User>
             deactivate UserRepo
 
-            alt [User is found]
+            alt User is found
                 Service -> Service : build Payment(amount, user,\nstatus=PENDING, transactionCode, jdId)
 
                 Service -> PaymentRepo : save(payment)
@@ -109,22 +101,22 @@ alt [Authorization token is present]
                 Service --> Controller : checkoutUrl : String
 
                 Controller --> Candidate : 200 OK\nbody = checkoutUrl
-            else [User is not found]
+            else User is not found
                 Service --> Controller : throws CustomException\n(404 NOT_FOUND, "User not found")
 
                 Controller --> Candidate : error response (404)
             end
-        else [Job description price is missing or invalid]
+        else Job description price is missing or invalid
             Service --> Controller : throws CustomException\n(400 BAD_REQUEST,\n"This JD has no price yet. Please contact admin.")
 
             Controller --> Candidate : error response (400)
         end
-    else [Job description is not found]
+    else Job description is not found
         Service --> Controller : throws CustomException\n(404 NOT_FOUND, "Job Description not found")
 
         Controller --> Candidate : error response (404)
     end
-else [Authorization token is missing]
+else Authorization token is missing
     SecUtils --> Service : throws CustomException\n(401 UNAUTHORIZED, "Missing Authorization token")
     deactivate SecUtils
     Service --> Controller : propagate exception

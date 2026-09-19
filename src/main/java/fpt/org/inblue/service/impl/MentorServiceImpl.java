@@ -2,6 +2,31 @@ package fpt.org.inblue.service.impl;
 
 import fpt.org.inblue.cloudinary.CloudinaryService;
 import fpt.org.inblue.enums.Role;
+import fpt.org.inblue.enums.SessionStatus;
+import fpt.org.inblue.model.Application;
+import fpt.org.inblue.model.ApplicationDetail;
+import fpt.org.inblue.model.MentorReview;
+import fpt.org.inblue.model.Session;
+import fpt.org.inblue.model.User;
+import fpt.org.inblue.model.dto.response.MentorDashboardSummaryResponse;
+import fpt.org.inblue.model.dto.response.MentorDashboardSummaryResponse.FeedbackItem;
+import fpt.org.inblue.model.dto.response.MentorDashboardSummaryResponse.ReviewedApplicationItem;
+import fpt.org.inblue.model.dto.response.MentorDashboardSummaryResponse.ReviewedCandidateItem;
+import fpt.org.inblue.model.dto.response.MentorDashboardSummaryResponse.SessionItem;
+import fpt.org.inblue.model.dto.response.MentorDashboardSummaryResponse.UserBasicInfo;
+import fpt.org.inblue.model.dto.response.MentorReviewResponse;
+import fpt.org.inblue.repository.ApplicationDetailRepository;
+import fpt.org.inblue.repository.ApplicationRepository;
+import fpt.org.inblue.repository.MentorReviewRepository;
+import fpt.org.inblue.repository.SessionRepository;
+import java.util.Comparator;
+import java.util.EnumMap;
+import java.util.Map;
+import java.util.Objects;
+import java.util.function.Function;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
+import org.springframework.transaction.annotation.Transactional;
 import fpt.org.inblue.exception.CustomException;
 import fpt.org.inblue.mapper.MentorMapper;
 import fpt.org.inblue.model.JobDescription;
@@ -39,6 +64,10 @@ public class MentorServiceImpl implements MentorService {
 
     private final MentorRepository mentorRepository;
     private final UserRepository userRepository;
+    private final SessionRepository sessionRepository;
+    private final ApplicationDetailRepository applicationDetailRepository;
+    private final ApplicationRepository applicationRepository;
+    private final MentorReviewRepository mentorReviewRepository;
     private final MentorFeedbackRepository mentorFeedbackRepository;
     private final JobDescriptionRepository jobDescriptionRepository;
     private final ApplicationEventPublisher applicationEventPublisher;
@@ -185,6 +214,185 @@ public class MentorServiceImpl implements MentorService {
                     return response;
                 })
                 .toList();
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public MentorDashboardSummaryResponse getSummary(int mentorId) {
+        List<Session> sessions = sessionRepository.findAllByUserId2(mentorId);
+        // MentorReview dùng chung id với session (@MapsId) nên tra theo session của mentor;
+        // không dựa vào cột mentor_id vì dữ liệu cũ có thể bị null.
+        List<MentorReview> reviews = mentorReviewRepository.findAllById(
+                sessions.stream().map(Session::getId).toList());
+        List<ReviewedApplicationItem> reviewedApplications = buildReviewedApplications(mentorId, reviews);
+
+        Map<Integer, User> usersById = loadUsers(sessions, reviewedApplications);
+
+        Map<SessionStatus, Long> countByStatus = new EnumMap<>(SessionStatus.class);
+        sessions.stream().filter(s -> s.getStatus() != null).forEach(s -> countByStatus.merge(s.getStatus(), 1L, Long::sum));
+
+        List<SessionItem> sessionItems = sessions.stream()
+                .sorted(Comparator.comparing(Session::getJoinTime, Comparator.nullsLast(Comparator.reverseOrder())))
+                .map(s -> {
+                    User mentee = usersById.get(s.getUserId());
+                    return SessionItem.builder()
+                            .sessionId(s.getId())
+                            .status(s.getStatus())
+                            .menteeId(s.getUserId())
+                            .menteeName(mentee != null ? mentee.getName() : null)
+                            .menteeAvatarUrl(mentee != null ? mentee.getAvatarUrl() : null)
+                            .joinTime(s.getJoinTime())
+                            .duration(s.getDuration())
+                            .totalPrice(s.getTotalPrice())
+                            .build();
+                })
+                .toList();
+
+        reviewedApplications.forEach(item -> {
+            User candidate = usersById.get(item.getCandidateId());
+            if (candidate != null) {
+                item.setCandidateName(candidate.getName());
+                item.setCandidateEmail(candidate.getEmail());
+                item.setCandidateAvatarUrl(candidate.getAvatarUrl());
+            }
+        });
+
+        List<FeedbackItem> feedbackItems = mentorFeedbackRepository.findAllByMentor_Id(mentorId).stream()
+                .sorted(Comparator.comparingInt(MentorFeedback::getId).reversed())
+                .map(fb -> FeedbackItem.builder()
+                        .sessionId(fb.getId())
+                        .user(toUserBasicInfo(fb.getUser()))
+                        .rating(fb.getRating())
+                        .comment(fb.getComment())
+                        .build())
+                .toList();
+
+        Map<Integer, Session> sessionById =
+                sessions.stream().collect(Collectors.toMap(Session::getId, Function.identity()));
+        List<ReviewedCandidateItem> reviewedCandidateItems = reviews.stream()
+                .sorted(Comparator.comparingInt(MentorReview::getId).reversed())
+                .map(r -> {
+                    User candidate = r.getUser() != null
+                            ? r.getUser()
+                            : usersById.get(sessionById.get(r.getId()).getUserId());
+                    return ReviewedCandidateItem.builder()
+                            .sessionId(r.getId())
+                            .candidate(toUserBasicInfo(candidate))
+                            .review(toReviewResponse(r))
+                            .build();
+                })
+                .toList();
+
+        return MentorDashboardSummaryResponse.builder()
+                .totalFeedbacks(feedbackItems.size())
+                .feedbacks(feedbackItems)
+                .totalReviewedCandidates(reviewedCandidateItems.size())
+                .reviewedCandidates(reviewedCandidateItems)
+                .totalSessions(sessionItems.size())
+                .sessionCountByStatus(countByStatus)
+                .sessions(sessionItems)
+                .totalReviewedApplications(reviewedApplications.size())
+                .reviewedApplications(reviewedApplications)
+                .build();
+    }
+
+    /** Application detail được gán cho mentor mà mentor đã nộp đánh giá (MentorReview) cho session của vòng đó. */
+    private List<ReviewedApplicationItem> buildReviewedApplications(int mentorId, List<MentorReview> reviews) {
+        Map<Integer, MentorReview> reviewBySessionId = reviews.stream()
+                .collect(Collectors.toMap(MentorReview::getId, Function.identity(), (a, b) -> a));
+        Map<Integer, MentorFeedback> feedbackBySessionId = mentorFeedbackRepository.findAllByMentor_Id(mentorId).stream()
+                .collect(Collectors.toMap(MentorFeedback::getId, Function.identity(), (a, b) -> a));
+
+        List<ApplicationDetail> details = applicationDetailRepository.findAllByMentorId(mentorId).stream()
+                .filter(d -> d.getSessionId() != null && reviewBySessionId.containsKey(d.getSessionId()))
+                .toList();
+        if (details.isEmpty()) {
+            return List.of();
+        }
+
+        Map<Long, Application> applicationsById = applicationRepository
+                .findAllById(details.stream()
+                        .map(ApplicationDetail::getApplicationId)
+                        .filter(Objects::nonNull)
+                        .distinct()
+                        .toList())
+                .stream()
+                .collect(Collectors.toMap(Application::getId, Function.identity()));
+        Map<Long, String> jobTitleById = jobDescriptionRepository
+                .findAllById(applicationsById.values().stream()
+                        .map(Application::getJdId)
+                        .filter(Objects::nonNull)
+                        .distinct()
+                        .toList())
+                .stream()
+                .collect(Collectors.toMap(JobDescription::getId, jd -> String.valueOf(jd.getTitle())));
+
+        return details.stream()
+                .filter(d -> {
+                    Application app = applicationsById.get(d.getApplicationId());
+                    return app != null && !Boolean.TRUE.equals(app.getIsDeleted());
+                })
+                .map(d -> {
+                    Application app = applicationsById.get(d.getApplicationId());
+                    MentorReview review = reviewBySessionId.get(d.getSessionId());
+                    MentorFeedback feedback = feedbackBySessionId.get(d.getSessionId());
+                    return ReviewedApplicationItem.builder()
+                            .applicationDetailId(d.getId())
+                            .applicationId(d.getApplicationId())
+                            .jobTitle(app.getJdId() != null ? jobTitleById.get(app.getJdId()) : null)
+                            .sessionId(d.getSessionId())
+                            .candidateId(app.getUserId())
+                            .mentorReview(toReviewResponse(review))
+                            .candidateFeedback(toFeedbackResponse(feedback))
+                            .build();
+                })
+                .toList();
+    }
+
+    private Map<Integer, User> loadUsers(List<Session> sessions, List<ReviewedApplicationItem> items) {
+        List<Integer> ids = Stream.concat(
+                        sessions.stream().map(Session::getUserId),
+                        items.stream().map(ReviewedApplicationItem::getCandidateId))
+                .distinct()
+                .toList();
+        return userRepository.findAllById(ids).stream().collect(Collectors.toMap(User::getId, Function.identity()));
+    }
+
+    private UserBasicInfo toUserBasicInfo(User user) {
+        if (user == null) {
+            return null;
+        }
+        return UserBasicInfo.builder()
+                .id(user.getId())
+                .name(user.getName())
+                .email(user.getEmail())
+                .avatarUrl(user.getAvatarUrl())
+                .build();
+    }
+
+    private MentorReviewResponse toReviewResponse(MentorReview review) {
+        return MentorReviewResponse.builder()
+                .rating(review.getRating())
+                .situationNote(review.getSituationNote())
+                .taskNote(review.getTaskNote())
+                .actionNote(review.getActionNote())
+                .resultNote(review.getResultNote())
+                .strength(review.getStrength())
+                .weakness(review.getWeakness())
+                .improve(review.getImprove())
+                .build();
+    }
+
+    private MentorFeedbackResponse toFeedbackResponse(MentorFeedback feedback) {
+        if (feedback == null) {
+            return null;
+        }
+        return MentorFeedbackResponse.builder()
+                .rating(feedback.getRating())
+                .comment(feedback.getComment())
+                .userName(feedback.getUser() != null ? feedback.getUser().getName() : null)
+                .userAvatarUrl(feedback.getUser() != null ? feedback.getUser().getAvatarUrl() : null)
+                .build();
     }
 
     private MentorResponse toMentorResponse(Mentor mentor) {

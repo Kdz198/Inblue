@@ -1,0 +1,150 @@
+@startuml AssessmentEngine_ControllerServiceLayer
+skinparam classAttributeIconSize 0
+skinparam monochrome true
+skinparam shadowing false
+hide circle
+
+skinparam linetype ortho
+skinparam nodesep 45
+skinparam ranksep 55
+
+
+' ================= SUBMISSION ENTRY POINT (controller & service layer) =================
+
+class ApplicationDetailController {
+  - submissionService : SubmissionService
+  - applicationDetailService : ApplicationDetailService
+  --
+  + submitApplicationDetail(submitRequest : SubmitRequest) : SubmissionResult
+  + evaluateCodeReview(request : CodeReviewSubmitRequest) : ApplicationDetail
+  + hrScore(applicationDetailId : int, isPass : boolean, note : String, score : double) : void
+  + getApplicationDetailById(id : long) : ApplicationDetail
+  + getApplicationDetailsByApplicationId(applicationId : long) : List<ApplicationDetail>
+  + getApplicationDetailsForReviewer() : List<ReviewerApplicationDetailResponseDto>
+  .. (Mentor Review scheduling endpoints: assignMentor, selectMentor,
+      scheduleDecision, cancelSchedule... see Mentor Review Module diagram) ..
+}
+
+class SubmissionService {
+  - roundProcessorFactory : RoundProcessorFactory
+  - applicationService : ApplicationService
+  - jobDescriptionService : JobDescriptionService
+  - apiClient : ApiClient
+  - applicationDetailRepository : ApplicationDetailRepository
+  - submissionEventHandle : SubmissionEventHandle
+  --
+  + evaluateCodeReview(request : CodeReviewSubmitRequest) : ApplicationDetail
+  + submitRound(detail : SubmitRequest) : SubmissionResult
+  + submitEmailRoundSync(detail : SubmitRequest, emailSubmission : EmailSubmission) : void
+}
+
+interface ApplicationDetailService {
+  + getApplicationDetailById(id : long) : ApplicationDetail
+  + getByApplicationId(applicationId : long) : List<ApplicationDetail>
+  + hrScore(applicationDetailId : long, isPass : boolean, note : String, score : double) : void
+  + getApplicationDetailsForReviewer() : List<ReviewerApplicationDetailResponseDto>
+  .. (assignMentor, selectMentor, scheduleDecision, cancelSchedule,
+      startAiInterview... see Mentor Review / AI Interview Module diagrams) ..
+}
+
+class ApplicationDetailServiceImpl {
+  - applicationDetailRepository : ApplicationDetailRepository
+  - applicationService : ApplicationService
+  --
+  + getApplicationDetailById(id : long) : ApplicationDetail
+  + getByApplicationId(applicationId : long) : List<ApplicationDetail>
+  + hrScore(applicationDetailId : long, isPass : boolean, note : String, score : double) : void
+  + getApplicationDetailsForReviewer() : List<ReviewerApplicationDetailResponseDto>
+  .. (also depends on Mentor/InterviewSession/Session services for the
+      methods above - see Mentor Review & AI Interview Module diagrams) ..
+}
+
+' ================= SHARED REPOSITORY INFRASTRUCTURE =================
+
+interface ApplicationDetailRepository {
+  + findByApplicationIdAndRoundId(applicationId : Long, roundId : Long) : Optional<ApplicationDetail>
+  + findAllByApplicationId(applicationId : Long) : List<ApplicationDetail>
+  + findAllByStatus(status : ApplicationDetailStatus) : List<ApplicationDetail>
+  .. (admin analytics projection queries omitted - see Admin
+      Analytics Module diagram) ..
+}
+
+' ================= OTHER MODULES (referenced, abbreviated) =================
+
+interface JpaRepository {
+  + save(entity) : T
+  + findById(id) : Optional<T>
+  + findAll() : List<T>
+}
+
+interface ApplicationService {
+  + getApplicationById(id : Long) : Application
+  + moveToNextRound(currentApplication : Application) : void
+  .. (applyForJob, getAllApplications... see Recruitment Pipeline diagram) ..
+}
+
+interface JobDescriptionService {
+  + getRoundByOrder(jdId : Long, roundOrder : Integer) : Round
+  .. (full detail in Job Search Module diagram) ..
+}
+
+' ================= REFERENCED FROM OTHER PARTS (abbreviated) =================
+
+class SubmitRequest {
+  .. (full detail in class-3.4.1(2)) ..
+}
+
+class ProcessDto {
+  .. (full detail in class-3.4.1(2)) ..
+}
+
+class CodeReviewSubmitRequest {
+  .. (full detail in class-3.4.1(2)) ..
+}
+
+class CodeReviewEvaluationRequest {
+  .. (full detail in class-3.4.1(2)) ..
+}
+
+class CvEvaluationResponse {
+  .. (full detail in class-3.4.1(2)) ..
+}
+
+class RoundProcessorFactory {
+  .. (full detail in class-3.4.1(3)) ..
+}
+
+class SubmissionEventHandle {
+  .. (full detail in class-3.4.1(5)) ..
+}
+
+interface ApiClient {
+  .. (full detail in class-3.4.1(5)) ..
+}
+
+' ================= RELATIONS =================
+
+' --- Submission entry point ---
+ApplicationDetailController .down.> SubmissionService : use
+ApplicationDetailController .down.> ApplicationDetailService : use
+ApplicationDetailController .down.> SubmitRequest : use
+ApplicationDetailController .down.> CodeReviewSubmitRequest : use
+ApplicationDetailServiceImpl .up.|> ApplicationDetailService : implement
+ApplicationDetailServiceImpl .down.> ApplicationDetailRepository : use
+ApplicationDetailServiceImpl .down.> ApplicationService : use
+
+' --- Round submission engine ---
+SubmissionService .down.> RoundProcessorFactory : use
+SubmissionService .down.> ApplicationService : use
+SubmissionService .down.> JobDescriptionService : use
+SubmissionService .down.> ApiClient : use
+SubmissionService .down.> ApplicationDetailRepository : use
+SubmissionService .down.> SubmissionEventHandle : use
+SubmissionService .down.> ProcessDto : create
+SubmissionService .down.> CodeReviewEvaluationRequest : create
+SubmissionService .down.> CvEvaluationResponse : use
+
+' --- Email inbox model ---
+ApplicationDetailRepository -up-|> JpaRepository : extend
+
+@enduml

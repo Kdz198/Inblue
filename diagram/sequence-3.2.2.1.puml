@@ -42,7 +42,7 @@ end note
 
 Candidate -> UI : Select CV file
 UI -> UI : Validate PDF type/extension and size <= 10 MB
-break [File type is invalid or file size exceeds the limit]
+break File type is invalid or file size exceeds the limit
   UI --> Candidate : Show validation error
 end
 UI --> Candidate : Preview selected PDF
@@ -57,7 +57,7 @@ end note
 Controller -> Service : upCv(userId, applicationId, cvFile)
 activate Service
 
-break [CV file is empty (direct API request)]
+break CV file is empty (direct API request)
   Service --> Controller : null
   Controller --> UI : HTTP 200, empty body
 end
@@ -78,17 +78,17 @@ group Transactional upCv attempt
     Cloudinary side effects are not rolled back.
   end note
 
-  opt [User has an existing CV public ID]
+  opt User has an existing CV public ID
     Service -> Storage : deletePdf(user.cv_public_id)
     Storage --> Service : Deletion result
   end
 
-  alt [Application ID is provided]
+  alt Application ID is provided
     Service -> Profiles : getProfileByApplicationId(applicationId)
     Profiles -> ProfileRepo : findByApplicationId(applicationId)
     ProfileRepo --> Profiles : Existing profile or null
     Profiles --> Service : Existing profile or null
-  else [Application ID is not provided]
+  else Application ID is not provided
     Service -> Profiles : getProfileByUserIdAndApplicationIdIsNull(userId)
     Profiles -> ProfileRepo : findByUser_IdAndApplicationIdIsNull(userId)
     ProfileRepo --> Profiles : Existing profile or null
@@ -131,12 +131,12 @@ par Return parsed profile (does not wait for Cloudinary)
   deactivate Controller
   UI -> UI : Refresh account data
   UI --> Candidate : Show upload success and close modal
-else [CV is being stored in background]
+else CV is being stored in background
   activate Listener
   Listener -> Users : findById(user.id)
   Users --> Listener : User or null
-  opt [User still exists]
-    opt [Existing CV public ID is present]
+  opt User still exists
+    opt Existing CV public ID is present
       Listener -> Storage : deletePdf(user.cv_public_id)
       Storage --> Listener : Deletion result
     end

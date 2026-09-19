@@ -3,6 +3,7 @@ package fpt.org.inblue.controller;
 import fpt.org.inblue.model.dto.request.ChangeMentorPasswordRequest;
 import fpt.org.inblue.model.dto.request.CreateMentorRequest;
 import fpt.org.inblue.model.dto.request.UpdateMentorRequest;
+import fpt.org.inblue.model.dto.response.MentorDashboardSummaryResponse;
 import fpt.org.inblue.model.dto.response.MentorResponse;
 import fpt.org.inblue.model.dto.response.UserScheduleEventDto;
 import fpt.org.inblue.service.MentorService;
@@ -54,6 +55,15 @@ public class MentorController {
         int mentorId = securityUtils.getCurrentUserId();
         List<UserScheduleEventDto> schedule = userScheduleService.getMentorSchedule(mentorId, startDate, endDate);
         return ResponseEntity.ok(schedule);
+    }
+
+    @GetMapping("/dashboard/summary")
+    @Operation(
+            summary = "Thông tin sơ bộ cho dashboard của Mentor đang đăng nhập",
+            description =
+                    "Trả về tổng số session mentor tham gia (kèm thông tin ngắn gọn và số lượng theo từng trạng thái), và danh sách application mà mentor đã đánh giá (ứng viên, điểm + nhận xét của mentor, feedback của ứng viên dành cho mentor).")
+    public ResponseEntity<MentorDashboardSummaryResponse> getDashboardSummary() {
+        return ResponseEntity.ok(mentorService.getSummary(securityUtils.getCurrentUserId()));
     }
 
     @GetMapping("/{mentorId}/schedule")

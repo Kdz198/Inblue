@@ -1,0 +1,130 @@
+@startuml AssessmentEngine_SubmissionDtos
+skinparam classAttributeIconSize 0
+skinparam monochrome true
+skinparam shadowing false
+hide circle
+
+skinparam linetype ortho
+skinparam nodesep 45
+skinparam ranksep 55
+
+
+' ================= SUBMISSION ENTRY POINT (request / response DTOs) =================
+
+class SubmitRequest {
+  - applicationId : Long
+  - textContent : String
+  - file : MultipartFile
+  - quizAnswers : List<String>
+  - compileRequest : List<CompileRequest>
+}
+
+class CompileRequest {
+  - problemId : Long
+  - language : CompilerLanguage
+  - sourceCode : List<String>
+  - isTest : Boolean
+}
+
+class ProcessDto {
+  - application : Application
+  - round : Round
+  - textContent : String
+  - file : MultipartFile
+  - quizAnswers : List<String>
+  - roundType : RoundType
+  - compileRequest : List<CompileRequest>
+}
+
+class SubmissionResult {
+  - status : Status
+  - applicationId : Long
+  - detail : ApplicationDetail
+  - message : String
+  - roundResult : ApplicationDetail.RoundResult
+  - testCases : List<CompilerResponseDto.TestCaseResult>
+  --
+  + completed(detail : ApplicationDetail) : SubmissionResult {static}
+  + pending(applicationId : Long) : SubmissionResult {static}
+  + compileCode(compilerResponse : CompilerResponseDto) : SubmissionResult {static}
+}
+
+enum "SubmissionResult.Status" as SubmissionResultStatus {
+  PENDING
+  COMPLETED
+}
+
+' ================= CODE REVIEW EVALUATION (direct, no processor strategy) =================
+
+class CodeReviewSubmitRequest {
+  - applicationId : Long
+  - roundId : Long
+  - submissions : List<ApplicationDetail.CodeReviewSubmission>
+}
+
+class CodeReviewEvaluationRequest {
+  - codeReviewProblem : CodeReviewProblem (snapshot DTO, own nested type)
+  - submissions : List<ApplicationDetail.CodeReviewSubmission>
+  - plan : Round.EvaluationPlan
+}
+
+class CvEvaluationResponse {
+  - score : Double
+  - extraMetrics : Map<String, Object>
+  - structuredAiFeedback : ApplicationDetail.StructuredAiFeedback
+}
+
+' ================= OTHER MODULES (referenced, abbreviated) =================
+
+enum RoundType {
+  CV_SCREENING
+  EMAIL_SIMULATOR
+  QUIZ
+  CODING
+  CODE_REVIEW
+  MENTROR_REVIEW
+  AI_INTERVIEW
+}
+
+class Application {
+  - id : Long
+  - jdId : Long
+  - userId : int
+  - currentRoundOrder : Integer
+  .. (full detail in the Application / Recruitment Pipeline diagram) ..
+}
+
+' ================= REFERENCED FROM OTHER PARTS (abbreviated) =================
+
+class CompilerResponseDto {
+  .. (full detail in class-3.4.1(5)) ..
+}
+
+class ApplicationDetail {
+  .. (full detail in class-3.4.1(6)) ..
+}
+
+class Round {
+  .. (full detail in class-3.4.1(7)) ..
+}
+
+' ================= RELATIONS =================
+
+' --- Submission entry point ---
+SubmitRequest .down.> CompileRequest : use
+
+' --- Round submission engine ---
+SubmissionResult .right.> SubmissionResultStatus : use
+SubmissionResult .down.> CompilerResponseDto : use
+SubmissionResult .down.> ApplicationDetail : use
+ProcessDto .down.> Application : use
+ProcessDto .down.> Round : use
+ProcessDto .down.> CompileRequest : use
+ProcessDto .down.> RoundType : use
+
+' --- Code Review direct evaluation ---
+CodeReviewSubmitRequest .down.> ApplicationDetail : use
+CodeReviewEvaluationRequest .down.> Round : use
+CodeReviewEvaluationRequest .down.> ApplicationDetail : use
+
+@enduml

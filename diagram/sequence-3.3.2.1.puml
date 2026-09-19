@@ -25,27 +25,27 @@ Controller -> Service ++ : searchJobs(titleKeyword, status, level, salaryMin, sa
 Service -> Spec ++ : isNotDeleted()
 Spec --> Service -- : Specification<JobDescription>
 
-opt [Title keyword is provided]
+opt Title keyword is provided
     Service -> Spec ++ : titleContains(titleKeyword)
     Spec --> Service -- : Specification<JobDescription>
 end
 
-opt [Status filter is provided]
+opt Status filter is provided
     Service -> Spec ++ : hasStatus(status)
     Spec --> Service -- : Specification<JobDescription>
 end
 
-opt [Level filter is provided]
+opt Level filter is provided
     Service -> Spec ++ : levelEquals(level)
     Spec --> Service -- : Specification<JobDescription>
 end
 
-opt [Minimum salary is provided]
+opt Minimum salary is provided
     Service -> Spec ++ : hasSalaryGreaterThanOrEqual(salaryMin)
     Spec --> Service -- : Specification<JobDescription>
 end
 
-opt [Maximum salary is provided]
+opt Maximum salary is provided
     Service -> Spec ++ : hasSalaryLessThanOrEqual(salaryMax)
     Spec --> Service -- : Specification<JobDescription>
 end

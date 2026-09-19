@@ -1,0 +1,131 @@
+@startuml AssessmentEngine_RoundSubmissionEngine
+skinparam classAttributeIconSize 0
+skinparam monochrome true
+skinparam shadowing false
+hide circle
+
+skinparam linetype ortho
+skinparam nodesep 45
+skinparam ranksep 55
+
+
+' ================= ROUND SUBMISSION ENGINE (Strategy + Factory) =================
+' Note: CODE_REVIEW is NOT routed through this engine - it is graded directly
+' by SubmissionService.evaluateCodeReview() (see CODE REVIEW EVALUATION section).
+
+interface RoundSubmissionProcessor {
+  + getSupportedType() : RoundType
+  + process(detail : ProcessDto) : SubmissionResult
+}
+
+class RoundProcessorFactory {
+  - quizProcessor : QuizRoundProcessor
+  - emailProcessor : EmailRoundProcessor
+  - cvProcessor : CVRoundProcessor
+  - codeProcessor : CodeRoundProcessor
+  --
+  + getProcessor(type : RoundType) : RoundSubmissionProcessor
+}
+
+class QuizRoundProcessor {
+  - roundRepository : RoundRepository
+  - applicationDetailRepository : ApplicationDetailRepository
+  - applicationService : ApplicationService
+  --
+  + getSupportedType() : RoundType
+  + process(dto : ProcessDto) : SubmissionResult
+}
+
+class CodeRoundProcessor {
+  - apiClient : ApiClient
+  - codingProblemsRepository : CodingProblemsRepository
+  - submissionEventHandle : SubmissionEventHandle
+  --
+  + getSupportedType() : RoundType
+  + process(dto : ProcessDto) : SubmissionResult
+  .. (isTest=true -> compiles against visible examples only, no persistence;
+      isTest=false -> delegates to SubmissionEventHandle.processCodeSubmission) ..
+}
+
+class EmailRoundProcessor {
+  - applicationEventPublisher : ApplicationEventPublisher
+  --
+  + getSupportedType() : RoundType
+  + process(dto : ProcessDto) : SubmissionResult
+}
+
+class CVRoundProcessor {
+  - submissionEventHandle : SubmissionEventHandle
+  --
+  + getSupportedType() : RoundType
+  + process(dto : ProcessDto) : SubmissionResult
+  .. (CV parsing/matching detail in AI CV Parsing & Job Description
+      Matching Module diagram) ..
+}
+
+class ApplicationEventPublisher <<external library>> {
+  + publishEvent(event : Object) : void
+}
+
+' ================= OTHER MODULES (referenced, abbreviated) =================
+
+interface ApplicationService {
+  + getApplicationById(id : Long) : Application
+  + moveToNextRound(currentApplication : Application) : void
+  .. (applyForJob, getAllApplications... see Recruitment Pipeline diagram) ..
+}
+
+' ================= REFERENCED FROM OTHER PARTS (abbreviated) =================
+
+interface ApplicationDetailRepository {
+  .. (full detail in class-3.4.1(1)) ..
+}
+
+class ProcessDto {
+  .. (full detail in class-3.4.1(2)) ..
+}
+
+class SubmissionResult {
+  .. (full detail in class-3.4.1(2)) ..
+}
+
+class SubmissionEventHandle {
+  .. (full detail in class-3.4.1(5)) ..
+}
+
+interface ApiClient {
+  .. (full detail in class-3.4.1(5)) ..
+}
+
+interface RoundRepository {
+  .. (full detail in class-3.4.1(7)) ..
+}
+
+interface CodingProblemsRepository {
+  .. (full detail in class-3.4.1(8)) ..
+}
+
+' ================= RELATIONS =================
+
+' --- Round submission engine ---
+RoundProcessorFactory .down.> QuizRoundProcessor : use
+RoundProcessorFactory .down.> EmailRoundProcessor : use
+RoundProcessorFactory .down.> CVRoundProcessor : use
+RoundProcessorFactory .down.> CodeRoundProcessor : use
+QuizRoundProcessor .up.|> RoundSubmissionProcessor : implement
+EmailRoundProcessor .up.|> RoundSubmissionProcessor : implement
+CVRoundProcessor .up.|> RoundSubmissionProcessor : implement
+CodeRoundProcessor .up.|> RoundSubmissionProcessor : implement
+RoundSubmissionProcessor .down.> ProcessDto : use
+RoundSubmissionProcessor .down.> SubmissionResult : use
+QuizRoundProcessor .down.> RoundRepository : use
+QuizRoundProcessor .down.> ApplicationDetailRepository : use
+QuizRoundProcessor .down.> ApplicationService : use
+CodeRoundProcessor .down.> ApiClient : use
+CodeRoundProcessor .down.> CodingProblemsRepository : use
+CodeRoundProcessor .down.> SubmissionEventHandle : use
+CVRoundProcessor .down.> SubmissionEventHandle : use
+EmailRoundProcessor .down.> ApplicationEventPublisher : use
+EmailRoundProcessor ..> ProcessDto : publish event
+
+@enduml

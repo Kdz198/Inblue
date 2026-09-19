@@ -1,0 +1,116 @@
+@startuml AssessmentEngine_SubmissionDataModel
+skinparam classAttributeIconSize 0
+skinparam monochrome true
+skinparam shadowing false
+hide circle
+
+skinparam linetype ortho
+skinparam nodesep 45
+skinparam ranksep 55
+
+
+' ================= SUBMISSION DATA MODEL =================
+
+class ApplicationDetail {
+  - id : Long
+  - applicationId : Long
+  - roundId : Long
+  - status : ApplicationDetailStatus
+  - finalScore : Double
+  - submissionData : ApplicationDetail.SubmissionData
+  - aiScore : Double
+  - aiFeedback : ApplicationDetail.AiFeedback
+  - structuredAiFeedback : ApplicationDetail.StructuredAiFeedback
+  - hrScore : Double
+  - hrNote : String
+  - finalResult : ApplicationDetail.RoundResult
+  - startedAt : LocalDateTime
+  - completedAt : LocalDateTime
+  - createdAt : LocalDateTime
+  - updatedAt : LocalDateTime
+  .. (mentor/AI-interview scheduling fields: mentorReview, mentorId,
+      assignedMentorIds, sessionId, aiInterviewSessionId, sessionInfo -
+      see Mentor Review & AI Interview Module diagrams) ..
+}
+
+class "ApplicationDetail.SubmissionData" as SubmissionData {
+  - textContent : String
+  - fileUrl : String
+  - quizAnswers : List<ApplicationDetail.QuizAnswer>
+  - codeSubmissions : List<ApplicationDetail.CodeSubmission>
+  - codeReviewSubmissions : List<ApplicationDetail.CodeReviewSubmission>
+  - emailSubmissionId : Long
+}
+
+class "ApplicationDetail.QuizAnswer" as QuizAnswer {
+  - questionText : String
+  - selectedAnswer : String
+  - isCorrect : Boolean
+}
+
+class "ApplicationDetail.CodeSubmission" as CodeSubmission {
+  - problemId : long
+  - sourceCode : List<String>
+  - testCases : CompilerResponseDto
+}
+
+class "ApplicationDetail.CodeReviewSubmission" as CodeReviewSubmission {
+  - filename : String
+  - lineNumber : Integer
+  - severity : String
+  - description : String
+}
+
+class "ApplicationDetail.AiFeedback" as AiFeedback {
+  - generalComment : String
+  - strengths : List<String>
+  - weaknesses : List<String>
+  - extraMetrics : Map<String, Object>
+}
+
+class "ApplicationDetail.StructuredAiFeedback" as StructuredAiFeedback {
+  - overallScore : Double
+  - overallFeedback : String
+  - strengths : List<String>
+  - weaknesses : List<String>
+  - improvementAdvice : List<String>
+  .. (metricResults : List<MetricResult> omitted - WIP field,
+      not yet consumed by the round processors above) ..
+}
+
+enum "ApplicationDetail.RoundResult" as RoundResult {
+  PASSED
+  FAILED
+}
+
+enum ApplicationDetailStatus {
+  PENDING
+  AWAITING_MENTOR
+  AWAITING_CANDIDATE_SELECT_MENTOR
+  AWAITING_MENTOR_SCHEDULE_APPROVAL
+  SLOT_PICKED
+  SUBMITTED
+  AI_EVALUATED
+  COMPLETED
+}
+
+' ================= REFERENCED FROM OTHER PARTS (abbreviated) =================
+
+class CompilerResponseDto {
+  .. (full detail in class-3.4.1(5)) ..
+}
+
+' ================= RELATIONS =================
+
+' --- Submission data model composition ---
+ApplicationDetail "1" *-down- "0..1" SubmissionData : owns
+ApplicationDetail "1" *-down- "0..1" AiFeedback : owns
+ApplicationDetail "1" *-down- "0..1" StructuredAiFeedback : owns
+ApplicationDetail .right.> RoundResult : use
+ApplicationDetail .right.> ApplicationDetailStatus : use
+SubmissionData "1" *-down- "0..*" QuizAnswer : owns
+SubmissionData "1" *-down- "0..*" CodeSubmission : owns
+SubmissionData "1" *-down- "0..*" CodeReviewSubmission : owns
+CodeSubmission .down.> CompilerResponseDto : use
+
+@enduml

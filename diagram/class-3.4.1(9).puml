@@ -1,0 +1,100 @@
+@startuml AssessmentEngine_CodeReviewProblemBank
+skinparam classAttributeIconSize 0
+skinparam monochrome true
+skinparam shadowing false
+hide circle
+
+skinparam linetype ortho
+skinparam nodesep 45
+skinparam ranksep 55
+
+
+' ================= PROBLEM BANKS (code review problems) =================
+
+class CodeReviewProblemController {
+  - codeReviewProblemService : CodeReviewProblemService
+  --
+  + getAllCodeReviewProblems() : List<CodeReviewProblem>
+  + getCodeReviewProblemById(id : Long) : Optional<CodeReviewProblem>
+  + createCodeReviewProblem(problem : CodeReviewProblem) : CodeReviewProblem
+  + generateCodeReviewProblem(request : CodeReviewProblemGenerateRequest) : CodeReviewProblemGenerateResponse
+}
+
+interface CodeReviewProblemService {
+  + findCodeReviewProblemById(id : Long) : Optional<CodeReviewProblem>
+  + save(codeReviewProblem : CodeReviewProblem) : CodeReviewProblem
+  + findAllCodeReviewProblems() : List<CodeReviewProblem>
+  + generateCodeReviewProblem(request : CodeReviewProblemGenerateRequest) : CodeReviewProblemGenerateResponse
+}
+
+class CodeReviewProblemServiceImpl {
+  - codeReviewProblemsRepository : CodeReviewProblemsRepository
+  - apiClient : ApiClient
+  --
+  + findCodeReviewProblemById(id : Long) : Optional<CodeReviewProblem>
+  + save(codeReviewProblem : CodeReviewProblem) : CodeReviewProblem
+  + findAllCodeReviewProblems() : List<CodeReviewProblem>
+  + generateCodeReviewProblem(request : CodeReviewProblemGenerateRequest) : CodeReviewProblemGenerateResponse
+}
+
+interface CodeReviewProblemsRepository {
+  + findById(id : Long) : Optional<CodeReviewProblem>
+}
+
+class CodeReviewProblem {
+  - id : Long
+  - title : String
+  - difficulty : CodingProblem.Difficulty
+  - language : String
+  - problemStatement : String
+  - files : List<CodeReviewProblem.CodeFile>
+  - expectedIssues : List<CodeReviewProblem.ExpectedIssue>
+  - isDeleted : Boolean
+  - createdAt : LocalDateTime
+  - updatedAt : LocalDateTime
+}
+
+class "CodeReviewProblem.CodeFile" as CodeReviewProblemFile {
+  - filename : String
+  - content : String
+  - language : String
+}
+
+class "CodeReviewProblem.ExpectedIssue" as CodeReviewProblemExpectedIssue {
+  - filename : String
+  - lineNumber : Integer
+  - severity : String
+  - description : String
+}
+
+' ================= OTHER MODULES (referenced, abbreviated) =================
+
+interface JpaRepository {
+  + save(entity) : T
+  + findById(id) : Optional<T>
+  + findAll() : List<T>
+}
+
+' ================= REFERENCED FROM OTHER PARTS (abbreviated) =================
+
+interface ApiClient {
+  .. (full detail in class-3.4.1(5)) ..
+}
+
+enum "CodingProblem.Difficulty" as CodingProblemDifficulty {
+  .. (full detail in class-3.4.1(8)) ..
+}
+
+' ================= RELATIONS =================
+
+' --- Code review problem bank ---
+CodeReviewProblemController .down.> CodeReviewProblemService : use
+CodeReviewProblemServiceImpl .up.|> CodeReviewProblemService : implement
+CodeReviewProblemServiceImpl .down.> CodeReviewProblemsRepository : use
+CodeReviewProblemServiceImpl .down.> ApiClient : use
+CodeReviewProblemsRepository -up-|> JpaRepository : extend
+CodeReviewProblem "1" *-down- "0..*" CodeReviewProblemFile : owns
+CodeReviewProblem "1" *-down- "0..*" CodeReviewProblemExpectedIssue : owns
+CodeReviewProblem .right.> CodingProblemDifficulty : use
+
+@enduml

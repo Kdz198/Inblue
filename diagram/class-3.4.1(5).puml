@@ -1,0 +1,193 @@
+@startuml AssessmentEngine_AiScoringCompiler
+skinparam classAttributeIconSize 0
+skinparam monochrome true
+skinparam shadowing false
+hide circle
+
+skinparam linetype ortho
+skinparam nodesep 45
+skinparam ranksep 55
+
+
+' ================= AI-SCORING EVENT HANDLER (shared by CV, Coding, Email) =================
+
+class SubmissionEventHandle {
+  - jobDescriptionRepository : JobDescriptionRepository
+  - apiClient : ApiClient
+  - cloudinaryService : CloudinaryService
+  - applicationDetailRepository : ApplicationDetailRepository
+  - codingProblemsRepository : CodingProblemsRepository
+  - applicationService : ApplicationService
+  - emailSubmissionRepository : EmailSubmissionRepository
+  - userService : UserService
+  --
+  + handleEventSubmission(dto : ProcessDto) : void
+  + processCodeSubmission(dto : ProcessDto) : ApplicationDetail
+  + processCvSubmission(dto : ProcessDto) : ApplicationDetail
+  + processEmailSubmissionSync(dto : ProcessDto, submission : EmailSubmission) : void
+  - processEmailSubmission(dto : ProcessDto) : void
+  - gradeEmailSubmission(dto : ProcessDto, submission : EmailSubmission) : void
+  - ensureRoundHasNotBeenSubmitted(dto : ProcessDto) : void
+  - saveApplicationDetail(applicationDetail : ApplicationDetail) : ApplicationDetail
+  + parseRawMetrics(rawMap : Map<String, Object>) : ApplicationDetail.AiFeedback {static}
+}
+
+interface ApiClient {
+  + callApi(targetService : PythonService, endpoint : String, method : HttpMethod, requestBody : Object, responseType : Class<T>) : T
+  + sendChatToAnythingLlm(workspace : AnythingLlmWorkspace, payload : Object, sessionId : String, reset : boolean, files : List<MultipartFile>, responseType : Class<T>) : T
+  + executeCode(request : CompilerRequestDto) : CompilerResponseDto
+  + connectWebSocket(targetService : PythonService, endpoint : String, onMessage : Consumer<String>, onError : Consumer<Throwable>) : WebSocket
+}
+
+class CompilerRequestDto {
+  - language : CompilerLanguage
+  - sourceCode : List<String>
+  - timeLimitMs : int
+  - memoryLimitMb : int
+  - paramTypes : List<String>
+  - returnType : String
+  - testCases : List<CompilerRequestDto.TestCase>
+}
+
+class "CompilerRequestDto.TestCase" as CompilerRequestTestCase {
+  - inputs : List<String>
+  - expectedOutput : String
+}
+
+class CompilerResponseDto {
+  - status : String
+  - passedTestCases : int
+  - totalTestCases : int
+  - executionTimeMs : long
+  - errorMessage : String
+  - testCases : List<CompilerResponseDto.TestCaseResult>
+}
+
+class "CompilerResponseDto.TestCaseResult" as CompilerTestCaseResult {
+  - index : int
+  - status : String
+  - input : String
+  - expectedOutput : String
+  - actualOutput : String
+  - executionTimeMs : long
+  - errorMessage : String
+}
+
+enum CompilerLanguage {
+  JAVA
+  PYTHON
+  JS
+  CPP
+  CSHARP
+  C
+  TYPESCRIPT
+  GO
+  KOTLIN
+  SWIFT
+  RUST
+  RUBY
+  PHP
+  DART
+  SCALA
+  ELIXIR
+  ERLANG
+  RACKET
+}
+
+' ================= OTHER MODULES (referenced, abbreviated) =================
+
+class CloudinaryService {
+  + uploadDocument(bytes : byte[], fileName : String) : Map<String, String>
+  .. (full detail in Company Showcase / Job Search Module diagram) ..
+}
+
+interface ApplicationService {
+  + getApplicationById(id : Long) : Application
+  + moveToNextRound(currentApplication : Application) : void
+  .. (applyForJob, getAllApplications... see Recruitment Pipeline diagram) ..
+}
+
+interface JobDescriptionRepository {
+  + findById(id : Long) : Optional<JobDescription>
+  .. (full detail in Job Search Module diagram) ..
+}
+
+class JobDescription {
+  - id : Long
+  - title : String
+  - level : TargetLevel
+  .. (full detail in Job Search Module diagram) ..
+}
+
+interface UserService {
+  + upCv(userId : int, applicationId : Long, file : MultipartFile) : void
+  .. (full detail in Authentication Module diagram) ..
+}
+
+' ================= REFERENCED FROM OTHER PARTS (abbreviated) =================
+
+interface ApplicationDetailRepository {
+  .. (full detail in class-3.4.1(1)) ..
+}
+
+class ProcessDto {
+  .. (full detail in class-3.4.1(2)) ..
+}
+
+class CvEvaluationResponse {
+  .. (full detail in class-3.4.1(2)) ..
+}
+
+interface EmailSubmissionRepository {
+  .. (full detail in class-3.4.1(4)) ..
+}
+
+class EmailSubmission {
+  .. (full detail in class-3.4.1(4)) ..
+}
+
+class ApplicationDetail {
+  .. (full detail in class-3.4.1(6)) ..
+}
+
+class Round {
+  .. (full detail in class-3.4.1(7)) ..
+}
+
+interface CodingProblemsRepository {
+  .. (full detail in class-3.4.1(8)) ..
+}
+
+class CodingProblem {
+  .. (full detail in class-3.4.1(8)) ..
+}
+
+' ================= RELATIONS =================
+
+' --- Round submission engine ---
+SubmissionEventHandle ..> ProcessDto : "«EventListener»\nhandleEventSubmission"
+
+' --- AI-scoring event handler ---
+SubmissionEventHandle .down.> ApiClient : use
+SubmissionEventHandle .down.> CloudinaryService : use
+SubmissionEventHandle .down.> ApplicationDetailRepository : use
+SubmissionEventHandle .down.> CodingProblemsRepository : use
+SubmissionEventHandle .down.> ApplicationService : use
+SubmissionEventHandle .down.> EmailSubmissionRepository : use
+SubmissionEventHandle .down.> UserService : use
+SubmissionEventHandle .down.> JobDescriptionRepository : use
+SubmissionEventHandle .down.> CodingProblem : use
+SubmissionEventHandle .down.> Round : use
+SubmissionEventHandle .down.> ApplicationDetail : create
+SubmissionEventHandle .down.> CvEvaluationResponse : use
+SubmissionEventHandle .down.> CompilerRequestDto : create
+SubmissionEventHandle .down.> CompilerResponseDto : use
+SubmissionEventHandle .down.> EmailSubmission : use
+JobDescriptionRepository .down.> JobDescription : use
+ApiClient .down.> CompilerRequestDto : use
+ApiClient .down.> CompilerResponseDto : use
+CompilerRequestDto "1" *-down- "0..*" CompilerRequestTestCase : owns
+CompilerRequestDto .right.> CompilerLanguage : use
+CompilerResponseDto "1" *-down- "0..*" CompilerTestCaseResult : owns
+
+@enduml

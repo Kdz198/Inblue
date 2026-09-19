@@ -41,10 +41,10 @@ JdRepo --> EventHandle -- : jobDescription
 
 EventHandle -> EventHandle : build CvEvaluationRequest(cvFile, JD title/description/requirements/level, evaluationPlan)
 
-par [parse & save candidate profile]
+par parse & save candidate profile
     EventHandle -> UserSvc ++ : upCv(userId, applicationId, cvFile)
     UserSvc --> EventHandle -- : CandidateProfile
-else [calculate ATS match score]
+else calculate ATS match score
     EventHandle -> ApiClient ++ : sendChatToAnythingLlm(CV_ANALYSIS, cvEvaluationRequest, cvFile)
     ApiClient -> AnythingLLM ++ : POST /workspace/cv-processor/chat
     AnythingLLM --> ApiClient -- : textResponse (score, extraMetrics)

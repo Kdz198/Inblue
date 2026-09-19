@@ -1,0 +1,116 @@
+@startuml AssessmentEngine_EmailSimulator
+skinparam classAttributeIconSize 0
+skinparam monochrome true
+skinparam shadowing false
+hide circle
+
+skinparam linetype ortho
+skinparam nodesep 45
+skinparam ranksep 55
+
+
+' ================= EMAIL SIMULATOR (IMAP inbox + async grading) =================
+
+class EmailSubmissionController {
+  - emailSubmissionService : EmailSubmissionService
+  --
+  + getById(id : Long) : EmailSubmission
+  + getAll() : List<EmailSubmission>
+  + triggerFetchEmails() : String
+  + triggerProcessPendingEmails() : String
+}
+
+interface EmailSubmissionService {
+  + getById(id : Long) : Optional<EmailSubmission>
+  + getAll() : List<EmailSubmission>
+  + fetchEmails() : void
+  + processEmailSchedule() : void
+}
+
+class EmailSubmissionServiceImpl {
+  - emailSubmissionRepository : EmailSubmissionRepository
+  - cloudinaryService : CloudinaryService
+  - objectMapper : ObjectMapper
+  - submissionService : SubmissionService
+  - host : String
+  - username : String
+  - password : String
+  --
+  + getById(id : Long) : Optional<EmailSubmission>
+  + getAll() : List<EmailSubmission>
+  + fetchEmails() : void
+  + processEmailSchedule() : void
+  - extractContent(part : Part, bodyText : StringBuilder, attachmentUrls : List<String>) : void
+}
+
+class BackgroundScheduler {
+  - emailSubmissionService : EmailSubmissionService
+  --
+  + scheduleFetchEmails() : void
+  + scheduleProcessPendingEmails() : void
+  .. (also schedules payment status check, meeting notification, JD
+      expiry, journey summary & audio jobs - see their own modules) ..
+}
+
+' ================= EMAIL INBOX MODEL =================
+
+interface EmailSubmissionRepository {
+  + findByStatus(status : EmailSubmission.EmailStatus) : List<EmailSubmission>
+  + findByStatusAndApplicationIdOrderByIdDesc(status : EmailSubmission.EmailStatus, applicationId : Long) : List<EmailSubmission>
+}
+
+class EmailSubmission {
+  - id : Long
+  - applicationId : Long
+  - senderEmail : String
+  - subject : String
+  - bodyText : String
+  - status : EmailSubmission.EmailStatus
+  - errorMessage : String
+  - attachmentUrls : String
+  - receivedAt : LocalDateTime
+  - createdAt : LocalDateTime
+}
+
+enum "EmailSubmission.EmailStatus" as EmailStatus {
+  PENDING
+  PROCESSED
+  ERROR
+  IGNORED
+}
+
+' ================= OTHER MODULES (referenced, abbreviated) =================
+
+class CloudinaryService {
+  + uploadDocument(bytes : byte[], fileName : String) : Map<String, String>
+  .. (full detail in Company Showcase / Job Search Module diagram) ..
+}
+
+interface JpaRepository {
+  + save(entity) : T
+  + findById(id) : Optional<T>
+  + findAll() : List<T>
+}
+
+' ================= REFERENCED FROM OTHER PARTS (abbreviated) =================
+
+class SubmissionService {
+  .. (full detail in class-3.4.1(1)) ..
+}
+
+' ================= RELATIONS =================
+
+' --- Email simulator ---
+EmailSubmissionController .down.> EmailSubmissionService : use
+EmailSubmissionServiceImpl .up.|> EmailSubmissionService : implement
+EmailSubmissionServiceImpl .down.> EmailSubmissionRepository : use
+EmailSubmissionServiceImpl .down.> CloudinaryService : use
+EmailSubmissionServiceImpl .down.> SubmissionService : use
+EmailSubmissionServiceImpl .down.> EmailSubmission : create
+BackgroundScheduler .down.> EmailSubmissionService : use
+EmailSubmissionRepository -up-|> JpaRepository : extend
+
+' --- Email inbox model ---
+EmailSubmission .right.> EmailStatus : use
+
+@enduml

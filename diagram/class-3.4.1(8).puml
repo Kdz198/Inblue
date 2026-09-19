@@ -1,0 +1,107 @@
+@startuml AssessmentEngine_CodingProblemBank
+skinparam classAttributeIconSize 0
+skinparam monochrome true
+skinparam shadowing false
+hide circle
+
+skinparam linetype ortho
+skinparam nodesep 45
+skinparam ranksep 55
+
+
+' ================= PROBLEM BANKS (coding problems) =================
+
+class CodingProblemController {
+  - codingProblemService : CodingProblemService
+  --
+  + getAllCodingProblems() : List<CodingProblem>
+  + getCodingProblemById(id : Long) : Optional<CodingProblem>
+  + createCodingProblem(codingProblem : CodingProblem) : CodingProblem
+  + generateCodingProblem(request : CodingProblemGenerateRequest) : CodingProblemGenerateResponse
+}
+
+interface CodingProblemService {
+  + findCodingProblemById(id : Long) : Optional<CodingProblem>
+  + save(codingProblem : CodingProblem) : CodingProblem
+  + findAllCodingProblems() : List<CodingProblem>
+  + generateCodingProblem(request : CodingProblemGenerateRequest) : CodingProblemGenerateResponse
+}
+
+class CodingProblemServiceImpl {
+  - codingProblemsRepository : CodingProblemsRepository
+  - apiClient : ApiClient
+  --
+  + findCodingProblemById(id : Long) : Optional<CodingProblem>
+  + save(codingProblem : CodingProblem) : CodingProblem
+  + findAllCodingProblems() : List<CodingProblem>
+  + generateCodingProblem(request : CodingProblemGenerateRequest) : CodingProblemGenerateResponse
+}
+
+interface CodingProblemsRepository {
+  + findById(id : Long) : Optional<CodingProblem>
+  + findAllByIsDeletedFalse() : List<CodingProblem>
+}
+
+class CodingProblem {
+  - id : Long
+  - title : String
+  - difficulty : CodingProblem.Difficulty
+  - problemStatement : String
+  - rulesAndConstraints : List<String>
+  - paramTypes : List<String>
+  - returnType : String
+  - visibleExamples : List<CodingProblem.Example>
+  - executionTimeLimitMs : Integer
+  - memoryLimitMb : Integer
+  - codeStubs : Map<String, String>
+  - hiddenTestCases : List<CodingProblem.TestCase>
+  - isDeleted : Boolean
+  - createdAt : LocalDateTime
+  - updatedAt : LocalDateTime
+}
+
+class "CodingProblem.Example" as CodingProblemExample {
+  - inputs : List<String>
+  - output : String
+  - explanation : String
+}
+
+class "CodingProblem.TestCase" as CodingProblemTestCase {
+  - inputs : List<String>
+  - expectedOutput : String
+  - weightPoints : Integer
+}
+
+enum "CodingProblem.Difficulty" as CodingProblemDifficulty {
+  EASY
+  MEDIUM
+  HARD
+}
+
+' ================= OTHER MODULES (referenced, abbreviated) =================
+
+interface JpaRepository {
+  + save(entity) : T
+  + findById(id) : Optional<T>
+  + findAll() : List<T>
+}
+
+' ================= REFERENCED FROM OTHER PARTS (abbreviated) =================
+
+interface ApiClient {
+  .. (full detail in class-3.4.1(5)) ..
+}
+
+' ================= RELATIONS =================
+
+' --- Coding problem bank ---
+CodingProblemController .down.> CodingProblemService : use
+CodingProblemServiceImpl .up.|> CodingProblemService : implement
+CodingProblemServiceImpl .down.> CodingProblemsRepository : use
+CodingProblemServiceImpl .down.> ApiClient : use
+CodingProblemsRepository -up-|> JpaRepository : extend
+CodingProblem "1" *-down- "0..*" CodingProblemExample : owns
+CodingProblem "1" *-down- "0..*" CodingProblemTestCase : owns
+CodingProblem .right.> CodingProblemDifficulty : use
+
+@enduml

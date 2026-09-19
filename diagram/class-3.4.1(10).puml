@@ -1,0 +1,102 @@
+@startuml AssessmentEngine_JourneySummaryEngine
+skinparam classAttributeIconSize 0
+skinparam monochrome true
+skinparam shadowing false
+hide circle
+
+skinparam linetype ortho
+skinparam nodesep 45
+skinparam ranksep 55
+
+
+' ================= JOURNEY SUMMARY ENGINE (Strategy + Factory) =================
+
+interface RoundSummaryBuilder {
+  + buildSummary(detail : ApplicationDetail, roundConfig : Round) : AISummaryRequest.RoundSummaryInfo
+}
+
+class RoundSummaryFactory {
+  - summaryBuilders : Map<RoundType, RoundSummaryBuilder>
+  --
+  + getBuilder(roundType : RoundType) : RoundSummaryBuilder
+  + build(detail : ApplicationDetail, roundConfig : Round) : AISummaryRequest.RoundSummaryInfo
+  + buildSummary(roundType : RoundType, detail : ApplicationDetail) : AISummaryRequest.RoundSummaryInfo
+  .. (also wires CvSummaryBuilder, MentorReviewSummaryBuilder,
+      AiInterviewSummaryBuilder for CV_SCREENING, MENTROR_REVIEW,
+      AI_INTERVIEW - see their own module diagrams) ..
+}
+
+class QuizSummaryBuilder {
+  + buildSummary(detail : ApplicationDetail, roundConfig : Round) : AISummaryRequest.RoundSummaryInfo
+}
+
+class CodingSummaryBuilder {
+  - codingProblemService : CodingProblemService
+  --
+  + buildSummary(detail : ApplicationDetail, roundConfig : Round) : AISummaryRequest.RoundSummaryInfo
+  - resolveProblemTitle(submission : ApplicationDetail.CodeSubmission, roundConfig : Round, index : int) : String
+  - extractFirstFailReason(testCases : CompilerResponseDto) : String
+}
+
+class CodeReviewSummaryBuilder {
+  + buildSummary(detail : ApplicationDetail, roundConfig : Round) : AISummaryRequest.RoundSummaryInfo
+  - buildSubmissionSummary(submissions : List<ApplicationDetail.CodeReviewSubmission>) : String
+}
+
+class EmailSummaryBuilder {
+  - emailSubmissionRepository : EmailSubmissionRepository
+  --
+  + buildSummary(detail : ApplicationDetail, roundConfig : Round) : AISummaryRequest.RoundSummaryInfo
+  - resolveEmailContext(detail : ApplicationDetail) : String
+}
+
+class "AISummaryRequest.RoundSummaryInfo" as RoundSummaryInfo {
+  - roundName : String
+  - roundType : RoundType
+  - roundOrder : Integer
+  - score : Double
+  - maxScore : Double
+  - finalResult : String
+  - summary : String
+  - strengths : List<String>
+  - weaknesses : List<String>
+  - hrNote : String
+  - hrScore : Double
+}
+
+' ================= REFERENCED FROM OTHER PARTS (abbreviated) =================
+
+interface EmailSubmissionRepository {
+  .. (full detail in class-3.4.1(4)) ..
+}
+
+class ApplicationDetail {
+  .. (full detail in class-3.4.1(6)) ..
+}
+
+class Round {
+  .. (full detail in class-3.4.1(7)) ..
+}
+
+interface CodingProblemService {
+  .. (full detail in class-3.4.1(8)) ..
+}
+
+' ================= RELATIONS =================
+
+' --- Journey summary engine ---
+RoundSummaryFactory .down.> QuizSummaryBuilder : use
+RoundSummaryFactory .down.> CodingSummaryBuilder : use
+RoundSummaryFactory .down.> CodeReviewSummaryBuilder : use
+RoundSummaryFactory .down.> EmailSummaryBuilder : use
+RoundSummaryFactory .down.> ApplicationDetail : use
+RoundSummaryFactory .down.> Round : use
+QuizSummaryBuilder .up.|> RoundSummaryBuilder : implement
+CodingSummaryBuilder .up.|> RoundSummaryBuilder : implement
+CodeReviewSummaryBuilder .up.|> RoundSummaryBuilder : implement
+EmailSummaryBuilder .up.|> RoundSummaryBuilder : implement
+CodingSummaryBuilder .down.> CodingProblemService : use
+EmailSummaryBuilder .down.> EmailSubmissionRepository : use
+RoundSummaryBuilder .down.> RoundSummaryInfo : use
+
+@enduml

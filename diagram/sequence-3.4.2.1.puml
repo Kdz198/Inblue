@@ -1,0 +1,189 @@
+@startuml SubmitQuizAssessment
+skinparam monochrome true
+skinparam shadowing false
+
+' ================= CẤU HÌNH TĂNG FONT SIZE =================
+skinparam defaultFontSize 22
+skinparam participantFontSize 24
+skinparam actorFontSize 24
+skinparam sequenceMessageFontSize 22
+skinparam sequenceGroupFontSize 22
+skinparam sequenceReferenceFontSize 22
+skinparam noteFontSize 20
+
+' Do not repeat participant boxes at the bottom of the diagram
+hide footbox
+
+<style>
+sequenceDiagram {
+  groupHeader {
+    FontStyle plain
+    FontSize 24
+  }
+}
+</style>
+
+actor "Candidate" as Candidate
+participant ":ApplicationDetailController" as Controller
+participant ":SubmissionService" as SubService
+participant ":ApplicationServiceImpl" as AppService
+participant ":ApplicationRepository" as AppRepo
+participant ":JobDescriptionServiceImpl" as JdService
+participant ":JobDescriptionRepository" as JdRepo
+participant ":RoundProcessorFactory" as Factory
+participant ":QuizRoundProcessor" as QuizProcessor
+participant ":ApplicationDetailRepository" as DetailRepo
+
+Candidate -> Controller : POST /api/application-details/submit\n(applicationId, quizAnswers)
+activate Controller
+Controller -> SubService : submitRound(submitRequest)
+activate SubService
+
+' ===================== Load current application =====================
+
+SubService -> AppService : getApplicationById(applicationId)
+activate AppService
+AppService -> AppRepo : findById(applicationId)
+activate AppRepo
+AppRepo --> AppService : Optional<Application>
+
+break Application is not found
+    AppService --> SubService : throws CustomException\n(404 NOT_FOUND, "Application not found")
+    SubService --> Controller : propagate exception
+    Controller --> Candidate : error response (404)
+end
+
+AppService --> SubService : currentApplication
+
+' ===================== Load current round of the job description =====================
+
+SubService -> JdService : getRoundByOrder(jdId, currentRoundOrder)
+activate JdService
+JdService -> JdRepo : findByIdWithRounds(jdId)
+activate JdRepo
+JdRepo --> JdService : Optional<JobDescription>
+
+break Job description is not found
+    JdService --> SubService : throws CustomException\n(404 NOT_FOUND, "Job description not found with ID: {jdId}")
+    SubService --> Controller : propagate exception
+    Controller --> Candidate : error response (404)
+end
+
+JdService -> JdService : find the round whose roundOrder\nmatches currentRoundOrder
+
+break Round is not found
+    JdService --> SubService : throws CustomException\n(404 NOT_FOUND, "Interview round not found with order: {order}")
+    SubService --> Controller : propagate exception
+    Controller --> Candidate : error response (404)
+end
+
+JdService --> SubService : currentRound
+deactivate JdService
+
+' ===================== Select processor by round type =====================
+
+SubService -> Factory : getProcessor(currentRound.roundType)
+activate Factory
+
+break Round type is not supported
+    Factory --> SubService : throws IllegalArgumentException\n("Unsupported round type")
+    SubService --> Controller : propagate exception
+    Controller --> Candidate : error response (500)
+end
+
+Factory --> SubService : QuizRoundProcessor
+deactivate Factory
+
+SubService -> SubService : build ProcessDto(application, round,\nquizAnswers, roundType)
+
+' ===================== Grade quiz answers =====================
+
+SubService -> QuizProcessor : process(processDto)
+activate QuizProcessor
+QuizProcessor -> DetailRepo : findByApplicationIdAndRoundId(applicationId, roundId)
+activate DetailRepo
+DetailRepo --> QuizProcessor : Optional<ApplicationDetail>
+
+alt Quiz round is already completed
+    QuizProcessor -> QuizProcessor : SubmissionResult.completed(existingDetail)
+else Quiz round is not completed yet
+    loop Each question in the quiz round
+        QuizProcessor -> QuizProcessor : compare selected answer with correct answer,\nadd points to earned points and maximum points
+    end
+
+    QuizProcessor -> QuizProcessor : calculate score percentage\n(earned points / maximum points)
+
+    alt Score percentage reaches the pass threshold
+        QuizProcessor -> QuizProcessor : set finalResult = PASSED
+    else Score percentage is below the pass threshold
+        QuizProcessor -> QuizProcessor : set finalResult = FAILED
+    end
+
+    QuizProcessor -> QuizProcessor : set quiz answers, finalScore and\nstatus = COMPLETED on ApplicationDetail
+
+    QuizProcessor -> DetailRepo : save(applicationDetail)
+    DetailRepo --> QuizProcessor : applicationDetail
+
+    ' ===================== Advance application to the next round =====================
+
+    QuizProcessor -> AppService : moveToNextRound(application)
+    AppService -> JdRepo : findById(jdId)
+    JdRepo --> AppService : Optional<JobDescription>
+    deactivate JdRepo
+
+    opt Job description is found
+        alt Current round is not the last round
+            AppService -> DetailRepo : findAllByApplicationId(applicationId)
+            DetailRepo --> AppService : List<ApplicationDetail>
+
+            opt Any previous round result is failed
+                AppService -> AppService : set application status = SOFT_FAILED
+            end
+
+            AppService -> AppService : set currentRoundOrder = currentRoundOrder + 1
+            AppService -> AppRepo : save(application)
+            AppRepo --> AppService : application
+
+            opt Next round is Mentor Review or AI Interview
+                AppService -> DetailRepo : findByApplicationIdAndRoundId(applicationId, nextRoundId)
+                DetailRepo --> AppService : Optional<ApplicationDetail>
+
+                opt Next round detail does not exist yet
+                    AppService -> DetailRepo : save(nextDetail)\n(status = AWAITING_MENTOR or PENDING)
+                    DetailRepo --> AppService : nextDetail
+
+                    opt Next round is AI Interview
+                        ref over AppService : Start AI interview session
+                    end
+                end
+            end
+        else Current round is the last round
+            AppService -> DetailRepo : findAllByApplicationId(applicationId)
+            DetailRepo --> AppService : List<ApplicationDetail>
+            deactivate DetailRepo
+
+            AppService -> AppService : calculate overall score and\nset application status = PASSED or FAILED
+            AppService -> AppRepo : save(application)
+            AppRepo --> AppService : application
+            deactivate AppRepo
+
+            opt Application was not finished before and all rounds have results
+                ref over AppService : Generate journey summary
+            end
+        end
+    end
+
+    AppService --> QuizProcessor : void
+    deactivate AppService
+
+    QuizProcessor -> QuizProcessor : SubmissionResult.completed(applicationDetail)
+end
+
+QuizProcessor --> SubService : SubmissionResult (COMPLETED)
+deactivate QuizProcessor
+SubService --> Controller : SubmissionResult
+deactivate SubService
+Controller --> Candidate : 200 OK\nbody = SubmissionResult
+deactivate Controller
+
+@enduml

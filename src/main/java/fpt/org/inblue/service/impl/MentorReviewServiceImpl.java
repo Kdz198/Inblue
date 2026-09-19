@@ -43,6 +43,8 @@ public class MentorReviewServiceImpl implements MentorReviewService {
         if (session.getStatus().equals(SessionStatus.COMPLETED)) {
             MentorReview review = mentorReviewMapper.toEntity(mentorReview);
             review.setSession(session);
+            review.setMentor(mentor);
+            review.setUser(user);
             review = repo.save(review);
 
             checkAndCompleteRound(session.getId());

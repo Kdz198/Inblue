@@ -40,14 +40,14 @@ activate UserRepo
 UserRepo --> UDS : user
 deactivate UserRepo
 
-opt [Active user account is not found]
+opt Active user account is not found
     UDS -> MentorRepo : findByEmail(email)
     activate MentorRepo
     MentorRepo --> UDS : mentor
     deactivate MentorRepo
 end
 
-alt [Account is found and active]
+alt Account is found and active
     UDS -> UDS : build CustomUserDetails(user/mentor)
     UDS --> Provider : return CustomUserDetails
     deactivate UDS
@@ -57,7 +57,7 @@ alt [Account is found and active]
     Encoder --> Provider : matches : boolean
     deactivate Encoder
 
-    alt [Password is correct]
+    alt Password is correct
         Provider --> AuthMgr : return Authentication\n(principal = CustomUserDetails, authorities)
         deactivate Provider
         AuthMgr --> Controller : return Authentication
@@ -73,14 +73,14 @@ alt [Account is found and active]
         deactivate Jwt
 
         Controller --> Candidate : 200 OK\nheader Authorization: Bearer <token>\nbody token
-    else [Password is incorrect]
+    else Password is incorrect
         Provider --> AuthMgr : throws BadCredentialsException
         deactivate Provider
         AuthMgr --> Controller : throws AuthenticationException
         deactivate AuthMgr
         Controller --> Candidate : error response (login failed)
     end
-else [Account is not found]
+else Account is not found
     UDS --> Provider : throws UsernameNotFoundException
     deactivate UDS
     Provider --> AuthMgr : throws AuthenticationException

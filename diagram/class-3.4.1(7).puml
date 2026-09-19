@@ -1,0 +1,144 @@
+@startuml AssessmentEngine_RoundConfigurationModel
+skinparam classAttributeIconSize 0
+skinparam monochrome true
+skinparam shadowing false
+hide circle
+
+skinparam linetype ortho
+skinparam nodesep 45
+skinparam ranksep 55
+
+
+' ================= ROUND CONFIGURATION MODEL =================
+
+class Round {
+  - id : Long
+  - name : String
+  - roundOrder : Integer
+  - roundType : RoundType
+  - passThreshold : Double
+  - configData : Round.RoundConfig
+  - reviewerId : Integer
+  - isDeleted : Boolean
+  - isAuto : Boolean
+  - createdAt : LocalDateTime
+  - updatedAt : LocalDateTime
+}
+
+class "Round.RoundConfig" as RoundConfig {
+  - instruction : String
+  - submissionFormat : String
+  - timeLimitMinutes : Integer
+  - maxScore : Integer
+  - aiSystemPrompt : String
+  - evaluationCriteria : String
+  - evaluationPlan : Round.EvaluationPlan
+  - quizQuestions : List<Round.QuizQuestion>
+  - codingProblems : List<Round.CodingProblemSnapshot>
+  - codeReviewProblems : List<Round.CodeReviewProblemSnapshot>
+  .. (mentorInterview field - see Mentor Review Module diagram) ..
+}
+
+class "Round.QuizQuestion" as QuizQuestion {
+  - questionText : String
+  - options : List<String>
+  - correctAnswer : String
+  - points : Integer
+}
+
+class "Round.CodingProblemSnapshot" as CodingProblemSnapshot {
+  - problemId : Long
+  - title : String
+  - difficulty : CodingProblem.Difficulty
+  - problemStatement : String
+  - rulesAndConstraints : List<String>
+  - visibleExamples : List<CodingProblem.Example>
+  - executionTimeLimitMs : Integer
+  - memoryLimitMb : Integer
+  - codeStubs : Map<String, String>
+}
+
+class "Round.CodeReviewProblemSnapshot" as CodeReviewProblemSnapshot {
+  - problemId : Long
+  - title : String
+  - difficulty : CodingProblem.Difficulty
+  - language : String
+  - problemStatement : String
+  - files : List<CodeReviewProblem.CodeFile>
+  - expectedIssues : List<CodeReviewProblem.ExpectedIssue>
+}
+
+class "Round.EvaluationPlan" as EvaluationPlan {
+  - metrics : List<Round.EvaluationMetric>
+  - scoringInstruction : String
+  - passRule : String
+}
+
+class "Round.EvaluationMetric" as EvaluationMetric {
+  - code : String
+  - name : String
+  - description : String
+  - weight : Double
+  - maxScore : Double
+  - required : Boolean
+  - minimumScore : Double
+}
+
+interface RoundRepository {
+  .. (extends JpaRepository<Round, Long>, no custom query methods) ..
+}
+
+' ================= OTHER MODULES (referenced, abbreviated) =================
+
+interface JpaRepository {
+  + save(entity) : T
+  + findById(id) : Optional<T>
+  + findAll() : List<T>
+}
+
+enum RoundType {
+  CV_SCREENING
+  EMAIL_SIMULATOR
+  QUIZ
+  CODING
+  CODE_REVIEW
+  MENTROR_REVIEW
+  AI_INTERVIEW
+}
+
+' ================= REFERENCED FROM OTHER PARTS (abbreviated) =================
+
+class "CodingProblem.Example" as CodingProblemExample {
+  .. (full detail in class-3.4.1(8)) ..
+}
+
+enum "CodingProblem.Difficulty" as CodingProblemDifficulty {
+  .. (full detail in class-3.4.1(8)) ..
+}
+
+class "CodeReviewProblem.CodeFile" as CodeReviewProblemFile {
+  .. (full detail in class-3.4.1(9)) ..
+}
+
+class "CodeReviewProblem.ExpectedIssue" as CodeReviewProblemExpectedIssue {
+  .. (full detail in class-3.4.1(9)) ..
+}
+
+' ================= RELATIONS =================
+
+' --- Round configuration model composition ---
+Round "1" *-down- "0..1" RoundConfig : owns
+Round .right.> RoundType : use
+RoundConfig "1" *-down- "0..*" QuizQuestion : owns
+RoundConfig "1" *-down- "0..*" CodingProblemSnapshot : owns
+RoundConfig "1" *-down- "0..*" CodeReviewProblemSnapshot : owns
+RoundConfig "1" *-down- "0..1" EvaluationPlan : owns
+EvaluationPlan "1" *-down- "0..*" EvaluationMetric : owns
+CodingProblemSnapshot .down.> CodingProblemDifficulty : use
+CodingProblemSnapshot .down.> CodingProblemExample : use
+CodeReviewProblemSnapshot .down.> CodingProblemDifficulty : use
+CodeReviewProblemSnapshot .down.> CodeReviewProblemFile : use
+CodeReviewProblemSnapshot .down.> CodeReviewProblemExpectedIssue : use
+RoundRepository -up-|> JpaRepository : extend
+
+@enduml

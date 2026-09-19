@@ -3,6 +3,7 @@ package fpt.org.inblue.service;
 import fpt.org.inblue.model.dto.request.ChangeMentorPasswordRequest;
 import fpt.org.inblue.model.dto.request.CreateMentorRequest;
 import fpt.org.inblue.model.dto.request.UpdateMentorRequest;
+import fpt.org.inblue.model.dto.response.MentorDashboardSummaryResponse;
 import fpt.org.inblue.model.dto.response.MentorResponse;
 import java.io.IOException;
 import java.util.List;
@@ -22,4 +23,6 @@ public interface MentorService {
     void toggleActive(int id);
 
     List<MentorResponse> getTopRecommendedMentors(Long jdId);
+
+    MentorDashboardSummaryResponse getSummary(int mentorId);
 }
