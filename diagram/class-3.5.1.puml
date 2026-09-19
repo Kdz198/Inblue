@@ -1,0 +1,500 @@
+@startuml AIMockInterview_PhysicalKioskStation
+skinparam classAttributeIconSize 0
+skinparam monochrome true
+skinparam shadowing false
+skinparam defaultFontSize 20
+hide circle
+
+skinparam linetype ortho
+skinparam nodesep 45
+skinparam ranksep 55
+
+' ================= KIOSK BOOKING & CHECK-IN =================
+
+class KioskController {
+  - kioskService : KioskService
+  --
+  + getAllKiosk() : List<Kiosk>
+  + getAvailableSlots(kioskId : Long, date : LocalDate) : List<SlotDto>
+  + createKiosk(kiosk : Kiosk) : Kiosk
+  + updateKiosk(id : Long, kiosk : Kiosk) : Kiosk
+  + createSchedule(schedule : KioskSchedule) : KioskSchedule
+  + updateSchedule(id : Long, schedule : KioskSchedule) : KioskSchedule
+  + getSchedulesByKiosk(kioskId : Long) : List<KioskSchedule>
+  + getKioskHistory(kioskId : Long) : List<KioskHistoryResponseDto>
+}
+
+class KioskBookingController {
+  - bookingService : KioskBookingService
+  --
+  - getCurrentUserId() : int
+  + pickSlot(dto : PickSlotDtoRequest) : KioskBooking
+  + cancelBooking(bookingId : Long) : void
+  + enterKiosk(sessionKey : String, kioskId : Long) : KioskEnterDtoResponse
+  + getBookingByApplicationDetailId(applicationDetailId : Long) : KioskBooking
+}
+
+interface KioskService {
+  + getAllKiosk() : List<Kiosk>
+  + createKiosk(kiosk : Kiosk) : Kiosk
+  + createSchedule(schedule : KioskSchedule) : KioskSchedule
+  + getSchedulesByKiosk(kioskId : Long) : List<KioskSchedule>
+  + getAvailableSlots(kioskId : Long, date : LocalDate) : List<SlotDto>
+  + updateKiosk(id : Long, kiosk : Kiosk) : Kiosk
+  + updateSchedule(id : Long, schedule : KioskSchedule) : KioskSchedule
+  + getKioskHistory(kioskId : Long) : List<KioskHistoryResponseDto>
+}
+
+class KioskServiceImpl {
+  - kioskRepository : KioskRepository
+  - kioskScheduleRepository : KioskScheduleRepository
+  - bookingRepository : KioskBookingRepository
+  - userRepository : UserRepository
+  - candidateProfileRepository : CandidateProfileRepository
+  - applicationDetailRepository : ApplicationDetailRepository
+  - applicationRepository : ApplicationRepository
+  - jobDescriptionRepository : JobDescriptionRepository
+  - companyRepository : CompanyRepository
+}
+
+interface KioskBookingService {
+  + pickSlot(dto : PickSlotDtoRequest, userId : int) : KioskBooking
+  + findByApplicationDetailId(applicationDetailId : Long) : KioskBooking
+  + cancelBooking(bookingId : Long, userId : int) : void
+  + enterKiosk(sessionKey : String, kioskId : Long) : KioskEnterDtoResponse
+}
+
+class KioskBookingServiceImpl {
+  - bookingRepository : KioskBookingRepository
+  - applicationDetailRepository : ApplicationDetailRepository
+  - kioskRepository : KioskRepository
+  - userRepository : UserRepository
+  - notificationService : NotificationService
+  - roundRepository : RoundRepository
+  - applicationDetailService : ApplicationDetailService
+}
+
+interface KioskRepository {
+}
+
+interface KioskScheduleRepository {
+  + findAllByKioskIdAndIsActiveTrue(kioskId : Long) : List<KioskSchedule>
+  + findAllByKioskIdAndDayOfWeekAndIsActiveTrue(kioskId : Long, dayOfWeek : DayOfWeek) : List<KioskSchedule>
+}
+
+interface KioskBookingRepository {
+  + findBySessionKey(sessionKey : String) : Optional<KioskBooking>
+  + findByApplicationDetailId(applicationDetailId : Long) : Optional<KioskBooking>
+  + findAllByKioskIdOrderByScheduledStartDesc(kioskId : Long) : List<KioskBooking>
+  + findActiveBookingsByKioskAndDateRange(kioskId : Long, cancelledStatus : BookingStatus, start : LocalDateTime, end : LocalDateTime) : List<KioskBooking>
+  + countOverlappingBookingsForKiosk(kioskId : Long, cancelledStatus : BookingStatus, start : LocalDateTime, end : LocalDateTime) : long
+}
+
+class Kiosk {
+  - id : Long
+  - name : String
+  - location : String
+  - isActive : boolean
+  - createdAt : LocalDateTime
+}
+
+class KioskSchedule {
+  - id : Long
+  - kioskId : Long
+  - dayOfWeek : DayOfWeek
+  - openTime : LocalTime
+  - closeTime : LocalTime
+  - slotDurationMinutes : int
+  - isActive : boolean
+  - createdAt : LocalDateTime
+}
+
+class KioskBooking {
+  - id : Long
+  - applicationDetailId : Long
+  - kioskId : Long
+  - applicantUserId : int
+  - scheduledStart : LocalDateTime
+  - scheduledEnd : LocalDateTime
+  - status : BookingStatus
+  - sessionKey : String
+  - notes : String
+  - createdAt : LocalDateTime
+  - updatedAt : LocalDateTime
+}
+
+enum BookingStatus {
+  AWAITING_MENTOR
+  MENTOR_ASSIGNED
+  ROOM_CREATED
+  IN_PROGRESS
+  COMPLETED
+  CANCELLED
+}
+
+class PickSlotDtoRequest {
+  - applicationDetailId : Long
+  - kioskId : Long
+  - scheduledStart : LocalDateTime
+  - scheduledEnd : LocalDateTime
+}
+
+class SlotDto {
+  - startTime : LocalDateTime
+  - endTime : LocalDateTime
+  - available : boolean
+}
+
+class KioskEnterDtoResponse {
+  - aiSessionKey : String
+  - durationMinutes : int
+}
+
+class KioskHistoryResponseDto {
+  - bookingId : Long
+  - kioskId : Long
+  - applicationDetailId : Long
+  - applicationId : Long
+  - candidateInfo : CandidateInfoDto
+  - jobDescriptionInfo : JobDescriptionInfoDto
+  - scheduledStart : LocalDateTime
+  - scheduledEnd : LocalDateTime
+  - status : BookingStatus
+  - sessionKey : String
+  - notes : String
+}
+
+' ================= AI INTERVIEW SESSION =================
+
+class InterviewSessionController {
+  - interviewSessionService : InterviewSessionService
+  --
+  + generateJobRequirement(jobDescription : String) : JobRequirementData
+  + getInterviewConfigOptions() : Map<String, Object>
+  + createInterviewSession(request : InterviewSetupRequest) : String
+  + getAllSessionsForUser(userId : Integer) : List<InterviewSession>
+  + getSessionFromCache(sessionKey : String) : InterviewSessionRedis
+  + getSessionById(sessionId : Integer) : InterviewSession
+}
+
+interface InterviewSessionService {
+  + getJobRequirementFromJD(jobDescription : String) : JobRequirementData
+  + getInterviewConfigOptions() : Map<String, Object>
+  + createSession(request : InterviewSetupRequest) : String
+  + getAllSessionsForUser(userId : Integer) : List<InterviewSession>
+  + getSessionById(sessionId : Integer) : InterviewSession
+  + getSessionFromCache(sessionKey : String) : InterviewSessionRedis
+}
+
+class InterviewSessionServiceImpl {
+  - apiClient : ApiClient
+  - sessionRepository : InterviewSessionRepository
+  - sessionRedisRepository : InterviewSessionRedisRepository
+}
+
+class InterviewProcessController {
+  - interviewService : InterviewProcessService
+  - speechService : SpeechService
+  --
+  + startInterview(sessionKey : String) : QuestionResponse
+  + submitAnswer(request : SubmitAnswerRequest) : QuestionResponse
+  + timeoutInterview(sessionKey : String) : QuestionResponse
+  + generateAudio(request : TtsRequest) : ResponseEntity<byte[]>
+  + generateAudioPython(request : TtsRequest) : ResponseEntity<byte[]>
+  + streamAudioPython(request : TtsRequest) : ResponseEntity<StreamingResponseBody>
+  + enhanceTranscript(request : EnhanceTranscriptRequest) : String
+  + getAvailableVoices() : ResponseEntity<List<VoiceResponse>>
+}
+
+interface InterviewProcessService {
+  + getCurrentQuestion(sessionKey : String) : QuestionResponse
+  + submitAnswer(request : SubmitAnswerRequest) : QuestionResponse
+  + timeoutSession(sessionKey : String) : QuestionResponse
+}
+
+class InterviewProcessServiceImpl {
+  - redisRepository : InterviewSessionRedisRepository
+  - sessionRepository : InterviewSessionRepository
+  - apiClient : ApiClient
+  - proctoringService : ProctoringService
+  - applicationDetailRepository : ApplicationDetailRepository
+  - kioskBookingRepository : KioskBookingRepository
+  --
+  - buildQuestionResponse(session : InterviewSessionRedis) : QuestionResponse
+  - buildPythonRequest(session : InterviewSessionRedis) : OrchestratorConductRequest
+  - finishSession(redisSession : InterviewSessionRedis, sessionKey : String) : void
+  - gradeAndMapFullHistory(fullHistory : List<InterviewExchange>, behaviorMap : Map<Integer, List<String>>) : List<QAResult>
+  - processGroupAndAddToResult(group : List<InterviewExchange>, finalResults : List<QAResult>, startOrderIndex : int, behaviorMap : Map<Integer, List<String>>) : void
+  - determineEvaluationResult(overallScore : double) : EvaluationResult
+  - genOverviewFeedback(gradedHistory : List<QAResult>) : String
+}
+
+interface InterviewSessionRepository {
+  + findByUserId(userId : Integer) : List<InterviewSession>
+  + findBySessionKey(sessionKey : String) : InterviewSession
+  + findFirstByApplicationDetailIdOrderByIdAsc(applicationDetailId : Long) : Optional<InterviewSession>
+}
+
+interface InterviewSessionRedisRepository {
+}
+
+class InterviewSession {
+  - id : Integer
+  - sessionKey : String
+  - applicationDetailId : Long
+  - user : User
+  - blueprint : InterviewBlueprintResponse
+  - candidateProfile : CandidateProfile
+  - jobRequirement : JobRequirementData
+  - sessionConfig : SessionConfigData
+  - mode : InterviewMode
+  - domain : JobDomain
+  - status : SessionStatus
+  - completedAt : LocalDateTime
+  - overallScore : Double
+  - result : EvaluationResult
+  - resultDetail : InterviewResultDetail
+  - createdAt : LocalDateTime
+  - updatedAt : LocalDateTime
+}
+
+enum SessionStatus {
+  CREATED
+  IN_PROGRESS
+  COMPLETED
+  CANCELLED
+}
+
+enum EvaluationResult {
+  STRONG_HIRE
+  HIRE
+  CONSIDER
+  REJECT
+}
+
+class InterviewSessionRedis <<Redis hash, TTL 2h>> {
+  - id : String
+  - dbId : int
+  - blueprint : InterviewBlueprintResponse
+  - currentPhaseIndex : Integer
+  - currentQuestionIndex : Integer
+  - currentQuestionText : String
+  - currentQuestionType : QuestionType
+  - chatHistory : List<InterviewExchange>
+}
+
+class InterviewExchange {
+  - phaseName : String
+  - questionId : int
+  - questionOrder : int
+  - questionText : String
+  - answerText : String
+  - submittedAt : String
+  - type : QuestionType
+}
+
+enum QuestionType {
+  BLUEPRINT
+  FOLLOW_UP
+}
+
+class InterviewSetupRequest {
+  - userId : int
+  - applicationDetailId : Long
+  - candidateProfile : CandidateProfile
+  - jobRequirement : JobRequirementData
+  - sessionConfig : SessionConfigData
+}
+
+class SubmitAnswerRequest {
+  - sessionKey : String
+  - answer : String
+}
+
+class QuestionResponse {
+  - sessionKey : String
+  - isFinished : boolean
+  - phaseName : String
+  - currentQuestionIndex : Integer
+  - totalQuestionsInPhase : Integer
+  - questionContent : String
+  - questionType : String
+}
+
+' ================= TTS & STT =================
+
+interface SpeechService {
+  + generateAudio(text : String, voiceId : String) : byte[]
+  + generateAudioFromPython(text : String, voice : String) : byte[]
+  + streamAudioFromPython(text : String, voice : String, outputStream : OutputStream) : void
+  + enhancedTranscript(request : EnhanceTranscriptRequest) : String
+  + connectStt(onMessage : Consumer<String>, onError : Consumer<Throwable>) : WebSocket
+}
+
+class SpeechServiceImpl {
+  - restTemplate : RestTemplate
+  - apiClient : ApiClient
+  - stringRedisTemplate : StringRedisTemplate
+  - voiceId : String
+  --
+  - callElevenLabsApi(url : String, text : String, voiceSettings : Map<String, Object>) : byte[]
+  - fallbackToGoogleTts(text : String) : byte[]
+  - splitTextForGoogleTts(text : String, maxChars : int) : List<String>
+}
+
+class SttWebSocketController {
+  - speechService : SpeechService
+  - sttSessions : Map<String, WebSocket>
+  --
+  + afterConnectionEstablished(session : WebSocketSession) : void
+  # handleBinaryMessage(session : WebSocketSession, message : BinaryMessage) : void
+  # handleTextMessage(session : WebSocketSession, message : TextMessage) : void
+  + afterConnectionClosed(session : WebSocketSession, status : CloseStatus) : void
+  - sendToClient(session : WebSocketSession, message : String) : void
+}
+
+class SttWebSocketConfig {
+  - sttWebSocketController : SttWebSocketController
+  --
+  + registerWebSocketHandlers(registry : WebSocketHandlerRegistry) : void
+}
+
+class EnhanceTranscriptRequest {
+  - question : String
+  - answer : String
+}
+
+class BinaryWebSocketHandler <<external library>> {
+}
+
+' ================= WEBCAM PROCTORING =================
+
+class ProctoringController {
+  - proctoringService : ProctoringService
+  --
+  + trackBehavior(request : FaceSnapshotRequest) : ResponseEntity<Void>
+}
+
+interface ProctoringService {
+  + trackSnapshot(request : FaceSnapshotRequest) : void
+  + getAndClearBehavioralRecord(sessionKey : String) : Map<Integer, List<String>>
+}
+
+class ProctoringServiceImpl {
+  - behaviorRedisRepo : InterviewBehaviorRedisRepository
+  - apiClient : ApiClient
+}
+
+interface InterviewBehaviorRedisRepository {
+}
+
+class InterviewBehaviorRedis <<Redis hash, TTL 1h>> {
+  - sessionKey : String
+  - behavioralRecord : Map<Integer, List<String>>
+}
+
+class FaceSnapshotRequest {
+  - sessionKey : String
+  - globalQuestionOrder : int
+  - imageBase64 : String
+}
+
+class FaceSnapshotResponse {
+  - status : String
+  - warningType : String
+  - message : String
+  - metrics : Metrics
+}
+
+' ================= SHARED / EXTERNAL =================
+
+interface ApplicationDetailService <<full detail in class-3.4.1(1)>> {
+  + startAiInterview(applicationDetailId : long) : String
+}
+
+class ApiClient <<full detail in class-3.4.1(5)>> {
+  + callApi(service : PythonService, path : String, method : HttpMethod, body : Object, responseType : Class<T>) : T
+  + connectWebSocket(service : PythonService, path : String, onMessage : Consumer<String>, onError : Consumer<Throwable>) : WebSocket
+}
+
+interface NotificationService <<external module>> {
+}
+
+interface JpaRepository <<external library>> {
+}
+
+interface CrudRepository <<external library>> {
+}
+
+' ================= RELATIONSHIPS =================
+
+' --- Kiosk booking & check-in ---
+KioskController .down.> KioskService : use
+KioskServiceImpl .up.|> KioskService : implement
+KioskServiceImpl .down.> KioskRepository : use
+KioskServiceImpl .down.> KioskScheduleRepository : use
+KioskServiceImpl .down.> KioskBookingRepository : use
+KioskServiceImpl .down.> SlotDto : create
+KioskServiceImpl .down.> KioskHistoryResponseDto : create
+
+KioskBookingController .down.> KioskBookingService : use
+KioskBookingServiceImpl .up.|> KioskBookingService : implement
+KioskBookingServiceImpl .down.> KioskBookingRepository : use
+KioskBookingServiceImpl .down.> KioskRepository : use
+KioskBookingServiceImpl .down.> NotificationService : use
+KioskBookingServiceImpl .down.> ApplicationDetailService : use
+KioskBookingServiceImpl .down.> KioskBooking : create
+KioskBookingServiceImpl .down.> KioskEnterDtoResponse : create
+KioskBookingController .down.> PickSlotDtoRequest : use
+
+KioskRepository -up-|> JpaRepository : extend
+KioskScheduleRepository -up-|> JpaRepository : extend
+KioskBookingRepository -up-|> JpaRepository : extend
+Kiosk "1" -right- "0..*" KioskSchedule : opens on
+Kiosk "1" -down- "0..*" KioskBooking : hosts
+KioskBooking .right.> BookingStatus : use
+
+' --- AI interview session ---
+InterviewSessionController .down.> InterviewSessionService : use
+InterviewSessionServiceImpl .up.|> InterviewSessionService : implement
+InterviewSessionServiceImpl .down.> InterviewSessionRepository : use
+InterviewSessionServiceImpl .down.> InterviewSessionRedisRepository : use
+InterviewSessionServiceImpl .down.> ApiClient : use
+InterviewSessionServiceImpl .down.> InterviewSessionRedis : create
+
+InterviewProcessController .down.> InterviewProcessService : use
+InterviewProcessController .down.> SpeechService : use
+InterviewProcessServiceImpl .up.|> InterviewProcessService : implement
+InterviewProcessServiceImpl .down.> InterviewSessionRedisRepository : use
+InterviewProcessServiceImpl .down.> InterviewSessionRepository : use
+InterviewProcessServiceImpl .down.> KioskBookingRepository : use
+InterviewProcessServiceImpl .down.> ProctoringService : use
+InterviewProcessServiceImpl .down.> ApiClient : use
+InterviewProcessServiceImpl .down.> QuestionResponse : create
+
+InterviewSessionRepository -up-|> JpaRepository : extend
+InterviewSessionRedisRepository -up-|> CrudRepository : extend
+InterviewSession .right.> SessionStatus : use
+InterviewSession .right.> EvaluationResult : use
+InterviewSessionRedis "1" *-down- "0..*" InterviewExchange : records
+InterviewExchange .right.> QuestionType : use
+InterviewSessionRedis .right.> QuestionType : use
+
+' --- TTS & STT ---
+SpeechServiceImpl .up.|> SpeechService : implement
+SpeechServiceImpl .down.> ApiClient : use
+SttWebSocketController -up-|> BinaryWebSocketHandler : extend
+SttWebSocketController .down.> SpeechService : use
+SttWebSocketConfig .right.> SttWebSocketController : register
+
+' --- Webcam proctoring ---
+ProctoringController .down.> ProctoringService : use
+ProctoringServiceImpl .up.|> ProctoringService : implement
+ProctoringServiceImpl .down.> InterviewBehaviorRedisRepository : use
+ProctoringServiceImpl .down.> ApiClient : use
+ProctoringServiceImpl .down.> InterviewBehaviorRedis : create
+InterviewBehaviorRedisRepository -up-|> CrudRepository : extend
+ProctoringController .down.> FaceSnapshotRequest : use
+ProctoringServiceImpl .down.> FaceSnapshotResponse : use
+
+@enduml
