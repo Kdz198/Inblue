@@ -1,0 +1,89 @@
+@startuml SendAndFetchCandidateEmail
+skinparam monochrome true
+skinparam shadowing false
+skinparam defaultFontSize 20
+
+' Do not repeat participant boxes at the bottom of the diagram
+hide footbox
+
+<style>
+sequenceDiagram {
+  groupHeader {
+    FontStyle plain
+  }
+}
+</style>
+
+actor "Candidate" as Candidate
+participant "Mail Server" as MailServer
+participant ":BackgroundScheduler" as Scheduler
+participant ":EmailSubmissionServiceImpl" as EmailService
+participant ":CloudinaryService" as Cloudinary
+participant ":EmailSubmissionRepository" as EmailRepo
+
+note right of MailServer
+  External IMAP mailbox that receives
+  candidate emails (not application code)
+end note
+
+' ===================== Candidate sends the email from own mail client =====================
+
+Candidate -> MailServer : send email to the recruiter mailbox\n(subject contains [INBLUE-APP-applicationId])
+activate MailServer
+
+' ===================== Fetch new emails from the inbox (every 60 seconds) =====================
+
+Scheduler -> EmailService : fetchEmails()
+activate EmailService
+
+break IMAP configuration is missing
+    EmailService --> Scheduler : skip email fetch
+end
+
+EmailService -> MailServer : connect via IMAPS and open INBOX
+
+break Connection to the mail server fails
+    EmailService --> Scheduler : log error and stop this run
+end
+
+MailServer --> EmailService : INBOX opened
+
+EmailService -> MailServer : search unseen messages
+MailServer --> EmailService : Message[] (at most 20 are processed per run)
+
+loop Each unseen email
+    EmailService -> EmailService : read subject, sender and received date;\nextract applicationId from the subject
+
+    EmailService -> EmailService : extract plain-text body from the message parts
+
+    opt Email contains attachments
+        loop Each attachment
+            EmailService -> Cloudinary : uploadDocument(bytes, fileName)
+            activate Cloudinary
+            Cloudinary --> EmailService : secure_url
+            deactivate Cloudinary
+        end
+    end
+
+    alt Application ID is found in the subject
+        EmailService -> EmailService : build EmailSubmission(status = PENDING)
+    else Application ID is missing in the subject
+        EmailService -> EmailService : build EmailSubmission(status = IGNORED,\nerrorMessage = "Missing or invalid application ID in subject")
+    end
+
+    EmailService -> EmailRepo : save(emailSubmission)
+    activate EmailRepo
+    EmailRepo --> EmailService : emailSubmission
+    deactivate EmailRepo
+
+    EmailService -> MailServer : mark message as SEEN
+end
+
+EmailService -> MailServer : close INBOX and store
+MailServer --> EmailService : closed
+deactivate MailServer
+
+EmailService --> Scheduler : void
+deactivate EmailService
+
+@enduml

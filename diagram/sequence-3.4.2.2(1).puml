@@ -1,0 +1,109 @@
+@startuml RunCodingProblemTestCases
+skinparam monochrome true
+skinparam shadowing false
+skinparam defaultFontSize 20
+
+' Do not repeat participant boxes at the bottom of the diagram
+hide footbox
+
+<style>
+sequenceDiagram {
+  groupHeader {
+    FontStyle plain
+  }
+}
+</style>
+
+actor "Candidate" as Candidate
+participant ":ApplicationDetailController" as Controller
+participant ":SubmissionService" as SubService
+participant ":RoundProcessorFactory" as Factory
+participant ":CodeRoundProcessor" as CodeProcessor
+participant ":CodingProblemsRepository" as ProblemRepo
+participant ":ApiClientImpl" as ApiClient
+participant "Compiler Service" as Compiler
+
+note right of Compiler
+  Python sandbox service that compiles
+  and runs code (separate service,
+  not part of the Spring Boot backend)
+end note
+
+Candidate -> Controller : POST /api/application-details/submit\n(applicationId, compileRequest[] with isTest = true)
+activate Controller
+
+Controller -> SubService : submitRound(submitRequest)
+activate SubService
+
+' ===================== Load current round and select processor =====================
+
+ref over SubService : Load current application and round\n(see 3.4.2.1)
+
+SubService -> Factory : getProcessor(currentRound.roundType)
+activate Factory
+Factory --> SubService : CodeRoundProcessor
+deactivate Factory
+
+SubService -> SubService : build ProcessDto(application, round,\ncompileRequest, roundType)
+
+SubService -> CodeProcessor : process(processDto)
+activate CodeProcessor
+
+break Compile request list is missing or empty
+    CodeProcessor --> SubService : throws IllegalArgumentException\n("Compile request must not be null or empty")
+    SubService --> Controller : propagate exception
+    Controller --> Candidate : error response (500)
+end
+
+' ===================== Test run against visible examples (nothing is saved) =====================
+
+CodeProcessor -> CodeProcessor : find the compile request flagged as a test run
+
+CodeProcessor -> ProblemRepo : findById(problemId)
+activate ProblemRepo
+ProblemRepo --> CodeProcessor : Optional<CodingProblem>
+deactivate ProblemRepo
+
+break Coding problem is not found
+    CodeProcessor --> SubService : throws IllegalArgumentException\n("Coding problem not found with ID: {problemId}")
+    SubService --> Controller : propagate exception
+    Controller --> Candidate : error response (500)
+end
+
+CodeProcessor -> CodeProcessor : build test cases from visible examples
+
+CodeProcessor -> CodeProcessor : build CompilerRequestDto(language, sourceCode, testCases,\ntime limit, memory limit, paramTypes, returnType)
+
+' ===================== Execute code in the compiler sandbox =====================
+
+CodeProcessor -> ApiClient : executeCode(compilerRequestDto)
+activate ApiClient
+
+ApiClient -> Compiler : POST compile request\n(CompilerRequestDto)
+activate Compiler
+
+break Compiler service call fails
+    ApiClient --> CodeProcessor : throws RuntimeException\n("Compiler service call failed")
+    CodeProcessor --> SubService : propagate exception
+    SubService --> Controller : propagate exception
+    Controller --> Candidate : error response (500)
+end
+
+Compiler --> ApiClient : CompilerResponseDto (test case results)
+deactivate Compiler
+
+ApiClient --> CodeProcessor : CompilerResponseDto
+deactivate ApiClient
+
+CodeProcessor -> CodeProcessor : SubmissionResult.compileCode(compilerResponse)
+
+CodeProcessor --> SubService : SubmissionResult (PENDING, test case results)
+deactivate CodeProcessor
+
+SubService --> Controller : SubmissionResult
+deactivate SubService
+
+Controller --> Candidate : 200 OK\nbody = SubmissionResult
+deactivate Controller
+
+@enduml

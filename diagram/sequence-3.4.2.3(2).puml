@@ -1,0 +1,111 @@
+@startuml ProcessEmailAndEvaluateWithLlm
+skinparam monochrome true
+skinparam shadowing false
+skinparam defaultFontSize 20
+
+' Do not repeat participant boxes at the bottom of the diagram
+hide footbox
+
+<style>
+sequenceDiagram {
+  groupHeader {
+    FontStyle plain
+  }
+}
+</style>
+
+participant ":BackgroundScheduler" as Scheduler
+participant ":EmailSubmissionServiceImpl" as EmailService
+participant ":EmailSubmissionRepository" as EmailRepo
+participant ":SubmissionService" as SubService
+participant ":SubmissionEventHandle" as EventHandle
+participant ":JobDescriptionRepository" as JdRepo
+participant ":ApiClientImpl" as ApiClient
+participant "AnythingLLM Service" as LlmService
+participant ":ApplicationDetailRepository" as DetailRepo
+
+note right of LlmService
+  External AI service (workspace EMAIL)
+  that evaluates the email
+end note
+
+' ===================== Grade pending emails (every 60 seconds) =====================
+
+Scheduler -> EmailService : processEmailSchedule()
+activate EmailService
+
+EmailService -> EmailRepo : findByStatus(PENDING)
+activate EmailRepo
+EmailRepo --> EmailService : List<EmailSubmission>
+
+EmailService -> EmailRepo : findByStatus(ERROR)
+EmailRepo --> EmailService : List<EmailSubmission>
+
+loop Each pending or failed email
+    opt Email has an application ID
+        EmailService -> EmailService : set status = PROCESSED
+        EmailService -> EmailRepo : save(email)
+        EmailRepo --> EmailService : email
+
+        EmailService -> SubService : submitEmailRoundSync(submitRequest, email)
+        activate SubService
+
+        ref over SubService : Load current application and round\n(see 3.4.2.1)
+
+        break Application or round cannot be loaded
+            SubService --> EmailService : throws CustomException\n(404 NOT_FOUND)
+            EmailService -> EmailService : set status = ERROR and\nerrorMessage = exception message
+            EmailService -> EmailRepo : save(email)
+        end
+
+        SubService -> SubService : build ProcessDto(application, round, roundType)
+
+        SubService -> EventHandle : processEmailSubmissionSync(processDto, email)
+        activate EventHandle
+
+        EventHandle -> EventHandle : gradeEmailSubmission(processDto, email)
+
+        EventHandle -> JdRepo : findById(jdId)
+        activate JdRepo
+        JdRepo --> EventHandle : Optional<JobDescription>
+        deactivate JdRepo
+
+        alt Job description is found and the AI service returns an evaluation
+            EventHandle -> EventHandle : build EmailEvaluationRequest(scenario, level,\ncandidate email, evaluation plan, metrics)
+
+            EventHandle -> ApiClient : sendChatToAnythingLlm(EMAIL workspace, request)
+            activate ApiClient
+            ApiClient -> LlmService : POST chat request
+            activate LlmService
+            LlmService --> ApiClient : evaluation result
+            deactivate LlmService
+            ApiClient --> EventHandle : CvEvaluationResponse
+            deactivate ApiClient
+
+            EventHandle -> DetailRepo : save(applicationDetail)\n(status = AI_EVALUATED, aiScore, aiFeedback,\nstructuredAiFeedback, emailSubmissionId)
+            activate DetailRepo
+            DetailRepo --> EventHandle : applicationDetail
+            deactivate DetailRepo
+
+            EventHandle -> EmailRepo : save(email with status = PROCESSED)
+            EmailRepo --> EventHandle : email
+        else Job description is not found or the AI service call fails
+            EventHandle -> EventHandle : set status = ERROR and\nerrorMessage = exception message
+
+            EventHandle -> EmailRepo : save(email)
+            EmailRepo --> EventHandle : email
+            deactivate EmailRepo
+        end
+
+        EventHandle --> SubService : void
+        deactivate EventHandle
+
+        SubService --> EmailService : void
+        deactivate SubService
+    end
+end
+
+EmailService --> Scheduler : void
+deactivate EmailService
+
+@enduml

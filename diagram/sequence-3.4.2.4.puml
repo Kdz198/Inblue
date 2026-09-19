@@ -1,0 +1,100 @@
+@startuml SubmitCodeReviewAssessment
+skinparam monochrome true
+skinparam shadowing false
+skinparam defaultFontSize 20
+
+' Do not repeat participant boxes at the bottom of the diagram
+hide footbox
+
+<style>
+sequenceDiagram {
+  groupHeader {
+    FontStyle plain
+  }
+}
+</style>
+
+actor "Candidate" as Candidate
+participant ":ApplicationDetailController" as Controller
+participant ":SubmissionService" as SubService
+participant ":ApplicationDetailRepository" as DetailRepo
+participant ":ApiClientImpl" as ApiClient
+participant "AnythingLLM Service" as LlmService
+
+note right of LlmService
+  External AI service (workspace CODE_REVIEW)
+  that evaluates the review comments
+end note
+
+Candidate -> Controller : POST /api/application-details/code-review/evaluate\n(applicationId, submissions[])
+activate Controller
+
+Controller -> SubService : evaluateCodeReview(codeReviewSubmitRequest)
+activate SubService
+
+' ===================== Load current round and validate configuration =====================
+
+ref over SubService : Load current application and round\n(see 3.4.2.1)
+
+break Round has no Code Review problem configured
+    SubService --> Controller : throws CustomException\n(400 BAD_REQUEST, "The round has no Code Review problem configured")
+    Controller --> Candidate : error response (400)
+end
+
+SubService -> SubService : select the first Code Review problem\nfrom the round configuration
+
+SubService -> DetailRepo : findByApplicationIdAndRoundId(applicationId, roundId)
+activate DetailRepo
+DetailRepo --> SubService : Optional<ApplicationDetail>
+
+break Round has already been submitted
+    SubService --> Controller : throws CustomException\n(409 CONFLICT, "Round has already been submitted")
+    Controller --> Candidate : error response (409)
+end
+
+' ===================== Evaluate review comments with the AI service =====================
+
+SubService -> SubService : build CodeReviewEvaluationRequest(problem,\nsubmissions, evaluation plan)
+
+SubService -> ApiClient : sendChatToAnythingLlm(CODE_REVIEW workspace,\nrequest, sessionId, reset = true)
+activate ApiClient
+ApiClient -> LlmService : POST chat request
+activate LlmService
+LlmService --> ApiClient : evaluation result
+deactivate LlmService
+ApiClient --> SubService : CvEvaluationResponse
+deactivate ApiClient
+
+break AI service returns no evaluation result
+    SubService --> Controller : throws CustomException\n(500 INTERNAL_SERVER_ERROR, "AI service did not return an evaluation result")
+    Controller --> Candidate : error response (500)
+end
+
+' ===================== Build and save the result =====================
+
+SubService -> SubService : build ApplicationDetail(codeReviewSubmissions, aiScore,\nfinalScore, aiFeedback, structuredAiFeedback,\nstatus = AI_EVALUATED)
+
+alt Score reaches the pass threshold
+    SubService -> SubService : set finalResult = PASSED
+else Score is below the pass threshold
+    SubService -> SubService : set finalResult = FAILED
+end
+
+SubService -> DetailRepo : saveAndFlush(applicationDetail)
+
+break Another submission for this round was saved at the same time
+    DetailRepo --> SubService : throws DataIntegrityViolationException
+    SubService --> Controller : throws CustomException\n(409 CONFLICT, "Round has already been submitted")
+    Controller --> Candidate : error response (409)
+end
+
+DetailRepo --> SubService : savedDetail
+deactivate DetailRepo
+
+SubService --> Controller : ApplicationDetail
+deactivate SubService
+
+Controller --> Candidate : 200 OK\nbody = ApplicationDetail
+deactivate Controller
+
+@enduml
