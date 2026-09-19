@@ -16,6 +16,7 @@ import fpt.org.inblue.model.dto.response.MentorResponse;
 import fpt.org.inblue.repository.JobDescriptionRepository;
 import fpt.org.inblue.repository.MentorFeedbackRepository;
 import fpt.org.inblue.repository.MentorRepository;
+import fpt.org.inblue.repository.UserRepository;
 import fpt.org.inblue.service.EmbeddingService;
 import fpt.org.inblue.service.MentorService;
 import fpt.org.inblue.utils.FileUtil;
@@ -37,6 +38,7 @@ public class MentorServiceImpl implements MentorService {
     private static final int TOP_RECOMMENDED_MENTOR_LIMIT = 20;
 
     private final MentorRepository mentorRepository;
+    private final UserRepository userRepository;
     private final MentorFeedbackRepository mentorFeedbackRepository;
     private final JobDescriptionRepository jobDescriptionRepository;
     private final ApplicationEventPublisher applicationEventPublisher;
@@ -47,6 +49,9 @@ public class MentorServiceImpl implements MentorService {
 
     @Override
     public MentorResponse createMentor(CreateMentorRequest data, MultipartFile avatar) throws IOException {
+        if (mentorRepository.existsByEmail(data.getEmail()) || userRepository.existsByEmail(data.getEmail())) {
+            throw new CustomException("Email đã tồn tại", HttpStatus.BAD_REQUEST);
+        }
         Mentor mentor = mentorMapper.toEntity(data);
         if (data.getPassword() != null && !data.getPassword().isEmpty()) {
             mentor.setPassword(passwordEncoder.encode(data.getPassword()));
@@ -73,6 +78,13 @@ public class MentorServiceImpl implements MentorService {
         Mentor mentor = mentorRepository
                 .findById(id)
                 .orElseThrow(() -> new CustomException("Mentor Not Found", HttpStatus.NOT_FOUND));
+
+        if (data.getEmail() != null
+                && !data.getEmail().equalsIgnoreCase(mentor.getEmail())
+                && (mentorRepository.existsByEmailAndIdNot(data.getEmail(), id)
+                        || userRepository.existsByEmail(data.getEmail()))) {
+            throw new CustomException("Email đã tồn tại", HttpStatus.BAD_REQUEST);
+        }
 
         mentorMapper.updateMentorFromDto(data, mentor);
         float[] skillEmbedding = embeddingService.generateEmbedding(

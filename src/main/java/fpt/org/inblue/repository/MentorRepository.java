@@ -19,6 +19,10 @@ public interface MentorRepository extends JpaRepository<Mentor, Integer> {
 
     Mentor findByEmail(String email);
 
+    boolean existsByEmail(String email);
+
+    boolean existsByEmailAndIdNot(String email, int id);
+
     int countMentorByIsActive(boolean active);
 
     @Query(

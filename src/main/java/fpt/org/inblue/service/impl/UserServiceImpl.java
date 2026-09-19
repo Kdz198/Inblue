@@ -9,6 +9,7 @@ import fpt.org.inblue.model.dto.UserEventDto;
 import fpt.org.inblue.model.dto.UserInfo;
 import fpt.org.inblue.model.dto.response.CVParserResponse;
 import fpt.org.inblue.model.dto.response.UserResponse;
+import fpt.org.inblue.repository.MentorRepository;
 import fpt.org.inblue.repository.UserRepository;
 import fpt.org.inblue.service.ApiClient;
 import fpt.org.inblue.service.CandidateProfileService;
@@ -35,6 +36,7 @@ import org.springframework.web.multipart.MultipartFile;
 @RequiredArgsConstructor
 public class UserServiceImpl implements UserService {
     private final UserRepository userRepository;
+    private final MentorRepository mentorRepository;
 
     private final ApplicationEventPublisher applicationEventPublisher;
     private final CloudinaryService cloudinaryService;
@@ -57,7 +59,7 @@ public class UserServiceImpl implements UserService {
     @Transactional
     public User createUser(UserInfo user, MultipartFile avatar) throws IOException {
         if (user.getId() == null) {
-            if (userRepository.existsByEmail(user.getEmail())) {
+            if (userRepository.existsByEmail(user.getEmail()) || mentorRepository.existsByEmail(user.getEmail())) {
                 throw new CustomException("Email đã tồn tại", HttpStatus.BAD_REQUEST);
             }
             User userBuilder = User.builder()
@@ -82,11 +84,14 @@ public class UserServiceImpl implements UserService {
             }
             return savedUser;
         } else {
-            if (userRepository.existsByEmailAndIdNot(user.getEmail(), user.getId())) {
-                throw new CustomException("Email đã tồn tại", HttpStatus.BAD_REQUEST);
-            }
             User updateUser =
                     userRepository.findById(user.getId()).orElseThrow(() -> new RuntimeException("User Not Found"));
+            if (user.getEmail() != null
+                    && !user.getEmail().equalsIgnoreCase(updateUser.getEmail())
+                    && (userRepository.existsByEmailAndIdNot(user.getEmail(), user.getId())
+                            || mentorRepository.existsByEmail(user.getEmail()))) {
+                throw new CustomException("Email đã tồn tại", HttpStatus.BAD_REQUEST);
+            }
             updateUser.setRole(user.getRole());
             updateUser.setName(user.getName());
             updateUser.setEmail(user.getEmail());
