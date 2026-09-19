@@ -3,44 +3,36 @@ package fpt.org.inblue.service.impl;
 import fpt.org.inblue.cloudinary.CloudinaryService;
 import fpt.org.inblue.enums.Role;
 import fpt.org.inblue.enums.SessionStatus;
+import fpt.org.inblue.exception.CustomException;
+import fpt.org.inblue.mapper.MentorMapper;
 import fpt.org.inblue.model.Application;
 import fpt.org.inblue.model.ApplicationDetail;
+import fpt.org.inblue.model.JobDescription;
+import fpt.org.inblue.model.Mentor;
+import fpt.org.inblue.model.MentorFeedback;
 import fpt.org.inblue.model.MentorReview;
 import fpt.org.inblue.model.Session;
 import fpt.org.inblue.model.User;
+import fpt.org.inblue.model.dto.MentorEventDto;
+import fpt.org.inblue.model.dto.request.ChangeMentorPasswordRequest;
+import fpt.org.inblue.model.dto.request.CreateMentorRequest;
+import fpt.org.inblue.model.dto.request.UpdateMentorRequest;
 import fpt.org.inblue.model.dto.response.MentorDashboardSummaryResponse;
 import fpt.org.inblue.model.dto.response.MentorDashboardSummaryResponse.FeedbackItem;
 import fpt.org.inblue.model.dto.response.MentorDashboardSummaryResponse.ReviewedApplicationItem;
 import fpt.org.inblue.model.dto.response.MentorDashboardSummaryResponse.ReviewedCandidateItem;
 import fpt.org.inblue.model.dto.response.MentorDashboardSummaryResponse.SessionItem;
 import fpt.org.inblue.model.dto.response.MentorDashboardSummaryResponse.UserBasicInfo;
+import fpt.org.inblue.model.dto.response.MentorFeedbackResponse;
+import fpt.org.inblue.model.dto.response.MentorResponse;
 import fpt.org.inblue.model.dto.response.MentorReviewResponse;
 import fpt.org.inblue.repository.ApplicationDetailRepository;
 import fpt.org.inblue.repository.ApplicationRepository;
-import fpt.org.inblue.repository.MentorReviewRepository;
-import fpt.org.inblue.repository.SessionRepository;
-import java.util.Comparator;
-import java.util.EnumMap;
-import java.util.Map;
-import java.util.Objects;
-import java.util.function.Function;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
-import org.springframework.transaction.annotation.Transactional;
-import fpt.org.inblue.exception.CustomException;
-import fpt.org.inblue.mapper.MentorMapper;
-import fpt.org.inblue.model.JobDescription;
-import fpt.org.inblue.model.Mentor;
-import fpt.org.inblue.model.MentorFeedback;
-import fpt.org.inblue.model.dto.MentorEventDto;
-import fpt.org.inblue.model.dto.request.ChangeMentorPasswordRequest;
-import fpt.org.inblue.model.dto.request.CreateMentorRequest;
-import fpt.org.inblue.model.dto.request.UpdateMentorRequest;
-import fpt.org.inblue.model.dto.response.MentorFeedbackResponse;
-import fpt.org.inblue.model.dto.response.MentorResponse;
 import fpt.org.inblue.repository.JobDescriptionRepository;
 import fpt.org.inblue.repository.MentorFeedbackRepository;
 import fpt.org.inblue.repository.MentorRepository;
+import fpt.org.inblue.repository.MentorReviewRepository;
+import fpt.org.inblue.repository.SessionRepository;
 import fpt.org.inblue.repository.UserRepository;
 import fpt.org.inblue.service.EmbeddingService;
 import fpt.org.inblue.service.MentorService;
@@ -49,12 +41,20 @@ import fpt.org.inblue.utils.VectorUtils;
 import java.io.File;
 import java.io.IOException;
 import java.util.Arrays;
+import java.util.Comparator;
+import java.util.EnumMap;
 import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.function.Function;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
 @Service
@@ -229,7 +229,9 @@ public class MentorServiceImpl implements MentorService {
         Map<Integer, User> usersById = loadUsers(sessions, reviewedApplications);
 
         Map<SessionStatus, Long> countByStatus = new EnumMap<>(SessionStatus.class);
-        sessions.stream().filter(s -> s.getStatus() != null).forEach(s -> countByStatus.merge(s.getStatus(), 1L, Long::sum));
+        sessions.stream()
+                .filter(s -> s.getStatus() != null)
+                .forEach(s -> countByStatus.merge(s.getStatus(), 1L, Long::sum));
 
         List<SessionItem> sessionItems = sessions.stream()
                 .sorted(Comparator.comparing(Session::getJoinTime, Comparator.nullsLast(Comparator.reverseOrder())))
@@ -298,10 +300,11 @@ public class MentorServiceImpl implements MentorService {
 
     /** Application detail được gán cho mentor mà mentor đã nộp đánh giá (MentorReview) cho session của vòng đó. */
     private List<ReviewedApplicationItem> buildReviewedApplications(int mentorId, List<MentorReview> reviews) {
-        Map<Integer, MentorReview> reviewBySessionId = reviews.stream()
-                .collect(Collectors.toMap(MentorReview::getId, Function.identity(), (a, b) -> a));
-        Map<Integer, MentorFeedback> feedbackBySessionId = mentorFeedbackRepository.findAllByMentor_Id(mentorId).stream()
-                .collect(Collectors.toMap(MentorFeedback::getId, Function.identity(), (a, b) -> a));
+        Map<Integer, MentorReview> reviewBySessionId =
+                reviews.stream().collect(Collectors.toMap(MentorReview::getId, Function.identity(), (a, b) -> a));
+        Map<Integer, MentorFeedback> feedbackBySessionId =
+                mentorFeedbackRepository.findAllByMentor_Id(mentorId).stream()
+                        .collect(Collectors.toMap(MentorFeedback::getId, Function.identity(), (a, b) -> a));
 
         List<ApplicationDetail> details = applicationDetailRepository.findAllByMentorId(mentorId).stream()
                 .filter(d -> d.getSessionId() != null && reviewBySessionId.containsKey(d.getSessionId()))
