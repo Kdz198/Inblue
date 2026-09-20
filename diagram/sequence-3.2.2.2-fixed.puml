@@ -1,0 +1,138 @@
+@startuml ATS_CVMatchScoreCalculation
+skinparam monochrome true
+skinparam shadowing false
+
+' Do not repeat participant boxes at the bottom of the diagram
+hide footbox
+
+<style>
+sequenceDiagram {
+  groupHeader {
+    FontStyle plain
+  }
+}
+</style>
+
+actor "Candidate" as Candidate
+participant ":ApplicationDetailController" as Controller
+participant ":SubmissionService" as SubmissionSvc
+participant ":ApplicationServiceImpl" as ApplicationSvc
+participant ":JobDescriptionServiceImpl" as JdSvc
+participant ":RoundProcessorFactory" as Factory
+participant ":CVRoundProcessor" as CVProcessor
+participant ":SubmissionEventHandle" as EventHandle
+participant ":ApplicationDetailRepository" as DetailRepo
+participant ":JobDescriptionRepository" as JdRepo
+participant ":UserServiceImpl" as UserSvc
+participant ":ApiClientImpl" as ApiClient
+participant "AnythingLLM\ncv-processor workspace" as AnythingLLM
+participant ":CloudinaryService" as Cloudinary
+
+note right of AnythingLLM
+  External AI service
+  (third-party, not custom
+  application code)
+end note
+
+' ===================== Submit CV for the CV screening round =====================
+
+Candidate -> Controller ++ : POST /api/application-details/submit\nmultipart SubmitRequest(applicationId, cvFile)
+Controller -> SubmissionSvc ++ : submitRound(submitRequest)
+
+note right of SubmissionSvc
+  submitRound() runs inside a transaction.
+end note
+
+SubmissionSvc -> ApplicationSvc ++ : getApplicationById(applicationId)
+ApplicationSvc --> SubmissionSvc -- : Application
+
+SubmissionSvc -> JdSvc ++ : getRoundByOrder(jdId, currentRoundOrder)
+JdSvc --> SubmissionSvc -- : Round
+
+SubmissionSvc -> Factory ++ : getProcessor(round.roundType)
+Factory --> SubmissionSvc -- : cvRoundProcessor
+
+SubmissionSvc -> SubmissionSvc : build ProcessDto(application, round,\ncvFile, roundType)
+
+SubmissionSvc -> CVProcessor ++ : process(processDto)
+
+opt CV file is present
+    CVProcessor -> CVProcessor : Detach MultipartFile via FileUtil\nDelete temporary file
+end
+
+CVProcessor -> EventHandle ++ : processCvSubmission(processDto)
+
+' ===================== Guard: the round must not be submitted yet =====================
+
+EventHandle -> DetailRepo ++ : findByApplicationIdAndRoundId(applicationId, roundId)
+DetailRepo --> EventHandle -- : Optional<ApplicationDetail>
+
+break Round has already been submitted
+    EventHandle --> CVProcessor : throws CustomException\n(409 CONFLICT, "Round already submitted")
+    CVProcessor --> SubmissionSvc : propagate exception
+    SubmissionSvc --> Controller : propagate exception
+    Controller --> Candidate : error response (409)
+end
+
+' ===================== Load Job Description & build the evaluation request =====================
+
+EventHandle -> JdRepo ++ : findById(application.jdId)
+JdRepo --> EventHandle -- : Optional<JobDescription>
+
+break Job description is not found
+    EventHandle --> CVProcessor : throws CustomException\n(404 NOT_FOUND, "Job Description not found")
+    CVProcessor --> SubmissionSvc : propagate exception
+    SubmissionSvc --> Controller : propagate exception
+    Controller --> Candidate : error response (404)
+end
+
+EventHandle -> EventHandle : build EvaluationCriteria(maxScore,\naiSystemPrompt, CV metric list)
+EventHandle -> EventHandle : build CvEvaluationRequest(cvFile,\nJD title/description/level/requirements,\nevaluationPlan)
+
+' ===================== Parse the profile & score the CV concurrently =====================
+
+par Parse and save the candidate profile
+    EventHandle -> UserSvc ++ : upCv(userId, applicationId, cvFile)
+    UserSvc --> EventHandle -- : CandidateProfile
+else Calculate the ATS match score
+    EventHandle -> ApiClient ++ : sendChatToAnythingLlm(CV_ANALYSIS,\ncvEvaluationRequest, "java-backend", true,\nfileList, CvEvaluationResponse.class)
+    ApiClient -> AnythingLLM ++ : POST /workspace/cv-processor/chat
+    AnythingLLM --> ApiClient -- : textResponse (score, extraMetrics)
+    ApiClient --> EventHandle -- : CvEvaluationResponse
+end
+
+note right of EventHandle
+  Both operands run on CompletableFuture.
+  CompletableFuture.allOf(...).join() blocks
+  until parsing and scoring both finish.
+  The parsed profile is not reused afterwards.
+end note
+
+' ===================== Store the CV file & persist the evaluated detail =====================
+
+EventHandle -> Cloudinary ++ : uploadDocument(cvFile)
+Cloudinary --> EventHandle -- : secure_url
+
+EventHandle -> EventHandle : build ApplicationDetail(applicationId, roundId,\nstatus=AI_EVALUATED, submissionData.fileUrl,\naiScore, aiFeedback, structuredAiFeedback)
+
+EventHandle -> DetailRepo ++ : saveAndFlush(applicationDetail)
+
+break Duplicate submission is detected on flush
+    DetailRepo --> EventHandle : throws DataIntegrityViolationException
+    EventHandle --> CVProcessor : throws CustomException\n(409 CONFLICT, "Round already submitted")
+    CVProcessor --> SubmissionSvc : propagate exception
+    SubmissionSvc --> Controller : propagate exception
+    Controller --> Candidate : error response (409)
+end
+
+DetailRepo --> EventHandle -- : Saved ApplicationDetail
+
+EventHandle --> CVProcessor -- : ApplicationDetail
+
+CVProcessor --> SubmissionSvc -- : SubmissionResult.completed(detail)
+
+SubmissionSvc --> Controller -- : SubmissionResult
+
+Controller --> Candidate -- : 200 OK\nbody = SubmissionResult(aiScore, aiFeedback)
+
+@enduml
