@@ -129,8 +129,6 @@ public class SessionServiceImpl implements SessionService {
                 .duration(session.getDuration())
                 .totalPrice(session.getTotalPrice())
                 .transactionCode(session.getTransactionCode())
-                .sessionKey(session.getSessionKey())
-                .kioskId(session.getKioskId())
                 .mentorReview(reviewResponse)
                 .mentorFeedback(feedbackResponse)
                 .build();

@@ -203,7 +203,6 @@ public class UserScheduleServiceImpl implements UserScheduleService {
                     .roomUrl(sess.getRoomUrl())
                     .color("#8B5CF6") // Purple badge
                     .sessionId(sess.getId())
-                    .sessionKey(sess.getSessionKey())
                     .build();
 
             events.add(event);
@@ -406,7 +405,6 @@ public class UserScheduleServiceImpl implements UserScheduleService {
                     .roomUrl(sess.getRoomUrl())
                     .color("#8B5CF6") // Purple badge
                     .sessionId(sess.getId())
-                    .sessionKey(sess.getSessionKey())
                     .build();
 
             events.add(event);
