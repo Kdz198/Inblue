@@ -216,15 +216,14 @@ class InterviewProcessServiceImpl {
   - redisRepository : InterviewSessionRedisRepository
   - sessionRepository : InterviewSessionRepository
   - apiClient : ApiClient
-  - proctoringService : ProctoringService
   - applicationDetailRepository : ApplicationDetailRepository
   - kioskBookingRepository : KioskBookingRepository
   --
   - buildQuestionResponse(session : InterviewSessionRedis) : QuestionResponse
   - buildPythonRequest(session : InterviewSessionRedis) : OrchestratorConductRequest
   - finishSession(redisSession : InterviewSessionRedis, sessionKey : String) : void
-  - gradeAndMapFullHistory(fullHistory : List<InterviewExchange>, behaviorMap : Map<Integer, List<String>>) : List<QAResult>
-  - processGroupAndAddToResult(group : List<InterviewExchange>, finalResults : List<QAResult>, startOrderIndex : int, behaviorMap : Map<Integer, List<String>>) : void
+  - gradeAndMapFullHistory(fullHistory : List<InterviewExchange>) : List<QAResult>
+  - processGroupAndAddToResult(group : List<InterviewExchange>, finalResults : List<QAResult>, startOrderIndex : int) : void
   - determineEvaluationResult(overallScore : double) : EvaluationResult
   - genOverviewFeedback(gradedHistory : List<QAResult>) : String
 }
@@ -367,45 +366,6 @@ class EnhanceTranscriptRequest {
 class BinaryWebSocketHandler <<external library>> {
 }
 
-' ================= WEBCAM PROCTORING =================
-
-class ProctoringController {
-  - proctoringService : ProctoringService
-  --
-  + trackBehavior(request : FaceSnapshotRequest) : ResponseEntity<Void>
-}
-
-interface ProctoringService {
-  + trackSnapshot(request : FaceSnapshotRequest) : void
-  + getAndClearBehavioralRecord(sessionKey : String) : Map<Integer, List<String>>
-}
-
-class ProctoringServiceImpl {
-  - behaviorRedisRepo : InterviewBehaviorRedisRepository
-  - apiClient : ApiClient
-}
-
-interface InterviewBehaviorRedisRepository {
-}
-
-class InterviewBehaviorRedis <<Redis hash, TTL 1h>> {
-  - sessionKey : String
-  - behavioralRecord : Map<Integer, List<String>>
-}
-
-class FaceSnapshotRequest {
-  - sessionKey : String
-  - globalQuestionOrder : int
-  - imageBase64 : String
-}
-
-class FaceSnapshotResponse {
-  - status : String
-  - warningType : String
-  - message : String
-  - metrics : Metrics
-}
-
 ' ================= SHARED / EXTERNAL =================
 
 interface ApplicationDetailService <<full detail in class-3.4.1(1)>> {
@@ -468,7 +428,6 @@ InterviewProcessServiceImpl .up.|> InterviewProcessService : implement
 InterviewProcessServiceImpl .down.> InterviewSessionRedisRepository : use
 InterviewProcessServiceImpl .down.> InterviewSessionRepository : use
 InterviewProcessServiceImpl .down.> KioskBookingRepository : use
-InterviewProcessServiceImpl .down.> ProctoringService : use
 InterviewProcessServiceImpl .down.> ApiClient : use
 InterviewProcessServiceImpl .down.> QuestionResponse : create
 
@@ -486,15 +445,5 @@ SpeechServiceImpl .down.> ApiClient : use
 SttWebSocketController -up-|> BinaryWebSocketHandler : extend
 SttWebSocketController .down.> SpeechService : use
 SttWebSocketConfig .right.> SttWebSocketController : register
-
-' --- Webcam proctoring ---
-ProctoringController .down.> ProctoringService : use
-ProctoringServiceImpl .up.|> ProctoringService : implement
-ProctoringServiceImpl .down.> InterviewBehaviorRedisRepository : use
-ProctoringServiceImpl .down.> ApiClient : use
-ProctoringServiceImpl .down.> InterviewBehaviorRedis : create
-InterviewBehaviorRedisRepository -up-|> CrudRepository : extend
-ProctoringController .down.> FaceSnapshotRequest : use
-ProctoringServiceImpl .down.> FaceSnapshotResponse : use
 
 @enduml
