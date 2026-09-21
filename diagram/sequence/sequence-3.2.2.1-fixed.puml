@@ -1,0 +1,155 @@
+@startuml UploadCVAndAutoParsing
+title 3.2.2.1 Upload CV & Auto Parsing via AnythingLLM CV_PARSE Workspace
+skinparam monochrome true
+skinparam shadowing false
+skinparam sequenceMessageAlign center
+skinparam maxMessageSize 260
+hide footbox
+
+<style>
+sequenceDiagram {
+  groupHeader {
+    FontStyle plain
+  }
+}
+</style>
+autonumber
+
+' Sources: supplied report, section IV.3.2.2.1 and Workflow 2: Manage Profile and CV.
+' Implementation: UserController.uploadCv, UserServiceImpl.upCv,
+' ApiClientImpl.sendChatToAnythingLlm, CandidateProfileImpl, EventListenerHandle.handleCv.
+' Reviewed local Inblue-BE master and EXE_FE on 2026-09-18.
+
+actor Candidate
+participant "Web UI\nCVUploadModal / AccountPage" as UI
+participant ":UserController" as Controller
+participant ":UserServiceImpl" as Service
+participant ":UserRepository" as Users
+participant ":CandidateProfileImpl" as Profiles
+participant ":CandidateProfileRepository" as ProfileRepo
+participant ":ApiClientImpl" as API
+participant "AnythingLLM\nCV_PARSE workspace" as AI
+participant ":EventListenerHandle" as Listener
+participant "Cloudinary\nvia CloudinaryService" as Storage
+
+note over AI
+  External AI service
+  (third-party, not custom
+  application code)
+end note
+
+Candidate -> UI : Select CV file
+UI -> UI : Validate PDF type/extension and size <= 10 MB
+break File type is invalid or file size exceeds the limit
+  UI --> Candidate : Show validation error
+end
+UI --> Candidate : Preview selected PDF
+Candidate -> UI : Confirm upload
+UI -> Controller : POST /api/users/upload-cv\n multipart: userId, cvFile, [applicationId]
+activate Controller
+note over UI, Controller
+  Account UI sends userId and cvFile only.
+  applicationId is an optional backend parameter.
+  Precondition: authenticated request accepted by security filters.
+end note
+Controller -> Service : upCv(userId, applicationId, cvFile)
+activate Service
+
+break CV file is empty (direct API request)
+  Service --> Controller : null
+  Controller --> UI : HTTP 200, empty body
+end
+
+group Transactional upCv attempt
+  Service -> Users : findById(userId)
+  activate Users
+  Users --> Service : User (or absent)
+  deactivate Users
+  note right of Service
+    Missing user throws RuntimeException.
+    Synchronous exceptions trigger retry of the entire
+    upCv call: max 3 attempts, 2-second backoff.
+    Empty/invalid AI output also leads to failure.
+    After exhaustion, recover() throws;
+    GlobalExceptionHandler returns HTTP 500.
+    The UI shows an upload error.
+    Cloudinary side effects are not rolled back.
+  end note
+
+  opt User has an existing CV public ID
+    Service -> Storage : deletePdf(user.cv_public_id)
+    Storage --> Service : Deletion result
+  end
+
+  alt Application ID is provided
+    Service -> Profiles : getProfileByApplicationId(applicationId)
+    Profiles -> ProfileRepo : findByApplicationId(applicationId)
+    ProfileRepo --> Profiles : Existing profile or null
+    Profiles --> Service : Existing profile or null
+  else Application ID is not provided
+    Service -> Profiles : getProfileByUserIdAndApplicationIdIsNull(userId)
+    Profiles -> ProfileRepo : findByUser_IdAndApplicationIdIsNull(userId)
+    ProfileRepo --> Profiles : Existing profile or null
+    Profiles --> Service : Existing profile or null
+  end
+  Service -> Service : Reuse existing profile ID, otherwise null
+
+  Service -> API : sendChatToAnythingLlm(CV_PARSE, null,\n"parse-cv", true, [cvFile], CVParserResponse.class)
+  activate API
+  API -> API : Encode CV as Base64 attachment\nBuild JSON body and bearer-auth header
+  API -> AI : POST {ANYTHING_LLM_URL}/workspace/parse-cv/chat\nmode=chat, sessionId=parse-cv, reset=true, attachments
+  activate AI
+  AI --> API : textResponse (structured profile JSON), metrics
+  deactivate AI
+  API -> API : Remove Markdown fences; save chat log via\nLlmChatLogService; deserialize CVParserResponse
+  API --> Service : CVParserResponse
+  deactivate API
+
+  Service -> Service : Build CandidateProfile with user/application\nMap skills, projects, experience, education,\ncertifications, achievements and target role/level
+  note right of Service
+    GPA normalization: 10-point score x 0.4;
+    4-point score unchanged; invalid value -> 0.0.
+  end note
+  Service -> Service : Prepare detached MultipartFile via FileUtil\nDelete temporary file
+  Service -> Profiles : createProfile(candidateProfile)
+  activate Profiles
+  Profiles -> ProfileRepo : save(candidateProfile)
+  activate ProfileRepo
+  ProfileRepo --> Profiles : Saved profile (insert or update)
+  deactivate ProfileRepo
+  Profiles --> Service : Saved profile
+  deactivate Profiles
+  Service ->> Listener : publishEvent(UserEventDto(user, file, "cv"))\nvia ApplicationEventPublisher / @Async
+end
+
+par Return parsed profile (does not wait for Cloudinary)
+  Service --> Controller : CandidateProfile (transaction completes)
+  deactivate Service
+  Controller --> UI : HTTP 200 + CandidateProfile
+  deactivate Controller
+  UI -> UI : Refresh account data
+  UI --> Candidate : Show upload success and close modal
+else CV is being stored in background
+  activate Listener
+  Listener -> Users : findById(user.id)
+  Users --> Listener : User or null
+  opt User still exists
+    opt Existing CV public ID is present
+      Listener -> Storage : deletePdf(user.cv_public_id)
+      Storage --> Listener : Deletion result
+    end
+    Listener -> Storage : uploadDocument(file)
+    Storage --> Listener : secure_url, public_id
+    Listener -> Listener : Set user.cvUrl and user.cv_public_id
+    Listener -> Users : save(user)
+    Users --> Listener : Updated user
+  end
+  deactivate Listener
+end
+
+note over UI, Storage
+  Background storage may finish before or after the HTTP response.
+  Its failure does not change an already returned HTTP 200;
+  an immediate account refresh may still show the previous CV URL.
+end note
+@enduml
