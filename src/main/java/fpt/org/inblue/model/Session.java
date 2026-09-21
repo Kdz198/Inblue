@@ -43,5 +43,4 @@ public class Session {
     private Integer duration;
     private Integer totalPrice;
     private String transactionCode;
-
 }
