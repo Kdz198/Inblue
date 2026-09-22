@@ -282,7 +282,7 @@ public class SubmissionEventHandle {
                     .emailSubmissionId(submission.getId())
                     .build();
             applicationDetail.setSubmissionData(submissionData);
-            applicationDetail.setAiScore(response.getScore());
+            applicationDetail.setAiScore(response.getStructuredAiFeedback().getOverallScore());
             applicationDetail.setAiFeedback(parseRawMetrics(response.getExtraMetrics()));
             applicationDetail.setStructuredAiFeedback(response.getStructuredAiFeedback());
             applicationDetailRepository.save(applicationDetail);
@@ -370,7 +370,7 @@ public class SubmissionEventHandle {
         ApplicationDetail.SubmissionData submissionData =
                 ApplicationDetail.SubmissionData.builder().fileUrl(cvUrl).build();
         applicationDetail.setSubmissionData(submissionData);
-        applicationDetail.setAiScore(response.getScore());
+        applicationDetail.setAiScore(response.getStructuredAiFeedback().getOverallScore());
         applicationDetail.setAiFeedback(parseRawMetrics(response.getExtraMetrics()));
         applicationDetail.setStructuredAiFeedback(response.getStructuredAiFeedback());
         return saveApplicationDetail(applicationDetail);
