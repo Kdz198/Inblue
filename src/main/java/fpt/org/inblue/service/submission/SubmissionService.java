@@ -108,9 +108,10 @@ public class SubmissionService {
         detail.setStructuredAiFeedback(response.getStructuredAiFeedback());
         detail.setStatus(ApplicationDetailStatus.AI_EVALUATED);
 
-        ApplicationDetail.RoundResult roundResult = response.getStructuredAiFeedback().getOverallScore() >= currentRound.getPassThreshold()
-                ? ApplicationDetail.RoundResult.PASSED
-                : ApplicationDetail.RoundResult.FAILED;
+        ApplicationDetail.RoundResult roundResult =
+                response.getStructuredAiFeedback().getOverallScore() >= currentRound.getPassThreshold()
+                        ? ApplicationDetail.RoundResult.PASSED
+                        : ApplicationDetail.RoundResult.FAILED;
         detail.setFinalResult(roundResult);
         //  applicationService.moveToNextRound(currentApplication);
         try {
