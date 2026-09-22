@@ -102,13 +102,13 @@ public class SubmissionService {
         submissionData.setCodeReviewSubmissions(request.getSubmissions());
         detail.setSubmissionData(submissionData);
 
-        detail.setAiScore(response.getScore());
-        detail.setFinalScore(response.getScore());
+        detail.setAiScore(response.getStructuredAiFeedback().getOverallScore());
+        detail.setFinalScore(response.getStructuredAiFeedback().getOverallScore());
         detail.setAiFeedback(SubmissionEventHandle.parseRawMetrics(response.getExtraMetrics()));
         detail.setStructuredAiFeedback(response.getStructuredAiFeedback());
         detail.setStatus(ApplicationDetailStatus.AI_EVALUATED);
 
-        ApplicationDetail.RoundResult roundResult = response.getScore() >= currentRound.getPassThreshold()
+        ApplicationDetail.RoundResult roundResult = response.getStructuredAiFeedback().getOverallScore() >= currentRound.getPassThreshold()
                 ? ApplicationDetail.RoundResult.PASSED
                 : ApplicationDetail.RoundResult.FAILED;
         detail.setFinalResult(roundResult);
