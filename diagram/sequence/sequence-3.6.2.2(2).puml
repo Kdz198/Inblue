@@ -1,0 +1,77 @@
+@startuml MentorAssessmentSubmission
+skinparam monochrome true
+skinparam shadowing false
+
+' Do not repeat participant boxes at the bottom of the diagram
+hide footbox
+
+<style>
+sequenceDiagram {
+  groupHeader {
+    FontStyle plain
+  }
+}
+</style>
+
+autonumber
+
+actor "Mentor" as Mentor
+participant ":MentorSessionReviewViewPage" as Client
+participant ":MentorReviewController" as ReviewCtrl
+participant ":MentorReviewServiceImpl" as ReviewSvc
+participant ":SessionRepository" as SessionRepo
+participant ":MentorReviewRepository" as ReviewRepo
+
+note over Mentor, ReviewSvc
+  Runs once the video call session is COMPLETED
+  (see 3.6.2.2(1) Join Video Call Room)
+end note
+
+' ===================== Mentor submits the assessment of the candidate =====================
+
+activate Client
+
+Mentor -> Client : POST /api/mentor-reviews\n(sessionId, mentorId, userId, rating, STAR notes,\nstrength, weakness, improvement)
+Client -> ReviewCtrl : POST /api/mentor-reviews\n(sessionId, mentorId, userId, rating, STAR notes,\nstrength, weakness, improvement)
+activate ReviewCtrl
+ReviewCtrl -> ReviewSvc : mentorReview(request)
+activate ReviewSvc
+
+ReviewSvc -> SessionRepo : findById(sessionId)
+activate SessionRepo
+SessionRepo --> ReviewSvc : Session
+deactivate SessionRepo
+
+break Session, mentor or candidate is not found
+    ReviewSvc --> ReviewCtrl : throws CustomException\n(404 NOT_FOUND, "Session | Mentor | User not found")
+    ReviewCtrl --> Client : error response (404)
+    Client --> Mentor : error response (404)
+end
+
+break Session is not completed yet
+    ReviewSvc --> ReviewCtrl : throws CustomException\n(400 BAD_REQUEST, "Cannot review mentor for a session\nthat is not completed")
+    ReviewCtrl --> Client : error response (400)
+    Client --> Mentor : error response (400)
+end
+
+ReviewSvc -> ReviewRepo : save(MentorReview(session, mentor, candidate,\nrating and STAR notes))
+activate ReviewRepo
+ReviewRepo --> ReviewSvc : MentorReview
+deactivate ReviewRepo
+
+ReviewSvc -> ReviewSvc : checkAndCompleteRound(sessionId)
+note right of ReviewSvc
+  The round is only closed once both the mentor review and the
+  candidate feedback exist (see 3.6.2.4 Post-Interview Mentor
+  STAR Evaluation & Round Completion Trigger)
+end note
+
+ReviewSvc --> ReviewCtrl : MentorReview
+deactivate ReviewSvc
+ReviewCtrl --> Client : 200 OK (assessment is saved)
+Client --> Mentor : 200 OK (assessment is saved)
+deactivate ReviewCtrl
+
+deactivate Client
+
+@enduml

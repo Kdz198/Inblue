@@ -1,0 +1,139 @@
+@startuml AutomatedPipelineStageProgression
+skinparam monochrome true
+skinparam shadowing false
+
+' Do not repeat participant boxes at the bottom of the diagram
+hide footbox
+
+<style>
+sequenceDiagram {
+  groupHeader {
+    FontStyle plain
+  }
+}
+</style>
+
+autonumber
+
+participant ":ApplicationDetailServiceImpl" as Caller
+participant ":ApplicationServiceImpl" as AppSvc
+participant ":JobDescriptionRepository" as JdRepo
+participant ":ApplicationDetailRepository" as DetailRepo
+participant ":ApplicationRepository" as AppRepo
+participant ":JourneySummaryServiceImpl" as SummarySvc
+
+note over Caller
+  moveToNextRound is triggered by whichever flow closes a round:
+  staff HR scoring (3.7.2.1), quiz and coding auto-grading (3.4.2),
+  or the mentor review completion check (3.6.2.4)
+end note
+
+Caller -> AppSvc : moveToNextRound(currentApplication)
+activate AppSvc
+
+AppSvc -> JdRepo : findById(application.jdId)
+activate JdRepo
+JdRepo --> AppSvc : JobDescription with its rounds
+deactivate JdRepo
+
+break Job description is not found
+    AppSvc --> Caller : return without changing the application
+end
+
+alt The application still has rounds left
+
+    ' ===================== Advance to the next round =====================
+
+    AppSvc -> DetailRepo : findAllByApplicationId(applicationId)
+    activate DetailRepo
+    DetailRepo --> AppSvc : List<ApplicationDetail>
+    deactivate DetailRepo
+
+    opt Any round of this application has failed
+        AppSvc -> AppSvc : application status = SOFT_FAILED
+    end
+
+    AppSvc -> AppSvc : current round order = current round order + 1
+    AppSvc -> AppRepo : save(application)
+    activate AppRepo
+    AppRepo --> AppSvc : Application
+    deactivate AppRepo
+
+    opt Next round is a Mentor Review or an AI Interview round
+        AppSvc -> DetailRepo : findByApplicationIdAndRoundId(applicationId, nextRound.id)
+        activate DetailRepo
+        DetailRepo --> AppSvc : Optional<ApplicationDetail>
+        deactivate DetailRepo
+
+        opt No application detail exists yet for that round
+            alt Next round is a Mentor Review round
+                AppSvc -> AppSvc : build ApplicationDetail with\nstatus = AWAITING_MENTOR and empty session info
+            else Next round is an AI Interview round
+                AppSvc -> AppSvc : build ApplicationDetail with status = PENDING,\nsession start time = now and\nend time = now + round time limit
+            end
+
+            AppSvc -> DetailRepo : save(nextDetail)
+            activate DetailRepo
+            DetailRepo --> AppSvc : ApplicationDetail
+            deactivate DetailRepo
+
+            opt Next round is an AI Interview round
+                AppSvc -> Caller : startAiInterview(nextDetail.id)
+                activate Caller
+                Caller --> AppSvc : AI interview session key
+                deactivate Caller
+
+                note right of AppSvc
+                  A failure here is logged only: the round stays open and the
+                  session is created again when the candidate checks in
+                  (see 3.5.2.2 Check-in at Physical Kiosk)
+                end note
+            end
+        end
+    end
+
+else The application has finished its last round
+
+    ' ===================== Close the application and compute the overall score =====================
+
+    AppSvc -> DetailRepo : findAllByApplicationId(applicationId)
+    activate DetailRepo
+    DetailRepo --> AppSvc : List<ApplicationDetail>
+    deactivate DetailRepo
+
+    loop For each round result of the application
+        AppSvc -> AppSvc : round score = final score, otherwise the AI score\n(scaled up when it is on a 10-point scale),\notherwise the HR score
+        AppSvc -> AppSvc : add the round score (capped to 0..100) to the earned total\nand add the round maximum score (default 100) to the maximum total
+    end
+
+    AppSvc -> AppSvc : overall score = earned total / maximum total,\nas a percentage capped to 0..100
+
+    alt At least one round has failed
+        AppSvc -> AppSvc : application status = FAILED
+    else All rounds have passed
+        AppSvc -> AppSvc : application status = PASSED
+    end
+
+    AppSvc -> AppRepo : save(application)
+    activate AppRepo
+    AppRepo --> AppSvc : Application
+    deactivate AppRepo
+
+    opt The application was not finished before and every round now has a result
+        AppSvc -> SummarySvc : generate(applicationId)
+        activate SummarySvc
+        SummarySvc --> AppSvc : recruitment journey summary is generated
+        deactivate SummarySvc
+
+        note right of SummarySvc
+          Builds the candidate competency report and journey summary
+          (see 3.9.2.1 Generate 6-Axis Competency Chart
+          & Journey Milestone Summary)
+        end note
+    end
+end
+
+AppSvc --> Caller : progression is done
+deactivate AppSvc
+
+@enduml

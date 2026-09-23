@@ -1,0 +1,172 @@
+@startuml JoinVideoCallRoom
+skinparam monochrome true
+skinparam shadowing false
+
+' Do not repeat participant boxes at the bottom of the diagram
+hide footbox
+
+<style>
+sequenceDiagram {
+  groupHeader {
+    FontStyle plain
+  }
+}
+</style>
+
+autonumber
+
+actor "Candidate" as Candidate
+actor "Mentor" as Mentor
+participant ":StudentSessionRoomPage" as StudentPage
+participant ":MentorSessionRoomPage" as MentorPage
+participant "Daily.co Video API" as DailyCo
+participant ":SessionController" as SessionCtrl
+participant ":SessionServiceImpl" as SessionSvc
+participant ":SessionRepository" as SessionRepo
+
+note right of DailyCo
+  Third-party video conferencing service
+  (not custom application code)
+end note
+
+' ===================== Both participants join the video room =====================
+
+par Candidate joins the room
+activate StudentPage
+activate MentorPage
+
+    Candidate -> StudentPage : open the scheduled session and join the call
+    StudentPage -> DailyCo : join the room (roomUrl of the session)
+    activate DailyCo
+    DailyCo --> StudentPage : joined-meeting event (local participant id)
+    deactivate DailyCo
+
+    StudentPage -> SessionCtrl : POST /api/sessions/join-session\n(sessionName = roomName, userId, participantId, mentor = false)
+    activate SessionCtrl
+    SessionCtrl -> SessionSvc : saveJoinRecord(request)
+    activate SessionSvc
+
+    SessionSvc -> SessionRepo : findByRoomName(sessionName)
+    activate SessionRepo
+    SessionRepo --> SessionSvc : Session
+    deactivate SessionRepo
+
+    break Meeting room is not found
+        SessionSvc --> SessionCtrl : throws CustomException\n(404 NOT_FOUND, "Meeting room not found")
+        SessionCtrl --> StudentPage : error response (404)
+        StudentPage --> Candidate : show error message
+    end
+
+    break Meeting room has not been approved yet
+        SessionSvc --> SessionCtrl : throws CustomException\n(409 CONFLICT, "Meeting room has not been approved")
+        SessionCtrl --> StudentPage : error response (409)
+        StudentPage --> Candidate : show error message
+    end
+
+    break Candidate is not the candidate of this session
+        SessionSvc --> SessionCtrl : throws CustomException\n(403 FORBIDDEN, "User ID does not match the session")
+        SessionCtrl --> StudentPage : error response (403)
+        StudentPage --> Candidate : show error message
+    end
+
+    SessionSvc -> SessionSvc : set candidate participant id,\nset session status = ONGOING and,\nif not set yet, the candidate start time
+    SessionSvc -> SessionRepo : save(session)
+    activate SessionRepo
+    SessionRepo --> SessionSvc : Session
+    deactivate SessionRepo
+
+    SessionSvc --> SessionCtrl : join is recorded
+    deactivate SessionSvc
+    SessionCtrl --> StudentPage : 200 OK
+    deactivate SessionCtrl
+    StudentPage --> Candidate : show the live video room
+else Mentor joins the room
+    Mentor -> MentorPage : open the scheduled session and join the call
+    MentorPage -> DailyCo : join the room (roomUrl of the session)
+    activate DailyCo
+    DailyCo --> MentorPage : joined-meeting event (local participant id)
+    deactivate DailyCo
+
+    MentorPage -> SessionCtrl : POST /api/sessions/join-session\n(sessionName = roomName, mentor profile id, participantId, mentor = true)
+    activate SessionCtrl
+    SessionCtrl -> SessionSvc : saveJoinRecord(request)
+    activate SessionSvc
+
+    SessionSvc -> SessionRepo : findByRoomName(sessionName)
+    activate SessionRepo
+    SessionRepo --> SessionSvc : Session
+    deactivate SessionRepo
+
+    break Mentor is not the mentor of this session
+        SessionSvc --> SessionCtrl : throws CustomException\n(403 FORBIDDEN, "Mentor ID does not match the session")
+        SessionCtrl --> MentorPage : error response (403)
+        MentorPage --> Mentor : show error message
+    end
+
+    SessionSvc -> SessionSvc : set mentor participant id and,\nif not set yet, the mentor start time
+    SessionSvc -> SessionRepo : save(session)
+    activate SessionRepo
+    SessionRepo --> SessionSvc : Session
+    deactivate SessionRepo
+
+    SessionSvc --> SessionCtrl : join is recorded
+    deactivate SessionSvc
+    SessionCtrl --> MentorPage : 200 OK
+    deactivate SessionCtrl
+    MentorPage --> Mentor : show the live video room
+end
+
+note over Candidate, DailyCo
+  The 1-on-1 interview is carried out inside the Daily.co room
+  (max 2 participants, screen share and cloud recording enabled)
+end note
+
+' ===================== Leaving the room is tracked through the webhook =====================
+
+loop For each participant who leaves the room
+    DailyCo -> SessionCtrl : POST /api/sessions/webhooks/dailyco\n(participant.left: room, session id)
+    activate SessionCtrl
+    SessionCtrl -> SessionCtrl : map the payload to DailyWebHookPayload
+    SessionCtrl -> SessionSvc : updateLeaveRecord(payload)
+    activate SessionSvc
+
+    SessionSvc -> SessionRepo : findByRoomName(roomName)
+    activate SessionRepo
+    SessionRepo --> SessionSvc : Session
+    deactivate SessionRepo
+
+    break Session of this room is not found
+        SessionSvc --> SessionCtrl : log the alert and stop
+        SessionCtrl --> DailyCo : 200 OK
+    end
+
+    alt Leaving participant is the candidate
+        SessionSvc -> SessionSvc : set candidate end time and\ncompute the candidate duration in seconds
+    else Leaving participant is the mentor
+        SessionSvc -> SessionSvc : set mentor end time and\ncompute the mentor duration in seconds
+    end
+
+    opt Both participants have left the room
+        SessionSvc -> SessionSvc : set session status = COMPLETED
+    end
+
+    SessionSvc -> SessionRepo : save(session)
+    activate SessionRepo
+    SessionRepo --> SessionSvc : Session
+    deactivate SessionRepo
+    SessionSvc --> SessionCtrl : leave is recorded
+    deactivate SessionSvc
+    SessionCtrl --> DailyCo : 200 OK
+    deactivate SessionCtrl
+end
+
+note right of SessionSvc
+  Once both participants have left, the session is COMPLETED and
+  the mentor can submit the assessment
+  (see 3.6.2.2(2) Mentor Assessment Submission)
+end note
+
+deactivate StudentPage
+deactivate MentorPage
+
+@enduml

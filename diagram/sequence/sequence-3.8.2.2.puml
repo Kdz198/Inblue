@@ -1,0 +1,241 @@
+@startuml AdminConfigureRecruitmentPipelineTemplates
+skinparam monochrome true
+skinparam shadowing false
+
+' Do not repeat participant boxes at the bottom of the diagram
+hide footbox
+
+<style>
+sequenceDiagram {
+  groupHeader {
+    FontStyle plain
+  }
+}
+</style>
+
+autonumber
+
+actor "Admin" as Admin
+participant ":JobDescriptionManagementPage" as Client
+participant ":RoundController" as RoundCtrl
+participant ":RoundServiceImpl" as RoundSvc
+participant ":JobDescriptionRepository" as JdRepo
+participant ":CompanyRepository" as CompanyRepo
+participant ":ApiClient" as ApiClient
+participant "AnythingLLM (Python AI)" as LLM
+participant ":CodingProblemsRepository" as CodingRepo
+participant ":CodeReviewProblemsRepository" as CodeReviewRepo
+
+note right of LLM
+  Third-party LLM workspace used to draft a pipeline
+  proposal; the admin still confirms it before saving
+end note
+
+' ===================== Ask the AI for a suggested pipeline =====================
+
+opt Admin asks the AI to draft the pipeline first
+activate Client
+
+    Admin -> Client : POST /api/rounds/jd/{jdId}/generate-round-plan
+    Client -> RoundCtrl : POST /api/rounds/jd/{jdId}/generate-round-plan
+    activate RoundCtrl
+    RoundCtrl -> RoundSvc : generateRoundPlan(jdId)
+    activate RoundSvc
+
+    RoundSvc -> JdRepo : findById(jdId)
+    activate JdRepo
+    JdRepo --> RoundSvc : Optional<JobDescription>
+    deactivate JdRepo
+
+    break Job description is not found or is deleted
+        RoundSvc --> RoundCtrl : throws CustomException\n(404 NOT_FOUND, "Job Description does not exist")
+        RoundCtrl --> Client : error response (404)
+        Client --> Admin : error response (404)
+    end
+
+    RoundSvc -> CompanyRepo : findByJobDescriptionsId(jdId)
+    activate CompanyRepo
+    CompanyRepo --> RoundSvc : Optional<Company>
+    deactivate CompanyRepo
+
+    RoundSvc -> ApiClient : sendChatToAnythingLlm(PIPELINE_GEN,\ncompany and job description context)
+    activate ApiClient
+    ApiClient -> LLM : POST chat (pipeline generation prompt)
+    activate LLM
+    LLM --> ApiClient : suggested rounds
+    deactivate LLM
+    ApiClient --> RoundSvc : RoundPlanGenerationResponse
+    deactivate ApiClient
+
+    break AI does not return a valid pipeline
+        RoundSvc --> RoundCtrl : throws CustomException\n(502 BAD_GATEWAY, "AnythingLLM did not return a valid pipeline")
+        RoundCtrl --> Client : error response (502)
+        Client --> Admin : error response (502)
+    end
+
+    RoundSvc --> RoundCtrl : RoundPlanGenerationResponse
+    deactivate RoundSvc
+    RoundCtrl --> Client : 200 OK (suggested rounds shown for editing)
+    Client --> Admin : 200 OK (suggested rounds shown for editing)
+    deactivate RoundCtrl
+end
+
+alt Admin sets up the pipeline of a job description for the first time
+
+    ' ===================== Create the rounds of the pipeline =====================
+
+    Admin -> Client : PUT /api/rounds/jd/{jdId}\n(list of rounds: name, order, type,\npass threshold, reviewer, configuration)
+    Client -> RoundCtrl : PUT /api/rounds/jd/{jdId}\n(list of rounds: name, order, type,\npass threshold, reviewer, configuration)
+    activate RoundCtrl
+    RoundCtrl -> RoundSvc : setUpRoundForJd(jdId, request)
+    activate RoundSvc
+
+    RoundSvc -> JdRepo : findById(jdId)
+    activate JdRepo
+    JdRepo --> RoundSvc : Optional<JobDescription>
+    deactivate JdRepo
+
+    break Job description is not found
+        RoundSvc --> RoundCtrl : throws CustomException\n(404 NOT_FOUND, "Job Description does not exist")
+        RoundCtrl --> Client : error response (404)
+        Client --> Admin : error response (404)
+    end
+
+    loop For each round of the pipeline
+        RoundSvc -> RoundSvc : build Round (name, order, type,\npass threshold, reviewer id) and its configuration\n(instruction, submission format, time limit,\nmaximum score, AI prompt, evaluation plan)
+
+        opt Round carries quiz questions
+            RoundSvc -> RoundSvc : copy every question\n(text, options, correct answer, points)\ninto the round configuration
+        end
+
+        opt Round carries coding problems
+            loop For each coding problem id
+                RoundSvc -> CodingRepo : findById(codingProblemId)
+                activate CodingRepo
+                CodingRepo --> RoundSvc : CodingProblem
+                deactivate CodingRepo
+
+                break Coding problem is not found
+                    RoundSvc --> RoundCtrl : throws CustomException\n(404 NOT_FOUND, "Coding problem does not exist")
+                    RoundCtrl --> Client : error response (404)
+                    Client --> Admin : error response (404)
+                end
+
+                RoundSvc -> RoundSvc : store a snapshot of the problem\n(title, statement, examples, limits, code stubs)
+            end
+        end
+
+        opt Round carries code review problems
+            loop For each code review problem id
+                RoundSvc -> CodeReviewRepo : findById(codeReviewId)
+                activate CodeReviewRepo
+                CodeReviewRepo --> RoundSvc : CodeReviewProblem
+                deactivate CodeReviewRepo
+
+                break Code review problem is not found
+                    RoundSvc --> RoundCtrl : throws CustomException\n(404 NOT_FOUND, "Code review problem does not exist")
+                    RoundCtrl --> Client : error response (404)
+                    Client --> Admin : error response (404)
+                end
+
+                RoundSvc -> RoundSvc : store a snapshot of the problem\n(title, language, files, expected issues)
+            end
+        end
+    end
+
+    note right of RoundSvc
+      Problems are copied into the round as snapshots, so editing
+      the source problem bank later does not change a running pipeline
+    end note
+
+    RoundSvc -> JdRepo : save(jobDescription with its rounds)
+    activate JdRepo
+    JdRepo --> RoundSvc : JobDescription
+    deactivate JdRepo
+
+    RoundSvc --> RoundCtrl : List<Round>
+    deactivate RoundSvc
+    RoundCtrl --> Client : 200 OK (pipeline is created)
+    Client --> Admin : 200 OK (pipeline is created)
+    deactivate RoundCtrl
+
+else Admin edits the pipeline of a job description
+
+    ' ===================== Update, add and remove rounds =====================
+
+    Admin -> Client : PUT /api/rounds/jd/{jdId}/update\n(list of rounds, existing ones carrying their id)
+    Client -> RoundCtrl : PUT /api/rounds/jd/{jdId}/update\n(list of rounds, existing ones carrying their id)
+    activate RoundCtrl
+    RoundCtrl -> RoundSvc : updateRoundForJd(jdId, request)
+    activate RoundSvc
+
+    RoundSvc -> JdRepo : findById(jdId)
+    activate JdRepo
+    JdRepo --> RoundSvc : Optional<JobDescription>
+    deactivate JdRepo
+
+    break Job description is not found
+        RoundSvc --> RoundCtrl : throws CustomException\n(404 NOT_FOUND, "Job Description does not exist")
+        RoundCtrl --> Client : error response (404)
+        Client --> Admin : error response (404)
+    end
+
+    RoundSvc -> RoundSvc : index the rounds the job description\nalready has, by id
+
+    loop For each round in the request
+        alt Round carries an existing id
+            break Round id does not belong to this job description
+                RoundSvc --> RoundCtrl : throws CustomException\n(400 BAD_REQUEST, "Round does not exist")
+                RoundCtrl --> Client : error response (400)
+                Client --> Admin : error response (400)
+            end
+
+            RoundSvc -> RoundSvc : reuse the existing round\nand mark its id as processed
+        else Round carries no id
+            RoundSvc -> RoundSvc : create a new round and attach it\nto the job description
+        end
+
+        RoundSvc -> RoundSvc : overwrite the round fields and rebuild\nits configuration from the request
+
+        opt Round carries coding or code review problems
+            RoundSvc -> CodingRepo : findById(codingProblemId)
+            activate CodingRepo
+            CodingRepo --> RoundSvc : CodingProblem
+            deactivate CodingRepo
+            RoundSvc -> CodeReviewRepo : findById(codeReviewId)
+            activate CodeReviewRepo
+            CodeReviewRepo --> RoundSvc : CodeReviewProblem
+            deactivate CodeReviewRepo
+
+            break Referenced problem is not found
+                RoundSvc --> RoundCtrl : throws CustomException\n(400 BAD_REQUEST, "Problem does not exist")
+                RoundCtrl --> Client : error response (400)
+                Client --> Admin : error response (400)
+            end
+
+            RoundSvc -> RoundSvc : rebuild the problem snapshots\nof the round
+        end
+    end
+
+    RoundSvc -> RoundSvc : drop every round of the job description\nthat is missing from the request
+
+    RoundSvc -> JdRepo : save(jobDescription)
+    activate JdRepo
+    JdRepo --> RoundSvc : JobDescription
+    deactivate JdRepo
+
+    RoundSvc --> RoundCtrl : List<Round>
+    deactivate RoundSvc
+    RoundCtrl --> Client : 200 OK (pipeline is updated)
+    Client --> Admin : 200 OK (pipeline is updated)
+    deactivate RoundCtrl
+end
+
+note over Admin, CodeReviewRepo
+  Candidates applying to this job description then go through these
+  rounds in order (see 3.7.2.2 Automated Pipeline Stage Progression)
+end note
+
+deactivate Client
+
+@enduml

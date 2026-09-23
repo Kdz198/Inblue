@@ -14,7 +14,10 @@ sequenceDiagram {
 }
 </style>
 
+autonumber
+
 actor "Candidate" as Candidate
+participant ":AIInterviewSessionPage" as Client
 participant ":SttWebSocketController" as SttController
 participant ":InterviewProcessController" as Controller
 participant ":SpeechServiceImpl" as Service
@@ -33,7 +36,10 @@ end note
 
 ' ===================== Open the live transcription channel =====================
 
-Candidate -> SttController : WebSocket connect\n/api/v1/interview/transcribe
+activate Client
+
+Candidate -> Client : WebSocket connect\n/api/v1/interview/transcribe
+Client -> SttController : WebSocket connect\n/api/v1/interview/transcribe
 activate SttController
 
 SttController -> Service : connectStt(onMessage, onError)
@@ -57,7 +63,8 @@ SttController -> SttController : store the upstream WebSocket\nby client session
 ' ===================== Stream microphone audio and receive transcripts =====================
 
 loop Until the candidate stops speaking
-    Candidate -> SttController : send binary PCM audio chunk
+    Candidate -> Client : send binary PCM audio chunk
+    Client -> SttController : send binary PCM audio chunk
 
     opt Upstream connection exists for this session
         SttController -> SttService : sendBinary(audio chunk)
@@ -68,19 +75,22 @@ loop Until the candidate stops speaking
     ApiClient -> SttController : onMessage(transcript)
 
     alt Client session is still open
-        SttController -> Candidate : send transcript text message
+        SttController -> Client : send transcript text message
+        Client -> Candidate : send transcript text message
     else Client session is closed
         SttController -> SttController : drop the transcript
     end
     deactivate ApiClient
 end
 
-Candidate -> SttController : send text message audio_end
+Candidate -> Client : send text message audio_end
+Client -> SttController : send text message audio_end
 SttController -> SttService : sendText(audio_end message)
 
 ' ===================== Close the channel =====================
 
-Candidate -> SttController : close WebSocket
+Candidate -> Client : close WebSocket
+Client -> SttController : close WebSocket
 SttController -> SttController : remove the upstream WebSocket\nfor the client session
 SttController -> SttService : sendClose(normal closure, "Client disconnected")
 deactivate SttService
@@ -88,7 +98,8 @@ deactivate SttController
 
 ' ===================== Polish the final transcript =====================
 
-Candidate -> Controller : POST /api/v1/interview/enhance-transcript\n(question, answer)
+Candidate -> Client : POST /api/v1/interview/enhance-transcript\n(question, answer)
+Client -> Controller : POST /api/v1/interview/enhance-transcript\n(question, answer)
 activate Controller
 
 Controller -> Service : enhancedTranscript(request)
@@ -106,7 +117,10 @@ deactivate ApiClient
 Service --> Controller : enhanced transcript
 deactivate Service
 
-Controller --> Candidate : 200 OK\nbody = enhanced transcript
+Controller --> Client : 200 OK\nbody = enhanced transcript
+Client --> Candidate : 200 OK\nbody = enhanced transcript
 deactivate Controller
+
+deactivate Client
 
 @enduml

@@ -13,7 +13,10 @@ sequenceDiagram {
 }
 </style>
 
+autonumber
+
 actor "Candidate" as Candidate
+participant ":ApplicationWorkspacePage" as Client
 participant ":ApplicationDetailController" as Controller
 participant ":SubmissionService" as SubmissionSvc
 participant ":RoundProcessorFactory" as Factory
@@ -26,45 +29,73 @@ participant "AnythingLLM (cv-processor)" as AnythingLLM
 participant ":CloudinaryService" as Cloudinary
 participant ":ApplicationDetailRepository" as DetailRepo
 
-Candidate -> Controller ++ : POST /api/application-details/submit (SubmitRequest: cvFile)
-Controller -> SubmissionSvc ++ : submitRound(submitRequest)
+activate Client
 
-SubmissionSvc -> Factory ++ : getProcessor(CV_SCREENING)
-Factory --> SubmissionSvc -- : cvRoundProcessor
+Candidate -> Client : POST /api/application-details/submit (SubmitRequest: cvFile)
+Client -> Controller : POST /api/application-details/submit (SubmitRequest: cvFile)
+activate Controller
+Controller -> SubmissionSvc : submitRound(submitRequest)
+activate SubmissionSvc
 
-SubmissionSvc -> CVProcessor ++ : process(processDto)
+SubmissionSvc -> Factory : getProcessor(CV_SCREENING)
+activate Factory
+Factory --> SubmissionSvc : cvRoundProcessor
+deactivate Factory
 
-CVProcessor -> EventHandle ++ : processCvSubmission(processDto)
+SubmissionSvc -> CVProcessor : process(processDto)
+activate CVProcessor
 
-EventHandle -> JdRepo ++ : findById(jdId)
-JdRepo --> EventHandle -- : jobDescription
+CVProcessor -> EventHandle : processCvSubmission(processDto)
+activate EventHandle
+
+EventHandle -> JdRepo : findById(jdId)
+activate JdRepo
+JdRepo --> EventHandle : jobDescription
+deactivate JdRepo
 
 EventHandle -> EventHandle : build CvEvaluationRequest(cvFile, JD title/description/requirements/level, evaluationPlan)
 
 par parse & save candidate profile
-    EventHandle -> UserSvc ++ : upCv(userId, applicationId, cvFile)
-    UserSvc --> EventHandle -- : CandidateProfile
+    EventHandle -> UserSvc : upCv(userId, applicationId, cvFile)
+    activate UserSvc
+    UserSvc --> EventHandle : CandidateProfile
+    deactivate UserSvc
 else calculate ATS match score
-    EventHandle -> ApiClient ++ : sendChatToAnythingLlm(CV_ANALYSIS, cvEvaluationRequest, cvFile)
-    ApiClient -> AnythingLLM ++ : POST /workspace/cv-processor/chat
-    AnythingLLM --> ApiClient -- : textResponse (score, extraMetrics)
-    ApiClient --> EventHandle -- : CvEvaluationResponse
+    EventHandle -> ApiClient : sendChatToAnythingLlm(CV_ANALYSIS, cvEvaluationRequest, cvFile)
+    activate ApiClient
+    ApiClient -> AnythingLLM : POST /workspace/cv-processor/chat
+    activate AnythingLLM
+    AnythingLLM --> ApiClient : textResponse (score, extraMetrics)
+    deactivate AnythingLLM
+    ApiClient --> EventHandle : CvEvaluationResponse
+    deactivate ApiClient
 end
 
-EventHandle -> Cloudinary ++ : uploadDocument(cvFile)
-Cloudinary --> EventHandle -- : cvUrl
+EventHandle -> Cloudinary : uploadDocument(cvFile)
+activate Cloudinary
+Cloudinary --> EventHandle : cvUrl
+deactivate Cloudinary
 
 EventHandle -> EventHandle : build ApplicationDetail(aiScore, aiFeedback, structuredAiFeedback, fileUrl)
 
-EventHandle -> DetailRepo ++ : saveAndFlush(applicationDetail)
-DetailRepo --> EventHandle -- : savedDetail
+EventHandle -> DetailRepo : saveAndFlush(applicationDetail)
+activate DetailRepo
+DetailRepo --> EventHandle : savedDetail
+deactivate DetailRepo
 
-EventHandle --> CVProcessor -- : return ApplicationDetail
+EventHandle --> CVProcessor : return ApplicationDetail
+deactivate EventHandle
 
-CVProcessor --> SubmissionSvc -- : SubmissionResult.completed(detail)
+CVProcessor --> SubmissionSvc : SubmissionResult.completed(detail)
+deactivate CVProcessor
 
-SubmissionSvc --> Controller -- : SubmissionResult
+SubmissionSvc --> Controller : SubmissionResult
+deactivate SubmissionSvc
 
-Controller --> Candidate -- : 200 OK (aiScore, aiFeedback)
+Controller --> Client : 200 OK (aiScore, aiFeedback)
+Client --> Candidate : 200 OK (aiScore, aiFeedback)
+deactivate Controller
+
+deactivate Client
 
 @enduml

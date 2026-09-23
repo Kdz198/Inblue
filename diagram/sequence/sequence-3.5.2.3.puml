@@ -1,0 +1,208 @@
+@startuml KioskSessionBooking_SlotSelection
+skinparam monochrome true
+skinparam shadowing false
+
+' Do not repeat participant boxes at the bottom of the diagram
+hide footbox
+
+<style>
+sequenceDiagram {
+  groupHeader {
+    FontStyle plain
+  }
+}
+</style>
+
+autonumber
+
+actor "Candidate" as Candidate
+participant ":KioskListPage" as ListPage
+participant ":KioskSlotsPage" as SlotsPage
+participant ":KioskController" as KioskCtrl
+participant ":KioskServiceImpl" as KioskSvc
+participant ":KioskRepository" as KioskRepo
+participant ":KioskScheduleRepository" as ScheduleRepo
+participant ":KioskBookingController" as BookingCtrl
+participant ":KioskBookingServiceImpl" as BookingSvc
+participant ":KioskBookingRepository" as BookingRepo
+participant ":ApplicationDetailRepository" as DetailRepo
+participant ":RoundRepository" as RoundRepo
+participant ":UserRepository" as UserRepo
+participant ":NotificationService" as NotifSvc
+
+' ===================== Browse active kiosk stations =====================
+
+activate ListPage
+activate SlotsPage
+
+Candidate -> ListPage : open the kiosk station list
+ListPage -> KioskCtrl : GET /api/kiosks
+activate KioskCtrl
+KioskCtrl -> KioskSvc : getAllKiosk()
+activate KioskSvc
+KioskSvc -> KioskRepo : findAll()
+activate KioskRepo
+KioskRepo --> KioskSvc : List<Kiosk>
+deactivate KioskRepo
+KioskSvc --> KioskCtrl : List<Kiosk>
+deactivate KioskSvc
+KioskCtrl --> ListPage : 200 OK (List<Kiosk>)
+deactivate KioskCtrl
+ListPage --> Candidate : show kiosk stations (name, location, status)
+
+Candidate -> ListPage : select a kiosk station
+ListPage -> SlotsPage : open slot calendar of the selected kiosk
+
+' ===================== Load available slots for the selected week =====================
+
+loop For each of the 7 days of the displayed week
+    SlotsPage -> KioskCtrl : GET /api/kiosks/{kioskId}/slots?date={date}
+    activate KioskCtrl
+    KioskCtrl -> KioskSvc : getAvailableSlots(kioskId, date)
+    activate KioskSvc
+
+    KioskSvc -> KioskRepo : existsById(kioskId)
+    activate KioskRepo
+    KioskRepo --> KioskSvc : boolean
+    deactivate KioskRepo
+
+    break Kiosk station is not found
+        KioskSvc --> KioskCtrl : throws CustomException\n(404 NOT_FOUND, "Kiosk not found with id")
+        KioskCtrl --> SlotsPage : error response (404)
+        SlotsPage --> Candidate : show error message
+    end
+
+    KioskSvc -> ScheduleRepo : findAllByKioskIdAndDayOfWeekAndIsActiveTrue(kioskId, dayOfWeek)
+    activate ScheduleRepo
+    ScheduleRepo --> KioskSvc : List<KioskSchedule>
+    deactivate ScheduleRepo
+
+    alt No active schedule is configured for that day of week
+        KioskSvc --> KioskCtrl : empty List<SlotDto>
+    else An active schedule is configured for that day of week
+        KioskSvc -> BookingRepo : findActiveBookingsByKioskAndDateRange\n(kioskId, start of day, end of day, CANCELLED)
+        activate BookingRepo
+        BookingRepo --> KioskSvc : List<KioskBooking>
+        deactivate BookingRepo
+
+        loop From opening time while the slot still ends before closing time
+            KioskSvc -> KioskSvc : build slot (start, start + slot duration)\nand mark it unavailable if it overlaps an active booking
+            KioskSvc -> KioskSvc : move to the next slot\n(slot duration + 15-minute break)
+        end
+
+        KioskSvc --> KioskCtrl : List<SlotDto>(startTime, endTime, available)
+        deactivate KioskSvc
+    end
+
+    KioskCtrl --> SlotsPage : 200 OK (List<SlotDto>)
+    deactivate KioskCtrl
+end
+
+SlotsPage --> Candidate : show the week calendar with free and booked slots
+
+' ===================== Pick a slot and create the booking =====================
+
+Candidate -> SlotsPage : select an AI Interview round,\npick a free slot and confirm
+
+break Selected slot is in the past
+    SlotsPage --> Candidate : show error "this slot has already passed"
+end
+
+SlotsPage -> BookingCtrl : POST /api/kiosk-bookings/pick-slot\n(applicationDetailId, kioskId, scheduledStart, scheduledEnd)
+activate BookingCtrl
+BookingCtrl -> BookingCtrl : read current user from SecurityContext
+
+break Current user is not authenticated
+    BookingCtrl --> SlotsPage : throws CustomException\n(401 UNAUTHORIZED, "Unauthorized")
+    SlotsPage --> Candidate : show error message
+end
+
+BookingCtrl -> BookingSvc : pickSlot(dto, userId)
+activate BookingSvc
+
+BookingSvc -> DetailRepo : findById(applicationDetailId)
+activate DetailRepo
+DetailRepo --> BookingSvc : Optional<ApplicationDetail>
+deactivate DetailRepo
+
+break Application detail is not found
+    BookingSvc --> BookingCtrl : throws CustomException\n(404 NOT_FOUND, "ApplicationDetail not found")
+    BookingCtrl --> SlotsPage : error response (404)
+    SlotsPage --> Candidate : show error message
+end
+
+BookingSvc -> KioskRepo : existsById(kioskId)
+activate KioskRepo
+KioskRepo --> BookingSvc : boolean
+deactivate KioskRepo
+
+break Kiosk station is not found
+    BookingSvc --> BookingCtrl : throws CustomException\n(404 NOT_FOUND, "Kiosk not found")
+    BookingCtrl --> SlotsPage : error response (404)
+    SlotsPage --> Candidate : show error message
+end
+
+BookingSvc -> BookingRepo : countOverlappingBookingsForKiosk\n(kioskId, scheduledStart, scheduledEnd, CANCELLED)
+activate BookingRepo
+BookingRepo --> BookingSvc : number of overlapping bookings
+deactivate BookingRepo
+
+break Selected slot is already booked
+    BookingSvc --> BookingCtrl : throws CustomException\n(409 CONFLICT, "Selected slot is already booked")
+    BookingCtrl --> SlotsPage : error response (409)
+    SlotsPage --> Candidate : show error message
+end
+
+BookingSvc -> RoundRepo : findById(appDetail.roundId)
+activate RoundRepo
+RoundRepo --> BookingSvc : Optional<Round>
+deactivate RoundRepo
+
+break Round is not found or is not an AI Interview round
+    BookingSvc --> BookingCtrl : throws CustomException\n(404 NOT_FOUND, "Round not found" /\n400 BAD_REQUEST, "Kiosk is only available for AI Interview rounds")
+    BookingCtrl --> SlotsPage : error response (404 / 400)
+    SlotsPage --> Candidate : show error message
+end
+
+BookingSvc -> BookingSvc : generate a random 6-digit PIN\nas the booking session key
+
+BookingSvc -> BookingRepo : save(KioskBooking(status = ROOM_CREATED,\nsessionKey = PIN, scheduled start and end))
+activate BookingRepo
+BookingRepo --> BookingSvc : KioskBooking
+deactivate BookingRepo
+
+BookingSvc -> BookingSvc : set application detail status = SLOT_PICKED
+BookingSvc -> DetailRepo : save(appDetail)
+activate DetailRepo
+DetailRepo --> BookingSvc : ApplicationDetail
+deactivate DetailRepo
+
+' ===================== Notify the candidate with the PIN =====================
+
+BookingSvc -> UserRepo : findById(userId)
+activate UserRepo
+UserRepo --> BookingSvc : Optional<User>
+deactivate UserRepo
+
+opt Candidate account is found
+    BookingSvc -> NotifSvc : createNotification(Notification\ncontaining kiosk, scheduled time and the 6-digit PIN)
+    activate NotifSvc
+    NotifSvc --> BookingSvc : Notification
+    deactivate NotifSvc
+end
+
+BookingSvc --> BookingCtrl : KioskBooking
+deactivate BookingSvc
+BookingCtrl --> SlotsPage : 200 OK (KioskBooking)
+deactivate BookingCtrl
+SlotsPage --> Candidate : open the booking success page\nand show the notification containing the PIN
+
+note over Candidate, NotifSvc
+  At the scheduled time the candidate enters this 6-digit PIN
+  at the physical kiosk (see 3.5.2.2 Check-in at Physical Kiosk)
+end note
+
+deactivate ListPage
+deactivate SlotsPage
+
+@enduml

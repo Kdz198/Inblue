@@ -23,7 +23,10 @@ sequenceDiagram {
 }
 </style>
 
+autonumber
+
 actor "Candidate" as Candidate
+participant ":ApplicationWorkspacePage" as Client
 participant ":ApplicationDetailController" as Controller
 participant ":SubmissionService" as SubService
 participant ":ApplicationServiceImpl" as AppService
@@ -34,7 +37,10 @@ participant ":RoundProcessorFactory" as Factory
 participant ":QuizRoundProcessor" as QuizProcessor
 participant ":ApplicationDetailRepository" as DetailRepo
 
-Candidate -> Controller : POST /api/application-details/submit\n(applicationId, quizAnswers)
+activate Client
+
+Candidate -> Client : POST /api/application-details/submit\n(applicationId, quizAnswers)
+Client -> Controller : POST /api/application-details/submit\n(applicationId, quizAnswers)
 activate Controller
 Controller -> SubService : submitRound(submitRequest)
 activate SubService
@@ -50,7 +56,8 @@ AppRepo --> AppService : Optional<Application>
 break Application is not found
     AppService --> SubService : throws CustomException\n(404 NOT_FOUND, "Application not found")
     SubService --> Controller : propagate exception
-    Controller --> Candidate : error response (404)
+    Controller --> Client : error response (404)
+    Client --> Candidate : error response (404)
 end
 
 AppService --> SubService : currentApplication
@@ -66,7 +73,8 @@ JdRepo --> JdService : Optional<JobDescription>
 break Job description is not found
     JdService --> SubService : throws CustomException\n(404 NOT_FOUND, "Job description not found with ID: {jdId}")
     SubService --> Controller : propagate exception
-    Controller --> Candidate : error response (404)
+    Controller --> Client : error response (404)
+    Client --> Candidate : error response (404)
 end
 
 JdService -> JdService : find the round whose roundOrder\nmatches currentRoundOrder
@@ -74,7 +82,8 @@ JdService -> JdService : find the round whose roundOrder\nmatches currentRoundOr
 break Round is not found
     JdService --> SubService : throws CustomException\n(404 NOT_FOUND, "Interview round not found with order: {order}")
     SubService --> Controller : propagate exception
-    Controller --> Candidate : error response (404)
+    Controller --> Client : error response (404)
+    Client --> Candidate : error response (404)
 end
 
 JdService --> SubService : currentRound
@@ -88,7 +97,8 @@ activate Factory
 break Round type is not supported
     Factory --> SubService : throws IllegalArgumentException\n("Unsupported round type")
     SubService --> Controller : propagate exception
-    Controller --> Candidate : error response (500)
+    Controller --> Client : error response (500)
+    Client --> Candidate : error response (500)
 end
 
 Factory --> SubService : QuizRoundProcessor
@@ -183,7 +193,10 @@ QuizProcessor --> SubService : SubmissionResult (COMPLETED)
 deactivate QuizProcessor
 SubService --> Controller : SubmissionResult
 deactivate SubService
-Controller --> Candidate : 200 OK\nbody = SubmissionResult
+Controller --> Client : 200 OK\nbody = SubmissionResult
+Client --> Candidate : 200 OK\nbody = SubmissionResult
 deactivate Controller
+
+deactivate Client
 
 @enduml

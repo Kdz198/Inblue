@@ -1,0 +1,254 @@
+@startuml BookMentorInterviewSlot_DailyCoRoomCreation
+skinparam monochrome true
+skinparam shadowing false
+
+' Do not repeat participant boxes at the bottom of the diagram
+hide footbox
+
+<style>
+sequenceDiagram {
+  groupHeader {
+    FontStyle plain
+  }
+}
+</style>
+
+autonumber
+
+actor "Candidate" as Candidate
+actor "Mentor" as Mentor
+participant ":ApplicationWorkspacePage" as CandidateClient
+participant ":MentorSessionsPage" as MentorClient
+participant ":SessionController" as SessionCtrl
+participant ":SessionServiceImpl" as SessionSvc
+participant ":ApplicationDetailRepository" as DetailRepo
+participant ":ApplicationRepository" as AppRepo
+participant ":SessionRepository" as SessionRepo
+participant ":ApplicationDetailController" as DetailCtrl
+participant ":ApplicationDetailServiceImpl" as DetailSvc
+participant ":JwtUtils" as Jwt
+participant ":MentorRepository" as MentorRepo
+participant "Daily.co Video API" as DailyCo
+
+note right of DailyCo
+  Third-party video conferencing service
+  (not custom application code)
+end note
+
+' ===================== Candidate proposes an interview slot =====================
+
+activate CandidateClient
+activate MentorClient
+
+Candidate -> CandidateClient : POST /api/sessions/create-for-round\n(applicationDetailId, joinTime, duration, offline)
+CandidateClient -> SessionCtrl : POST /api/sessions/create-for-round\n(applicationDetailId, joinTime, duration, offline)
+activate SessionCtrl
+SessionCtrl -> SessionSvc : createSessionForRound(request)
+activate SessionSvc
+
+SessionSvc -> DetailRepo : findById(applicationDetailId)
+activate DetailRepo
+DetailRepo --> SessionSvc : Optional<ApplicationDetail>
+deactivate DetailRepo
+
+break Application detail is not found
+    SessionSvc --> SessionCtrl : throws CustomException\n(404 NOT_FOUND, "Application detail not found")
+    SessionCtrl --> CandidateClient : error response (404)
+    CandidateClient --> Candidate : error response (404)
+end
+
+break Mentor has not been assigned to this round
+    SessionSvc --> SessionCtrl : throws CustomException\n(400 BAD_REQUEST, "Mentor has not been assigned to this round")
+    SessionCtrl --> CandidateClient : error response (400)
+    CandidateClient --> Candidate : error response (400)
+end
+
+SessionSvc -> AppRepo : findById(appDetail.applicationId)
+activate AppRepo
+AppRepo --> SessionSvc : Optional<Application>
+deactivate AppRepo
+
+break Application is not found or join time is missing
+    SessionSvc --> SessionCtrl : throws CustomException\n(404 NOT_FOUND, "Application not found" /\n400 BAD_REQUEST, "Join time is required")
+    SessionCtrl --> CandidateClient : error response (404 / 400)
+    CandidateClient --> Candidate : error response (404 / 400)
+end
+
+alt Candidate chooses an offline meeting
+    break Round is not in PENDING status
+        SessionSvc --> SessionCtrl : throws CustomException\n(400 BAD_REQUEST, "Application detail status is not PENDING")
+        SessionCtrl --> CandidateClient : error response (400)
+        CandidateClient --> Candidate : error response (400)
+    end
+
+    SessionSvc -> SessionRepo : save(Session(roomUrl = "OFFLINE",\nstatus = COMPLETED, joinTime, duration))
+    activate SessionRepo
+    SessionRepo --> SessionSvc : Session
+    deactivate SessionRepo
+
+    SessionSvc -> SessionSvc : set session info (meeting type = OFFLINE,\nsession id) and clear any pending schedule
+    SessionSvc -> DetailRepo : save(appDetail)
+    activate DetailRepo
+    DetailRepo --> SessionSvc : ApplicationDetail
+    deactivate DetailRepo
+
+    SessionSvc --> SessionCtrl : SessionDetailResponse (offline session)
+    SessionCtrl --> CandidateClient : 200 OK (offline session is confirmed,\nno video room is created)
+    CandidateClient --> Candidate : 200 OK (offline session is confirmed,\nno video room is created)
+else Candidate chooses an online meeting
+    break Round is neither PENDING nor awaiting mentor schedule approval
+        SessionSvc --> SessionCtrl : throws CustomException\n(400 BAD_REQUEST, "Application detail status is not PENDING")
+        SessionCtrl --> CandidateClient : error response (400)
+        CandidateClient --> Candidate : error response (400)
+    end
+
+    break A meeting room has already been created for this round
+        SessionSvc --> SessionCtrl : throws CustomException\n(400 BAD_REQUEST, "This interview round already has a meeting room")
+        SessionCtrl --> CandidateClient : error response (400)
+        CandidateClient --> Candidate : error response (400)
+    end
+
+    SessionSvc -> SessionSvc : set session info\n(meeting type = ONLINE, pending join time,\npending duration; schedule history is kept)
+    SessionSvc -> DetailRepo : save(appDetail with status =\nAWAITING_MENTOR_SCHEDULE_APPROVAL)
+    activate DetailRepo
+    DetailRepo --> SessionSvc : ApplicationDetail
+    deactivate DetailRepo
+
+    note right of SessionSvc
+      No Daily.co room is created yet, so that no unused room
+      is left behind if the mentor rejects the proposed slot
+    end note
+
+    SessionSvc --> SessionCtrl : SessionDetailResponse\n(proposed slot, no session id yet)
+    deactivate SessionSvc
+    SessionCtrl --> CandidateClient : 200 OK (slot is waiting for mentor approval)
+    CandidateClient --> Candidate : 200 OK (slot is waiting for mentor approval)
+    deactivate SessionCtrl
+
+    ' ===================== Mentor approves or rejects the proposed slot =====================
+
+    Mentor -> MentorClient : POST /api/application-details/{id}/schedule-decision\n(approved, reason)
+    MentorClient -> DetailCtrl : POST /api/application-details/{id}/schedule-decision\n(approved, reason)
+    activate DetailCtrl
+    DetailCtrl -> DetailSvc : scheduleDecision(applicationDetailId, approved, reason)
+    activate DetailSvc
+
+    DetailSvc -> DetailRepo : findById(applicationDetailId)
+    activate DetailRepo
+    DetailRepo --> DetailSvc : ApplicationDetail
+    deactivate DetailRepo
+
+    break Round has no schedule waiting for approval, or has no assigned mentor
+        DetailSvc --> DetailCtrl : throws CustomException\n(400 BAD_REQUEST)
+        DetailCtrl --> MentorClient : error response (400)
+        MentorClient --> Mentor : error response (400)
+    end
+
+    DetailSvc -> Jwt : get mentor id and email from the authorization token
+    activate Jwt
+    Jwt --> DetailSvc : mentor id, email
+    deactivate Jwt
+    DetailSvc -> MentorRepo : getMentorById(tokenId) / findByEmail(email)
+    activate MentorRepo
+    MentorRepo --> DetailSvc : Mentor
+    deactivate MentorRepo
+
+    break Current user is not the mentor assigned to this round
+        DetailSvc --> DetailCtrl : throws CustomException\n(403 FORBIDDEN, "You are not the mentor assigned to this round")
+        DetailCtrl --> MentorClient : error response (403)
+        MentorClient --> Mentor : error response (403)
+    end
+
+    alt Mentor approves the proposed slot
+        break Pending join time is missing or invalid
+            DetailSvc --> DetailCtrl : throws CustomException\n(400 BAD_REQUEST, "Pending schedule not found" /\n"Pending schedule is invalid")
+            DetailCtrl --> MentorClient : error response (400)
+            MentorClient --> Mentor : error response (400)
+        end
+
+        DetailSvc -> SessionSvc : createRoomForApprovedSchedule\n(userId, mentorId, joinTime, durationMinutes)
+        activate SessionSvc
+
+        SessionSvc -> SessionSvc : build room configuration\n(public, max 2 participants, video and audio off,\nscreen share on, cloud recording,\nexpires 1 hour after the join time)
+
+        SessionSvc -> DailyCo : POST /rooms (room configuration)
+        activate DailyCo
+        DailyCo --> SessionSvc : room (name, url)
+        deactivate DailyCo
+
+        break Daily.co does not return a created room
+            SessionSvc --> DetailSvc : throws RuntimeException\n("Failed to create the session on Daily.co")
+            DetailSvc --> DetailCtrl : propagate exception
+            DetailCtrl --> MentorClient : error response
+            MentorClient --> Mentor : error response
+        end
+
+        SessionSvc -> SessionRepo : save(Session(roomName, roomUrl,\ncandidate and mentor ids, status = DRAFT))
+        activate SessionRepo
+        SessionRepo --> SessionSvc : Session
+        deactivate SessionRepo
+
+        SessionSvc -> SessionRepo : findByRoomName(roomName)
+        activate SessionRepo
+        SessionRepo --> SessionSvc : Session
+        deactivate SessionRepo
+
+        break Created session cannot be read back
+            SessionSvc --> DetailSvc : throws CustomException\n(500 INTERNAL_SERVER_ERROR, "Failed to retrieve created session")
+            DetailSvc --> DetailCtrl : propagate exception
+            DetailCtrl --> MentorClient : error response (500)
+            MentorClient --> Mentor : error response (500)
+        end
+
+        SessionSvc -> SessionRepo : save(session with status = SCHEDULED)
+        activate SessionRepo
+        SessionRepo --> SessionSvc : Session
+        deactivate SessionRepo
+        SessionSvc --> DetailSvc : Session
+        deactivate SessionSvc
+
+        DetailSvc -> DetailSvc : set session info (session id, meeting type = ONLINE)\nand clear the pending schedule
+        DetailSvc -> DetailRepo : save(appDetail with session id\nand status = PENDING)
+        activate DetailRepo
+        DetailRepo --> DetailSvc : ApplicationDetail
+        deactivate DetailRepo
+
+        DetailSvc --> DetailCtrl : ApplicationDetail
+        DetailCtrl --> MentorClient : 200 OK (slot is confirmed,\nvideo room is created)
+        MentorClient --> Mentor : 200 OK (slot is confirmed,\nvideo room is created)
+        DetailCtrl --> CandidateClient : the confirmed slot and room\nare shown on the round detail
+        CandidateClient --> Candidate : the confirmed slot and room\nare shown on the round detail
+    else Mentor rejects the proposed slot
+        break Rejection reason is missing or longer than 1000 characters
+            DetailSvc --> DetailCtrl : throws CustomException (400 BAD_REQUEST)
+            DetailCtrl --> MentorClient : error response (400)
+            MentorClient --> Mentor : error response (400)
+        end
+
+        DetailSvc -> DetailSvc : clear the pending schedule and meeting type,\nappend a MENTOR_REJECTED entry\n(mentor id, reason, time) to the schedule history
+
+        alt Several mentors were suggested by the admin
+            DetailSvc -> DetailSvc : clear mentor id and set status =\nAWAITING_CANDIDATE_SELECT_MENTOR
+        else A single mentor was assigned directly
+            DetailSvc -> DetailSvc : keep the mentor and set status = PENDING
+        end
+
+        DetailSvc -> DetailRepo : save(appDetail)
+        activate DetailRepo
+        DetailRepo --> DetailSvc : ApplicationDetail
+        deactivate DetailRepo
+
+        DetailSvc --> DetailCtrl : ApplicationDetail
+        deactivate DetailSvc
+        DetailCtrl --> MentorClient : 200 OK (slot is rejected)
+        MentorClient --> Mentor : 200 OK (slot is rejected)
+        deactivate DetailCtrl
+        DetailCtrl --> CandidateClient : the rejection reason is shown\nand a new slot has to be proposed
+        CandidateClient --> Candidate : the rejection reason is shown\nand a new slot has to be proposed
+    end
+end
+
+deactivate CandidateClient
+deactivate MentorClient
+
+@enduml

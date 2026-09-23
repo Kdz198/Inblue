@@ -14,7 +14,10 @@ sequenceDiagram {
 }
 </style>
 
+autonumber
+
 actor "Candidate" as Candidate
+participant "Mail Client" as Client
 participant "Mail Server" as MailServer
 participant ":BackgroundScheduler" as Scheduler
 participant ":EmailSubmissionServiceImpl" as EmailService
@@ -28,7 +31,10 @@ end note
 
 ' ===================== Candidate sends the email from own mail client =====================
 
-Candidate -> MailServer : send email to the recruiter mailbox\n(subject contains [INBLUE-APP-applicationId])
+activate Client
+
+Candidate -> Client : send email to the recruiter mailbox\n(subject contains [INBLUE-APP-applicationId])
+Client -> MailServer : send email to the recruiter mailbox\n(subject contains [INBLUE-APP-applicationId])
 activate MailServer
 
 ' ===================== Fetch new emails from the inbox (every 60 seconds) =====================
@@ -85,5 +91,7 @@ deactivate MailServer
 
 EmailService --> Scheduler : void
 deactivate EmailService
+
+deactivate Client
 
 @enduml

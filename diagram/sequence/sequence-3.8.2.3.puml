@@ -1,0 +1,339 @@
+@startuml AdminCompanyAndJobDescriptionLifecycle
+skinparam monochrome true
+skinparam shadowing false
+
+' Do not repeat participant boxes at the bottom of the diagram
+hide footbox
+
+<style>
+sequenceDiagram {
+  groupHeader {
+    FontStyle plain
+  }
+}
+</style>
+
+autonumber
+
+actor "Admin" as Admin
+participant ":CompanyManagementPage" as CompanyPage
+participant ":JobDescriptionManagementPage" as JobPage
+participant ":CompanyController" as CompanyCtrl
+participant ":CompanyServiceImpl" as CompanySvc
+participant ":CompanyMapper" as CompanyMapper
+participant ":CompanyRepository" as CompanyRepo
+participant ":CloudinaryService" as Cloudinary
+participant ":JobDescriptionController" as JdCtrl
+participant ":JobDescriptionServiceImpl" as JdSvc
+participant ":JobDescriptionMapper" as JdMapper
+participant ":JobDescriptionRepository" as JdRepo
+participant ":EmbeddingServiceImpl" as EmbeddingSvc
+
+' ===================== Create the hiring company =====================
+
+activate CompanyPage
+activate JobPage
+
+Admin -> CompanyPage : add a hiring company\n(company data, logo file, banner file)
+CompanyPage -> CompanyCtrl : add a hiring company\n(company data, logo file, banner file)
+activate CompanyCtrl
+CompanyCtrl -> CompanySvc : create(request, logo, banner)
+activate CompanySvc
+
+break Request body is empty
+    CompanySvc --> CompanyCtrl : throws CustomException\n(400 BAD_REQUEST, "CreateCompanyRequest must not be empty")
+    CompanyCtrl --> CompanyPage : error response (400)
+    CompanyPage --> Admin : error response (400)
+end
+
+CompanySvc -> CompanyMapper : toEntity(request)
+activate CompanyMapper
+CompanyMapper --> CompanySvc : Company
+deactivate CompanyMapper
+
+loop For the logo file and the banner file
+    opt An image file is attached
+        CompanySvc -> Cloudinary : validate(file)
+        activate Cloudinary
+        Cloudinary --> CompanySvc : boolean
+        deactivate Cloudinary
+
+        break Image file is not valid
+            CompanySvc --> CompanyCtrl : throws CustomException\n(400 BAD_REQUEST, "Image file is not valid")
+            CompanyCtrl --> CompanyPage : error response (400)
+            CompanyPage --> Admin : error response (400)
+        end
+
+        CompanySvc -> Cloudinary : uploadImg(file)
+        activate Cloudinary
+        Cloudinary --> CompanySvc : secure url
+        deactivate Cloudinary
+
+        break Upload to Cloudinary fails
+            CompanySvc --> CompanyCtrl : throws CustomException\n(500 INTERNAL_SERVER_ERROR, "Image upload failed")
+            CompanyCtrl --> CompanyPage : error response (500)
+            CompanyPage --> Admin : error response (500)
+        end
+    end
+end
+
+CompanySvc -> CompanyRepo : save(company)
+activate CompanyRepo
+CompanyRepo --> CompanySvc : Company
+deactivate CompanyRepo
+
+CompanySvc --> CompanyCtrl : Company
+deactivate CompanySvc
+CompanyCtrl --> CompanyPage : 200 OK (company is created)
+CompanyPage --> Admin : 200 OK (company is created)
+deactivate CompanyCtrl
+
+' ===================== Publish a job description under that company =====================
+
+Admin -> JobPage : create a job description\n(job description data, companyId)
+JobPage -> JdCtrl : create a job description\n(job description data, companyId)
+activate JdCtrl
+JdCtrl -> JdSvc : create(request)
+activate JdSvc
+
+JdSvc -> CompanyRepo : findById(companyId)
+activate CompanyRepo
+CompanyRepo --> JdSvc : Optional<Company>
+deactivate CompanyRepo
+
+break Company is not found
+    JdSvc --> JdCtrl : throws CustomException\n(404 NOT_FOUND, "Company not found")
+    JdCtrl --> JobPage : error response (404)
+    JobPage --> Admin : error response (404)
+end
+
+JdSvc -> JdMapper : toEntity(request)
+activate JdMapper
+JdMapper --> JdSvc : JobDescription
+deactivate JdMapper
+
+JdSvc -> JdSvc : set applied count = 0 when missing,\nisDeleted = false, and copy the company\nname and logo onto the job description
+
+JdSvc -> CompanyRepo : saveAndFlush(company with the new job description)
+activate CompanyRepo
+CompanyRepo --> JdSvc : Company
+deactivate CompanyRepo
+
+JdSvc --> JdCtrl : JobDescription
+deactivate JdSvc
+JdCtrl --> JobPage : 200 OK (job description is created)
+JobPage --> Admin : 200 OK (job description is created)
+deactivate JdCtrl
+
+note over Admin, JdRepo
+  The pipeline of rounds is configured separately
+  (see 3.8.2.2 Admin Configure Recruitment Pipeline Templates)
+end note
+
+' ===================== Maintain the job description =====================
+
+alt Admin edits the job description
+    Admin -> JobPage : update the job description (job description data)
+    JobPage -> JdCtrl : update the job description (job description data)
+    activate JdCtrl
+    JdCtrl -> JdSvc : update(request)
+    activate JdSvc
+
+    JdSvc -> JdRepo : findById(request.id)
+    activate JdRepo
+    JdRepo --> JdSvc : Optional<JobDescription>
+    deactivate JdRepo
+
+    break Job description is not found
+        JdSvc --> JdCtrl : throws CustomException\n(404 NOT_FOUND, "Job description not found")
+        JdCtrl --> JobPage : error response (404)
+        JobPage --> Admin : error response (404)
+    end
+
+    JdSvc -> JdMapper : updateJobDescriptionFromRequest(request, jobDescription)
+    activate JdMapper
+    JdMapper --> JdSvc : JobDescription
+    deactivate JdMapper
+
+    opt Job description carries skill tags
+        JdSvc -> EmbeddingSvc : generateEmbedding(skill tags)
+        activate EmbeddingSvc
+        EmbeddingSvc --> JdSvc : skill embedding vector
+        deactivate EmbeddingSvc
+
+        note right of EmbeddingSvc
+          This vector drives CV matching and mentor recommendation
+          (see 3.2.2.2 ATS CV Match Score Calculation)
+        end note
+    end
+
+    JdSvc -> JdRepo : save(jobDescription)
+    activate JdRepo
+    JdRepo --> JdSvc : JobDescription
+    deactivate JdRepo
+
+    JdSvc --> JdCtrl : JobDescription
+    deactivate JdSvc
+    JdCtrl --> JobPage : 200 OK (job description is updated)
+    JobPage --> Admin : 200 OK (job description is updated)
+    deactivate JdCtrl
+
+else Admin opens or closes the job description
+    Admin -> JobPage : toggle the job description status (id)
+    JobPage -> JdCtrl : toggle the job description status (id)
+    activate JdCtrl
+    JdCtrl -> JdSvc : toggleActive(id)
+    activate JdSvc
+
+    JdSvc -> JdRepo : findById(id)
+    activate JdRepo
+    JdRepo --> JdSvc : Optional<JobDescription>
+    deactivate JdRepo
+
+    break Job description is not found
+        JdSvc --> JdCtrl : throws CustomException\n(404 NOT_FOUND, "Job description not found")
+        JdCtrl --> JobPage : error response (404)
+        JobPage --> Admin : error response (404)
+    end
+
+    alt Job description is currently OPEN
+        JdSvc -> JdSvc : status = CLOSED
+    else Job description is currently CLOSED
+        JdSvc -> JdSvc : status = OPEN
+    end
+
+    JdSvc -> JdRepo : save(jobDescription)
+    activate JdRepo
+    JdRepo --> JdSvc : JobDescription
+    deactivate JdRepo
+
+    JdSvc --> JdCtrl : status is switched
+    deactivate JdSvc
+    JdCtrl --> JobPage : 200 OK
+    JobPage --> Admin : 200 OK
+    deactivate JdCtrl
+
+else Admin takes the job description down
+    Admin -> JobPage : take the job description down (id)
+    JobPage -> JdCtrl : take the job description down (id)
+    activate JdCtrl
+    JdCtrl -> JdSvc : softDelete(id)
+    activate JdSvc
+
+    JdSvc -> JdRepo : findById(id)
+    activate JdRepo
+    JdRepo --> JdSvc : Optional<JobDescription>
+    deactivate JdRepo
+
+    break Job description is not found
+        JdSvc --> JdCtrl : throws CustomException\n(404 NOT_FOUND, "Job description not found")
+        JdCtrl --> JobPage : error response (404)
+        JobPage --> Admin : error response (404)
+    end
+
+    JdSvc -> JdSvc : isDeleted = true, deletion time = now
+    JdSvc -> JdRepo : save(jobDescription)
+    activate JdRepo
+    JdRepo --> JdSvc : JobDescription
+    deactivate JdRepo
+
+    note right of JdSvc
+      Soft delete only: the record is kept so that applications
+      and payments already made against it stay readable,
+      and job search filters it out
+    end note
+
+    JdSvc --> JdCtrl : job description is taken down
+    deactivate JdSvc
+    JdCtrl --> JobPage : 200 OK
+    JobPage --> Admin : 200 OK
+    deactivate JdCtrl
+end
+
+' ===================== Maintain the company =====================
+
+alt Admin edits the company
+    Admin -> CompanyPage : update the company\n(company data, logo file, banner file)
+    CompanyPage -> CompanyCtrl : update the company\n(company data, logo file, banner file)
+    activate CompanyCtrl
+    CompanyCtrl -> CompanySvc : update(request, logo, banner)
+    activate CompanySvc
+
+    CompanySvc -> CompanyRepo : findById(request.id)
+    activate CompanyRepo
+    CompanyRepo --> CompanySvc : Optional<Company>
+    deactivate CompanyRepo
+
+    break Company is not found
+        CompanySvc --> CompanyCtrl : throws CustomException\n(404 NOT_FOUND, "Company not found")
+        CompanyCtrl --> CompanyPage : error response (404)
+        CompanyPage --> Admin : error response (404)
+    end
+
+    CompanySvc -> CompanyMapper : updateCompanyFromRequest(request, company)
+    activate CompanyMapper
+    CompanyMapper --> CompanySvc : Company
+    deactivate CompanyMapper
+
+    opt A new logo is attached and passes validation
+        opt The company already has a logo
+            CompanySvc -> CompanySvc : extract the public id from the current logo url
+            CompanySvc -> Cloudinary : deleteImage(old public id)
+            activate Cloudinary
+            Cloudinary --> CompanySvc : old image is removed
+            deactivate Cloudinary
+        end
+
+        CompanySvc -> Cloudinary : uploadImg(logo)
+        activate Cloudinary
+        Cloudinary --> CompanySvc : secure url
+        deactivate Cloudinary
+        CompanySvc -> CompanySvc : copy the new logo url onto every\njob description of this company
+    end
+
+    CompanySvc -> CompanyRepo : save(company)
+    activate CompanyRepo
+    CompanyRepo --> CompanySvc : Company
+    deactivate CompanyRepo
+
+    CompanySvc --> CompanyCtrl : Company
+    deactivate CompanySvc
+    CompanyCtrl --> CompanyPage : 200 OK (company is updated)
+    CompanyPage --> Admin : 200 OK (company is updated)
+    deactivate CompanyCtrl
+
+else Admin removes the company
+    Admin -> CompanyPage : remove the company (id)
+    CompanyPage -> CompanyCtrl : remove the company (id)
+    activate CompanyCtrl
+    CompanyCtrl -> CompanySvc : deleteById(id)
+    activate CompanySvc
+
+    CompanySvc -> CompanyRepo : findById(id)
+    activate CompanyRepo
+    CompanyRepo --> CompanySvc : Optional<Company>
+    deactivate CompanyRepo
+
+    break Company is not found
+        CompanySvc --> CompanyCtrl : throws CustomException\n(404 NOT_FOUND, "Company not found")
+        CompanyCtrl --> CompanyPage : error response (404)
+        CompanyPage --> Admin : error response (404)
+    end
+
+    CompanySvc -> CompanySvc : isDeleted = true
+    CompanySvc -> CompanyRepo : save(company)
+    activate CompanyRepo
+    CompanyRepo --> CompanySvc : Company
+    deactivate CompanyRepo
+
+    CompanySvc --> CompanyCtrl : company is removed
+    deactivate CompanySvc
+    CompanyCtrl --> CompanyPage : 200 OK
+    CompanyPage --> Admin : 200 OK
+    deactivate CompanyCtrl
+end
+
+deactivate CompanyPage
+deactivate JobPage
+
+@enduml

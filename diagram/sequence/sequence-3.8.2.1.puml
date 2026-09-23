@@ -1,0 +1,282 @@
+@startuml AdminManageMentorAccounts
+skinparam monochrome true
+skinparam shadowing false
+
+' Do not repeat participant boxes at the bottom of the diagram
+hide footbox
+
+<style>
+sequenceDiagram {
+  groupHeader {
+    FontStyle plain
+  }
+}
+</style>
+
+autonumber
+
+actor "Admin" as Admin
+participant ":MentorManagementPage" as Client
+participant ":MentorController" as MentorCtrl
+participant ":MentorServiceImpl" as MentorSvc
+participant ":MentorRepository" as MentorRepo
+participant ":UserRepository" as UserRepo
+participant ":MentorMapper" as Mapper
+participant ":PasswordEncoder" as Encoder
+participant ":EmbeddingServiceImpl" as EmbeddingSvc
+participant ":FileUtil" as FileUtil
+participant ":EventListenerHandle" as EventHandler
+participant ":CloudinaryService" as Cloudinary
+
+note over EventHandler
+  Avatar upload is handled asynchronously (@Async @EventListener),
+  so the admin gets the response without waiting for Cloudinary
+end note
+
+alt Admin creates a new mentor account
+
+    ' ===================== Create a mentor account =====================
+
+activate Client
+
+    Admin -> Client : POST /api/mentors\n(mentor data, avatar file)
+    Client -> MentorCtrl : POST /api/mentors\n(mentor data, avatar file)
+    activate MentorCtrl
+    MentorCtrl -> MentorSvc : createMentor(data, avatar)
+    activate MentorSvc
+
+    MentorSvc -> MentorRepo : existsByEmail(email)
+    activate MentorRepo
+    MentorRepo --> MentorSvc : boolean
+    deactivate MentorRepo
+    MentorSvc -> UserRepo : existsByEmail(email)
+    activate UserRepo
+    UserRepo --> MentorSvc : boolean
+    deactivate UserRepo
+
+    break Email already belongs to a mentor or a user account
+        MentorSvc --> MentorCtrl : throws CustomException\n(400 BAD_REQUEST, "Email already exists")
+        MentorCtrl --> Client : error response (400)
+        Client --> Admin : error response (400)
+    end
+
+    MentorSvc -> Mapper : toEntity(data)
+    activate Mapper
+    Mapper --> MentorSvc : Mentor
+    deactivate Mapper
+
+    opt Password is provided
+        MentorSvc -> Encoder : encode(password)
+        activate Encoder
+        Encoder --> MentorSvc : hashed password
+        deactivate Encoder
+    end
+
+    MentorSvc -> MentorSvc : set role = MENTOR, active = true,\ntotal sessions = 0, average rating = 0,\nprice per minute (0 when not provided)
+
+    MentorSvc -> EmbeddingSvc : generateEmbedding(profile skills)
+    activate EmbeddingSvc
+    EmbeddingSvc --> MentorSvc : skill embedding vector
+    deactivate EmbeddingSvc
+
+    note right of EmbeddingSvc
+      The skill vector is what the recommendation query uses later
+      to rank mentors against a job description
+    end note
+
+    MentorSvc -> MentorRepo : save(mentor)
+    activate MentorRepo
+    MentorRepo --> MentorSvc : Mentor
+    deactivate MentorRepo
+
+    opt An avatar file is attached
+        MentorSvc -> FileUtil : saveFile(avatar) and convert it back\nto a multipart file
+        activate FileUtil
+        FileUtil --> MentorSvc : multipart file
+        deactivate FileUtil
+        MentorSvc ->> EventHandler : publish MentorEventDto(mentor, file, "avatar")
+        MentorSvc -> FileUtil : delete the temporary file
+        activate FileUtil
+        FileUtil --> MentorSvc : temporary file is removed
+        deactivate FileUtil
+    end
+
+    MentorSvc --> MentorCtrl : MentorResponse
+    deactivate MentorSvc
+    MentorCtrl --> Client : 200 OK (mentor account is created)
+    Client --> Admin : 200 OK (mentor account is created)
+    deactivate MentorCtrl
+
+    EventHandler -> MentorRepo : findById(mentor.id)
+    activate MentorRepo
+    activate EventHandler
+    MentorRepo --> EventHandler : Mentor
+    deactivate MentorRepo
+    EventHandler -> Cloudinary : uploadImg(avatar file)
+    activate Cloudinary
+    Cloudinary --> EventHandler : image url and public id
+    deactivate Cloudinary
+    EventHandler -> MentorRepo : save(mentor with avatar url)
+    activate MentorRepo
+    MentorRepo --> EventHandler : Mentor
+    deactivate MentorRepo
+    deactivate EventHandler
+
+else Admin updates an existing mentor
+
+    ' ===================== Update a mentor account =====================
+
+    Admin -> Client : PUT /api/mentors/{id}\n(mentor data, avatar file)
+    Client -> MentorCtrl : PUT /api/mentors/{id}\n(mentor data, avatar file)
+    activate MentorCtrl
+    MentorCtrl -> MentorSvc : updateMentor(id, data, avatar)
+    activate MentorSvc
+
+    MentorSvc -> MentorRepo : findById(id)
+    activate MentorRepo
+    MentorRepo --> MentorSvc : Optional<Mentor>
+    deactivate MentorRepo
+
+    break Mentor is not found
+        MentorSvc --> MentorCtrl : throws CustomException\n(404 NOT_FOUND, "Mentor Not Found")
+        MentorCtrl --> Client : error response (404)
+        Client --> Admin : error response (404)
+    end
+
+    break New email already belongs to another mentor or user
+        MentorSvc --> MentorCtrl : throws CustomException\n(400 BAD_REQUEST, "Email already exists")
+        MentorCtrl --> Client : error response (400)
+        Client --> Admin : error response (400)
+    end
+
+    MentorSvc -> Mapper : updateMentorFromDto(data, mentor)
+    activate Mapper
+    Mapper --> MentorSvc : Mentor
+    deactivate Mapper
+    MentorSvc -> EmbeddingSvc : generateEmbedding(profile skills)
+    activate EmbeddingSvc
+    EmbeddingSvc --> MentorSvc : skill embedding vector
+    deactivate EmbeddingSvc
+    MentorSvc -> MentorRepo : save(mentor)
+    activate MentorRepo
+    MentorRepo --> MentorSvc : Mentor
+    deactivate MentorRepo
+
+    opt A new avatar file is attached
+        opt The mentor already has an avatar
+            MentorSvc -> Cloudinary : deleteImage(current public id)
+            activate Cloudinary
+            Cloudinary --> MentorSvc : old image is removed
+            deactivate Cloudinary
+        end
+        MentorSvc ->> EventHandler : publish MentorEventDto(mentor, file, "avatar")
+    end
+
+    MentorSvc --> MentorCtrl : MentorResponse
+    deactivate MentorSvc
+    MentorCtrl --> Client : 200 OK (mentor account is updated)
+    Client --> Admin : 200 OK (mentor account is updated)
+    deactivate MentorCtrl
+
+else Admin resets the mentor password
+
+    ' ===================== Change the mentor password =====================
+
+    Admin -> Client : PUT /api/mentors/{id}/change-password\n(old password, new password)
+    Client -> MentorCtrl : PUT /api/mentors/{id}/change-password\n(old password, new password)
+    activate MentorCtrl
+    MentorCtrl -> MentorSvc : changePassword(id, request)
+    activate MentorSvc
+
+    MentorSvc -> MentorRepo : findById(id)
+    activate MentorRepo
+    MentorRepo --> MentorSvc : Optional<Mentor>
+    deactivate MentorRepo
+
+    break Mentor is not found
+        MentorSvc --> MentorCtrl : throws CustomException\n(404 NOT_FOUND, "Mentor Not Found")
+        MentorCtrl --> Client : error response (404)
+        Client --> Admin : error response (404)
+    end
+
+    opt Old password is provided
+        MentorSvc -> Encoder : matches(old password, stored password)
+        activate Encoder
+        Encoder --> MentorSvc : boolean
+        deactivate Encoder
+
+        break Old password is wrong
+            MentorSvc --> MentorCtrl : throws CustomException\n(400 BAD_REQUEST, "Old password is incorrect")
+            MentorCtrl --> Client : error response (400)
+            Client --> Admin : error response (400)
+        end
+    end
+
+    break New password is empty
+        MentorSvc --> MentorCtrl : throws CustomException\n(400 BAD_REQUEST, "New password must not be empty")
+        MentorCtrl --> Client : error response (400)
+        Client --> Admin : error response (400)
+    end
+
+    MentorSvc -> Encoder : encode(new password)
+    activate Encoder
+    Encoder --> MentorSvc : hashed password
+    deactivate Encoder
+    MentorSvc -> MentorRepo : save(mentor)
+    activate MentorRepo
+    MentorRepo --> MentorSvc : Mentor
+    deactivate MentorRepo
+
+    MentorSvc --> MentorCtrl : MentorResponse
+    deactivate MentorSvc
+    MentorCtrl --> Client : 200 OK (password is changed)
+    Client --> Admin : 200 OK (password is changed)
+    deactivate MentorCtrl
+
+else Admin enables or disables a mentor account
+
+    ' ===================== Toggle the mentor account =====================
+
+    Admin -> Client : GET /api/mentors/toggle/{id}
+    Client -> MentorCtrl : GET /api/mentors/toggle/{id}
+    activate MentorCtrl
+    MentorCtrl -> MentorSvc : toggleActive(id)
+    activate MentorSvc
+
+    MentorSvc -> MentorRepo : existsById(id)
+    activate MentorRepo
+    MentorRepo --> MentorSvc : boolean
+    deactivate MentorRepo
+
+    break Mentor is not found
+        MentorSvc --> MentorCtrl : throws CustomException\n(404 NOT_FOUND, "Mentor not found")
+        MentorCtrl --> Client : error response (404)
+        Client --> Admin : error response (404)
+    end
+
+    MentorSvc -> MentorRepo : findById(id)
+    activate MentorRepo
+    MentorRepo --> MentorSvc : Mentor
+    deactivate MentorRepo
+
+    alt Mentor account is currently active
+        MentorSvc -> MentorSvc : active = false
+    else Mentor account is currently inactive
+        MentorSvc -> MentorSvc : active = true
+    end
+
+    MentorSvc -> MentorRepo : save(mentor)
+    activate MentorRepo
+    MentorRepo --> MentorSvc : Mentor
+    deactivate MentorRepo
+
+    MentorSvc --> MentorCtrl : account state is switched
+    deactivate MentorSvc
+    MentorCtrl --> Client : 200 OK
+    Client --> Admin : 200 OK
+    deactivate MentorCtrl
+end
+
+deactivate Client
+
+@enduml

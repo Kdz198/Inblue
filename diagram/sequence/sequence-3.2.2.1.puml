@@ -22,7 +22,7 @@ autonumber
 ' Diagram shows the current implementation, not the legacy TestController Python endpoint.
 
 actor Candidate
-participant "Web UI\nCVUploadModal / AccountPage" as UI
+participant ":AccountPage" as UI
 participant ":UserController" as Controller
 participant ":UserServiceImpl" as Service
 participant ":UserRepository" as Users
@@ -39,6 +39,8 @@ note over API, AI
   Python /api/v1/parse-cv is called only by a test endpoint;
   it is not invoked by UserServiceImpl.upCv().
 end note
+
+activate UI
 
 Candidate -> UI : Select CV file
 UI -> UI : Validate PDF type/extension and size <= 10 MB
@@ -154,4 +156,6 @@ note over UI, Storage
   Its failure does not change an already returned HTTP 200;
   an immediate account refresh may still show the previous CV URL.
 end note
+deactivate UI
+
 @enduml

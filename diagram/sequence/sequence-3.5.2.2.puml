@@ -1,0 +1,310 @@
+@startuml KioskPinCheckIn_JoinHoloboxSession
+skinparam monochrome true
+skinparam shadowing false
+
+' Do not repeat participant boxes at the bottom of the diagram
+hide footbox
+
+<style>
+sequenceDiagram {
+  groupHeader {
+    FontStyle plain
+  }
+}
+</style>
+
+autonumber
+
+actor "Candidate" as Candidate
+participant ":StandaloneKioskPage" as KioskApp
+participant ":KioskAIInterviewRoomPage" as Room
+participant ":KioskBookingController" as KioskCtrl
+participant ":KioskBookingServiceImpl" as KioskSvc
+participant ":KioskBookingRepository" as BookingRepo
+participant ":ApplicationDetailRepository" as DetailRepo
+participant ":RoundRepository" as RoundRepo
+participant ":ApplicationDetailServiceImpl" as DetailSvc
+participant ":CandidateProfileRepository" as ProfileRepo
+participant ":InterviewSessionServiceImpl" as SessionSvc
+participant "Python AI Orchestrator" as PyAI
+participant ":InterviewSessionRepository" as SessionRepo
+participant ":InterviewSessionRedisRepository" as RedisRepo
+participant ":InterviewProcessController" as ProcCtrl
+participant ":InterviewProcessServiceImpl" as ProcSvc
+
+note over KioskApp
+  Kiosk web app (React) running on the
+  physical kiosk / Holobox display device
+end note
+
+note right of PyAI
+  Separate Python AI service (LLM),
+  called over HTTP through ApiClient
+  (not part of the Spring Boot backend)
+end note
+
+' ===================== Enter 6-digit PIN on the kiosk =====================
+
+activate KioskApp
+activate Room
+
+Candidate -> KioskApp : enter PIN on the on-screen / hardware keypad
+KioskApp -> KioskApp : append digit until the PIN has 6 digits
+
+alt Kiosk device is not configured
+    KioskApp --> Candidate : show error "Kiosk device is not configured"
+else Kiosk device is configured
+    ' ===================== Verify PIN and booking =====================
+
+    KioskApp -> KioskCtrl : POST /api/kiosk/enter/{sessionKey}?kioskId={kioskId}
+    activate KioskCtrl
+    KioskCtrl -> KioskSvc : enterKiosk(sessionKey, kioskId)
+    activate KioskSvc
+
+    KioskSvc -> BookingRepo : findBySessionKey(sessionKey)
+    activate BookingRepo
+    BookingRepo --> KioskSvc : Optional<KioskBooking>
+    deactivate BookingRepo
+
+    break Booking is not found
+        KioskSvc --> KioskCtrl : throws CustomException\n(404 NOT_FOUND, "Booking not found for this session key")
+        KioskCtrl --> KioskApp : error response (404)
+        KioskApp --> Candidate : clear PIN and show error message
+    end
+
+    break Booking is cancelled or belongs to another kiosk
+        KioskSvc --> KioskCtrl : throws CustomException\n(400 BAD_REQUEST, "Booking has been cancelled" /\n"This booking is not for the specified kiosk")
+        KioskCtrl --> KioskApp : error response (400)
+        KioskApp --> Candidate : clear PIN and show error message
+    end
+
+    KioskSvc -> KioskSvc : get current time (Asia/Ho_Chi_Minh)
+
+    break Current time is outside the 15-minute window around the scheduled start
+        KioskSvc --> KioskCtrl : throws CustomException\n(400 BAD_REQUEST, "You can only enter the Kiosk\nwithin 15 minutes of your scheduled start time")
+        KioskCtrl --> KioskApp : error response (400)
+        KioskApp --> Candidate : clear PIN and show error message
+    end
+
+    KioskSvc -> DetailRepo : findById(booking.applicationDetailId)
+    activate DetailRepo
+    DetailRepo --> KioskSvc : Optional<ApplicationDetail>
+    deactivate DetailRepo
+
+    break Application detail is not found
+        KioskSvc --> KioskCtrl : throws CustomException\n(404 NOT_FOUND, "ApplicationDetail not found")
+        KioskCtrl --> KioskApp : error response (404)
+        KioskApp --> Candidate : clear PIN and show error message
+    end
+
+    KioskSvc -> RoundRepo : findById(appDetail.roundId)
+    activate RoundRepo
+    RoundRepo --> KioskSvc : Optional<Round>
+    deactivate RoundRepo
+
+    break Round is not found or is not an AI Interview round
+        KioskSvc --> KioskCtrl : throws CustomException\n(404 NOT_FOUND, "Round not found" /\n400 BAD_REQUEST, "Kiosk only supports AI Interview rounds")
+        KioskCtrl --> KioskApp : error response (404 / 400)
+        KioskApp --> Candidate : clear PIN and show error message
+    end
+
+    KioskSvc -> KioskSvc : set booking status = IN_PROGRESS
+    KioskSvc -> BookingRepo : save(booking)
+    activate BookingRepo
+    BookingRepo --> KioskSvc : KioskBooking
+    deactivate BookingRepo
+
+    ' ===================== Start (or resume) the AI interview session =====================
+
+    KioskSvc -> DetailSvc : startAiInterview(applicationDetailId)
+    activate DetailSvc
+    note right of DetailSvc
+      Runs in a new transaction
+      (Propagation.REQUIRES_NEW)
+    end note
+
+    DetailSvc -> DetailRepo : findById(applicationDetailId)
+    activate DetailRepo
+    DetailRepo --> DetailSvc : ApplicationDetail
+    deactivate DetailRepo
+
+    break Round is already completed
+        DetailSvc --> KioskSvc : throws CustomException\n(400 BAD_REQUEST, "This round is already completed")
+        KioskSvc --> KioskCtrl : propagate exception
+        KioskCtrl --> KioskApp : error response (400)
+        KioskApp --> Candidate : clear PIN and show error message
+    end
+
+    opt AI interview session ID is already recorded on the application detail
+        DetailSvc -> SessionRepo : findById(aiInterviewSessionId)
+        activate SessionRepo
+        SessionRepo --> DetailSvc : Optional<InterviewSession>
+        deactivate SessionRepo
+    end
+
+    alt Existing interview session is found
+        DetailSvc --> KioskSvc : existing sessionKey : String
+        deactivate DetailSvc
+    else No existing interview session is found
+        DetailSvc -> DetailSvc : load Application, applicant User,\nJobDescription and Round
+        note right of DetailSvc
+          Loaded through ApplicationService, UserRepository,
+          JobDescriptionRepository and RoundRepository; each lookup
+          throws CustomException (404 / 400) and propagates to the
+          kiosk as an error response in the same way as above
+        end note
+
+        DetailSvc -> SessionSvc : getJobRequirementFromJD(jd.description)
+        activate SessionSvc
+        SessionSvc -> PyAI : POST JD_API (job description text)
+        activate PyAI
+        PyAI --> SessionSvc : JobRequirementData
+        deactivate PyAI
+        SessionSvc --> DetailSvc : JobRequirementData
+        deactivate SessionSvc
+
+        DetailSvc -> ProfileRepo : findByApplicationId(applicationId)
+        activate ProfileRepo
+        ProfileRepo --> DetailSvc : CandidateProfile
+        deactivate ProfileRepo
+
+        break Candidate profile is not found
+            DetailSvc --> KioskSvc : throws CustomException\n(400 BAD_REQUEST, "Candidate profile not found.\nPlease update your CV/Profile before starting the interview.")
+            KioskSvc --> KioskCtrl : propagate exception
+            KioskCtrl --> KioskApp : error response (400)
+            KioskApp --> Candidate : clear PIN and show error message
+        end
+
+        DetailSvc -> DetailSvc : build InterviewSetupRequest\n(STANDARD_MOCK, VI, FRESHER_BASIC, IT,\nduration = round time limit, evaluation criteria,\nAI system prompt)
+
+        DetailSvc -> SessionSvc : createSession(setupRequest)
+        activate SessionSvc
+        note right of SessionSvc
+          @Retryable: up to 3 attempts,
+          3-second backoff
+        end note
+
+        SessionSvc -> PyAI : POST ORCHESTRATOR_API\n(candidate profile, job requirement, session config)
+        activate PyAI
+        PyAI --> SessionSvc : InterviewBlueprintResponse
+        deactivate PyAI
+
+        break Interview blueprint is empty
+            SessionSvc --> DetailSvc : throws RuntimeException\n("Python Orchestrator returned an empty blueprint")
+            DetailSvc --> KioskSvc : propagate exception
+            KioskSvc --> KioskCtrl : propagate exception
+            KioskCtrl --> KioskApp : error response
+            KioskApp --> Candidate : clear PIN and show error message
+        end
+
+        SessionSvc -> SessionSvc : generate sessionKey (UUID)
+        SessionSvc -> SessionRepo : save(InterviewSession(status = IN_PROGRESS, blueprint))
+        activate SessionRepo
+        SessionRepo --> SessionSvc : InterviewSession
+        deactivate SessionRepo
+        SessionSvc -> RedisRepo : save(InterviewSessionRedis(sessionKey, blueprint,\nphase index = 0, question index = 0))
+        activate RedisRepo
+        RedisRepo --> SessionSvc : InterviewSessionRedis
+        deactivate RedisRepo
+        SessionSvc --> DetailSvc : sessionKey : String
+        deactivate SessionSvc
+
+        note right of DetailSvc
+          If a parallel request already created a session for the same
+          application detail (unique constraint violation), the key of
+          that first session is returned instead
+        end note
+
+        DetailSvc -> SessionRepo : findBySessionKey(sessionKey)
+        activate SessionRepo
+        SessionRepo --> DetailSvc : InterviewSession
+        deactivate SessionRepo
+        DetailSvc -> DetailRepo : save(appDetail with aiInterviewSessionId)
+        activate DetailRepo
+        DetailRepo --> DetailSvc : ApplicationDetail
+        deactivate DetailRepo
+        DetailSvc --> KioskSvc : sessionKey : String
+        deactivate DetailSvc
+    end
+
+    KioskSvc -> KioskSvc : set application detail status = PENDING
+    KioskSvc -> DetailRepo : save(appDetail)
+    activate DetailRepo
+    DetailRepo --> KioskSvc : ApplicationDetail
+    deactivate DetailRepo
+
+    KioskSvc -> KioskSvc : durationMinutes = round time limit
+    KioskSvc --> KioskCtrl : KioskEnterDtoResponse(aiSessionKey, durationMinutes)
+    deactivate KioskSvc
+    KioskCtrl --> KioskApp : 200 OK (aiSessionKey, durationMinutes)
+    deactivate KioskCtrl
+
+    ' ===================== AI voice selection and hardware check =====================
+
+    KioskApp -> KioskApp : switch to VOICE_SELECT screen
+    KioskApp -> ProcCtrl : GET /api/v1/interview/voices
+    activate ProcCtrl
+    ProcCtrl --> KioskApp : List<VoiceOption>
+    deactivate ProcCtrl
+    KioskApp --> Candidate : show available AI interviewer voices
+
+    Candidate -> KioskApp : select AI voice and confirm hardware check
+    KioskApp -> KioskApp : switch to AI_ROOM screen
+
+    ' ===================== Join the Holobox interview room =====================
+
+    create Room
+    KioskApp -> Room : render(sessionKey, durationMinutes, selectedVoiceId)
+
+    Room -> ProcCtrl : GET /api/v1/interview/start/{sessionKey}
+    activate ProcCtrl
+    ProcCtrl -> ProcSvc : getCurrentQuestion(sessionKey)
+    activate ProcSvc
+
+    ProcSvc -> RedisRepo : findById(sessionKey)
+    activate RedisRepo
+    RedisRepo --> ProcSvc : Optional<InterviewSessionRedis>
+    deactivate RedisRepo
+
+    break Interview session is not found in Redis or has expired
+        ProcSvc --> ProcCtrl : throws RuntimeException("Session not found or expired")
+        ProcCtrl --> Room : error response
+        Room -> Room : set AI state = IDLE
+    end
+
+    ProcSvc -> SessionRepo : findById(session.dbId)
+    activate SessionRepo
+    SessionRepo --> ProcSvc : InterviewSession
+    deactivate SessionRepo
+    ProcSvc -> SessionRepo : save(dbSession with status = IN_PROGRESS)
+    activate SessionRepo
+    SessionRepo --> ProcSvc : InterviewSession
+    deactivate SessionRepo
+
+    opt Current question is not set yet
+        ProcSvc -> ProcSvc : take the first blueprint question\nas the current question
+    end
+
+    ProcSvc -> RedisRepo : save(session) (refresh TTL)
+    activate RedisRepo
+    RedisRepo --> ProcSvc : InterviewSessionRedis
+    deactivate RedisRepo
+
+    ProcSvc --> ProcCtrl : QuestionResponse
+    deactivate ProcSvc
+    ProcCtrl --> Room : QuestionResponse\n(questionContent, currentQuestionIndex, totalQuestionsInPhase)
+    deactivate ProcCtrl
+
+    Room -> Room : speakQuestion(questionContent)\nwith the selected AI voice (TTS)
+    Room --> Candidate : AI interviewer asks the first question
+
+    note over Room, ProcSvc
+      The interview then continues question by question
+      (see 3.5.2.1 AI Interview Session)
+    end note
+end
+
+deactivate KioskApp
+deactivate Room
+
+@enduml

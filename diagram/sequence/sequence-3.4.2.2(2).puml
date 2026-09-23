@@ -14,7 +14,10 @@ sequenceDiagram {
 }
 </style>
 
+autonumber
+
 actor "Candidate" as Candidate
+participant ":ApplicationWorkspacePage" as Client
 participant ":ApplicationDetailController" as Controller
 participant ":SubmissionService" as SubService
 participant ":RoundProcessorFactory" as Factory
@@ -32,7 +35,10 @@ note right of Compiler
   not part of the Spring Boot backend)
 end note
 
-Candidate -> Controller : POST /api/application-details/submit\n(applicationId, compileRequest[] with isTest = false)
+activate Client
+
+Candidate -> Client : POST /api/application-details/submit\n(applicationId, compileRequest[] with isTest = false)
+Client -> Controller : POST /api/application-details/submit\n(applicationId, compileRequest[] with isTest = false)
 activate Controller
 
 Controller -> SubService : submitRound(submitRequest)
@@ -55,7 +61,8 @@ activate CodeProcessor
 break Compile request list is missing or empty
     CodeProcessor --> SubService : throws IllegalArgumentException\n("Compile request must not be null or empty")
     SubService --> Controller : propagate exception
-    Controller --> Candidate : error response (500)
+    Controller --> Client : error response (500)
+    Client --> Candidate : error response (500)
 end
 
 ' ===================== Official submission graded by hidden test cases =====================
@@ -73,7 +80,8 @@ break Round has already been submitted
     EventHandle --> CodeProcessor : throws CustomException\n(409 CONFLICT, "Round has already been submitted")
     CodeProcessor --> SubService : propagate exception
     SubService --> Controller : propagate exception
-    Controller --> Candidate : error response (409)
+    Controller --> Client : error response (409)
+    Client --> Candidate : error response (409)
 end
 
 loop Each compile request in the submission
@@ -86,7 +94,8 @@ loop Each compile request in the submission
         EventHandle --> CodeProcessor : throws IllegalArgumentException\n("Coding problem not found with ID: {problemId}")
         CodeProcessor --> SubService : propagate exception
         SubService --> Controller : propagate exception
-        Controller --> Candidate : error response (500)
+        Controller --> Client : error response (500)
+        Client --> Candidate : error response (500)
     end
 
     EventHandle -> EventHandle : build test cases from hidden test cases and\naccumulate maximum possible score
@@ -104,7 +113,8 @@ loop Each compile request in the submission
         EventHandle --> CodeProcessor : propagate exception
         CodeProcessor --> SubService : propagate exception
         SubService --> Controller : propagate exception
-        Controller --> Candidate : error response (500)
+        Controller --> Client : error response (500)
+        Client --> Candidate : error response (500)
     end
 
     Compiler --> ApiClient : CompilerResponseDto (test case results)
@@ -157,7 +167,10 @@ deactivate CodeProcessor
 SubService --> Controller : SubmissionResult
 deactivate SubService
 
-Controller --> Candidate : 200 OK\nbody = SubmissionResult
+Controller --> Client : 200 OK\nbody = SubmissionResult
+Client --> Candidate : 200 OK\nbody = SubmissionResult
 deactivate Controller
+
+deactivate Client
 
 @enduml

@@ -1,0 +1,149 @@
+@startuml StaffReview_RoundAdvancement
+skinparam monochrome true
+skinparam shadowing false
+
+' Do not repeat participant boxes at the bottom of the diagram
+hide footbox
+
+<style>
+sequenceDiagram {
+  groupHeader {
+    FontStyle plain
+  }
+}
+</style>
+
+autonumber
+
+actor "Staff (Reviewer)" as Staff
+participant ":StaffGradingWorkspacePage" as Client
+participant ":ApplicationDetailController" as DetailCtrl
+participant ":ApplicationDetailServiceImpl" as DetailSvc
+participant ":HelperUtil" as Helper
+participant ":JwtUtils" as Jwt
+participant ":ApplicationDetailRepository" as DetailRepo
+participant ":RoundRepository" as RoundRepo
+participant ":JobDescriptionRepository" as JdRepo
+participant ":ApplicationServiceImpl" as AppSvc
+
+' ===================== Staff opens the list of rounds to review =====================
+
+activate Client
+
+Staff -> Client : GET /api/application-details/reviewer
+Client -> DetailCtrl : GET /api/application-details/reviewer
+activate DetailCtrl
+DetailCtrl -> DetailSvc : getApplicationDetailsForReviewer()
+activate DetailSvc
+
+DetailSvc -> Helper : getToke()
+activate Helper
+Helper --> DetailSvc : authorization token
+deactivate Helper
+DetailSvc -> Jwt : getUserIdFromToken(token), getRolesFromToken(token)
+activate Jwt
+Jwt --> DetailSvc : reviewer id, roles
+deactivate Jwt
+
+break Current user does not have the STAFF role
+    DetailSvc --> DetailCtrl : throws CustomException\n(403 FORBIDDEN, "Only STAFF role is allowed\nto review application details")
+    DetailCtrl --> Client : error response (403)
+    Client --> Staff : error response (403)
+end
+
+DetailSvc -> DetailRepo : findAllByReviewerId(reviewerId)
+activate DetailRepo
+DetailRepo --> DetailSvc : List<ApplicationDetail>
+deactivate DetailRepo
+
+note right of DetailRepo
+  Only rounds whose reviewer is this staff member and
+  that are not marked as auto-graded are returned
+end note
+
+loop For each round assigned to this reviewer
+    DetailSvc -> AppSvc : getApplicationById(detail.applicationId)
+    activate AppSvc
+    AppSvc --> DetailSvc : Application
+    deactivate AppSvc
+    DetailSvc -> JdRepo : findById(application.jdId)
+    activate JdRepo
+    JdRepo --> DetailSvc : Optional<JobDescription>
+    deactivate JdRepo
+    DetailSvc -> RoundRepo : findById(detail.roundId)
+    activate RoundRepo
+    RoundRepo --> DetailSvc : Optional<Round>
+    deactivate RoundRepo
+
+    DetailSvc -> DetailSvc : build ReviewerApplicationDetailResponseDto\n(job title, round name, instruction,\nsubmission data, current scores)
+end
+
+DetailSvc --> DetailCtrl : List<ReviewerApplicationDetailResponseDto>
+deactivate DetailSvc
+DetailCtrl --> Client : 200 OK (rounds waiting to be graded)
+Client --> Staff : 200 OK (rounds waiting to be graded)
+deactivate DetailCtrl
+
+' ===================== Staff grades one round =====================
+
+Staff -> Staff : read the candidate submission\nand the AI evaluation of the round
+
+Staff -> Client : POST /api/application-details/hr-score\n(applicationDetailId, isPass, note, score)
+Client -> DetailCtrl : POST /api/application-details/hr-score\n(applicationDetailId, isPass, note, score)
+activate DetailCtrl
+DetailCtrl -> DetailSvc : hrScore(applicationDetailId, isPass, note, score)
+activate DetailSvc
+
+DetailSvc -> DetailRepo : findById(applicationDetailId)
+activate DetailRepo
+DetailRepo --> DetailSvc : Optional<ApplicationDetail>
+deactivate DetailRepo
+
+break Application detail is not found
+    DetailSvc --> DetailCtrl : throws CustomException\n(404 NOT_FOUND, "Application Detail not found")
+    DetailCtrl --> Client : error response (404)
+    Client --> Staff : error response (404)
+end
+
+DetailSvc -> DetailSvc : set HR score and HR note
+
+alt Staff marks the round as passed
+    DetailSvc -> DetailSvc : final result = PASSED
+else Staff marks the round as failed
+    DetailSvc -> DetailSvc : final result = FAILED
+end
+
+DetailSvc -> DetailSvc : final score = HR score,\nstatus = COMPLETED, completion time = now
+
+DetailSvc -> DetailRepo : save(appDetail)
+activate DetailRepo
+DetailRepo --> DetailSvc : ApplicationDetail
+deactivate DetailRepo
+
+' ===================== The application advances to the next round =====================
+
+DetailSvc -> AppSvc : getApplicationById(appDetail.applicationId)
+activate AppSvc
+AppSvc --> DetailSvc : Application
+deactivate AppSvc
+
+DetailSvc -> AppSvc : moveToNextRound(application)
+activate AppSvc
+ref over AppSvc : Automated pipeline stage progression\n(see 3.7.2.2)
+AppSvc --> DetailSvc : the application is advanced
+deactivate AppSvc
+
+DetailSvc --> DetailCtrl : grading is saved
+deactivate DetailSvc
+DetailCtrl --> Client : 200 OK
+Client --> Staff : 200 OK
+deactivate DetailCtrl
+
+note over Staff, AppSvc
+  A round graded by staff is closed even when the AI has already
+  scored it: the HR score overwrites the final score of the round
+end note
+
+deactivate Client
+
+@enduml

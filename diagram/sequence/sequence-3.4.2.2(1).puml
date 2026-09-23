@@ -14,7 +14,10 @@ sequenceDiagram {
 }
 </style>
 
+autonumber
+
 actor "Candidate" as Candidate
+participant ":ApplicationWorkspacePage" as Client
 participant ":ApplicationDetailController" as Controller
 participant ":SubmissionService" as SubService
 participant ":RoundProcessorFactory" as Factory
@@ -29,7 +32,10 @@ note right of Compiler
   not part of the Spring Boot backend)
 end note
 
-Candidate -> Controller : POST /api/application-details/submit\n(applicationId, compileRequest[] with isTest = true)
+activate Client
+
+Candidate -> Client : POST /api/application-details/submit\n(applicationId, compileRequest[] with isTest = true)
+Client -> Controller : POST /api/application-details/submit\n(applicationId, compileRequest[] with isTest = true)
 activate Controller
 
 Controller -> SubService : submitRound(submitRequest)
@@ -52,7 +58,8 @@ activate CodeProcessor
 break Compile request list is missing or empty
     CodeProcessor --> SubService : throws IllegalArgumentException\n("Compile request must not be null or empty")
     SubService --> Controller : propagate exception
-    Controller --> Candidate : error response (500)
+    Controller --> Client : error response (500)
+    Client --> Candidate : error response (500)
 end
 
 ' ===================== Test run against visible examples (nothing is saved) =====================
@@ -67,7 +74,8 @@ deactivate ProblemRepo
 break Coding problem is not found
     CodeProcessor --> SubService : throws IllegalArgumentException\n("Coding problem not found with ID: {problemId}")
     SubService --> Controller : propagate exception
-    Controller --> Candidate : error response (500)
+    Controller --> Client : error response (500)
+    Client --> Candidate : error response (500)
 end
 
 CodeProcessor -> CodeProcessor : build test cases from visible examples
@@ -86,7 +94,8 @@ break Compiler service call fails
     ApiClient --> CodeProcessor : throws RuntimeException\n("Compiler service call failed")
     CodeProcessor --> SubService : propagate exception
     SubService --> Controller : propagate exception
-    Controller --> Candidate : error response (500)
+    Controller --> Client : error response (500)
+    Client --> Candidate : error response (500)
 end
 
 Compiler --> ApiClient : CompilerResponseDto (test case results)
@@ -103,7 +112,10 @@ deactivate CodeProcessor
 SubService --> Controller : SubmissionResult
 deactivate SubService
 
-Controller --> Candidate : 200 OK\nbody = SubmissionResult
+Controller --> Client : 200 OK\nbody = SubmissionResult
+Client --> Candidate : 200 OK\nbody = SubmissionResult
 deactivate Controller
+
+deactivate Client
 
 @enduml

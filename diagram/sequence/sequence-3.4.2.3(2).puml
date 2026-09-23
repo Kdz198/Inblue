@@ -14,6 +14,8 @@ sequenceDiagram {
 }
 </style>
 
+autonumber
+
 participant ":BackgroundScheduler" as Scheduler
 participant ":EmailSubmissionServiceImpl" as EmailService
 participant ":EmailSubmissionRepository" as EmailRepo

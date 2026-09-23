@@ -1,0 +1,194 @@
+@startuml MentorStarEvaluation_RoundCompletionTrigger
+skinparam monochrome true
+skinparam shadowing false
+
+' Do not repeat participant boxes at the bottom of the diagram
+hide footbox
+
+<style>
+sequenceDiagram {
+  groupHeader {
+    FontStyle plain
+  }
+}
+</style>
+
+autonumber
+
+actor "Mentor" as Mentor
+actor "Candidate" as Candidate
+participant ":MentorSessionReviewViewPage" as MentorClient
+participant ":ApplicationWorkspacePage" as CandidateClient
+participant ":MentorReviewController" as ReviewCtrl
+participant ":MentorReviewServiceImpl" as ReviewSvc
+participant ":MentorReviewRepository" as ReviewRepo
+participant ":MentorFeedbackController" as FeedbackCtrl
+participant ":MentorFeedbackServiceImpl" as FeedbackSvc
+participant ":MentorFeedbackRepository" as FeedbackRepo
+participant ":MentorRepository" as MentorRepo
+participant ":SessionRepository" as SessionRepo
+participant ":ApplicationDetailRepository" as DetailRepo
+participant ":RoundRepository" as RoundRepo
+participant ":ApplicationServiceImpl" as AppSvc
+
+note over ReviewSvc, FeedbackSvc
+  The Mentor Review round is only closed once BOTH sides have been
+  submitted: the mentor STAR evaluation and the candidate feedback.
+  Whichever arrives last triggers the round completion.
+end note
+
+' ===================== Mentor submits the STAR evaluation =====================
+
+activate MentorClient
+activate CandidateClient
+
+Mentor -> MentorClient : POST /api/mentor-reviews\n(sessionId, mentorId, userId, rating,\nsituation, task, action, result notes,\nstrength, weakness, improvement)
+MentorClient -> ReviewCtrl : POST /api/mentor-reviews\n(sessionId, mentorId, userId, rating,\nsituation, task, action, result notes,\nstrength, weakness, improvement)
+activate ReviewCtrl
+ReviewCtrl -> ReviewSvc : mentorReview(request)
+activate ReviewSvc
+
+ReviewSvc -> MentorRepo : getMentorById(mentorId)
+activate MentorRepo
+MentorRepo --> ReviewSvc : Mentor
+deactivate MentorRepo
+ReviewSvc -> SessionRepo : findById(sessionId)
+activate SessionRepo
+SessionRepo --> ReviewSvc : Session
+deactivate SessionRepo
+
+break Session, mentor or candidate is not found
+    ReviewSvc --> ReviewCtrl : throws CustomException\n(404 NOT_FOUND, "Session | Mentor | User not found")
+    ReviewCtrl --> MentorClient : error response (404)
+    MentorClient --> Mentor : error response (404)
+end
+
+break Video session is not completed yet
+    ReviewSvc --> ReviewCtrl : throws CustomException\n(400 BAD_REQUEST, "Cannot review mentor for a session\nthat is not completed")
+    ReviewCtrl --> MentorClient : error response (400)
+    MentorClient --> Mentor : error response (400)
+end
+
+ReviewSvc -> ReviewRepo : save(MentorReview(session, mentor, candidate,\nrating and STAR notes))
+activate ReviewRepo
+ReviewRepo --> ReviewSvc : MentorReview
+deactivate ReviewRepo
+
+ReviewSvc -> ReviewSvc : checkAndCompleteRound(sessionId)
+activate ReviewSvc
+ref over ReviewSvc, AppSvc : Round completion check\n(see the fragment at the bottom of this diagram)
+ReviewSvc --> ReviewSvc --
+
+ReviewSvc --> ReviewCtrl : MentorReview
+deactivate ReviewSvc
+ReviewCtrl --> MentorClient : 200 OK (STAR evaluation is saved)
+MentorClient --> Mentor : 200 OK (STAR evaluation is saved)
+deactivate ReviewCtrl
+
+' ===================== Candidate submits the feedback about the mentor =====================
+
+Candidate -> CandidateClient : POST /api/mentor-feedbacks\n(sessionId, mentorId, userId, rating, comment)
+CandidateClient -> FeedbackCtrl : POST /api/mentor-feedbacks\n(sessionId, mentorId, userId, rating, comment)
+activate FeedbackCtrl
+FeedbackCtrl -> FeedbackSvc : createMentorFeedback(request)
+activate FeedbackSvc
+
+FeedbackSvc -> MentorRepo : getMentorById(mentorId)
+activate MentorRepo
+MentorRepo --> FeedbackSvc : Mentor
+deactivate MentorRepo
+FeedbackSvc -> SessionRepo : findById(sessionId)
+activate SessionRepo
+SessionRepo --> FeedbackSvc : Session
+deactivate SessionRepo
+
+break Session, mentor or candidate is not found,\nor the video session is not completed
+    FeedbackSvc --> FeedbackCtrl : throws CustomException\n(404 NOT_FOUND, "Session | Mentor | User not found\nor session is not complete")
+    FeedbackCtrl --> CandidateClient : error response (404)
+    CandidateClient --> Candidate : error response (404)
+end
+
+FeedbackSvc -> FeedbackRepo : findAllByMentor_Id(mentorId)
+activate FeedbackRepo
+FeedbackRepo --> FeedbackSvc : List<MentorFeedback>
+deactivate FeedbackRepo
+FeedbackSvc -> FeedbackSvc : increase the mentor session count and\nrecompute the average rating (capped at 5)
+FeedbackSvc -> MentorRepo : save(mentor)
+activate MentorRepo
+MentorRepo --> FeedbackSvc : Mentor
+deactivate MentorRepo
+
+FeedbackSvc -> FeedbackRepo : save(MentorFeedback(session, mentor,\ncandidate, rating, comment))
+activate FeedbackRepo
+FeedbackRepo --> FeedbackSvc : MentorFeedback
+deactivate FeedbackRepo
+
+FeedbackSvc -> ReviewSvc : checkAndCompleteRound(sessionId)
+activate ReviewSvc
+
+' ===================== Round completion check =====================
+
+ReviewSvc -> ReviewRepo : findBySession_Id(sessionId)
+activate ReviewRepo
+ReviewRepo --> ReviewSvc : MentorReview
+deactivate ReviewRepo
+ReviewSvc -> FeedbackRepo : findBySession_Id(sessionId)
+activate FeedbackRepo
+FeedbackRepo --> ReviewSvc : Optional<MentorFeedback>
+deactivate FeedbackRepo
+
+alt Mentor review and candidate feedback both exist
+    ReviewSvc -> DetailRepo : findBySessionId(sessionId)
+    activate DetailRepo
+    DetailRepo --> ReviewSvc : Optional<ApplicationDetail>
+    deactivate DetailRepo
+
+    alt Round is found and is not completed yet
+        ReviewSvc -> ReviewSvc : attach the mentor review to the round,\nset status = COMPLETED and completion time
+
+        ReviewSvc -> RoundRepo : findById(appDetail.roundId)
+        activate RoundRepo
+        RoundRepo --> ReviewSvc : Round
+        deactivate RoundRepo
+
+        ReviewSvc -> ReviewSvc : final score = mentor rating scaled\nto the round maximum score (default 100)
+
+        alt Round defines a pass threshold
+            ReviewSvc -> ReviewSvc : final result = PASSED when the score reaches\nthe threshold, otherwise FAILED
+        else Round defines no pass threshold
+            ReviewSvc -> ReviewSvc : final result = PASSED
+        end
+
+        ReviewSvc -> DetailRepo : save(appDetail)
+        activate DetailRepo
+        DetailRepo --> ReviewSvc : ApplicationDetail
+        deactivate DetailRepo
+
+        ReviewSvc -> AppSvc : getApplicationById(appDetail.applicationId)
+        activate AppSvc
+        AppSvc --> ReviewSvc : Application
+        deactivate AppSvc
+        ReviewSvc -> AppSvc : moveToNextRound(application)
+        activate AppSvc
+        AppSvc --> ReviewSvc : the application moves on to the next round
+        deactivate AppSvc
+    else Round is not found or is already completed
+        ReviewSvc -> ReviewSvc : leave the round unchanged
+    end
+else Only one of the two submissions exists so far
+    ReviewSvc -> ReviewSvc : keep the round open and wait\nfor the missing submission
+end
+
+ReviewSvc --> FeedbackSvc : round completion check is done
+deactivate ReviewSvc
+
+FeedbackSvc --> FeedbackCtrl : MentorFeedback
+deactivate FeedbackSvc
+FeedbackCtrl --> CandidateClient : 200 OK (feedback is saved)
+CandidateClient --> Candidate : 200 OK (feedback is saved)
+deactivate FeedbackCtrl
+
+deactivate MentorClient
+deactivate CandidateClient
+
+@enduml

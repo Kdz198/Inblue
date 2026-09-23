@@ -1,9 +1,8 @@
 @startuml UploadCVAndAutoParsing
-title 3.2.2.1 Upload CV & Auto Parsing via AnythingLLM CV_PARSE Workspace
 skinparam monochrome true
 skinparam shadowing false
-skinparam sequenceMessageAlign center
-skinparam maxMessageSize 260
+
+' Do not repeat participant boxes at the bottom of the diagram
 hide footbox
 
 <style>
@@ -13,15 +12,18 @@ sequenceDiagram {
   }
 }
 </style>
+
 autonumber
+
+' title 3.2.2.1 Upload CV & Auto Parsing via AnythingLLM CV_PARSE Workspace
 
 ' Sources: supplied report, section IV.3.2.2.1 and Workflow 2: Manage Profile and CV.
 ' Implementation: UserController.uploadCv, UserServiceImpl.upCv,
 ' ApiClientImpl.sendChatToAnythingLlm, CandidateProfileImpl, EventListenerHandle.handleCv.
 ' Reviewed local Inblue-BE master and EXE_FE on 2026-09-18.
 
-actor Candidate
-participant "Web UI\nCVUploadModal / AccountPage" as UI
+actor "Candidate" as Candidate
+participant ":AccountPage" as Client
 participant ":UserController" as Controller
 participant ":UserServiceImpl" as Service
 participant ":UserRepository" as Users
@@ -38,16 +40,12 @@ note over AI
   application code)
 end note
 
-Candidate -> UI : Select CV file
-UI -> UI : Validate PDF type/extension and size <= 10 MB
-break File type is invalid or file size exceeds the limit
-  UI --> Candidate : Show validation error
-end
-UI --> Candidate : Preview selected PDF
-Candidate -> UI : Confirm upload
-UI -> Controller : POST /api/users/upload-cv\n multipart: userId, cvFile, [applicationId]
+activate Client
+
+Candidate -> Client : POST /api/users/upload-cv\n multipart: userId, cvFile, [applicationId]
+Client -> Controller : POST /api/users/upload-cv\n multipart: userId, cvFile, [applicationId]
 activate Controller
-note over UI, Controller
+note over Candidate, Controller
   Account UI sends userId and cvFile only.
   applicationId is an optional backend parameter.
   Precondition: authenticated request accepted by security filters.
@@ -57,7 +55,8 @@ activate Service
 
 break CV file is empty (direct API request)
   Service --> Controller : null
-  Controller --> UI : HTTP 200, empty body
+  Controller --> Client : HTTP 200, empty body
+  Client --> Candidate : HTTP 200, empty body
 end
 
 group Transactional upCv attempt
@@ -125,10 +124,9 @@ end
 par Return parsed profile (does not wait for Cloudinary)
   Service --> Controller : CandidateProfile (transaction completes)
   deactivate Service
-  Controller --> UI : HTTP 200 + CandidateProfile
+  Controller --> Client : HTTP 200 + CandidateProfile
+  Client --> Candidate : HTTP 200 + CandidateProfile
   deactivate Controller
-  UI -> UI : Refresh account data
-  UI --> Candidate : Show upload success and close modal
 else CV is being stored in background
   activate Listener
   Listener -> Users : findById(user.id)
@@ -147,9 +145,11 @@ else CV is being stored in background
   deactivate Listener
 end
 
-note over UI, Storage
+note over Candidate, Storage
   Background storage may finish before or after the HTTP response.
   Its failure does not change an already returned HTTP 200;
   an immediate account refresh may still show the previous CV URL.
 end note
+deactivate Client
+
 @enduml

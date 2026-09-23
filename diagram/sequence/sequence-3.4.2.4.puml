@@ -14,7 +14,10 @@ sequenceDiagram {
 }
 </style>
 
+autonumber
+
 actor "Candidate" as Candidate
+participant ":ApplicationWorkspacePage" as Client
 participant ":ApplicationDetailController" as Controller
 participant ":SubmissionService" as SubService
 participant ":ApplicationDetailRepository" as DetailRepo
@@ -26,7 +29,10 @@ note right of LlmService
   that evaluates the review comments
 end note
 
-Candidate -> Controller : POST /api/application-details/code-review/evaluate\n(applicationId, submissions[])
+activate Client
+
+Candidate -> Client : POST /api/application-details/code-review/evaluate\n(applicationId, submissions[])
+Client -> Controller : POST /api/application-details/code-review/evaluate\n(applicationId, submissions[])
 activate Controller
 
 Controller -> SubService : evaluateCodeReview(codeReviewSubmitRequest)
@@ -38,7 +44,8 @@ ref over SubService : Load current application and round\n(see 3.4.2.1)
 
 break Round has no Code Review problem configured
     SubService --> Controller : throws CustomException\n(400 BAD_REQUEST, "The round has no Code Review problem configured")
-    Controller --> Candidate : error response (400)
+    Controller --> Client : error response (400)
+    Client --> Candidate : error response (400)
 end
 
 SubService -> SubService : select the first Code Review problem\nfrom the round configuration
@@ -49,7 +56,8 @@ DetailRepo --> SubService : Optional<ApplicationDetail>
 
 break Round has already been submitted
     SubService --> Controller : throws CustomException\n(409 CONFLICT, "Round has already been submitted")
-    Controller --> Candidate : error response (409)
+    Controller --> Client : error response (409)
+    Client --> Candidate : error response (409)
 end
 
 ' ===================== Evaluate review comments with the AI service =====================
@@ -67,7 +75,8 @@ deactivate ApiClient
 
 break AI service returns no evaluation result
     SubService --> Controller : throws CustomException\n(500 INTERNAL_SERVER_ERROR, "AI service did not return an evaluation result")
-    Controller --> Candidate : error response (500)
+    Controller --> Client : error response (500)
+    Client --> Candidate : error response (500)
 end
 
 ' ===================== Build and save the result =====================
@@ -85,7 +94,8 @@ SubService -> DetailRepo : saveAndFlush(applicationDetail)
 break Another submission for this round was saved at the same time
     DetailRepo --> SubService : throws DataIntegrityViolationException
     SubService --> Controller : throws CustomException\n(409 CONFLICT, "Round has already been submitted")
-    Controller --> Candidate : error response (409)
+    Controller --> Client : error response (409)
+    Client --> Candidate : error response (409)
 end
 
 DetailRepo --> SubService : savedDetail
@@ -94,7 +104,10 @@ deactivate DetailRepo
 SubService --> Controller : ApplicationDetail
 deactivate SubService
 
-Controller --> Candidate : 200 OK\nbody = ApplicationDetail
+Controller --> Client : 200 OK\nbody = ApplicationDetail
+Client --> Candidate : 200 OK\nbody = ApplicationDetail
 deactivate Controller
+
+deactivate Client
 
 @enduml

@@ -1,0 +1,130 @@
+@startuml BusinessContext_Inblue
+title Business Context Diagram - INBLUE System
+
+left to right direction
+skinparam shadowing false
+skinparam defaultTextAlignment center
+skinparam nodesep 40
+skinparam ranksep 200
+skinparam ArrowFontSize 11
+skinparam ArrowColor #555555
+skinparam usecase {
+  BackgroundColor #DCE6F5
+  BorderColor #3B5B8C
+  FontStyle bold
+  FontSize 18
+}
+skinparam rectangle {
+  BackgroundColor #FFFFFF
+  BorderColor #333333
+  FontStyle bold
+}
+skinparam rectangle<<Person>> {
+  BackgroundColor #FFF3D6
+  BorderColor #B07A00
+}
+
+' ================= SYSTEM =================
+usecase "INBLUE\nSYSTEM" as SYS
+
+' ================= EXTERNAL ENTITIES =================
+rectangle "Candidate" <<Person>> as CAN
+rectangle "Mentor" <<Person>> as MEN
+rectangle "Staff" <<Person>> as STA
+rectangle "Admin" <<Person>> as ADM
+
+rectangle "External AI Engine" as AI
+rectangle "Code Compiler\nService" as CMP
+rectangle "Payment Gateway\n(PayOS)" as PAY
+rectangle "Video Service\n(Daily.co)" as VID
+rectangle "Cloud Storage\n(Cloudinary)" as CLD
+rectangle "Email System" as EML
+rectangle "Google OAuth" as GOO
+rectangle "TopDev" as TOP
+
+' ================= LAYOUT HELPERS =================
+CAN -[hidden]down-> MEN
+MEN -[hidden]down-> STA
+STA -[hidden]down-> ADM
+
+AI -[hidden]down-> CMP
+CMP -[hidden]down-> PAY
+PAY -[hidden]down-> VID
+VID -[hidden]down-> CLD
+CLD -[hidden]down-> EML
+
+' ================= CANDIDATE =================
+CAN -right-> SYS : Login & Profile Data
+CAN -right-> SYS : Job Application
+CAN -right-> SYS : Assessment Answers
+CAN -right-> SYS : AI Interview Answers
+CAN -right-> SYS : JD Application Purchase Request
+CAN -right-> SYS : Community Posts
+SYS -left-> CAN : Checkout URL
+SYS -left-> CAN : Community Feed
+SYS -left-> CAN : Meeting URL
+SYS -left-> CAN : Job Listings & Details
+SYS -left-> CAN : AI Feedback & Roadmap
+SYS -left-> CAN : Assessment Results
+
+' ================= MENTOR =================
+MEN -right-> SYS : Community Posts
+MEN -right-> SYS : Candidate Evaluation
+SYS -left-> MEN : Meeting URL
+SYS -left-> MEN : Assigned Interview Rounds
+
+' ================= STAFF =================
+STA -right-> SYS : Community Posts
+STA -right-> SYS : Manual Assessment Scores
+SYS -left-> STA : Candidate Submissions
+SYS -left-> STA : Community Feed
+
+' ================= ADMIN =================
+ADM -right-> SYS : System Configs
+ADM -right-> SYS : Reviewer & Mentor Assignments
+ADM -right-> SYS : Company & JD Data
+SYS -left-> ADM : Dashboard Metrics
+SYS -left-> ADM : Recent Applications
+
+' ================= EXTERNAL AI ENGINE =================
+SYS -right-> AI : JD Context
+SYS -right-> AI : CV Documents
+SYS -right-> AI : Interview Transcripts
+SYS -right-> AI : Email & Code Review Submissions
+SYS -right-> AI : Proctoring Snapshots
+AI -left-> SYS : CV Evaluation Feedback
+AI -left-> SYS : Evaluation Scores
+AI -left-> SYS : Interview Plan & Questions
+AI -left-> SYS : Behavior Warnings
+
+' ================= CODE COMPILER SERVICE =================
+SYS -right-> CMP : Code Execution Request
+CMP -left-> SYS : Execution Results
+
+' ================= PAYMENT GATEWAY =================
+SYS -right-> PAY : Transaction Request
+PAY -left-> SYS : Checkout URL
+PAY -left-> SYS : Payment Status Updates
+
+' ================= VIDEO SERVICE =================
+SYS -right-> VID : Room Creation Request
+VID -left-> SYS : Room URL
+VID -left-> SYS : Meeting Events
+
+' ================= CLOUD STORAGE =================
+SYS -right-> CLD : Files (Images, PDFs, Audio)
+CLD -left-> SYS : File URL
+
+' ================= EMAIL SYSTEM =================
+SYS -right-> EML : Email Content (OTP, Alerts)
+EML -left-> SYS : Candidate Email Replies
+
+' ================= GOOGLE OAUTH =================
+SYS -up-> GOO : OAuth Authorization Request
+GOO -down-> SYS : Google User Profile
+
+' ================= TOPDEV =================
+SYS -down-> TOP : Job Search Request
+TOP -up-> SYS : Job Postings Data
+
+@enduml

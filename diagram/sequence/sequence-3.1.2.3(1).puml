@@ -14,7 +14,10 @@ sequenceDiagram {
 }
 </style>
 
+autonumber
+
 actor "Candidate / Mentor" as User
+participant ":ForgotPasswordPage" as Client
 participant ":AuthController" as Controller
 participant ":PasswordResetServiceImpl" as Service
 participant ":UserRepository" as UserRepo
@@ -29,7 +32,10 @@ end note
 
 ' ===================== Request the OTP =====================
 
-User -> Controller : POST /api/auth/forgot-password\n(email)
+activate Client
+
+User -> Client : POST /api/auth/forgot-password\n(email)
+Client -> Controller : POST /api/auth/forgot-password\n(email)
 activate Controller
 
 Controller -> Service : sendResetOtp(email)
@@ -49,7 +55,8 @@ deactivate MentorRepo
 
 break Email does not belong to any user or mentor
     Service --> Controller : throws CustomException\n(404 NOT_FOUND, "Email does not exist in the system")
-    Controller --> User : error response (404)
+    Controller --> Client : error response (404)
+    Client --> User : error response (404)
 end
 
 ' ===================== Generate and store the OTP =====================
@@ -77,13 +84,17 @@ deactivate MailService
 
 break Email sending fails
     Service --> Controller : throws CustomException\n(500 INTERNAL_SERVER_ERROR, "Failed to send email, please try again later.")
-    Controller --> User : error response (500)
+    Controller --> Client : error response (500)
+    Client --> User : error response (500)
 end
 
 Service --> Controller : void
 deactivate Service
 
-Controller --> User : 200 OK\n"OTP has been sent to your email"
+Controller --> Client : 200 OK\n"OTP has been sent to your email"
+Client --> User : 200 OK\n"OTP has been sent to your email"
 deactivate Controller
+
+deactivate Client
 
 @enduml

@@ -14,7 +14,10 @@ sequenceDiagram {
 }
 </style>
 
+autonumber
+
 actor "Candidate" as Candidate
+participant ":AIInterviewSessionPage" as Client
 participant ":InterviewProcessController" as Controller
 participant ":SpeechServiceImpl" as Service
 participant ":StringRedisTemplate" as Redis
@@ -32,7 +35,10 @@ end note
 
 ' ===================== Request audio for the current question =====================
 
-Candidate -> Controller : POST /api/v1/interview/tts\n(text, voiceId)
+activate Client
+
+Candidate -> Client : POST /api/v1/interview/tts\n(text, voiceId)
+Client -> Controller : POST /api/v1/interview/tts\n(text, voiceId)
 activate Controller
 
 Controller -> Service : generateAudio(text, voiceId)
@@ -66,7 +72,8 @@ else Bearer token is missing or ElevenLabs request fails
 
         break Google TTS request fails
             Service --> Controller : throws RuntimeException\n("Google TTS fallback failed")
-            Controller --> Candidate : error response (500)
+            Controller --> Client : error response (500)
+            Client --> Candidate : error response (500)
         end
 
         Service -> Service : append chunk to the output audio
@@ -76,7 +83,10 @@ end
 Service --> Controller : audio bytes
 deactivate Service
 
-Controller --> Candidate : 200 OK\nbody = audio bytes (application/octet-stream)
+Controller --> Client : 200 OK\nbody = audio bytes (application/octet-stream)
+Client --> Candidate : 200 OK\nbody = audio bytes (application/octet-stream)
 deactivate Controller
+
+deactivate Client
 
 @enduml

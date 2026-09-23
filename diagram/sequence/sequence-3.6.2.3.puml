@@ -1,0 +1,224 @@
+@startuml StaffMentorAssignment_CandidateMentorSelection
+skinparam monochrome true
+skinparam shadowing false
+
+' Do not repeat participant boxes at the bottom of the diagram
+hide footbox
+
+<style>
+sequenceDiagram {
+  groupHeader {
+    FontStyle plain
+  }
+}
+</style>
+
+autonumber
+
+actor "Admin / Staff" as Admin
+actor "Candidate" as Candidate
+participant ":MentorReviewAssignmentPage" as AdminClient
+participant ":ApplicationWorkspacePage" as CandidateClient
+participant ":ApplicationDetailController" as DetailCtrl
+participant ":ApplicationDetailServiceImpl" as DetailSvc
+participant ":ApplicationDetailRepository" as DetailRepo
+participant ":RoundRepository" as RoundRepo
+participant ":MentorServiceImpl" as MentorSvc
+participant ":MentorRepository" as MentorRepo
+
+note over DetailSvc
+  The Mentor Review round waits in status AWAITING_MENTOR
+  until a mentor is assigned to it
+end note
+
+alt Admin assigns a single mentor directly
+
+    ' ===================== Admin assigns one mentor =====================
+
+activate AdminClient
+activate CandidateClient
+
+    Admin -> AdminClient : PUT /api/application-details/{id}/assign-mentor?mentorId={mentorId}
+    AdminClient -> DetailCtrl : PUT /api/application-details/{id}/assign-mentor?mentorId={mentorId}
+    activate DetailCtrl
+    DetailCtrl -> DetailSvc : assignMentor(applicationDetailId, mentorId)
+    activate DetailSvc
+
+    DetailSvc -> DetailRepo : findById(applicationDetailId)
+    activate DetailRepo
+    DetailRepo --> DetailSvc : Optional<ApplicationDetail>
+    deactivate DetailRepo
+
+    break Application detail is not found
+        DetailSvc --> DetailCtrl : throws CustomException\n(404 NOT_FOUND, "Application Detail not found")
+        DetailCtrl --> AdminClient : error response (404)
+        AdminClient --> Admin : error response (404)
+    end
+
+    break Round is not waiting for a mentor assignment
+        DetailSvc --> DetailCtrl : throws CustomException\n(400 BAD_REQUEST, "Application detail status is not\nAWAITING_MENTOR or AWAITING_CANDIDATE_SELECT_MENTOR")
+        DetailCtrl --> AdminClient : error response (400)
+        AdminClient --> Admin : error response (400)
+    end
+
+    DetailSvc -> RoundRepo : findById(appDetail.roundId)
+    activate RoundRepo
+    RoundRepo --> DetailSvc : Optional<Round>
+    deactivate RoundRepo
+
+    break Round is not found
+        DetailSvc --> DetailCtrl : throws CustomException\n(404 NOT_FOUND, "Round not found")
+        DetailCtrl --> AdminClient : error response (404)
+        AdminClient --> Admin : error response (404)
+    end
+
+    DetailSvc -> DetailSvc : set session info start time = now and\nend time = now + round time limit
+
+    DetailSvc -> DetailRepo : save(appDetail with mentor id\nand status = PENDING)
+    activate DetailRepo
+    DetailRepo --> DetailSvc : ApplicationDetail
+    deactivate DetailRepo
+
+    DetailSvc --> DetailCtrl : ApplicationDetail
+    deactivate DetailSvc
+    DetailCtrl --> AdminClient : 200 OK (mentor is assigned)
+    AdminClient --> Admin : 200 OK (mentor is assigned)
+    deactivate DetailCtrl
+
+else Admin suggests several mentors for the candidate to choose from
+
+    ' ===================== Admin suggests a list of mentors =====================
+
+    Admin -> AdminClient : PUT /api/application-details/{id}/assign-mentors\n(mentorIds)
+    AdminClient -> DetailCtrl : PUT /api/application-details/{id}/assign-mentors\n(mentorIds)
+    activate DetailCtrl
+    DetailCtrl -> DetailSvc : assignMentors(applicationDetailId, mentorIds)
+    activate DetailSvc
+
+    DetailSvc -> DetailRepo : findById(applicationDetailId)
+    activate DetailRepo
+    DetailRepo --> DetailSvc : Optional<ApplicationDetail>
+    deactivate DetailRepo
+
+    break Application detail is not found, or round is not waiting\nfor a mentor assignment
+        DetailSvc --> DetailCtrl : throws CustomException\n(404 NOT_FOUND / 400 BAD_REQUEST)
+        DetailCtrl --> AdminClient : error response (404 / 400)
+        AdminClient --> Admin : error response (404 / 400)
+    end
+
+    break Mentor list is empty
+        DetailSvc --> DetailCtrl : throws CustomException\n(400 BAD_REQUEST, "Mentor IDs list cannot be empty")
+        DetailCtrl --> AdminClient : error response (400)
+        AdminClient --> Admin : error response (400)
+    end
+
+    DetailSvc -> DetailRepo : save(appDetail with suggested mentor ids,\nno selected mentor and status =\nAWAITING_CANDIDATE_SELECT_MENTOR)
+    activate DetailRepo
+    DetailRepo --> DetailSvc : ApplicationDetail
+    deactivate DetailRepo
+
+    DetailSvc --> DetailCtrl : ApplicationDetail
+    deactivate DetailSvc
+    DetailCtrl --> AdminClient : 200 OK (mentors are suggested)
+    AdminClient --> Admin : 200 OK (mentors are suggested)
+    deactivate DetailCtrl
+
+    ' ===================== Candidate reads the suggested mentors =====================
+
+    Candidate -> CandidateClient : GET /api/application-details/{id}/assigned-mentors
+    CandidateClient -> DetailCtrl : GET /api/application-details/{id}/assigned-mentors
+    activate DetailCtrl
+    DetailCtrl -> DetailSvc : getAssignedMentors(applicationDetailId)
+    activate DetailSvc
+
+    DetailSvc -> DetailRepo : findById(applicationDetailId)
+    activate DetailRepo
+    DetailRepo --> DetailSvc : ApplicationDetail
+    deactivate DetailRepo
+
+    alt No mentor has been suggested for this round
+        DetailSvc --> DetailCtrl : empty List<MentorResponse>
+    else Mentors have been suggested for this round
+        loop For each suggested mentor id
+            DetailSvc -> MentorSvc : getMentorById(mentorId)
+            activate MentorSvc
+            MentorSvc -> MentorRepo : getMentorById(mentorId)
+            activate MentorRepo
+            MentorRepo --> MentorSvc : Mentor
+            deactivate MentorRepo
+            MentorSvc --> DetailSvc : MentorResponse
+            deactivate MentorSvc
+
+            opt Mentor no longer exists
+                DetailSvc -> DetailSvc : skip this mentor and keep reading the list
+            end
+        end
+
+        DetailSvc --> DetailCtrl : List<MentorResponse>
+        deactivate DetailSvc
+    end
+
+    DetailCtrl --> CandidateClient : 200 OK (profiles of the suggested mentors)
+    CandidateClient --> Candidate : 200 OK (profiles of the suggested mentors)
+    deactivate DetailCtrl
+
+    ' ===================== Candidate selects one mentor =====================
+
+    Candidate -> CandidateClient : PUT /api/application-details/{id}/select-mentor?mentorId={mentorId}
+    CandidateClient -> DetailCtrl : PUT /api/application-details/{id}/select-mentor?mentorId={mentorId}
+    activate DetailCtrl
+    DetailCtrl -> DetailSvc : selectMentor(applicationDetailId, mentorId)
+    activate DetailSvc
+
+    DetailSvc -> DetailRepo : findById(applicationDetailId)
+    activate DetailRepo
+    DetailRepo --> DetailSvc : ApplicationDetail
+    deactivate DetailRepo
+
+    break Round is not waiting for the candidate to select a mentor
+        DetailSvc --> DetailCtrl : throws CustomException\n(400 BAD_REQUEST, "Application detail is not in\nAWAITING_CANDIDATE_SELECT_MENTOR status")
+        DetailCtrl --> CandidateClient : error response (400)
+        CandidateClient --> Candidate : error response (400)
+    end
+
+    break Selected mentor is not in the suggested list
+        DetailSvc --> DetailCtrl : throws CustomException\n(400 BAD_REQUEST, "Selected mentor is not in the\nassigned mentor list for this round")
+        DetailCtrl --> CandidateClient : error response (400)
+        CandidateClient --> Candidate : error response (400)
+    end
+
+    DetailSvc -> RoundRepo : findById(appDetail.roundId)
+    activate RoundRepo
+    RoundRepo --> DetailSvc : Optional<Round>
+    deactivate RoundRepo
+
+    break Round is not found
+        DetailSvc --> DetailCtrl : throws CustomException\n(404 NOT_FOUND, "Round not found")
+        DetailCtrl --> CandidateClient : error response (404)
+        CandidateClient --> Candidate : error response (404)
+    end
+
+    DetailSvc -> DetailSvc : set session info start time = now and\nend time = now + round time limit
+
+    DetailSvc -> DetailRepo : save(appDetail with the selected mentor\nand status = PENDING)
+    activate DetailRepo
+    DetailRepo --> DetailSvc : ApplicationDetail
+    deactivate DetailRepo
+
+    DetailSvc --> DetailCtrl : ApplicationDetail
+    deactivate DetailSvc
+    DetailCtrl --> CandidateClient : 200 OK (mentor is selected)
+    CandidateClient --> Candidate : 200 OK (mentor is selected)
+    deactivate DetailCtrl
+end
+
+note over Candidate, DetailSvc
+  Once the round is back in PENDING status with a mentor, the candidate
+  proposes an interview slot (see 3.6.2.1 Book Mentor Interview Slot
+  & Automated Daily.co Room Creation)
+end note
+
+deactivate AdminClient
+deactivate CandidateClient
+
+@enduml

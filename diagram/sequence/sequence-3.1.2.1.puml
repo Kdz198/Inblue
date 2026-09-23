@@ -13,7 +13,10 @@ sequenceDiagram {
 }
 </style>
 
+autonumber
+
 actor "Candidate / Mentor" as Candidate
+participant ":LoginPage" as Client
 participant ":AuthController" as Controller
 participant ":AuthenticationManager" as AuthMgr
 participant ":DaoAuthenticationProvider" as Provider
@@ -23,7 +26,10 @@ participant ":MentorRepository" as MentorRepo
 participant ":PasswordEncoder" as Encoder
 participant ":JwtUtils" as Jwt
 
-Candidate -> Controller : POST /api/auth/login(loginRequest)
+activate Client
+
+Candidate -> Client : POST /api/auth/login(loginRequest)
+Client -> Controller : POST /api/auth/login(loginRequest)
 activate Controller
 
 Controller -> AuthMgr : authenticate(\nUsernamePasswordAuthenticationToken(email, password))
@@ -59,9 +65,7 @@ alt Account is found and active
 
     alt Password is correct
         Provider --> AuthMgr : return Authentication\n(principal = CustomUserDetails, authorities)
-        deactivate Provider
         AuthMgr --> Controller : return Authentication
-        deactivate AuthMgr
 
         Controller -> Controller : SecurityContextHolder.getContext()\n.setAuthentication(auth)
 
@@ -72,13 +76,13 @@ alt Account is found and active
         Jwt --> Controller : return token : String
         deactivate Jwt
 
-        Controller --> Candidate : 200 OK\nheader Authorization: Bearer <token>\nbody token
+        Controller --> Client : 200 OK\nheader Authorization: Bearer <token>\nbody token
+        Client --> Candidate : 200 OK\nheader Authorization: Bearer <token>\nbody token
     else Password is incorrect
         Provider --> AuthMgr : throws BadCredentialsException
-        deactivate Provider
         AuthMgr --> Controller : throws AuthenticationException
-        deactivate AuthMgr
-        Controller --> Candidate : error response (login failed)
+        Controller --> Client : error response (login failed)
+        Client --> Candidate : error response (login failed)
     end
 else Account is not found
     UDS --> Provider : throws UsernameNotFoundException
@@ -87,8 +91,11 @@ else Account is not found
     deactivate Provider
     AuthMgr --> Controller : throws AuthenticationException
     deactivate AuthMgr
-    Controller --> Candidate : error response (login failed)
+    Controller --> Client : error response (login failed)
+    Client --> Candidate : error response (login failed)
     deactivate Controller
 end
+
+deactivate Client
 
 @enduml

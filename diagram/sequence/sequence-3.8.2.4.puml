@@ -1,0 +1,123 @@
+@startuml SystemAnalyticsDashboard
+skinparam monochrome true
+skinparam shadowing false
+
+' Do not repeat participant boxes at the bottom of the diagram
+hide footbox
+
+<style>
+sequenceDiagram {
+  groupHeader {
+    FontStyle plain
+  }
+}
+</style>
+
+autonumber
+
+actor "Admin" as Admin
+participant ":DashboardOverviewPage" as Client
+participant ":AdminManagementController" as AdminCtrl
+participant ":AdminManagementServiceImpl" as AdminSvc
+participant ":ApplicationRepository" as AppRepo
+participant ":CandidateProfileRepository" as ProfileRepo
+participant ":ApplicationDetailRepository" as DetailRepo
+participant ":PaymentRepository" as PaymentRepo
+
+note over AdminSvc
+  Read-only transaction: every figure comes from an aggregate
+  query, so no application or profile row is loaded in full
+end note
+
+' ===================== Load the dashboard overview =====================
+
+activate Client
+
+Admin -> Client : GET /api/admin/analytics/overview?limit={limit}&days={days}
+Client -> AdminCtrl : GET /api/admin/analytics/overview?limit={limit}&days={days}
+activate AdminCtrl
+AdminCtrl -> AdminSvc : getDashboardOverview(limit, days)
+activate AdminSvc
+
+AdminSvc -> AdminSvc : clamp the limit to 1..50 and\nthe transaction window to 1..365 days
+
+' ===================== Collect the aggregate figures =====================
+
+AdminSvc -> AppRepo : findApplicationTrendsByJob(top N)
+activate AppRepo
+AppRepo --> AdminSvc : application counts per job
+deactivate AppRepo
+
+AdminSvc -> ProfileRepo : findApplicationTrendsByPosition(top N)
+activate ProfileRepo
+ProfileRepo --> AdminSvc : application counts per target position
+deactivate ProfileRepo
+
+AdminSvc -> AppRepo : countApplicationsByStatus()
+activate AppRepo
+AppRepo --> AdminSvc : application counts per status
+deactivate AppRepo
+
+AdminSvc -> DetailRepo : findActiveInterviews(active statuses,\nAI Interview and Mentor Review round types, top N)
+activate DetailRepo
+DetailRepo --> AdminSvc : rounds currently being interviewed
+deactivate DetailRepo
+
+AdminSvc -> DetailRepo : countActiveInterviews(active statuses,\nAI Interview and Mentor Review round types)
+activate DetailRepo
+DetailRepo --> AdminSvc : number of active interviews
+deactivate DetailRepo
+
+AdminSvc -> PaymentRepo : findRecentTransactions(from, to,\nCOMPLETED, first 50)
+activate PaymentRepo
+PaymentRepo --> AdminSvc : completed payments of the window
+deactivate PaymentRepo
+
+' ===================== Build the response =====================
+
+AdminSvc -> AdminSvc : total applications = sum of the status counts;\nin progress, passed and failed\n(failed counts FAILED plus SOFT_FAILED)
+
+loop For each job in the trend list
+    AdminSvc -> AdminSvc : add rank, job title, application count\nand share of the total
+end
+
+loop For each target position in the trend list
+    AdminSvc -> AdminSvc : add rank, position, application count\nand share of the total
+end
+
+AdminSvc -> AdminSvc : map the active interviews and the recent\ntransactions into response items and\nstamp the generation time
+
+AdminSvc --> AdminCtrl : AdminDashboardOverviewResponse
+deactivate AdminSvc
+AdminCtrl --> Client : 200 OK (summary, job and position trends,\nactive interviews, recent transactions)
+Client --> Admin : 200 OK (summary, job and position trends,\nactive interviews, recent transactions)
+deactivate AdminCtrl
+
+' ===================== Load the applications-per-user metric =====================
+
+Admin -> Client : GET /api/admin/analytics/applications-per-user
+Client -> AdminCtrl : GET /api/admin/analytics/applications-per-user
+activate AdminCtrl
+AdminCtrl -> AdminSvc : getApplicationsPerUser()
+activate AdminSvc
+
+AdminSvc -> AppRepo : getApplicationUserStats()
+activate AppRepo
+AppRepo --> AdminSvc : total applications and unique applicants
+deactivate AppRepo
+
+alt There is at least one applicant
+    AdminSvc -> AdminSvc : average = total applications / unique applicants,\nrounded to two decimals
+else There is no applicant yet
+    AdminSvc -> AdminSvc : average = 0
+end
+
+AdminSvc --> AdminCtrl : AdminApplicationsPerUserResponse
+deactivate AdminSvc
+AdminCtrl --> Client : 200 OK (total, unique applicants, average)
+Client --> Admin : 200 OK (total, unique applicants, average)
+deactivate AdminCtrl
+
+deactivate Client
+
+@enduml

@@ -1,0 +1,110 @@
+@startuml PackageDiagram_InblueBE
+title Package Diagram - INBLUE Backend (Inblue-BE)
+
+skinparam packageStyle folder
+skinparam shadowing false
+skinparam defaultTextAlignment center
+skinparam linetype ortho
+skinparam ArrowColor #333333
+skinparam ArrowFontSize 11
+skinparam ArrowFontColor #333333
+skinparam ArrowThickness 1
+skinparam nodesep 40
+skinparam ranksep 90
+skinparam PackagePadding 12
+
+skinparam package {
+  BackgroundColor white
+  BorderColor #333333
+  FontStyle bold
+  FontColor #000000
+}
+
+' Style để ẩn viền và nền của thẻ chữ bên trong folder
+skinparam card {
+  BackgroundColor transparent
+  BorderColor transparent
+  FontColor #000000
+  FontStyle plain
+}
+
+' ================= PRESENTATION (top-left) =================
+package "Presentation" as PRES {
+  package "      " as pkg_controller #DAE8FC {
+    card controller
+  }
+  package "      " as pkg_entrytest #DAE8FC {
+    card entrytest
+  }
+  package "      " as pkg_filter #DAE8FC {
+    card filter
+  }
+}
+
+' ================= BUSINESS LOGIC LAYER (middle-left) =================
+package "Business Logic Layer" as BLL {
+  package "      " as pkg_service #DAE8FC {
+    card service
+  }
+  package "      " as pkg_schedule #DAE8FC {
+    card schedule
+  }
+  package "      " as pkg_event #DAE8FC {
+    card event
+  }
+  package "      " as pkg_mapper #DAE8FC {
+    card mapper
+  }
+  package "      " as pkg_aspect #DAE8FC {
+    card aspect
+  }
+  package "      " as pkg_cloudinary #DAE8FC {
+    card cloudinary
+  }
+}
+
+' ================= DATA ACCESS LAYER (bottom-left) =================
+package "Data Access Layer" as DAL {
+  package "      " as pkg_repository #DAE8FC {
+    card repository
+  }
+  package "      " as pkg_model #DAE8FC {
+    card model
+  }
+}
+
+' ================= COMMON & CORE (right column) =================
+package "Common & Core" as CORE {
+  package "      " as pkg_security #DAE8FC {
+    card security
+  }
+  package "      " as pkg_Config #DAE8FC {
+    card Config
+  }
+  package "      " as pkg_exception #DAE8FC {
+    card exception
+  }
+  package "      " as pkg_constants #DAE8FC {
+    card constants
+  }
+  package "      " as pkg_enums #DAE8FC {
+    card enums
+  }
+  package "      " as pkg_utils #DAE8FC {
+    card utils
+  }
+}
+
+' ================= LAYOUT HINTS =================
+PRES -[hidden]down-> BLL
+BLL -[hidden]down-> DAL
+BLL -[hidden]right-> CORE
+
+' ================= LAYER DEPENDENCIES =================
+PRES -down..> BLL : <<import>>
+BLL -down..> DAL : <<import>>
+PRES -right..> CORE : <<access>>
+BLL -right..> CORE : <<access>>
+DAL -right..> CORE : <<access>>
+
+@enduml

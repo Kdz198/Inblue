@@ -13,7 +13,10 @@ sequenceDiagram {
 }
 </style>
 
+autonumber
+
 actor "Candidate / Mentor" as User
+participant ":LoginPage" as Client
 participant ":AuthController" as Controller
 participant ":OAuth2LoginAuthenticationFilter" as OAuthFilter
 participant "Google Authorization Server" as GoogleAuth
@@ -29,25 +32,30 @@ note right of OAuthFilter
   filter chain (not custom application code)
 end note
 
-User -> Controller : GET /api/auth/login-with-google
+activate Client
+
+User -> Client : GET /api/auth/login-with-google
+Client -> Controller : GET /api/auth/login-with-google
 activate Controller
-Controller --> User : redirect to /oauth2/authorization/google
+Controller --> Client : redirect to /oauth2/authorization/google
+Client --> User : redirect to /oauth2/authorization/google
 
-User -> OAuthFilter : GET /oauth2/authorization/google
+User -> Client : GET /oauth2/authorization/google
+Client -> OAuthFilter : GET /oauth2/authorization/google
 activate OAuthFilter
-OAuthFilter --> User : redirect to Google authorization endpoint
-deactivate OAuthFilter
+OAuthFilter --> Client : redirect to Google authorization endpoint
+Client --> User : redirect to Google authorization endpoint
 
-User -> GoogleAuth : GET authorization endpoint (login & consent)
+User -> Client : GET authorization endpoint (login & consent)
+Client -> GoogleAuth : GET authorization endpoint (login & consent)
 activate GoogleAuth
-GoogleAuth --> User : redirect to /login/oauth2/code/google?code=...
-deactivate GoogleAuth
+GoogleAuth --> Client : redirect to /login/oauth2/code/google?code=...
+Client --> User : redirect to /login/oauth2/code/google?code=...
 
-User -> OAuthFilter : GET /login/oauth2/code/google?code=...
-activate OAuthFilter
+User -> Client : GET /login/oauth2/code/google?code=...
+Client -> OAuthFilter : GET /login/oauth2/code/google?code=...
 
 OAuthFilter -> GoogleAuth : exchange authorization code for access token
-activate GoogleAuth
 GoogleAuth --> OAuthFilter : access token
 deactivate GoogleAuth
 
@@ -70,11 +78,9 @@ else Mentor account does not exist or is not active
     OAuthService -> UserRepo : findByEmail(email)
     activate UserRepo
     UserRepo --> OAuthService : user
-    deactivate UserRepo
 
     opt User account does not exist
         OAuthService -> UserRepo : save(new User(email, name, role=USER))
-        activate UserRepo
         UserRepo --> OAuthService : user
         deactivate UserRepo
     end
@@ -98,7 +104,10 @@ deactivate Jwt
 Handler --> OAuthFilter : redirect prepared (frontendUrl/oauth2/callback?token=...)
 deactivate Handler
 
-OAuthFilter --> User : 302 redirect with JWT token
+OAuthFilter --> Client : 302 redirect with JWT token
+Client --> User : 302 redirect with JWT token
 deactivate OAuthFilter
+
+deactivate Client
 
 @enduml

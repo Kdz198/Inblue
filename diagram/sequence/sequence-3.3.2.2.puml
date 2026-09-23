@@ -5,7 +5,10 @@ skinparam shadowing false
 ' Do not repeat participant boxes at the bottom of the diagram
 hide footbox
 
+autonumber
+
 actor "Candidate" as Candidate
+participant ":JobDescriptionDetailPage" as Client
 participant ":PaymentController" as Controller
 participant ":PaymentServiceImpl" as Service
 participant ":SecurityUtils" as SecUtils
@@ -23,7 +26,10 @@ note right of PayOS
   custom application code)
 end note
 
-Candidate -> Controller : POST /api/payments/pay?jdId={jdId}
+activate Client
+
+Candidate -> Client : POST /api/payments/pay?jdId={jdId}
+Client -> Controller : POST /api/payments/pay?jdId={jdId}
 activate Controller
 
 Controller -> Service : createPayment(jdId)
@@ -100,29 +106,36 @@ alt Authorization token is present
 
                 Service --> Controller : checkoutUrl : String
 
-                Controller --> Candidate : 200 OK\nbody = checkoutUrl
+                Controller --> Client : 200 OK\nbody = checkoutUrl
+                Client --> Candidate : 200 OK\nbody = checkoutUrl
             else User is not found
                 Service --> Controller : throws CustomException\n(404 NOT_FOUND, "User not found")
 
-                Controller --> Candidate : error response (404)
+                Controller --> Client : error response (404)
+                Client --> Candidate : error response (404)
             end
         else Job description price is missing or invalid
             Service --> Controller : throws CustomException\n(400 BAD_REQUEST,\n"This JD has no price yet. Please contact admin.")
 
-            Controller --> Candidate : error response (400)
+            Controller --> Client : error response (400)
+            Client --> Candidate : error response (400)
         end
     else Job description is not found
         Service --> Controller : throws CustomException\n(404 NOT_FOUND, "Job Description not found")
 
-        Controller --> Candidate : error response (404)
+        Controller --> Client : error response (404)
+        Client --> Candidate : error response (404)
     end
 else Authorization token is missing
     SecUtils --> Service : throws CustomException\n(401 UNAUTHORIZED, "Missing Authorization token")
     deactivate SecUtils
     Service --> Controller : propagate exception
     deactivate Service
-    Controller --> Candidate : error response (401)
+    Controller --> Client : error response (401)
+    Client --> Candidate : error response (401)
     deactivate Controller
 end
+
+deactivate Client
 
 @enduml

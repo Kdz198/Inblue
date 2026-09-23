@@ -13,47 +13,74 @@ sequenceDiagram {
 }
 </style>
 
+autonumber
+
 actor "Candidate / Visitor" as Candidate
+participant ":JobSearchPage" as Client
 participant ":JobDescriptionController" as Controller
 participant ":JobDescriptionServiceImpl" as Service
 participant "JobDescriptionSpecification" as Spec
 participant ":JobDescriptionRepository" as Repo
 
-Candidate -> Controller ++ : GET /api/job-descriptions/search?titleKeyword&status&level&salaryMin&salaryMax
-Controller -> Service ++ : searchJobs(titleKeyword, status, level, salaryMin, salaryMax)
+activate Client
 
-Service -> Spec ++ : isNotDeleted()
-Spec --> Service -- : Specification<JobDescription>
+Candidate -> Client : GET /api/job-descriptions/search?titleKeyword&status&level&salaryMin&salaryMax
+Client -> Controller : GET /api/job-descriptions/search?titleKeyword&status&level&salaryMin&salaryMax
+activate Controller
+Controller -> Service : searchJobs(titleKeyword, status, level, salaryMin, salaryMax)
+activate Service
+
+Service -> Spec : isNotDeleted()
+activate Spec
+Spec --> Service : Specification<JobDescription>
+deactivate Spec
 
 opt Title keyword is provided
-    Service -> Spec ++ : titleContains(titleKeyword)
-    Spec --> Service -- : Specification<JobDescription>
+    Service -> Spec : titleContains(titleKeyword)
+    activate Spec
+    Spec --> Service : Specification<JobDescription>
+    deactivate Spec
 end
 
 opt Status filter is provided
-    Service -> Spec ++ : hasStatus(status)
-    Spec --> Service -- : Specification<JobDescription>
+    Service -> Spec : hasStatus(status)
+    activate Spec
+    Spec --> Service : Specification<JobDescription>
+    deactivate Spec
 end
 
 opt Level filter is provided
-    Service -> Spec ++ : levelEquals(level)
-    Spec --> Service -- : Specification<JobDescription>
+    Service -> Spec : levelEquals(level)
+    activate Spec
+    Spec --> Service : Specification<JobDescription>
+    deactivate Spec
 end
 
 opt Minimum salary is provided
-    Service -> Spec ++ : hasSalaryGreaterThanOrEqual(salaryMin)
-    Spec --> Service -- : Specification<JobDescription>
+    Service -> Spec : hasSalaryGreaterThanOrEqual(salaryMin)
+    activate Spec
+    Spec --> Service : Specification<JobDescription>
+    deactivate Spec
 end
 
 opt Maximum salary is provided
-    Service -> Spec ++ : hasSalaryLessThanOrEqual(salaryMax)
-    Spec --> Service -- : Specification<JobDescription>
+    Service -> Spec : hasSalaryLessThanOrEqual(salaryMax)
+    activate Spec
+    Spec --> Service : Specification<JobDescription>
+    deactivate Spec
 end
 
-Service -> Repo ++ : findAll(spec)
-Repo --> Service -- : List<JobDescription>
+Service -> Repo : findAll(spec)
+activate Repo
+Repo --> Service : List<JobDescription>
+deactivate Repo
 
-Service --> Controller -- : List<JobDescription>
-Controller --> Candidate -- : 200 OK (matching job list)
+Service --> Controller : List<JobDescription>
+deactivate Service
+Controller --> Client : 200 OK (matching job list)
+Client --> Candidate : 200 OK (matching job list)
+deactivate Controller
+
+deactivate Client
 
 @enduml

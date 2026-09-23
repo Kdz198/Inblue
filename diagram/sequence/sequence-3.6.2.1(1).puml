@@ -1,0 +1,112 @@
+@startuml BookMentorInterviewSlot_OfflineMeeting
+skinparam monochrome true
+skinparam shadowing false
+
+' Do not repeat participant boxes at the bottom of the diagram
+hide footbox
+
+<style>
+sequenceDiagram {
+  groupHeader {
+    FontStyle plain
+  }
+}
+</style>
+
+autonumber
+
+actor "Candidate" as Candidate
+participant ":ApplicationWorkspacePage" as Client
+participant ":SessionController" as SessionCtrl
+participant ":SessionServiceImpl" as SessionSvc
+participant ":ApplicationDetailRepository" as DetailRepo
+participant ":ApplicationRepository" as AppRepo
+participant ":SessionRepository" as SessionRepo
+
+note over Candidate, SessionSvc
+  Offline branch of the Mentor Review round: the candidate meets the
+  mentor in person, so no video room is created and the mentor does
+  not have to approve the proposed slot
+  (online branch: see 3.6.2.1.2)
+end note
+
+' ===================== Candidate books an offline meeting =====================
+
+activate Client
+
+Candidate -> Client : book the mentor interview slot\n(applicationDetailId, joinTime, duration, offline = true)
+Client -> SessionCtrl : book the mentor interview slot\n(applicationDetailId, joinTime, duration, offline = true)
+activate SessionCtrl
+SessionCtrl -> SessionSvc : createSessionForRound(request)
+activate SessionSvc
+
+SessionSvc -> DetailRepo : findById(applicationDetailId)
+activate DetailRepo
+DetailRepo --> SessionSvc  : Optional<ApplicationDetail>
+
+break Application detail is not found
+    SessionSvc --> SessionCtrl : throws CustomException\n(404 NOT_FOUND, "Application detail not found")
+    SessionCtrl --> Client : error response (404)
+    Client --> Candidate : error response (404)
+end
+
+break Mentor has not been assigned to this round
+    SessionSvc --> SessionCtrl : throws CustomException\n(400 BAD_REQUEST, "Mentor has not been assigned to this round")
+    SessionCtrl --> Client : error response (400)
+    Client --> Candidate : error response (400)
+end
+
+note right of SessionSvc
+  The mentor is assigned by the admin, or picked by the candidate
+  from the suggested list (see 3.6.2.3)
+end note
+
+SessionSvc -> AppRepo : findById(appDetail.applicationId)
+activate AppRepo
+AppRepo --> SessionSvc : Optional<Application>
+deactivate AppRepo
+
+break Application is not found or join time is missing
+    SessionSvc --> SessionCtrl : throws CustomException\n(404 NOT_FOUND, "Application not found" /\n400 BAD_REQUEST, "Join time is required")
+    SessionCtrl --> Client : error response (404 / 400)
+    Client --> Candidate : error response (404 / 400)
+end
+
+SessionSvc -> SessionSvc : read the candidate and mentor ids,\nthe start time and the duration\n(60 minutes when not provided)
+
+break Round is not in PENDING status
+    SessionSvc --> SessionCtrl : throws CustomException\n(400 BAD_REQUEST, "Application detail status is not PENDING")
+    SessionCtrl --> Client : error response (400)
+    Client --> Candidate : error response (400)
+end
+
+' ===================== Create the offline session =====================
+
+SessionSvc -> SessionSvc : build Session for the two participants\nwith room url = "OFFLINE" and a generated\nroom name, status = COMPLETED
+
+SessionSvc -> SessionRepo : save(session)
+activate SessionRepo
+SessionRepo --> SessionSvc : Session
+deactivate SessionRepo
+
+SessionSvc -> SessionSvc : set the round session info\n(session id, meeting type = OFFLINE)\nand clear any pending schedule
+
+SessionSvc -> DetailRepo  : save(appDetail with the session id)
+DetailRepo --> SessionSvc : ApplicationDetail
+deactivate DetailRepo
+
+note right of DetailRepo
+  The round stays in PENDING status: it is only closed once the
+  mentor STAR evaluation and the candidate feedback both exist
+  (see 3.6.2.4)
+end note
+
+SessionSvc --> SessionCtrl : SessionDetailResponse (offline session)
+deactivate SessionSvc
+SessionCtrl --> Client : 200 OK (offline meeting is confirmed,\nno video room is created)
+Client --> Candidate : 200 OK (offline meeting is confirmed,\nno video room is created)
+deactivate SessionCtrl
+
+deactivate Client
+
+@enduml

@@ -14,7 +14,10 @@ sequenceDiagram {
 }
 </style>
 
+autonumber
+
 actor "Candidate / Mentor" as User
+participant ":ResetPasswordPage" as Client
 participant ":AuthController" as Controller
 participant ":PasswordResetServiceImpl" as Service
 participant ":RedisTemplate" as Redis
@@ -24,7 +27,10 @@ participant ":PasswordEncoder" as Encoder
 
 ' ===================== Submit the OTP and the new password =====================
 
-User -> Controller : POST /api/auth/reset-password\n(email, otp, newPassword)
+activate Client
+
+User -> Client : POST /api/auth/reset-password\n(email, otp, newPassword)
+Client -> Controller : POST /api/auth/reset-password\n(email, otp, newPassword)
 activate Controller
 
 Controller -> Service : resetPassword(email, otp, newPassword)
@@ -32,7 +38,8 @@ activate Service
 
 break New password is empty
     Service --> Controller : throws CustomException\n(400 BAD_REQUEST, "New password must not be empty")
-    Controller --> User : error response (400)
+    Controller --> Client : error response (400)
+    Client --> User : error response (400)
 end
 
 ' ===================== Verify the OTP =====================
@@ -40,16 +47,17 @@ end
 Service -> Redis : get("reset_password_otp:" + email)
 activate Redis
 Redis --> Service : saved OTP or nothing
-deactivate Redis
 
 break Saved OTP is missing or has expired
     Service --> Controller : throws CustomException\n(400 BAD_REQUEST, "OTP code has expired or does not exist. Please request a new one.")
-    Controller --> User : error response (400)
+    Controller --> Client : error response (400)
+    Client --> User : error response (400)
 end
 
 break Submitted OTP does not match the saved OTP
     Service --> Controller : throws CustomException\n(400 BAD_REQUEST, "Invalid OTP code.")
-    Controller --> User : error response (400)
+    Controller --> Client : error response (400)
+    Client --> User : error response (400)
 end
 
 ' ===================== Update the account password =====================
@@ -57,36 +65,31 @@ end
 Service -> UserRepo : findByEmail(email)
 activate UserRepo
 UserRepo --> Service : User or nothing
-deactivate UserRepo
 
 alt User account is found
     Service -> Encoder : encode(newPassword)
     activate Encoder
     Encoder --> Service : encoded password
-    deactivate Encoder
 
     Service -> UserRepo : save(user with new password)
-    activate UserRepo
     UserRepo --> Service : saved user
     deactivate UserRepo
 else User account is not found
     Service -> MentorRepo : findByEmail(email)
     activate MentorRepo
     MentorRepo --> Service : Mentor or nothing
-    deactivate MentorRepo
 
     break Mentor account is not found
         Service --> Controller : throws CustomException\n(500 INTERNAL_SERVER_ERROR, "User not found after OTP verification.")
-        Controller --> User : error response (500)
+        Controller --> Client : error response (500)
+        Client --> User : error response (500)
     end
 
     Service -> Encoder : encode(newPassword)
-    activate Encoder
     Encoder --> Service : encoded password
     deactivate Encoder
 
     Service -> MentorRepo : save(mentor with new password)
-    activate MentorRepo
     MentorRepo --> Service : saved mentor
     deactivate MentorRepo
 end
@@ -94,14 +97,16 @@ end
 ' ===================== Invalidate the used OTP =====================
 
 Service -> Redis : delete("reset_password_otp:" + email)
-activate Redis
 Redis --> Service : deleted
 deactivate Redis
 
 Service --> Controller : void
 deactivate Service
 
-Controller --> User : 200 OK\n"Password has been reset successfully"
+Controller --> Client : 200 OK\n"Password has been reset successfully"
+Client --> User : 200 OK\n"Password has been reset successfully"
 deactivate Controller
+
+deactivate Client
 
 @enduml
