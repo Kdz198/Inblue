@@ -15,7 +15,7 @@ sequenceDiagram {
 
 autonumber
 
-actor "Candidate / Mentor" as User
+actor "User" as User
 participant ":LoginPage" as Client
 participant ":AuthController" as Controller
 participant ":OAuth2LoginAuthenticationFilter" as OAuthFilter

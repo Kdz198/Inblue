@@ -83,7 +83,6 @@ activate EventHandle
 EventHandle -> DetailRepo : findByApplicationIdAndRoundId(applicationId, roundId)
 activate DetailRepo
 DetailRepo --> EventHandle : Optional<ApplicationDetail>
-deactivate DetailRepo
 
 break Round has already been submitted
     EventHandle --> CVProcessor : throws CustomException\n(409 CONFLICT, "Round already submitted")
@@ -146,7 +145,6 @@ deactivate Cloudinary
 EventHandle -> EventHandle : build ApplicationDetail(applicationId, roundId,\nstatus=AI_EVALUATED, submissionData.fileUrl,\naiScore, aiFeedback, structuredAiFeedback)
 
 EventHandle -> DetailRepo : saveAndFlush(applicationDetail)
-activate DetailRepo
 
 break Duplicate submission is detected on flush
     DetailRepo --> EventHandle : throws DataIntegrityViolationException

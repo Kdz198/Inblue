@@ -77,12 +77,15 @@ group Transactional upCv attempt
 
   opt User has an existing CV public ID
     Service -> Storage : deletePdf(user.cv_public_id)
+    activate Storage
     Storage --> Service : Deletion result
   end
 
   alt Application ID is provided
     Service -> Profiles : getProfileByApplicationId(applicationId)
+    activate Profiles
     Profiles -> ProfileRepo : findByApplicationId(applicationId)
+    activate ProfileRepo
     ProfileRepo --> Profiles : Existing profile or null
     Profiles --> Service : Existing profile or null
   else Application ID is not provided
@@ -111,14 +114,13 @@ group Transactional upCv attempt
   end note
   Service -> Service : Prepare detached MultipartFile via FileUtil\nDelete temporary file
   Service -> Profiles : createProfile(candidateProfile)
-  activate Profiles
   Profiles -> ProfileRepo : save(candidateProfile)
-  activate ProfileRepo
   ProfileRepo --> Profiles : Saved profile (insert or update)
   deactivate ProfileRepo
   Profiles --> Service : Saved profile
   deactivate Profiles
   Service ->> Listener : publishEvent(UserEventDto(user, file, "cv"))\nvia ApplicationEventPublisher / @Async
+  activate Listener
 end
 
 par Return parsed profile (does not wait for Cloudinary)
@@ -128,7 +130,6 @@ par Return parsed profile (does not wait for Cloudinary)
   Client --> Candidate : HTTP 200 + CandidateProfile
   deactivate Controller
 else CV is being stored in background
-  activate Listener
   Listener -> Users : findById(user.id)
   Users --> Listener : User or null
   opt User still exists
@@ -138,6 +139,7 @@ else CV is being stored in background
     end
     Listener -> Storage : uploadDocument(file)
     Storage --> Listener : secure_url, public_id
+    deactivate Storage
     Listener -> Listener : Set user.cvUrl and user.cv_public_id
     Listener -> Users : save(user)
     Users --> Listener : Updated user
@@ -145,11 +147,6 @@ else CV is being stored in background
   deactivate Listener
 end
 
-note over Candidate, Storage
-  Background storage may finish before or after the HTTP response.
-  Its failure does not change an already returned HTTP 200;
-  an immediate account refresh may still show the previous CV URL.
-end note
 deactivate Client
 
 @enduml

@@ -16,7 +16,7 @@ sequenceDiagram {
 
 autonumber
 
-actor "Candidate / Mentor" as User
+actor "Guest" as User
 participant ":ForgotPasswordPage" as Client
 participant ":AuthController" as Controller
 participant ":PasswordResetServiceImpl" as Service

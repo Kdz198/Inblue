@@ -39,6 +39,10 @@ activate MailServer
 
 ' ===================== Fetch new emails from the inbox (every 60 seconds) =====================
 
+' Scheduler thức dậy theo lịch chạy ngầm
+[-> Scheduler : trigger (every 60s)
+activate Scheduler
+
 Scheduler -> EmailService : fetchEmails()
 activate EmailService
 
@@ -91,6 +95,7 @@ deactivate MailServer
 
 EmailService --> Scheduler : void
 deactivate EmailService
+deactivate Scheduler
 
 deactivate Client
 

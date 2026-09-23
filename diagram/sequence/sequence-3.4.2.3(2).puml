@@ -33,6 +33,9 @@ end note
 
 ' ===================== Grade pending emails (every 60 seconds) =====================
 
+[-> Scheduler : trigger (every 60s)
+activate Scheduler
+
 Scheduler -> EmailService : processEmailSchedule()
 activate EmailService
 
@@ -58,6 +61,7 @@ loop Each pending or failed email
             SubService --> EmailService : throws CustomException\n(404 NOT_FOUND)
             EmailService -> EmailService : set status = ERROR and\nerrorMessage = exception message
             EmailService -> EmailRepo : save(email)
+            EmailRepo --> EmailService : email
         end
 
         SubService -> SubService : build ProcessDto(application, round, roundType)
@@ -109,5 +113,6 @@ end
 
 EmailService --> Scheduler : void
 deactivate EmailService
+deactivate Scheduler
 
 @enduml

@@ -15,7 +15,7 @@ sequenceDiagram {
 
 autonumber
 
-actor "Candidate / Mentor" as Candidate
+actor "User" as Candidate
 participant ":LoginPage" as Client
 participant ":AuthController" as Controller
 participant ":AuthenticationManager" as AuthMgr
