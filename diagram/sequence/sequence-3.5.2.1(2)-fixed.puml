@@ -1,0 +1,95 @@
+@startuml TranscribeCandidateSpeechWithStt
+skinparam monochrome true
+skinparam shadowing false
+skinparam defaultFontSize 20
+
+' Do not repeat participant boxes at the bottom of the diagram
+hide footbox
+
+<style>
+sequenceDiagram {
+  groupHeader {
+    FontStyle plain
+  }
+}
+</style>
+
+autonumber
+
+actor "Candidate" as Candidate
+participant ":KioskAIInterviewRoomPage" as Client
+participant ":SttWebSocketController" as SttController
+participant ":SpeechServiceImpl" as Service
+participant ":ApiClientImpl" as ApiClient
+participant "Speech-to-Text Service" as SttService
+
+note right of SttService
+  External Python live-transcription service
+  reached through a WebSocket connection
+end note
+
+' ===================== Open the live transcription channel =====================
+
+activate Client
+
+Candidate -> Client : WebSocket connect\n/api/v1/interview/transcribe
+Client -> SttController : WebSocket connect\n/api/v1/interview/transcribe
+activate SttController
+
+SttController -> Service : connectStt(onMessage, onError)
+activate Service
+
+Service -> ApiClient : connectWebSocket(LLM,\n"/api/v1/transcription/live", onMessage, onError)
+activate ApiClient
+ApiClient -> SttService : open WebSocket connection
+activate SttService
+SttService --> ApiClient : connection established
+ApiClient --> Service : WebSocket
+deactivate ApiClient
+
+Service -> SttService : sendText(start message, sampleRate 16000)
+
+Service --> SttController : WebSocket
+deactivate Service
+
+SttController -> SttController : store the upstream WebSocket\nby client session id
+
+' ===================== Stream microphone audio and receive transcripts =====================
+
+loop Until the candidate stops speaking
+    Candidate -> Client : send binary PCM audio chunk
+    Client -> SttController : send binary PCM audio chunk
+
+    opt Upstream connection exists for this session
+        SttController -> SttService : sendBinary(audio chunk)
+    end
+
+    SttService -> ApiClient : partial or final transcript text
+    activate ApiClient
+    ApiClient -> SttController : onMessage(transcript)
+
+    alt Client session is still open
+        SttController -> Client : send transcript text message
+        Client -> Candidate : send transcript text message
+    else Client session is closed
+        SttController -> SttController : drop the transcript
+    end
+    deactivate ApiClient
+end
+
+Candidate -> Client : send text message audio_end
+Client -> SttController : send text message audio_end
+SttController -> SttService : sendText(audio_end message)
+
+' ===================== Close the channel =====================
+
+Candidate -> Client : close WebSocket
+Client -> SttController : close WebSocket
+SttController -> SttController : remove the upstream WebSocket\nfor the client session
+SttController -> SttService : sendClose(normal closure, "Client disconnected")
+deactivate SttService
+deactivate SttController
+
+deactivate Client
+
+@enduml

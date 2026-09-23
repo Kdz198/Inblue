@@ -1,0 +1,207 @@
+@startuml CreateAIInterviewBlueprint
+skinparam monochrome true
+skinparam shadowing false
+skinparam defaultFontSize 20
+
+' Do not repeat participant boxes at the bottom of the diagram
+hide footbox
+
+<style>
+sequenceDiagram {
+  groupHeader {
+    FontStyle plain
+  }
+}
+</style>
+
+autonumber
+
+participant ":ApplicationServiceImpl" as AppSvc
+participant ":ApplicationDetailServiceImpl" as DetailSvc
+participant ":ApplicationDetailRepository" as DetailRepo
+participant ":UserRepository" as UserRepo
+participant ":JobDescriptionRepository" as JdRepo
+participant ":RoundRepository" as RoundRepo
+participant ":CandidateProfileRepository" as ProfileRepo
+participant ":InterviewSessionServiceImpl" as SessionSvc
+participant ":InterviewSessionRepository" as SessionRepo
+participant ":InterviewSessionRedisRepository" as RedisRepo
+participant "Python AI Orchestrator" as PyAI
+
+note right of PyAI
+  Separate Python AI service (LLM),
+  called over HTTP through ApiClient
+  (not part of the Spring Boot backend)
+end note
+
+' ===================== Trigger: the application reaches an AI Interview round =====================
+
+activate AppSvc
+
+AppSvc -> DetailRepo : save(new ApplicationDetail for the next round)
+activate DetailRepo
+DetailRepo --> AppSvc : ApplicationDetail
+deactivate DetailRepo
+
+opt Next round type is AI_INTERVIEW
+
+    AppSvc -> DetailSvc : startAiInterview(applicationDetailId)
+    activate DetailSvc
+
+    note right of DetailSvc
+      Runs in a new transaction (Propagation.REQUIRES_NEW).
+      The caller catches any exception and only logs it, so a
+      failed blueprint never blocks the pipeline. The kiosk
+      check-in calls the same operation to create or resume
+      the session (see 3.5.2.2).
+    end note
+
+    ' ===================== Guard clauses =====================
+
+    DetailSvc -> DetailRepo : findById(applicationDetailId)
+    activate DetailRepo
+    DetailRepo --> DetailSvc : ApplicationDetail
+    deactivate DetailRepo
+
+    break Round is already completed
+        DetailSvc --> AppSvc : throws CustomException\n(400 BAD_REQUEST, "This round is already completed")
+    end
+
+    opt AI interview session id is already recorded on the application detail
+        DetailSvc -> SessionRepo : findById(aiInterviewSessionId)
+        activate SessionRepo
+        SessionRepo --> DetailSvc : Optional<InterviewSession>
+        deactivate SessionRepo
+
+        break Existing interview session is found
+            DetailSvc --> AppSvc : existing sessionKey : String\n(the blueprint is reused, nothing is regenerated)
+        end
+    end
+
+    DetailSvc -> DetailSvc : load Application through ApplicationService
+
+    DetailSvc -> UserRepo : findById(application.userId)
+    activate UserRepo
+    UserRepo --> DetailSvc : Optional<User>
+    deactivate UserRepo
+
+    DetailSvc -> JdRepo : findById(application.jdId)
+    activate JdRepo
+    JdRepo --> DetailSvc : Optional<JobDescription>
+    deactivate JdRepo
+
+    DetailSvc -> RoundRepo : findById(appDetail.roundId)
+    activate RoundRepo
+    RoundRepo --> DetailSvc : Optional<Round>
+    deactivate RoundRepo
+
+    break Applicant, job description or round is not found
+        DetailSvc --> AppSvc : throws CustomException (404 NOT_FOUND)
+    end
+
+    break Round type is not AI_INTERVIEW
+        DetailSvc --> AppSvc : throws CustomException\n(400 BAD_REQUEST, "This round is not AI_INTERVIEW")
+    end
+
+    ' ===================== Extract the job requirement from the job description =====================
+
+    DetailSvc -> SessionSvc : getJobRequirementFromJD(jd.description)
+    activate SessionSvc
+
+    note right of SessionSvc
+      @Retryable: up to 3 attempts,
+      3-second backoff
+    end note
+
+    SessionSvc -> PyAI : POST /api/v1/parse-jd\n(job description text)
+    activate PyAI
+    PyAI --> SessionSvc : JobRequirementData
+    deactivate PyAI
+
+    SessionSvc --> DetailSvc : JobRequirementData
+    deactivate SessionSvc
+
+    ' ===================== Collect the candidate profile and the session configuration =====================
+
+    DetailSvc -> ProfileRepo : findByApplicationId(applicationId)
+    activate ProfileRepo
+    ProfileRepo --> DetailSvc : CandidateProfile
+    deactivate ProfileRepo
+
+    break Candidate profile is not found
+        DetailSvc --> AppSvc : throws CustomException\n(400 BAD_REQUEST, "Candidate profile not found.\nPlease update your CV/Profile before starting the interview.")
+    end
+
+    DetailSvc -> DetailSvc : build SessionConfigData\n(defaults STANDARD_MOCK, VI, FRESHER_BASIC, IT;\nduration, evaluation criteria and AI system prompt\ntaken from the round configuration)
+
+    DetailSvc -> DetailSvc : build InterviewSetupRequest\n(userId, applicationDetailId, candidate profile,\njob requirement, session config)
+
+    ' ===================== Generate and store the blueprint =====================
+
+    DetailSvc -> SessionSvc : createSession(setupRequest)
+    activate SessionSvc
+
+    note right of SessionSvc
+      @Transactional and @Retryable:
+      up to 3 attempts, 3-second backoff
+    end note
+
+    SessionSvc -> PyAI : POST /api/v1/orchestrator/create-plan\n(candidate profile, job requirement, session config)
+    activate PyAI
+    PyAI --> SessionSvc : InterviewBlueprintResponse\n(phases, each with its anchor questions)
+    deactivate PyAI
+
+    break Blueprint is empty
+        SessionSvc --> DetailSvc : throws RuntimeException\n("Python Orchestrator returned an empty blueprint")
+        DetailSvc --> AppSvc : propagate exception
+    end
+
+    SessionSvc -> SessionSvc : generate sessionKey (UUID)
+
+    SessionSvc -> SessionRepo : save(InterviewSession)\n(blueprint, sessionKey, snapshots of the profile,\njob requirement and config, status = IN_PROGRESS)
+    activate SessionRepo
+    SessionRepo --> SessionSvc : InterviewSession
+    deactivate SessionRepo
+
+    SessionSvc -> RedisRepo : save(InterviewSessionRedis)\n(id = sessionKey, dbId, blueprint,\nphase index = 0, question index = 0)
+    activate RedisRepo
+    RedisRepo --> SessionSvc : InterviewSessionRedis
+    deactivate RedisRepo
+
+    SessionSvc --> DetailSvc : sessionKey : String
+    deactivate SessionSvc
+
+    break A parallel request already created a session for the same application detail
+        DetailSvc -> SessionRepo : findFirstByApplicationDetailIdOrderByIdAsc(applicationDetailId)
+        activate SessionRepo
+        SessionRepo --> DetailSvc : InterviewSession
+        deactivate SessionRepo
+        DetailSvc --> AppSvc : sessionKey of that first session
+    end
+
+    ' ===================== Link the session back to the application detail =====================
+
+    DetailSvc -> SessionRepo : findBySessionKey(sessionKey)
+    activate SessionRepo
+    SessionRepo --> DetailSvc : InterviewSession
+    deactivate SessionRepo
+
+    DetailSvc -> DetailRepo : save(appDetail with aiInterviewSessionId)
+    activate DetailRepo
+    DetailRepo --> DetailSvc : ApplicationDetail
+    deactivate DetailRepo
+
+    DetailSvc --> AppSvc : sessionKey : String
+    deactivate DetailSvc
+
+    note over AppSvc, RedisRepo
+      The blueprint is now ready. The candidate books a kiosk slot
+      (see 3.5.2.3), checks in with the PIN (see 3.5.2.2) and then
+      conducts the interview (see 3.5.2.5).
+    end note
+
+end
+
+deactivate AppSvc
+
+@enduml

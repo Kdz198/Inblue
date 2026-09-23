@@ -1,0 +1,278 @@
+@startuml ConductAIInterviewAndSubmit
+skinparam monochrome true
+skinparam shadowing false
+skinparam defaultFontSize 20
+
+' Do not repeat participant boxes at the bottom of the diagram
+hide footbox
+
+<style>
+sequenceDiagram {
+  groupHeader {
+    FontStyle plain
+  }
+}
+</style>
+
+autonumber
+
+actor "Candidate" as Candidate
+participant ":KioskAIInterviewRoomPage" as Room
+participant ":InterviewProcessController" as Controller
+participant ":InterviewProcessServiceImpl" as ProcSvc
+participant ":SpeechServiceImpl" as Speech
+participant ":InterviewSessionRedisRepository" as RedisRepo
+participant ":InterviewSessionRepository" as SessionRepo
+participant ":ApplicationDetailRepository" as DetailRepo
+participant ":KioskBookingRepository" as BookingRepo
+participant "Python AI Orchestrator" as PyAI
+
+note right of PyAI
+  Separate Python AI service (LLM),
+  called over HTTP through ApiClient
+  (not part of the Spring Boot backend)
+end note
+
+note over Room
+  The interview room runs on the kiosk device and, for the
+  online round, inside the Web Portal. The blueprint has
+  already been generated (see 3.5.2.4).
+end note
+
+' ===================== Load the first question =====================
+
+activate Room
+
+Room -> Controller : GET /api/v1/interview/start/{sessionKey}
+activate Controller
+
+Controller -> ProcSvc : getCurrentQuestion(sessionKey)
+activate ProcSvc
+
+ProcSvc -> RedisRepo : findById(sessionKey)
+activate RedisRepo
+RedisRepo --> ProcSvc : Optional<InterviewSessionRedis>
+deactivate RedisRepo
+
+break Interview session is not found in Redis or has expired
+    ProcSvc --> Controller : throws RuntimeException("Session not found or expired")
+    Controller --> Room : error response
+    Room --> Candidate : show the idle state
+end
+
+ProcSvc -> SessionRepo : findById(session.dbId)
+activate SessionRepo
+SessionRepo --> ProcSvc : InterviewSession
+deactivate SessionRepo
+
+ProcSvc -> SessionRepo : save(dbSession with status = IN_PROGRESS)
+activate SessionRepo
+SessionRepo --> ProcSvc : InterviewSession
+deactivate SessionRepo
+
+opt Current question is not set yet
+    ProcSvc -> ProcSvc : take the first blueprint question\nas the current question (type = BLUEPRINT)
+end
+
+ProcSvc -> RedisRepo : save(session) (refresh TTL)
+activate RedisRepo
+RedisRepo --> ProcSvc : InterviewSessionRedis
+deactivate RedisRepo
+
+ProcSvc --> Controller : QuestionResponse
+deactivate ProcSvc
+
+Controller --> Room : QuestionResponse\n(questionContent, currentQuestionIndex, totalQuestionsInPhase)
+deactivate Controller
+
+' ===================== Question and answer loop =====================
+
+loop Until the blueprint is exhausted or the time limit expires
+
+    Room -> Room : AI state = SPEAKING
+
+    Room -> Controller : POST /api/v1/interview/tts\n(question text, selected voice id)
+    activate Controller
+    Controller -> Speech : generateAudio(text, voiceId)
+    activate Speech
+    Speech --> Controller : audio bytes
+    deactivate Speech
+    Controller --> Room : audio stream
+    deactivate Controller
+
+    Room --> Candidate : play the question with the AI voice\n(see 3.5.2.1(1))
+
+    Room -> Room : AI state = LISTENING
+    Candidate -> Room : speak the answer
+    Room -> Room : build the live transcript through the\nspeech-to-text channel (see 3.5.2.1(2))
+
+    Candidate -> Room : confirm and send the answer
+    Room -> Room : AI state = THINKING
+
+    Room -> Controller : POST /api/v1/interview/submit\n(sessionKey, answer)
+    activate Controller
+
+    Controller -> ProcSvc : submitAnswer(request)
+    activate ProcSvc
+
+    ProcSvc -> RedisRepo : findById(sessionKey)
+    activate RedisRepo
+    RedisRepo --> ProcSvc : InterviewSessionRedis
+    deactivate RedisRepo
+
+    ProcSvc -> ProcSvc : append the exchange to the chat history\n(phase name, question order, question text,\nanswer text, question type, submitted time)
+
+    ProcSvc -> ProcSvc : build the AI context (the current anchor and\nits follow-ups), read the current anchor and\npeek at the next blueprint question
+
+    ProcSvc -> PyAI : POST /api/v1/orchestrator/analyze-response\n(context, current anchor, next anchor)
+    activate PyAI
+    PyAI --> ProcSvc : OrchestratorAnalysisResponse\n(action, responseText)
+    deactivate PyAI
+
+    alt Action is DRILL_DOWN or CLARIFY_AND_SUPPORT
+
+        ProcSvc -> ProcSvc : question type = FOLLOW_UP,\ncurrent question text = responseText
+
+        ProcSvc -> RedisRepo : save(session)
+        activate RedisRepo
+        RedisRepo --> ProcSvc : InterviewSessionRedis
+        deactivate RedisRepo
+
+        ProcSvc --> Controller : QuestionResponse (follow-up question)
+        Controller --> Room : follow-up question
+
+    else No next blueprint question is left
+
+        ProcSvc -> ProcSvc : run finishSession asynchronously\n(see the fragment below)
+
+        ProcSvc --> Controller : QuestionResponse(isFinished = true)
+        Controller --> Room : interview finished
+        Room --> Candidate : show the evaluating screen,\nthen the completion screen
+
+    else A next blueprint question is available
+
+        ProcSvc -> ProcSvc : move to the next phase and question index,\nquestion type = BLUEPRINT,\ncurrent question text = responseText
+
+        ProcSvc -> RedisRepo : save(session)
+        activate RedisRepo
+        RedisRepo --> ProcSvc : InterviewSessionRedis
+        deactivate RedisRepo
+
+        ProcSvc --> Controller : QuestionResponse (next anchor question)
+        Controller --> Room : next question
+
+    end
+
+    deactivate ProcSvc
+    deactivate Controller
+
+end
+
+' ===================== The time limit expires first =====================
+
+opt The time limit expires before the blueprint is finished
+
+    Room -> Controller : POST /api/v1/interview/timeout/{sessionKey}
+    activate Controller
+
+    Controller -> ProcSvc : timeoutSession(sessionKey)
+    activate ProcSvc
+
+    ProcSvc -> RedisRepo : findById(sessionKey)
+    activate RedisRepo
+    RedisRepo --> ProcSvc : Optional<InterviewSessionRedis>
+    deactivate RedisRepo
+
+    opt Session still exists
+        ProcSvc -> ProcSvc : run finishSession synchronously\n(see the fragment below)
+    end
+
+    ProcSvc --> Controller : QuestionResponse(isFinished = true)
+    deactivate ProcSvc
+
+    Controller --> Room : interview finished
+    deactivate Controller
+
+    Room --> Candidate : show the completion screen
+
+end
+
+' ===================== Grade the interview and store the result =====================
+
+group finishSession
+
+    activate ProcSvc
+
+    ProcSvc -> SessionRepo : findById(session.dbId)
+    activate SessionRepo
+    SessionRepo --> ProcSvc : InterviewSession
+    deactivate SessionRepo
+
+    ProcSvc -> ProcSvc : group the chat history by anchor\n(one BLUEPRINT question and the FOLLOW_UP\nquestions that came after it)
+
+    loop For each anchor group
+
+        ProcSvc -> PyAI : POST /api/v1/orchestrator/grade-answer\n(the whole group)
+        activate PyAI
+        PyAI --> ProcSvc : GradingResponse(score, feedback, suggestion)
+        deactivate PyAI
+
+        note right of ProcSvc
+          If the grading call fails, the group is stored
+          with score 0 and a system error message
+        end note
+
+        ProcSvc -> ProcSvc : store the score and feedback on the anchor;\nthe follow-up questions keep an empty score
+
+    end
+
+    ProcSvc -> PyAI : POST /api/v1/orchestrator/generate-overview\n(graded history)
+    activate PyAI
+    PyAI --> ProcSvc : overview feedback
+    deactivate PyAI
+
+    ProcSvc -> ProcSvc : average the scored anchors,\noverall score = average * 10,\nresult = STRONG_HIRE (>= 9) / HIRE (>= 7) /\nCONSIDER (>= 5) / REJECT
+
+    ProcSvc -> SessionRepo : save(InterviewSession)\n(result detail, overview feedback, overall score,\nresult, status = COMPLETED, completed time)
+    activate SessionRepo
+    SessionRepo --> ProcSvc : InterviewSession
+    deactivate SessionRepo
+
+    ProcSvc -> RedisRepo : delete(session)
+    activate RedisRepo
+    RedisRepo --> ProcSvc : deleted
+    deactivate RedisRepo
+
+    opt The session belongs to an application detail
+
+        ProcSvc -> DetailRepo : save(appDetail with AI score, AI feedback\nand status = AI_EVALUATED)
+        activate DetailRepo
+        DetailRepo --> ProcSvc : ApplicationDetail
+        deactivate DetailRepo
+
+        ProcSvc -> BookingRepo : findByApplicationDetailId(applicationDetailId)
+        activate BookingRepo
+        BookingRepo --> ProcSvc : Optional<KioskBooking>
+        deactivate BookingRepo
+
+        opt Kiosk booking exists
+            ProcSvc -> BookingRepo : save(booking with status = COMPLETED)
+            activate BookingRepo
+            BookingRepo --> ProcSvc : KioskBooking
+            deactivate BookingRepo
+        end
+
+    end
+
+    deactivate ProcSvc
+
+    note over ProcSvc, DetailRepo
+      Staff then review the AI evaluation and grade the round
+      (see 3.7.2.1 Staff Review and Round Advancement).
+    end note
+
+end
+
+deactivate Room
+
+@enduml
