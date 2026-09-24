@@ -1,0 +1,91 @@
+@startuml NotificationDispatchAndReadTracking
+skinparam monochrome true
+skinparam shadowing false
+
+' Do not repeat participant boxes at the bottom of the diagram
+hide footbox
+
+<style>
+sequenceDiagram {
+  groupHeader {
+    FontStyle plain
+  }
+}
+</style>
+
+actor "Candidate" as Candidate
+participant ":KioskBookingServiceImpl" as KioskSvc
+participant ":NotificationController" as Ctrl
+participant ":NotificationServiceImpl" as Svc
+participant ":NotificationRepository" as Repo
+
+note over KioskSvc, Repo
+  Notifications are not pushed over WebSocket; they are created as a
+  side effect of other actions (here, successfully picking an AI
+  Interview kiosk slot) and later fetched by the candidate over REST
+end note
+
+' ===================== A notification is dispatched (kiosk slot booked) =====================
+
+Candidate -> KioskSvc ++ : POST /api/kiosk-bookings/pick-slot\n(applicationDetailId, kioskId,\nscheduledStart, scheduledEnd)
+
+note right of KioskSvc
+  Full slot-booking logic (overlap check, Round / ApplicationDetail
+  validation, PIN generation) belongs to the Kiosk Booking module;
+  only the notification side effect is shown here
+end note
+
+KioskSvc -> KioskSvc : build a Notification\n(title, message with the kiosk PIN, isRead = false)
+KioskSvc -> Svc ++ : createNotification(notification)
+Svc -> Repo ++ : save(notification)
+Repo --> Svc -- : Notification
+Svc --> KioskSvc -- : Notification
+KioskSvc --> Candidate -- : 200 OK (booking confirmed,\nkiosk PIN issued)
+
+' ===================== View notifications =====================
+
+Candidate -> Ctrl ++ : GET /api/notifications/{id}
+Ctrl -> Svc ++ : getNotifications(id)
+
+alt Id is 0
+    Svc -> Repo ++ : findAllByUser_Id(0)
+    Repo --> Svc -- : List<Notification>\n(platform-wide / admin notifications)
+else Id is a specific candidate's user id
+    Svc -> Repo ++ : findAllByUser_Id(id)
+    Repo --> Svc -- : List<Notification>\n(that candidate's own notifications)
+end
+
+Svc --> Ctrl -- : List<Notification>
+Ctrl --> Candidate -- : 200 OK (notification list)
+
+note right of Ctrl
+  id = 0 is a project-wide convention: it retrieves platform-wide /
+  admin notifications rather than any single user's own notifications
+end note
+
+' ===================== Mark a notification as read =====================
+
+Candidate -> Ctrl ++ : GET /api/notifications/check-read/{notificationId}
+Ctrl -> Svc ++ : checkRead(notificationId)
+Svc -> Repo ++ : existsById(notificationId)
+Repo --> Svc -- : boolean
+
+alt Notification exists
+    Svc -> Repo ++ : findById(notificationId)
+    Repo --> Svc -- : Notification
+    Svc -> Svc : set isRead to true
+    Svc -> Repo ++ : save(notification)
+    Repo --> Svc -- : Notification
+    Svc --> Ctrl -- : true
+    Ctrl --> Candidate -- : 200 OK (true)
+else Notification does not exist
+    Svc --> Ctrl -- : false
+    Ctrl --> Candidate -- : 200 OK (false)
+end
+
+note right of Ctrl
+  check-read is exposed as a GET endpoint even though it mutates
+  data (it marks the notification read as a side effect of the check)
+end note
+
+@enduml

@@ -1,0 +1,184 @@
+@startuml StartEntryTestSubmitQuizCodingAnswers
+skinparam monochrome true
+skinparam shadowing false
+
+' Do not repeat participant boxes at the bottom of the diagram
+hide footbox
+
+<style>
+sequenceDiagram {
+  groupHeader {
+    FontStyle plain
+  }
+}
+</style>
+
+actor "Candidate" as Candidate
+participant ":EntryTestController" as Ctrl
+participant ":EntryTestServiceImpl" as Svc
+participant ":UserCareerPreferenceRepository" as PrefRepo
+participant ":UserRepository" as UserRepo
+participant ":EntryTestRepository" as TestRepo
+participant ":QuestionBankRepository" as QRepo
+participant ":CodingProblemsRepository" as CodingRepo
+participant ":EntryTestAttemptRepository" as AttemptRepo
+participant ":ApiClient" as ApiClient
+participant "Code Execution Service (Python)" as Compiler
+participant ":UserCompetencyServiceImpl" as CompetencySvc
+
+note right of Compiler
+  Third-party code execution sandbox reached through ApiClient;
+  compiles and runs the candidate's code against a set of test cases
+end note
+
+' ===================== Start the entry test =====================
+
+Candidate -> Ctrl ++ : POST /api/entry-tests/start
+Ctrl -> Svc ++ : startEntryTest(userId)
+
+Svc -> PrefRepo ++ : findByUserIdAndIsActiveTrue(userId)
+PrefRepo --> Svc -- : Optional<UserCareerPreference>
+
+break No active career preference for this user
+    Svc --> Ctrl : throws CustomException(400 BAD_REQUEST, "Career preference not found")
+    Ctrl --> Candidate : error response (400)
+end
+
+Svc -> UserRepo ++ : findById(userId)
+UserRepo --> Svc -- : Optional<User>
+
+break User is not found
+    Svc --> Ctrl : throws CustomException(404 NOT_FOUND, "User not found")
+    Ctrl --> Candidate : error response (404)
+end
+
+Svc -> TestRepo ++ : findFirstByIsActiveTrueOrderByUpdatedAtDesc()
+TestRepo --> Svc -- : Optional<EntryTest>
+
+opt No active EntryTest exists yet
+    Svc -> TestRepo ++ : save(a default "Software Engineer Entry Test")
+    TestRepo --> Svc -- : EntryTest
+end
+
+loop For each section config, ordered by displayOrder
+    alt Section is COMMON_QUIZ
+        Svc -> QRepo ++ : findRandomByCategoryName("COMMON", pageable)
+        QRepo --> Svc -- : List<QuestionBank>
+        Svc -> Svc : snapshot into QuestionItemSnapshot items
+    else Section is SPECIFIC_QUIZ
+        Svc -> QRepo ++ : findRandomByCategoryNames(categories built\nfrom the candidate's role and languages, pageable)
+        QRepo --> Svc -- : List<QuestionBank>
+        Svc -> Svc : snapshot into QuestionItemSnapshot items
+    else Section is SPECIFIC_CODING
+        Svc -> CodingRepo ++ : findAllByIsDeletedFalse()
+        CodingRepo --> Svc -- : List<CodingProblem>
+        Svc -> Svc : keep only EASY problems, shuffle,\nand take the configured item count
+        Svc -> Svc : snapshot into CodingProblemItemSnapshot items
+    end
+end
+
+Svc -> Svc : build a new EntryTestAttempt (user, careerPreferenceId,\nentryTestId, selectedLanguagesJson, the three snapshot\nlists, status = IN_PROGRESS, startedAt = now)
+Svc -> AttemptRepo ++ : save(attempt)
+AttemptRepo --> Svc -- : EntryTestAttempt
+
+Svc --> Ctrl -- : EntryTestStartResponse
+Ctrl --> Candidate -- : 200 OK (attemptId, time limit, section configs,\nquestions and coding problems to answer)
+
+note right of Svc
+  All picked questions and coding problems are frozen into the
+  attempt's own snapshot lists, so later grading never re-queries
+  the question bank or the coding problem catalog
+end note
+
+' ===================== Run code against the visible examples (optional, during the test) =====================
+
+Candidate -> Ctrl ++ : POST /api/entry-tests/{attemptId}/coding/run\n(itemId, language, sourceCode)
+Ctrl -> Svc ++ : runCode(userId, attemptId, request)
+
+Svc -> Svc : load the attempt and check it\nbelongs to the current user
+
+break Attempt is not in progress
+    Svc --> Ctrl : throws CustomException(400 BAD_REQUEST, "Entry test attempt is not in progress")
+    Ctrl --> Candidate : error response (400)
+end
+
+Svc -> Svc : look up the coding item snapshot by itemId
+
+break Item does not belong to this attempt
+    Svc --> Ctrl : throws CustomException(400 BAD_REQUEST, "Coding item does not belong to this attempt")
+    Ctrl --> Candidate : error response (400)
+end
+
+Svc -> Svc : validate the submitted source code is not empty
+
+Svc -> ApiClient ++ : executeCode(compilerRequest)\n(language, sourceCode, time/memory limits,\nthe item's visible examples as test cases)
+ApiClient -> Compiler ++ : run the candidate's code against\nthe visible examples
+Compiler --> ApiClient -- : CompilerResponseDto
+ApiClient --> Svc -- : CompilerResponseDto
+
+break Compiler sandbox returns no result
+    Svc --> Ctrl : throws CustomException(502 BAD_GATEWAY, "Compiler sandbox did not return a result")
+    Ctrl --> Candidate : error response (502)
+end
+
+Svc --> Ctrl -- : CompilerResponseDto
+Ctrl --> Candidate -- : 200 OK (visible test case results -\nnot scored, for the candidate's own feedback)
+
+' ===================== Submit the entry test =====================
+
+Candidate -> Ctrl ++ : POST /api/entry-tests/{attemptId}/submit\n(answers[])
+Ctrl -> Svc ++ : submitEntryTest(userId, attemptId, request)
+
+Svc -> Svc : load the attempt and check it\nbelongs to the current user
+
+break Attempt is not in progress
+    Svc --> Ctrl : throws CustomException(400 BAD_REQUEST, "Entry test attempt is not in progress")
+    Ctrl --> Candidate : error response (400)
+end
+
+Svc -> Svc : index the attempt's own question and\ncoding snapshots by itemId
+
+Svc -> Svc : validate every submitted answer has an itemId,\nmatches a known item, and is not a duplicate
+
+break An answer is missing its itemId, refers to an\nunknown item, or duplicates another answer
+    Svc --> Ctrl : throws CustomException(400 BAD_REQUEST, validation message)
+    Ctrl --> Candidate : error response (400)
+end
+
+loop For each submitted answer
+    alt Item belongs to the common or specific quiz section
+        Svc -> Svc : compare the selected option to the\nsnapshot's correctAnswer
+        Svc -> Svc : score = item's maxScore if correct, else 0
+    else Item belongs to the specific coding section
+        Svc -> Svc : validate the answer carries a language\nand sourceCode
+        Svc -> ApiClient ++ : executeCode(compilerRequest)\n(this time against the problem's hidden test cases)
+        ApiClient -> Compiler ++ : run the candidate's code against\nthe hidden test cases
+        Compiler --> ApiClient -- : CompilerResponseDto
+        ApiClient --> Svc -- : CompilerResponseDto
+        Svc -> Svc : score = maxScore * passedTestCases / totalTestCases\n(clamped to maxScore; 0 if no result comes back)
+    end
+end
+
+Svc -> Svc : sum and round the common quiz, specific quiz\nand coding scores into a finalScore
+
+Svc -> CompetencySvc ++ : resolveLevelName(attempt)
+
+ref over CompetencySvc : Level-scale matching for the final score\n(see sequence-3.10.2.3)
+
+CompetencySvc --> Svc -- : resultLevel (String)
+
+Svc -> Svc : set commonQuizScore, specificQuizScore, specificCodingScore,\nfinalScore, resultLevel, resultSnapshotJson,\nstatus = GRADED, submittedAt = now
+
+Svc -> AttemptRepo ++ : save(attempt)
+AttemptRepo --> Svc -- : EntryTestAttempt (saved)
+
+Svc -> CompetencySvc ++ : updateAfterEntryTest(saved)
+
+ref over CompetencySvc : Persist the candidate's UserCompetency\n(see sequence-3.10.2.3)
+
+CompetencySvc --> Svc -- : UserCompetency
+
+Svc --> Ctrl -- : EntryTestAttempt (saved)
+Ctrl --> Candidate -- : 200 OK (final scores, result level,\nfull graded answer breakdown)
+
+@enduml

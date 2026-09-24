@@ -1,0 +1,138 @@
+@startuml AdminConfigureEntryTestsLevelScales
+skinparam monochrome true
+skinparam shadowing false
+
+' Do not repeat participant boxes at the bottom of the diagram
+hide footbox
+
+<style>
+sequenceDiagram {
+  groupHeader {
+    FontStyle plain
+  }
+}
+</style>
+
+actor "Admin" as Admin
+participant ":AdminEntryTestController" as TestCtrl
+participant ":AdminEntryTestServiceImpl" as TestSvc
+participant ":EntryTestRepository" as TestRepo
+participant ":EntryTestMapper" as TestMapper
+participant ":AdminLevelScaleController" as ScaleCtrl
+participant ":AdminLevelScaleServiceImpl" as ScaleSvc
+participant ":LevelScaleRepository" as ScaleRepo
+participant ":LevelScaleMapper" as ScaleMapper
+
+' ===================== Configure the entry test (create / update / deactivate) =====================
+
+Admin -> TestCtrl ++ : POST /api/admin/entry-tests\n(name, totalScore, timeLimitMinutes, sectionConfigs, isActive)
+TestCtrl -> TestSvc ++ : createEntryTest(request)
+TestSvc -> TestMapper ++ : toEntity(request)
+TestMapper --> TestSvc -- : EntryTest
+TestSvc -> TestRepo ++ : save(entryTest)
+TestRepo --> TestSvc -- : EntryTest
+TestSvc --> TestCtrl -- : EntryTest
+TestCtrl --> Admin -- : 200 OK (entry test created)
+
+Admin -> TestCtrl ++ : PUT /api/admin/entry-tests/{id}\n(name, totalScore, timeLimitMinutes, sectionConfigs, isActive)
+TestCtrl -> TestSvc ++ : updateEntryTest(id, request)
+TestSvc -> TestRepo ++ : findById(id)
+TestRepo --> TestSvc -- : Optional<EntryTest>
+
+break Entry test is not found
+    TestSvc --> TestCtrl : throws CustomException(404 NOT_FOUND, "Entry test not found")
+    TestCtrl --> Admin : error response (404)
+end
+
+TestSvc -> TestMapper ++ : updateFromRequest(request, entryTest)\n(null fields in the request are left untouched)
+TestMapper --> TestSvc -- : void
+TestSvc -> TestRepo ++ : save(entryTest)
+TestRepo --> TestSvc -- : EntryTest
+TestSvc --> TestCtrl -- : EntryTest
+TestCtrl --> Admin -- : 200 OK (entry test updated)
+
+Admin -> TestCtrl ++ : DELETE /api/admin/entry-tests/{id}
+TestCtrl -> TestSvc ++ : deactivateEntryTest(id)
+TestSvc -> TestRepo ++ : findById(id)
+TestRepo --> TestSvc -- : Optional<EntryTest>
+
+break Entry test is not found
+    TestSvc --> TestCtrl : throws CustomException(404 NOT_FOUND, "Entry test not found")
+    TestCtrl --> Admin : error response (404)
+end
+
+TestSvc -> TestSvc : set isActive = false
+TestSvc -> TestRepo ++ : save(entryTest)
+TestRepo --> TestSvc -- : EntryTest
+TestSvc --> TestCtrl -- : EntryTest
+TestCtrl --> Admin -- : 200 OK (entry test deactivated)
+
+note right of TestCtrl
+  getAllEntryTests, getActiveEntryTest and getEntryTest(id) are plain
+  reads (findAll / findFirstByIsActiveTrueOrderByUpdatedAtDesc /
+  findById) and are omitted here for brevity
+end note
+
+' ===================== Configure a single level scale =====================
+
+Admin -> ScaleCtrl ++ : POST /api/admin/level-scales\n(targetRole, level, minScore, maxScore, minCodingScore, isActive)
+ScaleCtrl -> ScaleSvc ++ : createLevelScale(request)
+ScaleSvc -> ScaleSvc : validate level is set, minScore and\nmaxScore are set, and minScore <= maxScore
+
+break Validation fails
+    ScaleSvc --> ScaleCtrl : throws CustomException(400 BAD_REQUEST, validation message)
+    ScaleCtrl --> Admin : error response (400)
+end
+
+ScaleSvc -> ScaleMapper ++ : toEntity(request)
+ScaleMapper --> ScaleSvc -- : LevelScale
+ScaleSvc -> ScaleRepo ++ : save(levelScale)
+ScaleRepo --> ScaleSvc -- : LevelScale
+ScaleSvc --> ScaleCtrl -- : LevelScale
+ScaleCtrl --> Admin -- : 200 OK (level scale created)
+
+' ===================== Bulk-configure a role's full set of level scales =====================
+
+Admin -> ScaleCtrl ++ : POST /api/admin/level-scales/set\n(targetRole, scales[])
+ScaleCtrl -> ScaleSvc ++ : upsertLevelScaleSet(request)
+
+break Scales list is empty or missing
+    ScaleSvc --> ScaleCtrl : throws CustomException(400 BAD_REQUEST, "scales cannot be empty")
+    ScaleCtrl --> Admin : error response (400)
+end
+
+alt No specific targetRole is given (role-agnostic set)
+    ScaleSvc -> ScaleRepo ++ : findAllByTargetRoleIsNull()
+    ScaleRepo --> ScaleSvc -- : List<LevelScale>
+else targetRole is set
+    ScaleSvc -> ScaleRepo ++ : findAllByTargetRole(targetRole)
+    ScaleRepo --> ScaleSvc -- : List<LevelScale>
+end
+
+ScaleSvc -> ScaleSvc : index the existing scales by their level
+
+loop For each scale in the request
+    ScaleSvc -> ScaleSvc : validate level, minScore and\nmaxScore as above
+
+    alt No existing scale at this level
+        ScaleSvc -> ScaleMapper ++ : toEntityForSet(scaleRequest, targetRole)
+        ScaleMapper --> ScaleSvc -- : LevelScale (new)
+    else A scale already exists at this level
+        ScaleSvc -> ScaleMapper ++ : updateFromSetRequest(scaleRequest, targetRole, scale)
+        ScaleMapper --> ScaleSvc -- : void
+    end
+end
+
+ScaleSvc -> ScaleRepo ++ : saveAll(the upserted scales)
+ScaleRepo --> ScaleSvc -- : List<LevelScale>
+
+ScaleSvc --> ScaleCtrl -- : List<LevelScale>
+ScaleCtrl --> Admin -- : 200 OK (the role's full level-scale set)
+
+note right of ScaleSvc
+  upsertLevelScaleSet replaces one role's (or the role-agnostic)
+  whole set of levels in a single call: a level already configured is
+  updated in place, a new one is inserted, and nothing is deleted
+end note
+
+@enduml

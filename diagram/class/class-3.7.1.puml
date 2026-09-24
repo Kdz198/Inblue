@@ -1,0 +1,277 @@
+@startuml StaffHRScoring_CandidateReviewManagement
+skinparam classAttributeIconSize 0
+skinparam monochrome true
+skinparam shadowing false
+hide circle
+
+skinparam linetype ortho
+skinparam nodesep 45
+skinparam ranksep 55
+
+' ================= APPLICATION LIFECYCLE & RECRUITMENT PIPELINE =================
+
+class ApplicationController {
+  - applicationService : ApplicationService
+  - journeySummaryService : JourneySummaryService
+  --
+  + applyJd(jdId : Long) : Application
+  + getAllApplications() : List<Application>
+  + getApplicationsByEmail(email : String) : List<ApplicationLookupResponse>
+  + getApplicationById(id : Long) : Application
+  + getAllApplicationsByUserId() : List<Application>
+  .. (journey-summary, competency-chart endpoints - see class-3.9.1) ..
+}
+
+interface ApplicationService {
+  + applyForJob(jdId : Long) : Application
+  + getApplicationById(id : Long) : Application
+  + getAllApplications() : List<Application>
+  + getAllApplicationsByUserId() : List<Application>
+  + getAllApplicationsByUserEmail(email : String) : List<ApplicationLookupResponse>
+  + moveToNextRound(currentApplication : Application) : void
+}
+
+class ApplicationServiceImpl {
+  - securityUtils : SecurityUtils
+  - applicationRepository : ApplicationRepository
+  - jobDescriptionRepository : JobDescriptionRepository
+  - applicationDetailRepository : ApplicationDetailRepository
+  - jdPurchaseRepository : JdPurchaseRepository
+  - userRepository : UserRepository
+  - applicationEventPublisher : ApplicationEventPublisher
+  - journeySummaryService : JourneySummaryService
+  - journeySummaryServiceImpl : JourneySummaryServiceImpl
+  - applicationDetailServiceProvider : ObjectProvider<ApplicationDetailService>
+  --
+  + applyForJob(jdId : Long) : Application
+  + getApplicationById(id : Long) : Application
+  + getAllApplications() : List<Application>
+  + getAllApplicationsByUserId() : List<Application>
+  + getAllApplicationsByUserEmail(email : String) : List<ApplicationLookupResponse>
+  + moveToNextRound(currentApplication : Application) : void
+  - areAllRoundsCompleted(rounds : List<Round>, details : List<ApplicationDetail>) : boolean
+}
+
+note right of ApplicationServiceImpl
+  applicationDetailServiceProvider is an ObjectProvider (lazy lookup)
+  instead of a direct field, to break the circular dependency between
+  ApplicationServiceImpl and ApplicationDetailServiceImpl
+end note
+
+interface ApplicationRepository {
+  + findAllByUserId(userId : int) : List<Application>
+  + findAllByUserIdAndStatusNot(userId : int, status : ApplicationStatus) : List<Application>
+  + findByJdIdAndIsDeletedFalse(jdId : Long) : List<Application>
+  + findByJdId(jdId : Long) : List<Application>
+  .. (admin analytics queries - see class-3.8.1) ..
+}
+
+class Application {
+  - id : Long
+  - userId : int
+  - jdId : Long
+  - currentRoundOrder : Integer
+  - status : ApplicationStatus
+  - overallScore : Double
+  - isDeleted : Boolean
+  - createdAt : LocalDateTime
+  - updatedAt : LocalDateTime
+}
+
+enum ApplicationStatus {
+  IN_PROGRESS
+  PASSED
+  FAILED
+  SOFT_FAILED
+}
+
+class ApplicationLookupResponse {
+  - id : Long
+  - userId : Integer
+  - jdId : Long
+  - applicationName : String
+  - currentRoundOrder : Integer
+  - status : ApplicationStatus
+  - overallScore : Double
+  - isDeleted : Boolean
+  - createdAt : LocalDateTime
+  - updatedAt : LocalDateTime
+}
+
+' ================= STAFF HR REVIEW & SCORING =================
+
+class ApplicationDetailController {
+  - applicationDetailService : ApplicationDetailService
+  --
+  + hrScore(applicationDetailId : int, isPass : boolean, note : String, score : double) : void
+  + getApplicationDetailById(id : long) : ApplicationDetail
+  + getApplicationDetailsByApplicationId(applicationId : long) : List<ApplicationDetail>
+  + getApplicationDetailsForReviewer() : List<ReviewerApplicationDetailResponseDto>
+  .. (submission & mentor-scheduling endpoints - see class-3.4.1 / class-3.6.1) ..
+}
+
+interface ApplicationDetailService {
+  + getApplicationDetailById(id : long) : ApplicationDetail
+  + getByApplicationId(applicationId : long) : List<ApplicationDetail>
+  + hrScore(applicationId : long, isPass : boolean, note : String, score : double) : void
+  + getApplicationDetailsForReviewer() : List<ReviewerApplicationDetailResponseDto>
+  .. (other operations - see class-3.4.1 / class-3.5.1 / class-3.6.1) ..
+}
+
+class ApplicationDetailServiceImpl {
+  - applicationDetailRepository : ApplicationDetailRepository
+  - applicationService : ApplicationService
+  - roundRepository : RoundRepository
+  - jobDescriptionRepository : JobDescriptionRepository
+  - jwtUtils : JwtUtils
+  --
+  + getApplicationDetailById(id : long) : ApplicationDetail
+  + getByApplicationId(applicationId : long) : List<ApplicationDetail>
+  + hrScore(applicationId : long, isPass : boolean, note : String, score : double) : void
+  + getApplicationDetailsForReviewer() : List<ReviewerApplicationDetailResponseDto>
+  .. (other fields/operations - see class-3.4.1 / class-3.5.1 / class-3.6.1) ..
+}
+
+interface ApplicationDetailRepository {
+  + findAllByReviewerId(reviewerId : Integer) : List<ApplicationDetail>
+  + findAllByApplicationId(applicationId : Long) : List<ApplicationDetail>
+  + findByApplicationIdAndRoundId(applicationId : Long, roundId : Long) : Optional<ApplicationDetail>
+  .. (full detail in class-3.4.1) ..
+}
+
+class ReviewerApplicationDetailResponseDto {
+  - id : Long
+  - applicationId : Long
+  - roundId : Long
+  - status : ApplicationDetailStatus
+  - finalScore : Double
+  - submissionData : ApplicationDetail.SubmissionData
+  - aiScore : Double
+  - aiFeedback : Object
+  - structuredAiFeedback : ApplicationDetail.StructuredAiFeedback
+  - hrScore : Double
+  - hrNote : String
+  - finalResult : ApplicationDetail.RoundResult
+  - startedAt : LocalDateTime
+  - completedAt : LocalDateTime
+  - mentorId : Integer
+  - assignedMentorIds : List<Integer>
+  - assignedMentors : List<MentorResponse>
+  - mentorReview : Object
+  - sessionId : Integer
+  - aiInterviewSessionId : Integer
+  - sessionInfo : ApplicationDetail.RoundSessionInfo
+  - createdAt : LocalDateTime
+  - updatedAt : LocalDateTime
+  - jobTitle : String
+  - roundName : String
+  - instruction : String
+  - roundConfig : Round.RoundConfig
+}
+
+' ================= SHARED / EXTERNAL =================
+
+class ApplicationDetail <<full detail in class-3.4.1>> {
+}
+
+enum ApplicationDetailStatus <<full detail in class-3.4.1>> {
+}
+
+class Round <<full detail in class-3.4.1>> {
+}
+
+interface RoundRepository <<full detail in class-3.4.1>> {
+}
+
+class JobDescription <<full detail in class-3.3.1>> {
+  + getAppliedCount() : int
+  + getPrice() : Integer
+  + getRounds() : List<Round>
+}
+
+interface JobDescriptionRepository <<full detail in class-3.3.1>> {
+  + findById(id : Long) : Optional<JobDescription>
+  + findAllById(ids : List<Long>) : List<JobDescription>
+}
+
+class JdPurchase <<full detail in class-3.3.1>> {
+}
+
+interface JdPurchaseRepository <<full detail in class-3.3.1>> {
+  + findByUserIdAndJdIdAndStatus(userId : int, jdId : Long, status : JdPurchaseStatus) : Optional<JdPurchase>
+}
+
+enum JdPurchaseStatus <<full detail in class-3.3.1>> {
+}
+
+class MentorResponse <<full detail in class-3.6.1>> {
+}
+
+class User <<full detail in class-3.1.1>> {
+}
+
+interface UserRepository <<full detail in class-3.1.1>> {
+  + findByEmail(email : String) : User
+}
+
+interface JourneySummaryService <<full detail in class-3.9.1>> {
+  + generate(applicationId : Long) : void
+}
+
+class JourneySummaryServiceImpl <<full detail in class-3.9.1>> {
+}
+
+interface JwtUtils <<external module>> {
+  + getUserIdFromToken(token : String) : int
+  + getRolesFromToken(token : String) : List<String>
+}
+
+interface SecurityUtils <<external module>> {
+  + getCurrentUserId() : int
+}
+
+interface ApplicationEventPublisher <<external library>> {
+}
+
+class "ObjectProvider<ApplicationDetailService>" as ApplicationDetailServiceProvider <<external library>> {
+}
+
+interface JpaRepository <<external library>> {
+}
+
+' ================= RELATIONSHIPS =================
+
+' --- Application lifecycle & recruitment pipeline ---
+ApplicationController .down.> ApplicationService : use
+ApplicationServiceImpl .up.|> ApplicationService : implement
+ApplicationServiceImpl .down.> ApplicationRepository : use
+ApplicationServiceImpl .down.> JobDescriptionRepository : use
+ApplicationServiceImpl .down.> ApplicationDetailRepository : use
+ApplicationServiceImpl .down.> JdPurchaseRepository : use
+ApplicationServiceImpl .down.> UserRepository : use
+ApplicationServiceImpl .down.> SecurityUtils : use
+ApplicationServiceImpl .down.> ApplicationEventPublisher : use
+ApplicationServiceImpl .down.> JourneySummaryService : use
+ApplicationServiceImpl .down.> JourneySummaryServiceImpl : use
+ApplicationServiceImpl .down.> ApplicationDetailServiceProvider : use
+ApplicationDetailServiceProvider .down.> ApplicationDetailService : use
+ApplicationServiceImpl .down.> ApplicationLookupResponse : create
+ApplicationServiceImpl .down.> ApplicationDetail : create
+ApplicationRepository -up-|> JpaRepository : extend
+Application .right.> ApplicationStatus : use
+ApplicationLookupResponse .right.> ApplicationStatus : use
+
+' --- Staff HR review & scoring ---
+ApplicationDetailController .down.> ApplicationDetailService : use
+ApplicationDetailServiceImpl .up.|> ApplicationDetailService : implement
+ApplicationDetailServiceImpl .down.> ApplicationDetailRepository : use
+ApplicationDetailServiceImpl .down.> ApplicationService : use
+ApplicationDetailServiceImpl .down.> RoundRepository : use
+ApplicationDetailServiceImpl .down.> JobDescriptionRepository : use
+ApplicationDetailServiceImpl .down.> JwtUtils : use
+ApplicationDetailServiceImpl .down.> ReviewerApplicationDetailResponseDto : create
+ReviewerApplicationDetailResponseDto .down.> ApplicationDetailStatus : use
+ReviewerApplicationDetailResponseDto .down.> MentorResponse : use
+ReviewerApplicationDetailResponseDto .down.> Round : use
+
+@enduml

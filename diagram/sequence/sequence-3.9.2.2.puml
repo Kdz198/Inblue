@@ -1,0 +1,190 @@
+@startuml CommunityFeedInteractions
+skinparam monochrome true
+skinparam shadowing false
+
+' Do not repeat participant boxes at the bottom of the diagram
+hide footbox
+
+<style>
+sequenceDiagram {
+  groupHeader {
+    FontStyle plain
+  }
+}
+</style>
+
+actor "Candidate / Mentor" as Actor
+participant ":PostController" as Ctrl
+participant ":PostServiceImpl" as Svc
+participant ":SecurityUtils" as SecurityUtils
+participant ":UserService" as UserSvc
+participant ":MentorRepository" as MentorRepo
+participant ":CloudinaryService" as Cloudinary
+participant ":PostMapper" as Mapper
+participant ":PostRepository" as Repo
+
+note right of Cloudinary
+  Third-party image hosting used to store each post's cover image
+end note
+
+' ===================== Resolve the current actor (User or Mentor) =====================
+
+note over Svc, MentorRepo
+  Every action below (create post, like/unlike, comment) starts by resolving
+  who is acting: a candidate (User) or a mentor (Mentor), never both. Later
+  phases reference this fragment instead of repeating it.
+end note
+
+Svc -> SecurityUtils ++ : getCurrentUserId()
+SecurityUtils --> Svc -- : actorId
+Svc -> SecurityUtils ++ : getCurrentRole()
+SecurityUtils --> Svc -- : role
+
+alt Role is USER
+    Svc -> UserSvc ++ : getById(actorId)
+    UserSvc --> Svc -- : User
+else Role is MENTOR
+    Svc -> MentorRepo ++ : findById(actorId)
+    MentorRepo --> Svc -- : Mentor
+end
+
+' ===================== Create a post =====================
+
+Actor -> Ctrl ++ : POST /api/posts\n(multipart: title, content, summary,\ncoverImg, tags, status)
+Ctrl -> Svc ++ : createPost(postCreateRequest)
+
+ref over Svc, MentorRepo : Resolve the current actor\n(see the fragment above)
+
+Svc -> Cloudinary ++ : uploadImg(coverImg)
+Cloudinary --> Svc -- : secure_url, public_id
+
+Svc -> Mapper ++ : toEntity(postCreateRequest)
+Mapper --> Svc -- : Post (title, content, summary, tags, status)
+
+Svc -> Svc : set coverImgUrl, public_id, and\nauthor / authorMentor from the resolved actor
+
+Svc -> Repo ++ : save(post)
+Repo --> Svc -- : Post
+
+Svc --> Ctrl -- : Post
+Ctrl --> Actor -- : 200 OK (post created)
+
+' ===================== Browse the feed & open a post's detail =====================
+
+Actor -> Ctrl ++ : GET /api/posts/feed?page={page}&size={size}
+Ctrl -> Svc ++ : getNewFeed(page, size)
+Svc -> Repo ++ : findAllByOrderByCreationDateDesc(pageable)
+Repo --> Svc -- : Page<Post>
+
+loop For each post on the page
+    Svc -> Svc : map to PostResponse\n(post detail, like count, comment count,\nlikes, comments)
+end
+
+Svc --> Ctrl -- : Page<PostResponse>
+Ctrl --> Actor -- : 200 OK (paginated feed, newest first)
+
+opt Candidate/Mentor opens one post's full detail
+    Actor -> Ctrl ++ : GET /api/posts/{postId}
+    Ctrl -> Svc ++ : getPostByPostId(postId)
+    Svc -> Repo ++ : findById(postId)
+    Repo --> Svc -- : Optional<Post>
+
+    break Post is not found
+        Svc --> Ctrl : throws RuntimeException("Post not found")
+        Ctrl --> Actor : error response (500)
+    end
+
+    Svc -> Svc : map to PostResponse\n(post detail, likes, comments)
+    Svc --> Ctrl -- : PostResponse
+    Ctrl --> Actor -- : 200 OK (post detail, likes, comments)
+end
+
+' ===================== Like / unlike a post =====================
+
+Actor -> Ctrl ++ : POST /api/posts/likes\n(postId)
+Ctrl -> Svc ++ : likePost(request)
+Svc -> Repo ++ : findById(postId)
+Repo --> Svc -- : Optional<Post>
+
+break Post is not found
+    Svc --> Ctrl : throws RuntimeException("Post not found")
+    Ctrl --> Actor : error response (500)
+end
+
+ref over Svc, MentorRepo : Resolve the current actor\n(see the fragment above)
+
+Svc -> Svc : check the post's existing likes\nfor this actor
+
+break Actor has already liked this post
+    Svc --> Ctrl : throws RuntimeException("User đã like bài viết này rồi")
+    Ctrl --> Actor : error response (500)
+end
+
+Svc -> Svc : append a new PostLike\n(user or mentor) to the post
+Svc -> Repo ++ : save(post)
+Repo --> Svc -- : Post
+
+Svc --> Ctrl -- : PostLike
+Ctrl --> Actor -- : 200 OK (like recorded)
+
+Actor -> Ctrl ++ : DELETE /api/posts/likes/{postId}
+Ctrl -> Svc ++ : unlikePost(postId)
+Svc -> Repo ++ : findById(postId)
+Repo --> Svc -- : Optional<Post>
+
+break Post is not found
+    Svc --> Ctrl : throws RuntimeException("Post not found")
+    Ctrl --> Actor : error response (500)
+end
+
+ref over Svc, MentorRepo : Resolve the current actor\n(see the fragment above)
+
+Svc -> Svc : find this actor's existing like on the post
+
+break Actor has not liked this post yet
+    Svc --> Ctrl : throws RuntimeException("User chưa like bài viết này")
+    Ctrl --> Actor : error response (500)
+end
+
+Svc -> Svc : remove the like from the post
+Svc -> Repo ++ : save(post)
+Repo --> Svc -- : Post
+
+Svc --> Ctrl -- : void
+Ctrl --> Actor -- : 200 OK ("Unlike thành công")
+
+' ===================== Comment on a post (root comment or threaded reply) =====================
+
+Actor -> Ctrl ++ : POST /api/posts/comments\n(postId, content, parentCommentId?)
+Ctrl -> Svc ++ : createComment(request)
+Svc -> Repo ++ : findById(postId)
+Repo --> Svc -- : Optional<Post>
+
+break Post is not found
+    Svc --> Ctrl : throws RuntimeException("Post not found")
+    Ctrl --> Actor : error response (500)
+end
+
+ref over Svc, MentorRepo : Resolve the current actor\n(see the fragment above)
+
+alt Request carries a parentCommentId (this is a reply)
+    Svc -> Svc : check the parent comment exists\namong the post's comments
+
+    break Parent comment does not exist
+        Svc --> Ctrl : throws RuntimeException("Parent comment không tồn tại")
+        Ctrl --> Actor : error response (500)
+    end
+
+    Svc -> Svc : set parentCommentId on the new comment
+else Request carries no parentCommentId (root comment)
+    Svc -> Svc : set parentCommentId to 0
+end
+
+Svc -> Svc : append the new PostComment\n(user or mentor, content) to the post
+Svc -> Repo ++ : save(post)
+Repo --> Svc -- : Post
+
+Svc --> Ctrl -- : PostComment
+Ctrl --> Actor -- : 200 OK (comment created)
+
+@enduml

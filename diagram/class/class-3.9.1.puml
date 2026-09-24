@@ -1,0 +1,696 @@
+@startuml CompetencyReport_CommunityMessengerModule
+skinparam classAttributeIconSize 0
+skinparam monochrome true
+skinparam shadowing false
+hide circle
+
+skinparam linetype ortho
+skinparam nodesep 45
+skinparam ranksep 55
+
+' ================= CANDIDATE COMPETENCY REPORT & JOURNEY SUMMARY =================
+
+class ApplicationController {
+  - applicationService : ApplicationService
+  - journeySummaryService : JourneySummaryService
+  --
+  + getJourneySummary(applicationId : Long) : JourneySummary
+  + generateJourneySummary(applicationId : Long) : JourneySummary
+  + getCompetencyChart(applicationId : Long) : CompetencyChartResponse
+  .. (applyJd, getAllApplications, getApplicationsByEmail,
+      getApplicationById, getAllApplicationsByUserId - see class-3.7.1) ..
+}
+
+note right of ApplicationController
+  summary-audio/{email} endpoint (getAllJourneySummaryWithMissingAudio)
+  supports the text-to-speech narration pipeline and is not
+  part of this report's diagram scope
+end note
+
+interface JourneySummaryService {
+  + generate(applicationId : Long) : JourneySummaryAIRequest
+  + buildAIRequest(applicationId : Long) : JourneySummaryAIRequest
+  + buildSummaryRequest(applicationId : Long) : AISummaryRequest
+  + saveNarrative(applicationId : Long, narrative : String) : JourneySummary
+  + getSavedSummary(applicationId : Long) : JourneySummary
+  + getSavedCompetencyChart(applicationId : Long) : CompetencyChartResponse
+  + generateMissingScripts() : void
+  + getAllJourneyByUser(email : String) : List<JourneySummary>
+}
+
+class JourneySummaryServiceImpl {
+  - summaryReportFallbackEnabled : boolean
+  - applicationRepository : ApplicationRepository
+  - jobDescriptionRepository : JobDescriptionRepository
+  - applicationDetailRepository : ApplicationDetailRepository
+  - roundRepository : RoundRepository
+  - journeySummaryRepository : JourneySummaryRepository
+  - userRepository : UserRepository
+  - roundSummaryService : RoundSummaryService
+  - competencyChartService : CompetencyChartService
+  - apiClient : ApiClient
+  --
+  + generate(applicationId : Long) : JourneySummaryAIRequest
+  + buildAIRequest(applicationId : Long) : JourneySummaryAIRequest
+  + buildSummaryRequest(applicationId : Long) : AISummaryRequest
+  + saveNarrative(applicationId : Long, narrative : String) : JourneySummary
+  + getSavedSummary(applicationId : Long) : JourneySummary
+  + getSavedCompetencyChart(applicationId : Long) : CompetencyChartResponse
+  + generateMissingScripts() : void
+  + getAllJourneyByUser(email : String) : List<JourneySummary>
+  - saveAIResponse(applicationId : Long, request : JourneySummaryAIRequest,\nresponse : JourneySummaryAIResponse) : JourneySummary
+  - saveFallbackSummary(applicationId : Long, request : JourneySummaryAIRequest,\ncause : Exception) : JourneySummary
+  - enrichCompetencyChartMetadata(applicationId : Long, request : JourneySummaryAIRequest,\ncompetencyChart : CompetencyChartResponse) : void
+  .. (buildFallbackNarrative, extractKeyRequirements,\nresolveRoundOrder - minor formatting helpers, omitted) ..
+}
+
+note right of JourneySummaryServiceImpl
+  generate() calls the AnythingLLM SUMMARY_REPORT workspace; if it fails
+  or the fallback flag is enabled, a fallback summary is built locally
+  from CompetencyChartService instead of failing the request
+end note
+
+interface CompetencyChartService {
+  + getCompetencyChart(applicationId : Long) : CompetencyChartResponse
+}
+
+class CompetencyChartServiceImpl {
+  - applicationRepository : ApplicationRepository
+  - applicationDetailRepository : ApplicationDetailRepository
+  - jobDescriptionRepository : JobDescriptionRepository
+  - roundRepository : RoundRepository
+  - userRepository : UserRepository
+  --
+  + getCompetencyChart(applicationId : Long) : CompetencyChartResponse
+  - buildTechnicalSkillAreas(contributions : List<RoundContribution>) : List<SkillAreaScore>
+  - buildBehavioralSkills(contributions : List<RoundContribution>) : List<BehavioralSkillScore>
+  - toCompetencyLevel(score : Double) : CompetencyLevel
+  .. (buildContribution, resolveRawScore, normalizeScore, resolveOverallScore,
+      average, sourceRounds, roundName, clamp - scoring helpers, omitted) ..
+}
+
+note right of CompetencyChartServiceImpl
+  Each completed round contributes a normalized 0-100 score, mapped to a
+  SWECOM skill area or behavioral skill via SwecomMappingConfig, then
+  averaged per skill area/skill and converted to a CompetencyLevel
+end note
+
+class RoundSummaryService {
+  - roundSummaryFactory : RoundSummaryFactory
+  --
+  + buildRoundSummary(detail : ApplicationDetail, roundConfig : Round) : AISummaryRequest.RoundSummaryInfo
+}
+
+class JourneySummary {
+  - id : Long
+  - applicationId : Long
+  - narrative : String
+  - competencyChart : CompetencyChartResponse
+  - swecomAssessments : List<JourneySummaryAIResponse.SwecomSkillAssessment>
+  - developmentRecommendations : List<JourneySummaryAIResponse.DevelopmentRecommendation>
+  - generatedAt : LocalDateTime
+  - createdAt : LocalDateTime
+  - script : String
+  - audioUrl : String
+}
+
+interface JourneySummaryRepository {
+  + findTopByApplicationIdOrderByGeneratedAtDesc(applicationId : Long) : Optional<JourneySummary>
+  + findByScriptIsNull() : List<JourneySummary>
+  + findByAudioUrlIsNullAndScriptIsNotNull() : List<JourneySummary>
+  + findAllByApplicationIdIn(applicationIds : Collection<Long>) : List<JourneySummary>
+}
+
+class CompetencyChartResponse {
+  - applicationId : Long
+  - candidateName : String
+  - jobTitle : String
+  - overallLevel : CompetencyLevel
+  - overallScore : Double
+  - technicalSkillAreas : List<SkillAreaScore>
+  - behavioralSkills : List<BehavioralSkillScore>
+}
+
+class SkillAreaScore {
+  - skillArea : String
+  - score : Double
+  - level : CompetencyLevel
+  - sourceRounds : List<String>
+}
+
+class BehavioralSkillScore {
+  - skillName : String
+  - score : Double
+  - sourceRounds : List<String>
+}
+
+enum CompetencyLevel {
+  TECHNICIAN
+  ENTRY_LEVEL_PRACTITIONER
+  PRACTITIONER
+  TECHNICAL_LEADER
+  SENIOR_SOFTWARE_ENGINEER
+}
+
+class JourneySummaryAIRequest {
+  - data : AISummaryRequest
+}
+
+class AISummaryRequest {
+  - jobDescription : AISummaryRequest.JobDescriptionDto
+  - roundSummaries : List<AISummaryRequest.RoundSummaryInfo>
+  --
+  + toPromptText() : String
+}
+
+class "AISummaryRequest.JobDescriptionDto" as JobDescriptionDto {
+  - title : String
+  - level : String
+  - keyRequirements : List<String>
+}
+
+class "AISummaryRequest.RoundSummaryInfo" as RoundSummaryInfo {
+  - roundName : String
+  - roundType : RoundType
+  - roundOrder : Integer
+  - score : Double
+  - maxScore : Double
+  - finalResult : String
+  - summary : String
+  - strengths : List<String>
+  - weaknesses : List<String>
+  - hrNote : String
+  - hrScore : Double
+}
+
+class JourneySummaryAIResponse {
+  - narrative : String
+  - competencyChart : CompetencyChartResponse
+  - swecomAssessments : List<JourneySummaryAIResponse.SwecomSkillAssessment>
+  - developmentRecommendations : List<JourneySummaryAIResponse.DevelopmentRecommendation>
+}
+
+class "JourneySummaryAIResponse.SwecomSkillAssessment" as SwecomSkillAssessment {
+  - skillArea : String
+  - level : CompetencyLevel
+  - score : Double
+  - evidenceSummary : String
+  - sourceRounds : List<String>
+}
+
+class "JourneySummaryAIResponse.DevelopmentRecommendation" as DevelopmentRecommendation {
+  - targetSkillArea : String
+  - recommendation : String
+  - targetLevel : CompetencyLevel
+}
+
+' ================= COMMUNITY BLOG & FEED (POST, LIKE, COMMENT) =================
+
+class PostController {
+  - postService : PostService
+  --
+  + createPost(postCreateRequest : PostCreateRequest) : Post
+  + getNewFeed(page : int, size : int) : Page<PostResponse>
+  + getPostById(postId : int) : PostResponse
+  + likePost(request : PostLikeRequest) : PostLike
+  + unlikePost(postId : int) : Map<String, String>
+  + checkLiked(postId : int) : Map<String, String>
+  + createComment(request : PostCommentRequest) : PostComment
+  + updateComment(commentId : int, body : Map<String, String>) : PostComment
+  + deleteComment(commentId : int) : void
+  + getAllPosts() : List<PostResponse>
+  + getPublishedPosts() : List<PostResponse>
+  + changeStatus(postId : int, status : PostStatus) : Map<String, String>
+}
+
+note right of PostController
+  changeStatus(postId, status) is also the endpoint behind report
+  section 3.7.11 Admin Community Post Moderation: Staff/Admin sets a
+  post to PUBLISHED or ARCHIVED to moderate the community feed
+end note
+
+interface PostService {
+  + createPost(post : PostCreateRequest) : Post
+  + getPostByPostId(postId : int) : PostResponse
+  + changeStatus(postId : int, status : PostStatus) : void
+  + getPublishPost() : List<PostResponse>
+  + getAllPost() : List<PostResponse>
+  + getNewFeed(page : int, size : int) : Page<PostResponse>
+  + likePost(request : PostLikeRequest) : PostLike
+  + unlikePost(postId : int) : void
+  + isLiked(postId : int) : boolean
+  + createComment(request : PostCommentRequest) : PostComment
+  + updateComment(commentId : int, content : String) : PostComment
+  + deleteComment(commentId : int) : void
+}
+
+class PostServiceImpl {
+  - postMapper : PostMapper
+  - postRepository : PostRepository
+  - mentorRepository : MentorRepository
+  - cloudinaryService : CloudinaryService
+  - userService : UserService
+  - securityUtils : SecurityUtils
+  --
+  + createPost(post : PostCreateRequest) : Post
+  + changeStatus(postId : int, status : PostStatus) : void
+  + getPublishPost() : List<PostResponse>
+  + getPostByPostId(postId : int) : PostResponse
+  + getAllPost() : List<PostResponse>
+  + getNewFeed(page : int, size : int) : Page<PostResponse>
+  + likePost(request : PostLikeRequest) : PostLike
+  + unlikePost(postId : int) : void
+  + isLiked(postId : int) : boolean
+  + createComment(request : PostCommentRequest) : PostComment
+  + updateComment(commentId : int, content : String) : PostComment
+  + deleteComment(commentId : int) : void
+  - getPostById(postId : int) : Post
+  - mapPostToResponse(posts : List<Post>) : List<PostResponse>
+  - resolveCurrentActor() : Actor
+  - resolveActor(actorId : int, role : Role) : Actor
+  - isSameActor(like : PostLike, actor : Actor) : boolean
+  .. (mapPostAuthor, mapLikeToResponse, mapCommentToResponse -
+      per-DTO mapping helpers, omitted) ..
+}
+
+class "PostServiceImpl.Actor" as Actor {
+  - user : User
+  - mentor : Mentor
+}
+
+note right of Actor
+  Either a User or a Mentor, never both - the current
+  author/liker/commenter is resolved once per request
+  from the authenticated role (USER or MENTOR)
+end note
+
+class Post {
+  - postId : int
+  - title : String
+  - content : String
+  - summary : String
+  - status : PostStatus
+  - author : User
+  - authorMentor : Mentor
+  - creationDate : Instant
+  - lastModifiedDate : Instant
+  - coverImgUrl : String
+  - public_id : String
+  - tags : List<String>
+  - likes : List<PostLike>
+  - comments : List<PostComment>
+}
+
+class PostComment {
+  - id : int
+  - user : User
+  - mentor : Mentor
+  - content : String
+  - parentCommentId : int
+  - createdAt : Timestamp
+  - updatedAt : Timestamp
+}
+
+class PostLike {
+  - id : int
+  - user : User
+  - mentor : Mentor
+  - createdAt : Timestamp
+}
+
+note right of PostLike
+  Unique constraint on (post_id, user_id) and (post_id, mentor_id)
+  prevents the same user or mentor from liking a post twice
+end note
+
+enum PostStatus {
+  DRAFT
+  PUBLISHED
+  ARCHIVED
+}
+
+interface PostRepository {
+  + findAllByStatus(status : PostStatus) : List<Post>
+  + findAllByOrderByCreationDateDesc(pageable : Pageable) : Page<Post>
+}
+
+interface PostMapper {
+  + toEntity(dto : PostCreateRequest) : Post
+}
+
+class PostCreateRequest {
+  - title : String
+  - content : String
+  - summary : String
+  - coverImg : MultipartFile
+  - tags : List<String>
+  - status : PostStatus
+}
+
+class PostCommentRequest {
+  - postId : int
+  - content : String
+  - parentCommentId : Integer
+}
+
+class PostLikeRequest {
+  - postId : int
+}
+
+class PostResponse {
+  - post : PostDetailResponse
+  - likeCount : int
+  - commentCount : int
+  - postLikes : List<PostLikeResponse>
+  - postComments : List<PostCommentResponse>
+}
+
+class PostDetailResponse {
+  - postId : int
+  - title : String
+  - content : String
+  - summary : String
+  - status : String
+  - creationDate : Instant
+  - lastModifiedDate : Instant
+  - coverImgUrl : String
+  - tags : List<String>
+  - author : PostDetailResponse.AuthorResponse
+}
+
+class "PostDetailResponse.AuthorResponse" as AuthorResponse {
+  - id : Integer
+  - role : String
+  - name : String
+  - avatar : String
+}
+
+class PostCommentResponse {
+  - id : int
+  - userId : Integer
+  - role : String
+  - userName : String
+  - userAvatar : String
+  - content : String
+  - parentCommentId : int
+  - createdAt : Timestamp
+  - updatedAt : Timestamp
+}
+
+class PostLikeResponse {
+  - userId : Integer
+  - role : String
+  - userName : String
+  - userAvatar : String
+}
+
+' ================= DIRECT MESSENGER CHAT (CANDIDATE <-> MENTOR) =================
+
+class ChatController {
+  - chatService : ChatService
+  --
+  + processMessage(message : ChatDto) : void
+}
+
+note right of ChatController
+  STOMP @MessageMapping("/chat") handler: invoked when a client
+  sends a message over the /ws-chat WebSocket connection
+end note
+
+class ChatMessageController {
+  - chatService : ChatService
+  --
+  + getChatHistory(currentFullId : String, recipientFullId : String) : List<ChatMessage>
+  + getContacts(myId : int, role : Role) : List<Integer>
+}
+
+interface ChatService {
+  + processMessage(message : ChatDto) : void
+  + getChatHistory(senderId : String, recipientId : String) : List<ChatMessage>
+  + findAllContact(myId : int, role : Role) : List<Integer>
+}
+
+class ChatServiceImpl {
+  - chatMessageRepository : ChatMessageRepository
+  - messagingTemplate : SimpMessagingTemplate
+  --
+  + processMessage(message : ChatDto) : void
+  + getChatHistory(senderId : String, recipientId : String) : List<ChatMessage>
+  + findAllContact(myId : int, role : Role) : List<Integer>
+  + parseId(id : String) : int
+  + getType(id : String) : String
+}
+
+note right of ChatServiceImpl
+  senderId/recipientId are "TYPE_id" strings (e.g. "USER_12",
+  "MENTOR_5"); parseId/getType split them into the numeric id
+  and actor type stored on ChatMessage
+end note
+
+class ChatMessage {
+  - id : int
+  - senderId : int
+  - senderType : String
+  - recipientId : int
+  - recipientType : String
+  - content : String
+  - timestamp : Timestamp
+}
+
+interface ChatMessageRepository {
+  + getHistory(id1 : int, type1 : String, id2 : int, type2 : String) : List<ChatMessage>
+  + findPartnerIds(myId : int, myType : String) : List<Integer>
+}
+
+class ChatDto {
+  - senderId : String
+  - recipientId : String
+  - content : String
+}
+
+class WebSocketConfig {
+  + registerStompEndpoints(registry : StompEndpointRegistry) : void
+  + configureMessageBroker(registry : MessageBrokerRegistry) : void
+}
+
+note right of WebSocketConfig
+  Registers the /ws-chat SockJS endpoint and enables a simple
+  broker on /topic (group) and /user (private, per-recipient) prefixes
+end note
+
+' ================= REAL-TIME NOTIFICATION =================
+
+class NotificationController {
+  - notificationService : NotificationService
+  --
+  + getAllNotifications(id : int) : List<Notification>
+  + createNotification(notification : Notification) : Notification
+  + checkRead(notificationId : int) : boolean
+}
+
+interface NotificationService {
+  + getNotifications(userId : int) : List<Notification>
+  + createNotification(notification : Notification) : Notification
+  + checkRead(notificationId : int) : boolean
+}
+
+class NotificationServiceImpl {
+  - notificationRepository : NotificationRepository
+  --
+  + getNotifications(userId : int) : List<Notification>
+  + createNotification(notification : Notification) : Notification
+  + checkRead(notificationId : int) : boolean
+}
+
+note right of NotificationServiceImpl
+  getNotifications(0) returns platform-wide/admin notifications;
+  any other userId returns that candidate's own notifications
+end note
+
+class Notification {
+  - id : int
+  - user : User
+  - title : String
+  - message : String
+  - isRead : Boolean
+  - createAt : LocalDateTime
+}
+
+interface NotificationRepository {
+  + findAllByUser_Id(userId : int) : List<Notification>
+}
+
+' ================= SHARED / EXTERNAL =================
+
+class User <<full detail in class-3.1.1>> {
+}
+
+interface UserRepository <<full detail in class-3.1.1>> {
+}
+
+enum Role <<full detail in class-3.1.1>> {
+}
+
+interface UserService {
+  + getById(id : int) : User
+}
+
+class Mentor <<full detail in class-3.6.1>> {
+}
+
+interface MentorRepository <<full detail in class-3.6.1>> {
+}
+
+class Application <<full detail in class-3.7.1>> {
+}
+
+interface ApplicationService <<full detail in class-3.7.1>> {
+}
+
+interface ApplicationRepository <<full detail in class-3.7.1>> {
+}
+
+class JobDescription <<full detail in class-3.3.1>> {
+}
+
+interface JobDescriptionRepository <<full detail in class-3.3.1>> {
+}
+
+class ApplicationDetail <<full detail in class-3.4.1>> {
+}
+
+interface ApplicationDetailRepository <<full detail in class-3.4.1>> {
+}
+
+class Round <<full detail in class-3.4.1>> {
+}
+
+interface RoundRepository <<full detail in class-3.4.1>> {
+}
+
+enum RoundType <<full detail in class-3.4.1>> {
+}
+
+class RoundSummaryFactory <<full detail in class-3.4.1>> {
+}
+
+interface ApiClient <<full detail in class-3.4.1>> {
+}
+
+interface CloudinaryService <<external module>> {
+  + uploadImg(file : MultipartFile) : Map<String, String>
+}
+
+interface SecurityUtils <<external module>> {
+  + getCurrentUserId() : int
+  + getCurrentRole() : Role
+}
+
+interface SimpMessagingTemplate <<external library>> {
+  + convertAndSendToUser(user : String, destination : String, payload : Object) : void
+}
+
+interface JpaRepository <<external library>> {
+}
+
+' ================= RELATIONSHIPS =================
+
+' --- Competency report & journey summary ---
+ApplicationController .down.> JourneySummaryService : use
+JourneySummaryServiceImpl .up.|> JourneySummaryService : implement
+JourneySummaryServiceImpl .down.> ApplicationRepository : use
+JourneySummaryServiceImpl .down.> JobDescriptionRepository : use
+JourneySummaryServiceImpl .down.> ApplicationDetailRepository : use
+JourneySummaryServiceImpl .down.> RoundRepository : use
+JourneySummaryServiceImpl .down.> JourneySummaryRepository : use
+JourneySummaryServiceImpl .down.> UserRepository : use
+JourneySummaryServiceImpl .down.> RoundSummaryService : use
+JourneySummaryServiceImpl .down.> CompetencyChartService : use
+JourneySummaryServiceImpl .down.> ApiClient : use
+JourneySummaryServiceImpl .down.> JourneySummaryAIRequest : create
+JourneySummaryServiceImpl .down.> JourneySummaryAIResponse : use
+JourneySummaryServiceImpl .down.> AISummaryRequest : create
+JourneySummaryServiceImpl .down.> JourneySummary : create
+
+CompetencyChartServiceImpl .up.|> CompetencyChartService : implement
+CompetencyChartServiceImpl .down.> ApplicationRepository : use
+CompetencyChartServiceImpl .down.> ApplicationDetailRepository : use
+CompetencyChartServiceImpl .down.> JobDescriptionRepository : use
+CompetencyChartServiceImpl .down.> RoundRepository : use
+CompetencyChartServiceImpl .down.> UserRepository : use
+CompetencyChartServiceImpl .down.> CompetencyChartResponse : create
+CompetencyChartServiceImpl .right.> RoundType : use
+CompetencyChartServiceImpl .right.> CompetencyLevel : use
+
+RoundSummaryService .down.> RoundSummaryFactory : use
+RoundSummaryService .down.> RoundSummaryInfo : create
+
+JourneySummary "1" *-down- "0..1" CompetencyChartResponse : owns
+JourneySummary "1" *-down- "0..*" SwecomSkillAssessment : owns
+JourneySummary "1" *-down- "0..*" DevelopmentRecommendation : owns
+
+CompetencyChartResponse "1" *-down- "0..*" SkillAreaScore : owns
+CompetencyChartResponse "1" *-down- "0..*" BehavioralSkillScore : owns
+CompetencyChartResponse .right.> CompetencyLevel : use
+SkillAreaScore .right.> CompetencyLevel : use
+SwecomSkillAssessment .right.> CompetencyLevel : use
+DevelopmentRecommendation .right.> CompetencyLevel : use
+
+JourneySummaryAIRequest "1" *-right- "0..1" AISummaryRequest : owns
+AISummaryRequest "1" *-down- "0..1" JobDescriptionDto : owns
+AISummaryRequest "1" *-down- "0..*" RoundSummaryInfo : owns
+RoundSummaryInfo .right.> RoundType : use
+JourneySummaryAIResponse "1" *-down- "0..1" CompetencyChartResponse : owns
+JourneySummaryAIResponse "1" *-down- "0..*" SwecomSkillAssessment : owns
+JourneySummaryAIResponse "1" *-down- "0..*" DevelopmentRecommendation : owns
+
+' --- Community blog & feed ---
+PostController .down.> PostService : use
+PostServiceImpl .up.|> PostService : implement
+PostServiceImpl .down.> PostMapper : use
+PostServiceImpl .down.> PostRepository : use
+PostServiceImpl .down.> MentorRepository : use
+PostServiceImpl .down.> CloudinaryService : use
+PostServiceImpl .down.> UserService : use
+PostServiceImpl .down.> SecurityUtils : use
+PostServiceImpl .down.> Actor : create
+PostServiceImpl .down.> PostResponse : create
+Actor "0..1" -right-> "0..1" User : wraps
+Actor "0..1" -right-> "0..1" Mentor : wraps
+
+Post "1" *-down- "0..*" PostLike : owns
+Post "1" *-down- "0..*" PostComment : owns
+Post .right.> PostStatus : use
+Post "0..*" -left-> "0..1" User : written by
+Post "0..*" -left-> "0..1" Mentor : written by
+PostLike "0..*" -right-> "0..1" User : liked by
+PostLike "0..*" -right-> "0..1" Mentor : liked by
+PostComment "0..*" -right-> "0..1" User : written by
+PostComment "0..*" -right-> "0..1" Mentor : written by
+
+PostMapper .down.> Post : create
+PostRepository -up-|> JpaRepository : extend
+PostResponse "1" *-down- "0..1" PostDetailResponse : owns
+PostResponse "1" *-down- "0..*" PostLikeResponse : owns
+PostResponse "1" *-down- "0..*" PostCommentResponse : owns
+PostDetailResponse "1" *-down- "0..1" AuthorResponse : owns
+
+' --- Direct messenger chat ---
+ChatController .down.> ChatService : use
+ChatMessageController .down.> ChatService : use
+ChatServiceImpl .up.|> ChatService : implement
+ChatServiceImpl .down.> ChatMessageRepository : use
+ChatServiceImpl .down.> SimpMessagingTemplate : use
+ChatServiceImpl .down.> ChatMessage : create
+ChatController .down.> ChatDto : use
+ChatMessageController .down.> ChatMessage : use
+ChatMessageRepository -up-|> JpaRepository : extend
+
+' --- Real-time notification ---
+NotificationController .down.> NotificationService : use
+NotificationServiceImpl .up.|> NotificationService : implement
+NotificationServiceImpl .down.> NotificationRepository : use
+Notification "0..*" -right-> "0..1" User : belongs to
+NotificationRepository -up-|> JpaRepository : extend
+
+@enduml

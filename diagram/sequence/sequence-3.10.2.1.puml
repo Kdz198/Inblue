@@ -1,0 +1,111 @@
+@startuml SetCareerPreferenceGenerateSkillEmbeddingVector
+skinparam monochrome true
+skinparam shadowing false
+
+' Do not repeat participant boxes at the bottom of the diagram
+hide footbox
+
+<style>
+sequenceDiagram {
+  groupHeader {
+    FontStyle plain
+  }
+}
+</style>
+
+actor "Candidate" as Candidate
+participant ":CareerPreferenceController" as Ctrl
+participant ":CareerPreferenceServiceImpl" as Svc
+participant ":UserCareerPreferenceRepository" as Repo
+participant "EmbeddingService" as EmbeddingSvc
+
+note right of EmbeddingSvc
+  Internal AI module that turns the candidate's chosen skills into a
+  384-dimension vector, later used for embedding-based JD matching
+end note
+
+' ===================== View the current preference =====================
+
+Candidate -> Ctrl ++ : GET /api/me/career-preference
+Ctrl -> Svc ++ : getCurrentPreference(userId)
+Svc -> Repo ++ : findByUserIdAndIsActiveTrue(userId)
+Repo --> Svc -- : Optional<UserCareerPreference>
+
+alt Preference exists and is active
+    Svc --> Ctrl -- : UserCareerPreference
+    Ctrl --> Candidate -- : 200 OK (career preference)
+else No active preference for this user
+    Svc --> Ctrl : throws CustomException(404 NOT_FOUND, "Career preference not found")
+    Ctrl --> Candidate : error response (404)
+end
+
+' ===================== Set / update the career preference =====================
+
+Candidate -> Ctrl ++ : PUT /api/me/career-preference\n(targetRole, languagesJson, careerGoal, targetLevel)
+Ctrl -> Svc ++ : upsertPreference(userId, request)
+
+break targetRole is missing from the request
+    Svc --> Ctrl : throws CustomException(400 BAD_REQUEST, "targetRole is required")
+    Ctrl --> Candidate : error response (400)
+end
+
+Svc -> Repo ++ : findById(userId)
+Repo --> Svc -- : Optional<UserCareerPreference>
+
+alt No existing preference for this user
+    Svc -> Svc : build a new UserCareerPreference\n(userId, isActive = true, needRetest = true)
+else Existing preference found
+    Svc -> Svc : reuse the existing preference
+end
+
+Svc -> Svc : work out whether the skills changed and whether\nthe main direction (role or skills) changed
+
+Svc -> Svc : set targetRole, skills, careerGoal,\ntargetLevel, isActive = true
+
+opt Main direction changed (new role, or new skills)
+    Svc -> Svc : set needRetest = true
+end
+
+alt Skills changed, or no embedding exists yet
+    opt Request carries a non-empty language list
+        Svc -> Svc : trim entries and drop blank ones
+
+        alt Cleaned language list is not empty
+            Svc -> EmbeddingSvc ++ : generateEmbedding(joined skill list)
+            EmbeddingSvc --> Svc -- : skillEmbedding (float[384])
+        else Cleaned language list is empty
+            Svc -> Svc : clear skillEmbedding
+        end
+    else Request carries no languages
+        Svc -> Svc : clear skillEmbedding
+    end
+else Skills are unchanged and an embedding already exists
+    Svc -> Svc : keep the existing skillEmbedding
+end
+
+Svc -> Repo ++ : save(preference)
+Repo --> Svc -- : UserCareerPreference
+
+Svc --> Ctrl -- : UserCareerPreference
+Ctrl --> Candidate -- : 200 OK (career preference saved)
+
+' ===================== Skip setting a preference =====================
+
+Candidate -> Ctrl ++ : POST /api/me/career-preference/skip
+Ctrl -> Svc ++ : skipPreference(userId)
+Svc -> Repo ++ : findById(userId)
+Repo --> Svc -- : Optional<UserCareerPreference>
+
+alt No existing preference for this user
+    Svc -> Svc : build a new UserCareerPreference\n(userId, isActive = true, needRetest = true)
+else Existing preference found
+    Svc -> Svc : reuse the existing preference
+end
+
+Svc -> Svc : set isActive = true, needRetest = true
+Svc -> Repo ++ : save(preference)
+Repo --> Svc -- : UserCareerPreference
+Svc --> Ctrl -- : UserCareerPreference
+Ctrl --> Candidate -- : 200 OK (preference skipped - candidate\nproceeds straight to the entry test)
+
+@enduml

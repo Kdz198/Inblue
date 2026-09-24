@@ -1,0 +1,142 @@
+@startuml Generate6AxisCompetencyChartJourneyMilestoneSummary
+skinparam monochrome true
+skinparam shadowing false
+
+' Do not repeat participant boxes at the bottom of the diagram
+hide footbox
+
+<style>
+sequenceDiagram {
+  groupHeader {
+    FontStyle plain
+  }
+}
+</style>
+
+actor "Candidate" as Candidate
+participant ":ApplicationController" as Ctrl
+participant ":JourneySummaryServiceImpl" as JourneySvc
+participant ":RoundSummaryService" as RoundSummarySvc
+participant ":RoundSummaryFactory" as RoundFactory
+participant ":CompetencyChartServiceImpl" as CompetencySvc
+participant ":ApiClient" as ApiClient
+participant "AnythingLLM (Python AI)" as LLM
+participant ":JourneySummaryRepository" as JourneyRepo
+
+note right of LLM
+  Third-party LLM workspace (SUMMARY_REPORT) that turns the round-by-round
+  summaries into a narrative, a SWECOM competency chart, skill assessments
+  and development recommendations
+end note
+
+note right of RoundFactory
+  Dispatches to the round-type-specific builder (Quiz, Coding, Code Review,
+  AI Interview, Email, Mentor Review) already detailed in class-3.4.1
+end note
+
+' ===================== View a previously generated summary =====================
+
+opt Candidate opens a report already generated before
+    Candidate -> Ctrl ++ : GET /api/applications/{applicationId}/journey-summary
+    Ctrl -> JourneySvc ++ : getSavedSummary(applicationId)
+    JourneySvc -> JourneyRepo ++ : findTopByApplicationIdOrderByGeneratedAtDesc(applicationId)
+    JourneyRepo --> JourneySvc -- : Optional<JourneySummary>
+
+    break No journey summary has been generated yet
+        JourneySvc --> Ctrl : throws CustomException\n(404 NOT_FOUND, "Journey summary is not available yet.\nCandidate may not have completed all rounds.")
+        Ctrl --> Candidate : error response (404)
+    end
+
+    JourneySvc --> Ctrl -- : JourneySummary
+    Ctrl --> Candidate -- : 200 OK (narrative, competency chart,\nSWECOM assessments, recommendations)
+end
+
+' ===================== Generate the journey summary & competency chart =====================
+
+Candidate -> Ctrl ++ : POST /api/applications/{applicationId}/journey-summary/generate
+Ctrl -> JourneySvc ++ : generate(applicationId)
+
+JourneySvc -> JourneySvc ++ : buildAIRequest(applicationId)
+JourneySvc -> JourneySvc : buildSummaryRequest(applicationId)
+
+break Application or Job Description is not found
+    JourneySvc --> Ctrl : throws CustomException\n(404 NOT_FOUND, "Application / Job Description not found")
+    Ctrl --> Candidate : error response (404)
+end
+
+loop For each completed round, ordered by round order
+    JourneySvc -> RoundSummarySvc ++ : buildRoundSummary(applicationDetail, round)
+    RoundSummarySvc -> RoundFactory ++ : build(applicationDetail, round)
+    RoundFactory --> RoundSummarySvc -- : AISummaryRequest.RoundSummaryInfo\n(score, final result, strengths,\nweaknesses, HR note)
+    RoundSummarySvc --> JourneySvc -- : AISummaryRequest.RoundSummaryInfo
+end
+
+JourneySvc -> JourneySvc -- : assemble AISummaryRequest\n(job description + ordered round summaries)\ninto a JourneySummaryAIRequest
+
+JourneySvc -> ApiClient ++ : sendChatToAnythingLlm(SUMMARY_REPORT,\nJourneySummaryAIRequest)
+ApiClient -> LLM ++ : POST chat (journey narrative,\ncompetency chart & recommendations prompt)
+LLM --> ApiClient -- : JourneySummaryAIResponse
+ApiClient --> JourneySvc -- : JourneySummaryAIResponse
+
+alt AnythingLLM returns a valid narrative
+    JourneySvc -> JourneySvc ++ : enrichCompetencyChartMetadata\n(applicationId, request, response.competencyChart)
+    JourneySvc -> JourneySvc -- : set applicationId, job title\nand candidate name on the chart
+
+    JourneySvc -> JourneyRepo ++ : save(JourneySummary(applicationId, narrative,\ncompetencyChart, swecomAssessments,\ndevelopmentRecommendations, generatedAt))
+    JourneyRepo --> JourneySvc -- : JourneySummary
+else AnythingLLM call fails, or returns an empty narrative
+    alt Fallback report generation is enabled
+        JourneySvc -> CompetencySvc ++ : getCompetencyChart(applicationId)
+
+        note right of CompetencySvc
+          Each completed round's score is normalized to 0-100, mapped to a
+          SWECOM technical skill area or behavioral skill, averaged per
+          skill and converted to a CompetencyLevel (TECHNICIAN to
+          SENIOR_SOFTWARE_ENGINEER) - the same 6-axis breakdown the AI
+          would otherwise have produced
+        end note
+
+        CompetencySvc --> JourneySvc -- : CompetencyChartResponse\n(technicalSkillAreas, behavioralSkills, overallLevel)
+
+        JourneySvc -> JourneySvc ++ : enrichCompetencyChartMetadata\n(applicationId, request, competencyChart)
+        JourneySvc -> JourneySvc -- : set applicationId, job title\nand candidate name on the chart
+
+        JourneySvc -> JourneySvc : build a fallback narrative explaining\nthe AI report could not be generated
+
+        JourneySvc -> JourneyRepo ++ : save(JourneySummary(applicationId,\nfallback narrative, competencyChart, generatedAt))
+        JourneyRepo --> JourneySvc -- : JourneySummary
+    else Fallback report generation is disabled
+        JourneySvc --> Ctrl : throws CustomException\n(500 INTERNAL_SERVER_ERROR, AnythingLLM failure reason)
+        Ctrl --> Candidate : error response (500)
+    end
+end
+
+JourneySvc --> Ctrl -- : JourneySummaryAIRequest
+
+Ctrl -> JourneySvc ++ : getSavedSummary(applicationId)
+JourneySvc -> JourneyRepo ++ : findTopByApplicationIdOrderByGeneratedAtDesc(applicationId)
+JourneyRepo --> JourneySvc -- : Optional<JourneySummary>
+JourneySvc --> Ctrl -- : JourneySummary
+
+Ctrl --> Candidate -- : 200 OK (narrative, 6-axis competency chart,\nSWECOM assessments, development recommendations)
+
+' ===================== View the competency chart alone =====================
+
+opt Candidate only wants the chart data (e.g. to re-render it on the frontend)
+    Candidate -> Ctrl ++ : GET /api/applications/{applicationId}/competency-chart
+    Ctrl -> JourneySvc ++ : getSavedCompetencyChart(applicationId)
+    JourneySvc -> JourneySvc ++ : getSavedSummary(applicationId)
+    JourneySvc -> JourneyRepo ++ : findTopByApplicationIdOrderByGeneratedAtDesc(applicationId)
+    JourneyRepo --> JourneySvc -- : Optional<JourneySummary>
+    JourneySvc --> JourneySvc -- : JourneySummary
+
+    break Journey summary exists but carries no competency chart
+        JourneySvc --> Ctrl : throws CustomException\n(404 NOT_FOUND, "Competency chart is not available yet.\nSummary report may not have been generated by AI.")
+        Ctrl --> Candidate : error response (404)
+    end
+
+    JourneySvc --> Ctrl -- : CompetencyChartResponse
+    Ctrl --> Candidate -- : 200 OK (technicalSkillAreas, behavioralSkills,\noverallScore, overallLevel)
+end
+
+@enduml

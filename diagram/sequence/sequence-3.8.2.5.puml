@@ -1,0 +1,140 @@
+@startuml AdminImportJobDescriptionsFromTopDev
+skinparam monochrome true
+skinparam shadowing false
+
+' Do not repeat participant boxes at the bottom of the diagram
+hide footbox
+
+<style>
+sequenceDiagram {
+  groupHeader {
+    FontStyle plain
+  }
+}
+</style>
+
+actor "Admin" as Admin
+participant ":AdminJobImportController" as Ctrl
+participant ":TopDevCrawlerServiceImpl" as CrawlerSvc
+participant "TopDev (Job Board)" as TopDev
+participant ":JobDescriptionRepository" as JdRepo
+participant ":CompanyRepository" as CompanyRepo
+participant ":ApiClient" as ApiClient
+participant "AnythingLLM (Python AI)" as LLM
+participant ":EmbeddingService" as EmbeddingSvc
+participant ":JobDescriptionService" as JdSvc
+
+note right of TopDev
+  Third-party job board (topdev.vn); its search page,
+  job detail page and internal job API are scraped
+  with Jsoup HTML parsing, not a public API
+end note
+
+note right of LLM
+  Third-party LLM workspace used to extract
+  structured skill tags from the crawled JD text
+end note
+
+' ===================== Search & crawl TopDev job listings =====================
+
+Admin -> Ctrl ++ : GET /api/admin/job-import/topdev/search\n(keyword, level, jobCategoriesIds, page, limit)
+Ctrl -> CrawlerSvc ++ : searchJobs(keyword, level, jobCategoryIds, page, limit)
+
+break Page number is less than 1
+    CrawlerSvc --> Ctrl : throws CustomException\n(400 BAD_REQUEST, "Page phải lớn hơn hoặc bằng 1")
+    Ctrl --> Admin : error response (400)
+end
+
+CrawlerSvc -> CrawlerSvc : build the TopDev search URL\n(category ids, keyword and level, page)
+CrawlerSvc -> TopDev ++ : GET search results page
+TopDev --> CrawlerSvc -- : search results HTML
+CrawlerSvc -> CrawlerSvc : extract job detail URLs\nfrom the search results page
+
+loop For each detail URL, up to the requested limit
+    CrawlerSvc -> TopDev ++ : GET job detail page, job sections\n(TopDev's internal job API) and\nthe hiring company's page
+    TopDev --> CrawlerSvc -- : detail page HTML (JobPosting JSON-LD),\njob sections JSON and company page HTML
+
+    CrawlerSvc -> JdRepo ++ : findFirstBySourceJobIdAndIsDeletedFalse(sourceJobId)
+    JdRepo --> CrawlerSvc -- : Optional<JobDescription>
+
+    CrawlerSvc -> CrawlerSvc : assemble a TopDevJobPreviewResponse\n(title, company, location, description,\nrequirements, benefits, salary, isExist flag)
+end
+
+note right of CrawlerSvc
+  A detail page that fails to crawl is skipped, so one broken
+  listing does not fail the whole search; a full failure of the
+  search request itself is reported to the admin as 502 Bad Gateway
+end note
+
+CrawlerSvc --> Ctrl -- : List<TopDevJobPreviewResponse>
+Ctrl --> Admin -- : 200 OK (job previews shown for the admin to review)
+
+' ===================== Import the selected job description =====================
+
+Admin -> Ctrl ++ : POST /api/admin/job-import/topdev/import\n(selected preview, edited by the admin if needed)
+Ctrl -> CrawlerSvc ++ : importJob(request)
+
+break Job title or company name is missing
+    CrawlerSvc --> Ctrl : throws CustomException\n(400 BAD_REQUEST, "JD title / Company name\nkhông được để trống")
+    Ctrl --> Admin : error response (400)
+end
+
+opt Source job ID is provided
+    CrawlerSvc -> JdRepo ++ : findFirstBySourceJobIdAndIsDeletedFalse(sourceJobId)
+    JdRepo --> CrawlerSvc -- : Optional<JobDescription>
+
+    break Job description already exists for this source job id
+        CrawlerSvc --> Ctrl : throws CustomException\n(409 CONFLICT, "JD TopDev này đã được\nimport trước đó")
+        Ctrl --> Admin : error response (409)
+    end
+end
+
+CrawlerSvc -> CompanyRepo ++ : findFirstByNameIgnoreCaseAndIsDeletedFalse(companyName)
+CompanyRepo --> CrawlerSvc -- : Optional<Company>
+
+alt Company does not exist yet
+    CrawlerSvc -> CrawlerSvc : build a new Company\n(name, description, logo, status ACTIVE)
+    CrawlerSvc -> CompanyRepo ++ : save(company)
+    CompanyRepo --> CrawlerSvc -- : Company (newly created)
+else Company already exists
+    opt Company is missing a logo, or still has\nits auto-generated "Imported from ..." description
+        CrawlerSvc -> CrawlerSvc : fill in the logo and/or\ndescription from the request
+        CrawlerSvc -> CompanyRepo ++ : save(company)
+        CompanyRepo --> CrawlerSvc -- : Company (updated)
+    end
+end
+
+CrawlerSvc -> ApiClient ++ : sendChatToAnythingLlm(SKILL_TAGS,\njob preview payload)
+ApiClient -> LLM ++ : POST chat (skill tag extraction prompt)
+LLM --> ApiClient -- : extracted skill tags
+ApiClient --> CrawlerSvc -- : SkillTagExtractionResponse
+
+alt AnythingLLM call succeeds and returns skill tags
+    CrawlerSvc -> CrawlerSvc : normalize the extracted skill tags\n(trim, collapse whitespace, drop duplicates)
+else AnythingLLM call fails or returns no tags
+    CrawlerSvc -> CrawlerSvc : fall back to splitting the raw\nTopDev skills text by delimiter
+end
+
+opt Skill tags list is not empty
+    CrawlerSvc -> EmbeddingSvc ++ : generateEmbedding(joined skill tags)
+    EmbeddingSvc --> CrawlerSvc -- : skillEmbedding (float[])
+end
+
+CrawlerSvc -> CrawlerSvc : build a CreateJobDescriptionRequest\n(title, description, requirements, benefits,\nskill tags, skill embedding, level, status DRAFT)
+
+CrawlerSvc -> JdSvc ++ : create(jdRequest)
+
+alt Job description is created successfully
+    JdSvc --> CrawlerSvc -- : JobDescription
+else TopDev data cannot be converted into a job description
+    JdSvc --> CrawlerSvc -- : throws IOException
+    CrawlerSvc --> Ctrl : throws CustomException\n(502 BAD_GATEWAY, "Không thể tạo Job\nDescription từ dữ liệu TopDev")
+    Ctrl --> Admin : error response (502)
+end
+
+CrawlerSvc -> CrawlerSvc : build a TopDevJobImportResponse\n(company id, JD id, JD title,\nJD status, companyCreated flag)
+
+CrawlerSvc --> Ctrl -- : TopDevJobImportResponse
+Ctrl --> Admin -- : 200 OK (JD imported as DRAFT\nfor the admin to review and finalize)
+
+@enduml

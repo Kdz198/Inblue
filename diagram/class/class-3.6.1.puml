@@ -1,0 +1,669 @@
+@startuml MentorVideoInterview_STAREvaluation
+skinparam classAttributeIconSize 0
+skinparam monochrome true
+skinparam shadowing false
+hide circle
+
+skinparam linetype ortho
+skinparam nodesep 45
+skinparam ranksep 55
+
+' ================= MENTOR ASSIGNMENT & INTERVIEW SCHEDULING =================
+
+class ApplicationDetailController {
+  - applicationDetailService : ApplicationDetailService
+  --
+  + assignMentor(id : long, mentorId : int) : ApplicationDetail
+  + assignMentors(id : long, request : AssignMentorsRequestDto) : ApplicationDetail
+  + getAssignedMentors(id : long) : List<MentorResponse>
+  + getPendingScheduleApprovals() : List<MentorPendingScheduleResponse>
+  + scheduleDecision(id : long, request : ScheduleDecisionRequest) : ApplicationDetail
+  + cancelSchedule(id : long, request : CancelScheduleRequest) : ApplicationDetail
+  + selectMentor(id : long, mentorId : int) : ApplicationDetail
+  .. (submission & HR review endpoints - see class-3.4.1 / class-3.7.1) ..
+}
+
+interface ApplicationDetailService {
+  + assignMentor(applicationDetailId : long, mentorId : int) : ApplicationDetail
+  + assignMentors(applicationDetailId : long, mentorIds : List<Integer>) : ApplicationDetail
+  + selectMentor(applicationDetailId : long, mentorId : int) : ApplicationDetail
+  + getAssignedMentors(applicationDetailId : long) : List<MentorResponse>
+  + scheduleDecision(applicationDetailId : long, approved : boolean, reason : String) : ApplicationDetail
+  + getPendingScheduleApprovals() : List<MentorPendingScheduleResponse>
+  + cancelSchedule(applicationDetailId : long, reason : String) : ApplicationDetail
+  .. (other operations - see class-3.4.1 / class-3.5.1 / class-3.7.1) ..
+}
+
+class ApplicationDetailServiceImpl {
+  - applicationDetailRepository : ApplicationDetailRepository
+  - applicationRepository : ApplicationRepository
+  - applicationService : ApplicationService
+  - roundRepository : RoundRepository
+  - mentorService : MentorService
+  - mentorRepository : MentorRepository
+  - sessionService : SessionService
+  - jwtUtils : JwtUtils
+  --
+  - resolveCurrentMentorId() : int
+  - resolveCurrentUserId() : int
+  + assignMentor(applicationDetailId : long, mentorId : int) : ApplicationDetail
+  + assignMentors(applicationDetailId : long, mentorIds : List<Integer>) : ApplicationDetail
+  + selectMentor(applicationDetailId : long, mentorId : int) : ApplicationDetail
+  + getAssignedMentors(applicationDetailId : long) : List<MentorResponse>
+  + scheduleDecision(applicationDetailId : long, approved : boolean, reason : String) : ApplicationDetail
+  + getPendingScheduleApprovals() : List<MentorPendingScheduleResponse>
+  + cancelSchedule(applicationDetailId : long, reason : String) : ApplicationDetail
+  .. (other fields/operations - see class-3.4.1 / class-3.5.1 / class-3.7.1) ..
+}
+
+class AssignMentorsRequestDto {
+  - mentorIds : List<Integer>
+}
+
+class ScheduleDecisionRequest {
+  - approved : boolean
+  - reason : String
+}
+
+class CancelScheduleRequest {
+  - reason : String
+}
+
+class MentorPendingScheduleResponse {
+  - applicationDetailId : Long
+  - applicationId : Long
+  - roundId : Long
+  - roundName : String
+  - roundOrder : Integer
+  - jobTitle : String
+  - candidateUserId : Integer
+  - candidateName : String
+  - candidateEmail : String
+  - candidateAvatarUrl : String
+  - mentorId : Integer
+  - meetingType : MeetingType
+  - proposedJoinTime : String
+  - proposedDurationMinutes : Integer
+  - requestedAt : LocalDateTime
+}
+
+' ================= APPLICATION DETAIL SCHEDULING STATE (JSONB) =================
+
+class ApplicationDetail {
+  - id : Long
+  - applicationId : Long
+  - roundId : Long
+  - status : ApplicationDetailStatus
+  - mentorReview : MentorReview
+  - mentorId : Integer
+  - assignedMentorIds : List<Integer>
+  - sessionId : Integer
+  - aiInterviewSessionId : Integer
+  - sessionInfo : ApplicationDetail.RoundSessionInfo
+  - finalScore : Double
+  - finalResult : ApplicationDetail.RoundResult
+  - hrScore : Double
+  - hrNote : String
+  - completedAt : LocalDateTime
+  .. (submission-related fields: submissionData, aiScore, aiFeedback,
+      structuredAiFeedback - see class-3.4.1) ..
+}
+
+class "ApplicationDetail.RoundSessionInfo" as RoundSessionInfo {
+  - sessionId : Integer
+  - meetingType : MeetingType
+  - startTime : LocalDateTime
+  - endTime : LocalDateTime
+  - pendingJoinTime : String
+  - pendingDurationMinutes : Integer
+  - scheduleHistory : List<ApplicationDetail.ScheduleHistoryEntry>
+}
+
+class "ApplicationDetail.ScheduleHistoryEntry" as ScheduleHistoryEntry {
+  - type : ScheduleEventType
+  - mentorId : Integer
+  - reason : String
+  - occurredAt : String
+}
+
+enum MeetingType {
+  ONLINE
+  OFFLINE
+}
+
+enum ScheduleEventType {
+  MENTOR_REJECTED
+  CANDIDATE_CANCELED
+}
+
+enum ApplicationDetailStatus <<full detail in class-3.4.1>> {
+}
+
+' ================= MENTOR VIDEO INTERVIEW SESSION (DAILY.CO) =================
+
+class SessionController {
+  - sessionService : SessionService
+  --
+  + getSessions() : List<SessionDetailResponse>
+  + getSession(id : int) : SessionDetailResponse
+  + getSessionsByUserId(userId : int) : List<SessionDetailResponse>
+  + updateSession(session : Session) : Session
+  + saveJoinRecord(request : JoinSessionDtoRequest) : void
+  + handleDailyCoWebhook(body : Map<String, Object>) : void
+  + updateSessionStatus(sessionId : int, isApproved : boolean) : void
+  + makePayment(sessionId : int) : String
+  + createSessionForRound(request : CreateRoundSessionRequest) : SessionDetailResponse
+  .. (createSession, check-webhook, reactivate-webhook - chat / ops
+      endpoints, see class-3.9.1) ..
+}
+
+interface SessionService {
+  + getSessions() : List<SessionDetailResponse>
+  + getSession(id : int) : SessionDetailResponse
+  + getSessionsByUserId(userId : int) : List<SessionDetailResponse>
+  + updateSession(session : Session) : Session
+  + saveJoinRecord(request : JoinSessionDtoRequest) : void
+  + updateLeaveRecord(payload : DailyWebHookPayload) : void
+  + updateSessionStatus(sessionId : int, isApproved : boolean) : void
+  + makePayment(sessionId : int) : String
+  + createSessionForRound(request : CreateRoundSessionRequest) : SessionDetailResponse
+  + createRoomForApprovedSchedule(userId : int, mentorId : int, joinTime : Timestamp, durationMinutes : int) : Session
+  + cancelApprovedSchedule(sessionId : int) : void
+  .. (createSession, deleteSession, webhook maintenance - see class-3.9.1) ..
+}
+
+class SessionServiceImpl {
+  - restTemplate : RestTemplate
+  - dailyApiUrl : String
+  - dailyApiKey : String
+  - dailyWebhookUrl : String
+  - sessionRepository : SessionRepository
+  - paymentService : PaymentService
+  - mentorReviewRepository : MentorReviewRepository
+  - mentorFeedbackRepository : MentorFeedbackRepository
+  - applicationRepository : ApplicationRepository
+  - applicationDetailRepository : ApplicationDetailRepository
+  --
+  + createSessionForRound(request : CreateRoundSessionRequest) : SessionDetailResponse
+  + createRoomForApprovedSchedule(userId : int, mentorId : int, joinTime : Timestamp, durationMinutes : int) : Session
+  + saveJoinRecord(request : JoinSessionDtoRequest) : void
+  + updateLeaveRecord(payload : DailyWebHookPayload) : void
+  + cancelApprovedSchedule(sessionId : int) : void
+  .. (other operations - see class-3.9.1) ..
+}
+
+interface SessionRepository {
+  + findAllByUserIdOrUserId2(userId : int, userId2 : int) : List<Session>
+  + findAllByUserId(userId : int) : List<Session>
+  + findAllByUserId2(userId2 : int) : List<Session>
+  + findByRoomName(roomName : String) : Session
+}
+
+class Session {
+  - id : int
+  - roomName : String
+  - userId : int
+  - participantId1 : String
+  - startTime1 : Timestamp
+  - endTime1 : Timestamp
+  - durationSeconds1 : Long
+  - userId2 : int
+  - participantId2 : String
+  - startTime2 : Timestamp
+  - endTime2 : Timestamp
+  - durationSeconds2 : Long
+  - roomUrl : String
+  - joinTime : Timestamp
+  - recordUrl : String
+  - status : SessionStatus
+  - duration : Integer
+  - totalPrice : Integer
+  - transactionCode : String
+}
+
+enum SessionStatus {
+  DRAFT
+  SCHEDULED
+  PAID
+  REJECTED
+  ONGOING
+  COMPLETED
+  CANCELED
+}
+
+class CreateRoundSessionRequest {
+  - applicationDetailId : Long
+  - joinTime : Timestamp
+  - duration : Integer
+  - offline : boolean
+}
+
+class JoinSessionDtoRequest {
+  - sessionName : String
+  - userId : int
+  - participantId : String
+  - isMentor : boolean
+}
+
+class SessionDetailResponse {
+  - id : int
+  - roomName : String
+  - userId : int
+  - participantId1 : String
+  - startTime1 : Timestamp
+  - endTime1 : Timestamp
+  - durationSeconds1 : Long
+  - mentorId : int
+  - participantId2 : String
+  - startTime2 : Timestamp
+  - endTime2 : Timestamp
+  - durationSeconds2 : Long
+  - roomUrl : String
+  - joinTime : Timestamp
+  - recordUrl : String
+  - status : SessionStatus
+  - duration : Integer
+  - totalPrice : Integer
+  - transactionCode : String
+  - sessionKey : String
+  - kioskId : Long
+  - mentorReview : MentorReviewResponse
+  - mentorFeedback : MentorFeedbackResponse
+}
+
+' ================= MENTOR STAR EVALUATION & CANDIDATE FEEDBACK =================
+
+class MentorReviewController {
+  - mentorReviewService : MentorReviewService
+  --
+  + getAllMentorReviews() : List<MentorReview>
+  + createMentorReview(mentorReview : CreateMentorReviewRequest) : MentorReview
+  + updateMentorReview(mentorReview : UpdateMentorReviewRequest) : MentorReview
+  + getMentorReviewById(id : int) : MentorReview
+}
+
+interface MentorReviewService {
+  + mentorReview(mentorReview : CreateMentorReviewRequest) : MentorReview
+  + updateMentorReview(mentorReview : UpdateMentorReviewRequest) : MentorReview
+  + getMentorReviewById(id : int) : MentorReview
+  + getAllMentorReviews() : List<MentorReview>
+  + checkAndCompleteRound(sessionId : int) : void
+}
+
+class MentorReviewServiceImpl {
+  - repo : MentorReviewRepository
+  - sessionRepo : SessionRepository
+  - mentorReviewMapper : MentorReviewMapper
+  - mentorRepo : MentorRepository
+  - userService : UserService
+  - appDetailRepo : ApplicationDetailRepository
+  - roundRepo : RoundRepository
+  - applicationService : ApplicationService
+  - mentorFeedbackRepository : MentorFeedbackRepository
+  --
+  + mentorReview(mentorReview : CreateMentorReviewRequest) : MentorReview
+  + updateMentorReview(mentorReview : UpdateMentorReviewRequest) : MentorReview
+  + getMentorReviewById(id : int) : MentorReview
+  + getAllMentorReviews() : List<MentorReview>
+  + checkAndCompleteRound(sessionId : int) : void
+}
+
+interface MentorReviewRepository {
+  + findBySession_Id(sessionId : int) : MentorReview
+}
+
+interface MentorReviewMapper {
+  + toEntity(dto : CreateMentorReviewRequest) : MentorReview
+  + fromUpdateToEntity(dto : UpdateMentorReviewRequest, entity : MentorReview) : void
+}
+
+class MentorReview {
+  - id : int
+  - rating : int
+  - situationNote : String
+  - taskNote : String
+  - actionNote : String
+  - resultNote : String
+  - strength : String
+  - weakness : String
+  - improve : String
+}
+
+class CreateMentorReviewRequest {
+  - sessionId : int
+  - mentorId : int
+  - userId : int
+  - rating : int
+  - situationNote : String
+  - taskNote : String
+  - actionNote : String
+  - resultNote : String
+  - strength : String
+  - weakness : String
+  - improve : String
+}
+
+class UpdateMentorReviewRequest {
+  - id : int
+  - rating : int
+  - situationNote : String
+  - taskNote : String
+  - actionNote : String
+  - resultNote : String
+  - strength : String
+  - weakness : String
+  - improve : String
+}
+
+class MentorFeedbackController {
+  - mentorFeedbackService : MentorFeedbackService
+  --
+  + getMentorFeedbackBySessionId(id : int) : MentorFeedback
+  + getAllMentorFeedbacks() : List<MentorFeedback>
+  + getAllByMentor(mentorId : int) : List<MentorFeedback>
+  + createMentorFeedback(mentorFeedback : CreateMentorFeedbackRequest) : MentorFeedback
+  + updateMentorFeedback(mentorFeedback : UpdateMentorFeedbackRequest) : MentorFeedback
+}
+
+interface MentorFeedbackService {
+  + createMentorFeedback(mentorFeedback : CreateMentorFeedbackRequest) : MentorFeedback
+  + updateMentorFeedback(mentorFeedback : UpdateMentorFeedbackRequest) : MentorFeedback
+  + getMentorFeedbackBySessionId(sessionId : int) : MentorFeedback
+  + getAllByMentor(mentorId : int) : List<MentorFeedback>
+  + getAllMentorFeedbacks() : List<MentorFeedback>
+}
+
+class MentorFeedbackServiceImpl {
+  - mentorFeedbackRepository : MentorFeedbackRepository
+  - sessionRepository : SessionRepository
+  - mentorFeedbackMapper : MentorFeedbackMapper
+  - mentorRepository : MentorRepository
+  - userService : UserService
+  - mentorReviewService : MentorReviewService
+  --
+  + createMentorFeedback(mentorFeedback : CreateMentorFeedbackRequest) : MentorFeedback
+  - caculateAverageRating(mentorId : int) : double
+  + updateMentorFeedback(mentorFeedback : UpdateMentorFeedbackRequest) : MentorFeedback
+  + getMentorFeedbackBySessionId(sessionId : int) : MentorFeedback
+  + getAllByMentor(mentorId : int) : List<MentorFeedback>
+  + getAllMentorFeedbacks() : List<MentorFeedback>
+}
+
+interface MentorFeedbackRepository {
+  + findAllByMentor_Id(mentorId : int) : List<MentorFeedback>
+  + findBySession_Id(sessionId : int) : Optional<MentorFeedback>
+}
+
+interface MentorFeedbackMapper {
+  + toEntity(request : CreateMentorFeedbackRequest) : MentorFeedback
+  + fromUpdateToEntity(dto : UpdateMentorFeedbackRequest, entity : MentorFeedback) : void
+}
+
+class MentorFeedback {
+  - id : int
+  - rating : int
+  - comment : String
+}
+
+class CreateMentorFeedbackRequest {
+  - sessionId : int
+  - mentorId : int
+  - userId : int
+  - rating : int
+  - comment : String
+}
+
+class UpdateMentorFeedbackRequest {
+  - id : int
+  - rating : int
+  - comment : String
+}
+
+class MentorReviewSummaryBuilder {
+  + buildSummary(detail : ApplicationDetail, roundConfig : Round) : AISummaryRequest.RoundSummaryInfo
+  - resolveMaxScore(roundConfig : Round) : Double
+  - buildSummary(review : MentorReview) : String
+  - joinNonBlank(delimiter : String, values : String[]) : String
+}
+
+interface RoundSummaryBuilder <<full detail in class-3.4.1>> {
+}
+
+' ================= SHARED / EXTERNAL =================
+
+class Mentor {
+  - id : Integer
+  - name : String
+  - email : String
+  - password : String
+  - role : Role
+  - isActive : boolean
+  - bio : String
+  - avatarUrl : String
+  - public_id : String
+  - expertise : String
+  - yearsOfExperience : int
+  - linkedInUrl : String
+  - currentCompany : String
+  - totalSession : int
+  - averageRating : double
+  - pricePerMinute : Integer
+  - profileData : Mentor.MentorProfile
+  - skillEmbedding : float[]
+  - createdAt : LocalDateTime
+  - updatedAt : LocalDateTime
+}
+
+class "Mentor.MentorProfile" as MentorProfile {
+  - certifications : List<String>
+  - skills : List<String>
+  - jobTitle : String
+  - education : String
+  - languages : List<String>
+  - portfolioUrl : String
+  - githubUrl : String
+}
+
+interface MentorRepository {
+  + updateAvatar(id : int, url : String, publicId : String) : void
+  + getMentorById(id : int) : Mentor
+  + findByEmail(email : String) : Mentor
+  + existsByEmail(email : String) : boolean
+  + existsByEmailAndIdNot(email : String, id : int) : boolean
+  + countMentorByIsActive(active : boolean) : int
+  + findTopRecommendedMentor(vectorStr : String, limit : int) : List<Mentor>
+}
+
+interface MentorService <<full detail in class-3.8.1>> {
+  + getMentorById(id : int) : MentorResponse
+}
+
+class MentorResponse {
+  - id : int
+  - name : String
+  - email : String
+  - isActive : boolean
+  - bio : String
+  - avatarUrl : String
+  - expertise : String
+  - yearsOfExperience : int
+  - linkedInUrl : String
+  - currentCompany : String
+  - rate : int
+  - totalSession : int
+  - averageRating : double
+  - pricePerMinute : int
+  - createdAt : LocalDateTime
+  - updatedAt : LocalDateTime
+  - feedbacks : List<MentorFeedbackResponse>
+  - profileData : MentorProfileResponse
+  - matchPercent : Double
+}
+
+class MentorProfileResponse {
+  - certifications : List<String>
+  - skills : List<String>
+  - jobTitle : String
+  - education : String
+  - languages : List<String>
+  - portfolioUrl : String
+  - githubUrl : String
+}
+
+class MentorFeedbackResponse {
+  - id : int
+  - mentorId : int
+  - userId : int
+  - rating : int
+  - comment : String
+}
+
+class MentorReviewResponse {
+  - id : int
+  - mentorId : int
+  - userId : int
+  - rating : int
+  - situationNote : String
+  - taskNote : String
+  - actionNote : String
+  - resultNote : String
+  - strength : String
+  - weakness : String
+  - improve : String
+}
+
+enum Role <<full detail in class-3.1.1>> {
+}
+
+class User <<full detail in class-3.1.1>> {
+}
+
+class Application <<full detail in class-3.4.1>> {
+  + getUserId() : int
+}
+
+interface ApplicationService <<full detail in class-3.4.1>> {
+  + getApplicationById(id : long) : Application
+  + moveToNextRound(application : Application) : void
+}
+
+interface ApplicationRepository <<full detail in class-3.4.1>> {
+  + findById(id : Long) : Optional<Application>
+}
+
+interface ApplicationDetailRepository <<full detail in class-3.4.1>> {
+  + findBySessionId(sessionId : Integer) : Optional<ApplicationDetail>
+}
+
+class Round <<full detail in class-3.4.1>> {
+}
+
+interface RoundRepository <<full detail in class-3.4.1>> {
+}
+
+interface UserService <<full detail in class-3.1.1>> {
+  + getById(id : int) : User
+}
+
+interface PaymentService <<external module>> {
+}
+
+interface JwtUtils <<external module>> {
+}
+
+interface JpaRepository <<external library>> {
+}
+
+' ================= RELATIONSHIPS =================
+
+' --- Mentor assignment & scheduling ---
+ApplicationDetailController .down.> ApplicationDetailService : use
+ApplicationDetailServiceImpl .up.|> ApplicationDetailService : implement
+ApplicationDetailServiceImpl .down.> ApplicationDetailRepository : use
+ApplicationDetailServiceImpl .down.> ApplicationRepository : use
+ApplicationDetailServiceImpl .down.> ApplicationService : use
+ApplicationDetailServiceImpl .down.> RoundRepository : use
+ApplicationDetailServiceImpl .down.> MentorService : use
+ApplicationDetailServiceImpl .down.> MentorRepository : use
+ApplicationDetailServiceImpl .down.> SessionService : use
+ApplicationDetailServiceImpl .down.> JwtUtils : use
+ApplicationDetailController .down.> AssignMentorsRequestDto : use
+ApplicationDetailController .down.> ScheduleDecisionRequest : use
+ApplicationDetailController .down.> CancelScheduleRequest : use
+ApplicationDetailServiceImpl .down.> MentorPendingScheduleResponse : create
+ApplicationDetailServiceImpl .down.> MentorResponse : create
+
+ApplicationDetail "1" *-down- "0..1" RoundSessionInfo : owns
+RoundSessionInfo "1" *-down- "0..*" ScheduleHistoryEntry : owns
+RoundSessionInfo .right.> MeetingType : use
+ScheduleHistoryEntry .right.> ScheduleEventType : use
+ApplicationDetail .right.> ApplicationDetailStatus : use
+ApplicationDetail "0..1" -right-> "1" MentorReview : references (mentorReview)
+
+' --- Mentor video interview session (Daily.co) ---
+SessionController .down.> SessionService : use
+SessionServiceImpl .up.|> SessionService : implement
+SessionServiceImpl .down.> SessionRepository : use
+SessionServiceImpl .down.> ApplicationRepository : use
+SessionServiceImpl .down.> ApplicationDetailRepository : use
+SessionServiceImpl .down.> MentorReviewRepository : use
+SessionServiceImpl .down.> MentorFeedbackRepository : use
+SessionServiceImpl .down.> PaymentService : use
+SessionRepository -up-|> JpaRepository : extend
+Session .right.> SessionStatus : use
+SessionController .down.> CreateRoundSessionRequest : use
+SessionController .down.> JoinSessionDtoRequest : use
+SessionController .down.> SessionDetailResponse : create
+SessionDetailResponse .down.> MentorReviewResponse : use
+SessionDetailResponse .down.> MentorFeedbackResponse : use
+
+Session "1" *-right- "0..1" MentorReview : owns (shares PK)
+Session "1" *-right- "0..1" MentorFeedback : owns (shares PK)
+
+' --- Mentor STAR evaluation & candidate feedback ---
+MentorReviewController .down.> MentorReviewService : use
+MentorReviewServiceImpl .up.|> MentorReviewService : implement
+MentorReviewServiceImpl .down.> MentorReviewRepository : use
+MentorReviewServiceImpl .down.> SessionRepository : use
+MentorReviewServiceImpl .down.> MentorReviewMapper : use
+MentorReviewServiceImpl .down.> MentorRepository : use
+MentorReviewServiceImpl .down.> UserService : use
+MentorReviewServiceImpl .down.> ApplicationDetailRepository : use
+MentorReviewServiceImpl .down.> RoundRepository : use
+MentorReviewServiceImpl .down.> ApplicationService : use
+MentorReviewServiceImpl .down.> MentorFeedbackRepository : use
+MentorReviewMapper .down.> MentorReview : create
+MentorReviewRepository -up-|> JpaRepository : extend
+MentorReviewController .down.> CreateMentorReviewRequest : use
+MentorReviewController .down.> UpdateMentorReviewRequest : use
+
+MentorFeedbackController .down.> MentorFeedbackService : use
+MentorFeedbackServiceImpl .up.|> MentorFeedbackService : implement
+MentorFeedbackServiceImpl .down.> MentorFeedbackRepository : use
+MentorFeedbackServiceImpl .down.> SessionRepository : use
+MentorFeedbackServiceImpl .down.> MentorFeedbackMapper : use
+MentorFeedbackServiceImpl .down.> MentorRepository : use
+MentorFeedbackServiceImpl .down.> UserService : use
+MentorFeedbackServiceImpl .down.> MentorReviewService : use
+MentorFeedbackMapper .down.> MentorFeedback : create
+MentorFeedbackRepository -up-|> JpaRepository : extend
+MentorFeedbackController .down.> CreateMentorFeedbackRequest : use
+MentorFeedbackController .down.> UpdateMentorFeedbackRequest : use
+
+MentorReviewSummaryBuilder .up.|> RoundSummaryBuilder : implement
+MentorReviewSummaryBuilder .down.> ApplicationDetail : use
+MentorReviewSummaryBuilder .down.> MentorReview : use
+MentorReviewSummaryBuilder .down.> Round : use
+
+' --- Shared / external ---
+Mentor "1" *-down- "0..1" MentorProfile : owns
+Mentor .right.> Role : use
+MentorRepository -up-|> JpaRepository : extend
+MentorReview "0..*" -left-> "1" Mentor : reviewed by
+MentorFeedback "0..*" -left-> "1" Mentor : rates
+MentorReview "0..*" -left-> "1" User : about (candidate)
+MentorFeedback "0..*" -left-> "1" User : given by (candidate)
+MentorResponse .down.> MentorFeedbackResponse : use
+MentorResponse .down.> MentorProfileResponse : use
+
+@enduml

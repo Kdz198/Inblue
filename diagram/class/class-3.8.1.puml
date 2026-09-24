@@ -1,0 +1,743 @@
+@startuml AdminSystemManagement_RepositoryConfiguration
+skinparam classAttributeIconSize 0
+skinparam monochrome true
+skinparam shadowing false
+hide circle
+
+skinparam linetype ortho
+skinparam nodesep 45
+skinparam ranksep 55
+
+' ================= ADMIN MENTOR ACCOUNT MANAGEMENT =================
+
+class MentorController {
+  - mentorService : MentorService
+  - userScheduleService : UserScheduleService
+  - securityUtils : SecurityUtils
+  --
+  + getAllMentors() : List<MentorResponse>
+  + getMentorById(id : int) : MentorResponse
+  + createMentor(data : CreateMentorRequest, avatar : MultipartFile) : MentorResponse
+  + updateMentor(id : int, data : UpdateMentorRequest, avatar : MultipartFile) : MentorResponse
+  + changePassword(id : int, request : ChangeMentorPasswordRequest) : MentorResponse
+  + toggleActive(id : int) : void
+  + getTopRecommendedMentors(jdId : Long) : List<MentorResponse>
+  .. (mentor's own schedule & dashboard endpoints -
+      not part of this report's diagram scope) ..
+}
+
+interface MentorService {
+  + createMentor(data : CreateMentorRequest, avatar : MultipartFile) : MentorResponse
+  + updateMentor(id : int, data : UpdateMentorRequest, avatar : MultipartFile) : MentorResponse
+  + changePassword(id : int, request : ChangeMentorPasswordRequest) : MentorResponse
+  + getMentorById(id : int) : MentorResponse
+  + getAllMentors() : List<MentorResponse>
+  + toggleActive(id : int) : void
+  + getTopRecommendedMentors(jdId : Long) : List<MentorResponse>
+  + getSummary(mentorId : int) : MentorDashboardSummaryResponse
+}
+
+class MentorServiceImpl {
+  - {static} TOP_RECOMMENDED_MENTOR_LIMIT : int
+  - mentorRepository : MentorRepository
+  - userRepository : UserRepository
+  - sessionRepository : SessionRepository
+  - applicationDetailRepository : ApplicationDetailRepository
+  - applicationRepository : ApplicationRepository
+  - mentorReviewRepository : MentorReviewRepository
+  - mentorFeedbackRepository : MentorFeedbackRepository
+  - jobDescriptionRepository : JobDescriptionRepository
+  - applicationEventPublisher : ApplicationEventPublisher
+  - cloudinaryService : CloudinaryService
+  - mentorMapper : MentorMapper
+  - passwordEncoder : PasswordEncoder
+  - embeddingService : EmbeddingService
+  --
+  + createMentor(data : CreateMentorRequest, avatar : MultipartFile) : MentorResponse
+  + updateMentor(id : int, data : UpdateMentorRequest, avatar : MultipartFile) : MentorResponse
+  + changePassword(id : int, request : ChangeMentorPasswordRequest) : MentorResponse
+  + getMentorById(id : int) : MentorResponse
+  + getAllMentors() : List<MentorResponse>
+  + toggleActive(id : int) : void
+  + getTopRecommendedMentors(jdId : Long) : List<MentorResponse>
+  + getSummary(mentorId : int) : MentorDashboardSummaryResponse
+  .. (getSummary aggregates sessions/reviews for the mentor's own
+      dashboard - not part of this report's diagram scope) ..
+}
+
+interface MentorMapper {
+  + toMentorResponse(mentor : Mentor) : MentorResponse
+  + toEntity(request : CreateMentorRequest) : Mentor
+  + updateMentorFromDto(request : UpdateMentorRequest, mentor : Mentor) : void
+}
+
+class CreateMentorRequest {
+  - name : String
+  - email : String
+  - password : String
+  - bio : String
+  - expertise : String
+  - yearsOfExperience : int
+  - linkedInUrl : String
+  - currentCompany : String
+  - pricePerMinute : Integer
+  - profileData : MentorProfileRequest
+}
+
+class UpdateMentorRequest {
+  - name : String
+  - email : String
+  - bio : String
+  - expertise : String
+  - yearsOfExperience : int
+  - linkedInUrl : String
+  - currentCompany : String
+  - pricePerMinute : Integer
+  - profileData : MentorProfileRequest
+}
+
+class ChangeMentorPasswordRequest {
+  - oldPassword : String
+  - newPassword : String
+}
+
+class MentorProfileRequest {
+  - certifications : List<String>
+  - skills : List<String>
+  - jobTitle : String
+  - education : String
+  - languages : List<String>
+  - portfolioUrl : String
+  - githubUrl : String
+}
+
+class MentorDashboardSummaryResponse {
+  - totalSessions : int
+  - sessionCountByStatus : Map<SessionStatus, Long>
+  - sessions : List<MentorDashboardSummaryResponse.SessionItem>
+  - totalReviewedApplications : int
+  - reviewedApplications : List<MentorDashboardSummaryResponse.ReviewedApplicationItem>
+  .. (nested item classes - not part of this report's diagram scope) ..
+}
+
+' ================= ADMIN RECRUITMENT PIPELINE TEMPLATES =================
+
+class RoundController {
+  - roundService : RoundService
+  - apiClient : ApiClient
+  --
+  + setUpRoundForJd(jdId : Long, request : SetupJdRoundsRequest) : List<Round>
+  + updateRoundForJd(jdId : Long, request : UpdateJdRoundRequest) : List<Round>
+  + generateRoundPlan(jdId : Long) : RoundPlanGenerationResponse
+  .. (getRoundById, getAllRoundTypes, generate-whiteboard-question,
+      find-by-application-order - not part of this report's diagram scope) ..
+}
+
+interface RoundService {
+  + setUpRoundForJd(jdId : Long, request : SetupJdRoundsRequest) : List<Round>
+  + updateRoundForJd(jdId : Long, request : UpdateJdRoundRequest) : List<Round>
+  + getRoundById(roundId : Long) : Round
+  + getAllRoundTypes() : List<RoundType>
+  + getRoundByOrder(applicationId : Long) : Round
+  + generateRoundPlan(jdId : Long) : RoundPlanGenerationResponse
+}
+
+class RoundServiceImpl {
+  - roundRepository : RoundRepository
+  - jobDescriptionRepository : JobDescriptionRepository
+  - codingProblemsRepository : CodingProblemsRepository
+  - applicationService : ApplicationService
+  - jobDescriptionService : JobDescriptionService
+  - codeReviewProblemsRepository : CodeReviewProblemsRepository
+  - companyRepository : CompanyRepository
+  - apiClient : ApiClient
+  --
+  + setUpRoundForJd(jdId : Long, request : SetupJdRoundsRequest) : List<Round>
+  + updateRoundForJd(jdId : Long, request : UpdateJdRoundRequest) : List<Round>
+  + generateRoundPlan(jdId : Long) : RoundPlanGenerationResponse
+  .. (getRoundById, getAllRoundTypes, getRoundByOrder - simple
+      lookups, not detailed further) ..
+}
+
+class SetupJdRoundsRequest {
+  - rounds : List<Round>
+}
+
+class UpdateJdRoundRequest {
+  - rounds : List<Round>
+}
+
+class RoundPlanGenerationResponse {
+  - rounds : List<RoundPlanGenerationResponse.SuggestedRound>
+}
+
+' ================= ADMIN COMPANY & JOB DESCRIPTION LIFECYCLE =================
+
+class CompanyController {
+  - companyService : CompanyService
+  --
+  + addCompany(request : CreateCompanyRequest, logo : MultipartFile, banner : MultipartFile) : Company
+  + updateCompany(request : UpdateCompanyRequest, logo : MultipartFile, banner : MultipartFile) : Company
+  + getCompanyById(id : Long) : Company
+  + getAllCompanies() : List<Company>
+  + deleteCompanyById(id : Long) : void
+  + toggleActive(id : Long) : void
+}
+
+interface CompanyService {
+  + getById(id : Long) : Company
+  + create(request : CreateCompanyRequest, logo : MultipartFile, banner : MultipartFile) : Company
+  + update(request : UpdateCompanyRequest, logo : MultipartFile, banner : MultipartFile) : Company
+  + getAll() : List<Company>
+  + deleteById(id : Long) : void
+  + toggleActive(id : Long) : void
+}
+
+class CompanyServiceImpl {
+  - companyRepository : CompanyRepository
+  - companyMapper : CompanyMapper
+  - cloudinaryService : CloudinaryService
+  --
+  + getById(id : Long) : Company
+  + create(request : CreateCompanyRequest, logo : MultipartFile, banner : MultipartFile) : Company
+  + update(request : UpdateCompanyRequest, logo : MultipartFile, banner : MultipartFile) : Company
+  + getAll() : List<Company>
+  + deleteById(id : Long) : void
+  + toggleActive(id : Long) : void
+}
+
+class CreateCompanyRequest {
+  ~ name : String
+  - description : String
+  - status : String
+}
+
+class UpdateCompanyRequest {
+  - id : Long
+  - description : String
+  - status : String
+}
+
+class JobDescriptionController {
+  - jobDescriptionService : JobDescriptionService
+  - jobRecommendationService : JobRecommendationService
+  - securityUtils : SecurityUtils
+  --
+  + create(request : CreateJobDescriptionRequest) : JobDescription
+  + update(request : UpdateJobDescriptionRequest) : JobDescription
+  + softDelete(id : Long) : Map<String, String>
+  + toggleActive(id : Long) : void
+  .. (getAll, getById, getByCompanyId, recommendations, search -
+      candidate-facing, see class-3.3.1) ..
+}
+
+interface JobDescriptionService {
+  + getById(id : Long) : JobDescription
+  + getAll() : List<JobDescription>
+  + getByCompanyId(companyId : Long) : List<JobDescription>
+  + create(request : CreateJobDescriptionRequest) : JobDescription
+  + update(request : UpdateJobDescriptionRequest) : JobDescription
+  + delete(id : Long) : void
+  + softDelete(id : Long) : void
+  + searchJobs(keyword : String, status : JobDescriptionStatus, level : TargetLevel, salaryMin : Double, salaryMax : Double) : List<JobDescription>
+  + getRoundByOrder(jdId : Long, order : int) : Round
+  + toggleActive(id : Long) : void
+}
+
+class JobDescriptionServiceImpl {
+  - jobDescriptionRepository : JobDescriptionRepository
+  - companyRepository : CompanyRepository
+  - jobDescriptionMapper : JobDescriptionMapper
+  - embeddingService : EmbeddingService
+  --
+  + create(request : CreateJobDescriptionRequest) : JobDescription
+  + update(request : UpdateJobDescriptionRequest) : JobDescription
+  + softDelete(id : Long) : void
+  + toggleActive(id : Long) : void
+  .. (getById, getAll, getByCompanyId, searchJobs, getRoundByOrder,
+      delete - see class-3.3.1) ..
+}
+
+class CreateJobDescriptionRequest {
+  - title : String
+  - description : String
+  - requirements : String
+  - benefits : String
+  - skillTags : List<String>
+  - sourceJobId : String
+  - level : TargetLevel
+  - salaryMin : Double
+  - salaryMax : Double
+  - currency : String
+  - status : JobDescriptionStatus
+  - deadlineAt : LocalDateTime
+  - companyId : Long
+  - price : Long
+  - skillEmbedding : float[]
+}
+
+class UpdateJobDescriptionRequest {
+  - id : Long
+  - title : String
+  - description : String
+  - requirements : String
+  - benefits : String
+  - skillTags : List<String>
+  - level : TargetLevel
+  - salaryMin : Double
+  - salaryMax : Double
+  - currency : String
+  - status : JobDescriptionStatus
+  - deadlineAt : LocalDateTime
+  - price : Long
+}
+
+' ================= ADMIN IMPORT JOB DESCRIPTIONS FROM TOPDEV =================
+
+class AdminJobImportController {
+  - topDevCrawlerService : TopDevCrawlerService
+  --
+  + getTopDevCategories() : List<TopDevJobCategoryResponse>
+  + searchTopDevJobs(keyword : String, level : TargetLevel, jobCategoriesIds : List<Integer>, page : int, limit : int) : List<TopDevJobPreviewResponse>
+  + importTopDevJob(request : TopDevJobImportRequest) : TopDevJobImportResponse
+}
+
+interface TopDevCrawlerService {
+  + searchJobs(keyword : String, level : TargetLevel, jobCategoryIds : List<Integer>, page : int, limit : int) : List<TopDevJobPreviewResponse>
+  + importJob(request : TopDevJobImportRequest) : TopDevJobImportResponse
+}
+
+class TopDevCrawlerServiceImpl {
+  - objectMapper : ObjectMapper
+  - companyRepository : CompanyRepository
+  - jobDescriptionRepository : JobDescriptionRepository
+  - jobDescriptionService : JobDescriptionService
+  - apiClient : ApiClient
+  - embeddingService : EmbeddingService
+  --
+  + searchJobs(keyword : String, level : TargetLevel, jobCategoryIds : List<Integer>, page : int, limit : int) : List<TopDevJobPreviewResponse>
+  + importJob(request : TopDevJobImportRequest) : TopDevJobImportResponse
+  - extractSkillTagsFromAnythingLlm(request : TopDevJobImportRequest, company : Company) : List<String>
+  - parseTopDevSkillTags(skills : String) : List<String>
+  - crawlDetail(detailUrl : String, requestedLevel : TargetLevel) : TopDevJobPreviewResponse
+  - crawlCompanyPage(companyUrl : String) : TopDevCrawlerServiceImpl.CompanyPageData
+  .. (Jsoup HTML-parsing helpers: buildSearchUrl, extractDetailUrls,
+      fetchFullJobSections, extractJobSections, extractBenefits,
+      cleanRichText... - internal scraping detail, omitted) ..
+}
+
+note right of TopDevCrawlerServiceImpl
+  Crawls job postings from the TopDev job board (Jsoup HTML
+  parsing) and extracts skill tags via an AnythingLLM workspace
+  before embedding them for mentor/candidate matching
+end note
+
+enum TopDevJobCategory {
+  SOFTWARE_DEVELOPER
+  MACHINE_LEARNING_AI_ENGINEER
+  AUGMENTED_REALITY_DEVELOPER
+  IOT_DEVELOPER
+  BLOCKCHAIN_DEVELOPER
+  DEVOPS_ENGINEER
+  DATA_ENGINEER_SCIENTIST_ANALYST
+  NETWORK_ENGINEER_CYBER_SECURITY
+  QA_TESTER
+  PRODUCT_MANAGER_BUSINESS_ANALYST
+  IT_SUPPORT_SPECIALIST
+  IT_HARDWARE_NETWORK
+  UX_UI_DESIGNER
+  --
+  - id : int
+  - displayName : String
+}
+
+class TopDevJobCategoryResponse {
+  - code : String
+  - id : Integer
+  - displayName : String
+}
+
+class TopDevJobPreviewResponse {
+  - source : String
+  - sourceUrl : String
+  - sourceJobId : String
+  - isExist : Boolean
+  - existingJobDescriptionId : Long
+  - title : String
+  - companyName : String
+  - companyLogo : String
+  - companyDescription : String
+  - location : String
+  - description : String
+  - requirements : String
+  - benefits : String
+  - skills : String
+  - salary : String
+  - postedAt : LocalDate
+  - validThrough : LocalDate
+  - requestedLevel : TargetLevel
+}
+
+class TopDevJobImportRequest {
+  - title : String
+  - companyName : String
+  - companyLogo : String
+  - companyDescription : String
+  - description : String
+  - requirements : String
+  - benefits : String
+  - skills : String
+  - location : String
+  - salary : String
+  - source : String
+  - sourceUrl : String
+  - sourceJobId : String
+  - requestedLevel : TargetLevel
+}
+
+class TopDevJobImportResponse {
+  - companyId : Long
+  - jobDescriptionId : Long
+  - companyName : String
+  - jobDescriptionTitle : String
+  - jobDescriptionStatus : JobDescriptionStatus
+  - companyCreated : boolean
+}
+
+' ================= SYSTEM ANALYTICS DASHBOARD =================
+
+class AdminManagementController {
+  - adminManagementService : AdminManagementService
+  - jobRecommendationService : JobRecommendationService
+  --
+  + getDashboardOverview(limit : int, days : int) : AdminDashboardOverviewResponse
+  + getApplicationsPerUser() : AdminApplicationsPerUserResponse
+  .. (job-recommendation-threshold, open-jds, jds/{id}/applications,
+      applications/{id}/detail, application-details - admin oversight
+      endpoints, not part of this report's diagram scope) ..
+}
+
+interface AdminManagementService {
+  + getDashboardOverview(limit : int, days : int) : AdminDashboardOverviewResponse
+  + getApplicationsPerUser() : AdminApplicationsPerUserResponse
+  .. (getOpenJdsWithCompanyAndStats, getApplicationsByJdId,
+      getApplicationFullDetail, getApplicationDetails - not part
+      of this report's diagram scope) ..
+}
+
+class AdminManagementServiceImpl {
+  - jobDescriptionRepository : JobDescriptionRepository
+  - companyRepository : CompanyRepository
+  - applicationRepository : ApplicationRepository
+  - applicationDetailRepository : ApplicationDetailRepository
+  - userRepository : UserRepository
+  - candidateProfileRepository : CandidateProfileRepository
+  - mentorService : MentorService
+  - paymentRepository : PaymentRepository
+  - roundRepository : RoundRepository
+  --
+  + getDashboardOverview(limit : int, days : int) : AdminDashboardOverviewResponse
+  + getApplicationsPerUser() : AdminApplicationsPerUserResponse
+  .. (other operations - not part of this report's diagram scope) ..
+}
+
+class AdminDashboardOverviewResponse {
+  - generatedAt : LocalDateTime
+  - summary : AdminDashboardOverviewResponse.DashboardSummary
+  - jobTrends : List<AdminDashboardOverviewResponse.JobTrendItem>
+  - positionTrends : List<AdminDashboardOverviewResponse.PositionTrendItem>
+  - activeInterviews : List<AdminDashboardOverviewResponse.ActiveInterviewItem>
+  - recentTransactionDays : int
+  - recentTransactions : List<AdminDashboardOverviewResponse.RecentTransactionItem>
+}
+
+class "AdminDashboardOverviewResponse.DashboardSummary" as DashboardSummary {
+  - totalApplications : long
+  - inProgressApplications : long
+  - passedApplications : long
+  - failedApplications : long
+  - activeInterviewCount : long
+}
+
+class "AdminDashboardOverviewResponse.JobTrendItem" as JobTrendItem {
+  - rank : int
+  - jobId : Long
+  - jobTitle : String
+  - applicationCount : long
+  - percentage : double
+}
+
+class "AdminDashboardOverviewResponse.PositionTrendItem" as PositionTrendItem {
+  - rank : int
+  - position : String
+  - applicationCount : long
+  - percentage : double
+}
+
+class "AdminDashboardOverviewResponse.ActiveInterviewItem" as ActiveInterviewItem {
+  - applicationDetailId : Long
+  - applicationId : Long
+  - userId : Integer
+  - userName : String
+  - userEmail : String
+  - jobId : Long
+  - jobTitle : String
+  - roundId : Long
+  - roundOrder : Integer
+  - roundName : String
+  - roundType : RoundType
+  - roundStatus : ApplicationDetailStatus
+  - startedAt : LocalDateTime
+  - updatedAt : LocalDateTime
+}
+
+class "AdminDashboardOverviewResponse.RecentTransactionItem" as RecentTransactionItem {
+  - transactionId : Integer
+  - transactionCode : String
+  - amount : long
+  - description : String
+  - status : PaymentStatus
+  - createdAt : LocalDateTime
+  - userId : Integer
+  - userName : String
+  - userEmail : String
+  - avatarUrl : String
+  - jobId : Long
+  - jobTitle : String
+}
+
+class AdminApplicationsPerUserResponse {
+  - generatedAt : LocalDateTime
+  - totalApplications : long
+  - uniqueApplicants : long
+  - averageApplicationsPerUser : double
+}
+
+' ================= SHARED / EXTERNAL =================
+
+class Mentor <<full detail in class-3.6.1>> {
+}
+
+interface MentorRepository <<full detail in class-3.6.1>> {
+}
+
+class MentorResponse <<full detail in class-3.6.1>> {
+}
+
+class Round <<full detail in class-3.4.1>> {
+}
+
+interface RoundRepository <<full detail in class-3.4.1>> {
+}
+
+enum RoundType <<full detail in class-3.4.1>> {
+}
+
+class CodingProblem <<full detail in class-3.4.1>> {
+}
+
+interface CodingProblemsRepository <<full detail in class-3.4.1>> {
+}
+
+class CodeReviewProblem <<full detail in class-3.4.1>> {
+}
+
+interface CodeReviewProblemsRepository <<full detail in class-3.4.1>> {
+}
+
+interface ApplicationService <<full detail in class-3.7.1>> {
+}
+
+interface ApplicationRepository <<full detail in class-3.7.1>> {
+}
+
+interface ApplicationDetailRepository <<full detail in class-3.4.1>> {
+}
+
+enum ApplicationDetailStatus <<full detail in class-3.4.1>> {
+}
+
+class Company <<full detail in class-3.3.1>> {
+}
+
+interface CompanyRepository <<full detail in class-3.3.1>> {
+  + findFirstByNameIgnoreCaseAndIsDeletedFalse(name : String) : Optional<Company>
+}
+
+interface CompanyMapper <<full detail in class-3.3.1>> {
+}
+
+class JobDescription <<full detail in class-3.3.1>> {
+}
+
+interface JobDescriptionRepository <<full detail in class-3.3.1>> {
+  + findFirstBySourceJobIdAndIsDeletedFalse(sourceJobId : String) : Optional<JobDescription>
+}
+
+interface JobDescriptionMapper <<full detail in class-3.3.1>> {
+}
+
+enum JobDescriptionStatus <<full detail in class-3.3.1>> {
+}
+
+interface JobRecommendationService <<full detail in class-3.2.1>> {
+}
+
+interface PaymentRepository <<full detail in class-3.3.1>> {
+}
+
+enum PaymentStatus <<full detail in class-3.3.1>> {
+}
+
+interface CandidateProfileRepository <<full detail in class-3.2.1>> {
+}
+
+interface UserRepository <<full detail in class-3.1.1>> {
+}
+
+enum SessionStatus <<full detail in class-3.6.1>> {
+}
+
+interface SessionRepository <<full detail in class-3.6.1>> {
+}
+
+interface MentorReviewRepository <<full detail in class-3.6.1>> {
+}
+
+interface MentorFeedbackRepository <<full detail in class-3.6.1>> {
+}
+
+interface EmbeddingService <<external module>> {
+  + generateEmbedding(text : String) : float[]
+}
+
+interface ApiClient <<full detail in class-3.4.1>> {
+}
+
+interface CloudinaryService <<external module>> {
+}
+
+interface SecurityUtils <<external module>> {
+}
+
+interface UserScheduleService <<external module>> {
+}
+
+interface PasswordEncoder <<external library>> {
+}
+
+interface ApplicationEventPublisher <<external library>> {
+}
+
+interface ObjectMapper <<external library>> {
+}
+
+' ================= RELATIONSHIPS =================
+
+' --- Admin mentor account management ---
+MentorController .down.> MentorService : use
+MentorServiceImpl .up.|> MentorService : implement
+MentorServiceImpl .down.> MentorRepository : use
+MentorServiceImpl .down.> UserRepository : use
+MentorServiceImpl .down.> SessionRepository : use
+MentorServiceImpl .down.> ApplicationDetailRepository : use
+MentorServiceImpl .down.> ApplicationRepository : use
+MentorServiceImpl .down.> MentorReviewRepository : use
+MentorServiceImpl .down.> MentorFeedbackRepository : use
+MentorServiceImpl .down.> JobDescriptionRepository : use
+MentorServiceImpl .down.> ApplicationEventPublisher : use
+MentorServiceImpl .down.> CloudinaryService : use
+MentorServiceImpl .down.> MentorMapper : use
+MentorServiceImpl .down.> PasswordEncoder : use
+MentorServiceImpl .down.> EmbeddingService : use
+MentorMapper .down.> Mentor : create
+MentorController .down.> CreateMentorRequest : use
+MentorController .down.> UpdateMentorRequest : use
+MentorController .down.> ChangeMentorPasswordRequest : use
+CreateMentorRequest "1" *-right- "0..1" MentorProfileRequest : owns
+UpdateMentorRequest "1" *-right- "0..1" MentorProfileRequest : owns
+MentorServiceImpl .down.> MentorDashboardSummaryResponse : create
+
+' --- Admin recruitment pipeline templates ---
+RoundController .down.> RoundService : use
+RoundServiceImpl .up.|> RoundService : implement
+RoundServiceImpl .down.> RoundRepository : use
+RoundServiceImpl .down.> JobDescriptionRepository : use
+RoundServiceImpl .down.> CodingProblemsRepository : use
+RoundServiceImpl .down.> ApplicationService : use
+RoundServiceImpl .down.> JobDescriptionService : use
+RoundServiceImpl .down.> CodeReviewProblemsRepository : use
+RoundServiceImpl .down.> CompanyRepository : use
+RoundServiceImpl .down.> ApiClient : use
+RoundController .down.> SetupJdRoundsRequest : use
+RoundController .down.> UpdateJdRoundRequest : use
+RoundController .down.> RoundPlanGenerationResponse : create
+RoundServiceImpl .down.> CodingProblem : use
+RoundServiceImpl .down.> CodeReviewProblem : use
+
+' --- Admin company & JD lifecycle ---
+CompanyController .down.> CompanyService : use
+CompanyServiceImpl .up.|> CompanyService : implement
+CompanyServiceImpl .down.> CompanyRepository : use
+CompanyServiceImpl .down.> CompanyMapper : use
+CompanyServiceImpl .down.> CloudinaryService : use
+CompanyController .down.> CreateCompanyRequest : use
+CompanyController .down.> UpdateCompanyRequest : use
+
+JobDescriptionController .down.> JobDescriptionService : use
+JobDescriptionServiceImpl .up.|> JobDescriptionService : implement
+JobDescriptionServiceImpl .down.> JobDescriptionRepository : use
+JobDescriptionServiceImpl .down.> CompanyRepository : use
+JobDescriptionServiceImpl .down.> JobDescriptionMapper : use
+JobDescriptionServiceImpl .down.> EmbeddingService : use
+JobDescriptionController .down.> CreateJobDescriptionRequest : use
+JobDescriptionController .down.> UpdateJobDescriptionRequest : use
+JobDescriptionController .down.> JobRecommendationService : use
+CreateJobDescriptionRequest .right.> JobDescriptionStatus : use
+UpdateJobDescriptionRequest .right.> JobDescriptionStatus : use
+
+' --- Admin import JD from TopDev ---
+AdminJobImportController .down.> TopDevCrawlerService : use
+TopDevCrawlerServiceImpl .up.|> TopDevCrawlerService : implement
+TopDevCrawlerServiceImpl .down.> CompanyRepository : use
+TopDevCrawlerServiceImpl .down.> JobDescriptionRepository : use
+TopDevCrawlerServiceImpl .down.> JobDescriptionService : use
+TopDevCrawlerServiceImpl .down.> ApiClient : use
+TopDevCrawlerServiceImpl .down.> EmbeddingService : use
+TopDevCrawlerServiceImpl .down.> ObjectMapper : use
+TopDevCrawlerServiceImpl .down.> Company : create
+TopDevCrawlerServiceImpl .down.> CreateJobDescriptionRequest : create
+AdminJobImportController .down.> TopDevJobImportRequest : use
+AdminJobImportController .down.> TopDevJobCategoryResponse : create
+TopDevCrawlerServiceImpl .down.> TopDevJobPreviewResponse : create
+TopDevCrawlerServiceImpl .down.> TopDevJobImportResponse : create
+TopDevJobCategoryResponse .right.> TopDevJobCategory : use
+TopDevJobPreviewResponse .right.> TargetLevel : use
+TopDevJobImportRequest .right.> TargetLevel : use
+TopDevJobImportResponse .right.> JobDescriptionStatus : use
+
+' --- System analytics dashboard ---
+AdminManagementController .down.> AdminManagementService : use
+AdminManagementServiceImpl .up.|> AdminManagementService : implement
+AdminManagementServiceImpl .down.> JobDescriptionRepository : use
+AdminManagementServiceImpl .down.> CompanyRepository : use
+AdminManagementServiceImpl .down.> ApplicationRepository : use
+AdminManagementServiceImpl .down.> ApplicationDetailRepository : use
+AdminManagementServiceImpl .down.> UserRepository : use
+AdminManagementServiceImpl .down.> CandidateProfileRepository : use
+AdminManagementServiceImpl .down.> MentorService : use
+AdminManagementServiceImpl .down.> PaymentRepository : use
+AdminManagementServiceImpl .down.> RoundRepository : use
+AdminManagementServiceImpl .down.> AdminDashboardOverviewResponse : create
+AdminManagementServiceImpl .down.> AdminApplicationsPerUserResponse : create
+
+AdminDashboardOverviewResponse "1" *-down- "0..1" DashboardSummary : owns
+AdminDashboardOverviewResponse "1" *-down- "0..*" JobTrendItem : owns
+AdminDashboardOverviewResponse "1" *-down- "0..*" PositionTrendItem : owns
+AdminDashboardOverviewResponse "1" *-down- "0..*" ActiveInterviewItem : owns
+AdminDashboardOverviewResponse "1" *-down- "0..*" RecentTransactionItem : owns
+ActiveInterviewItem .right.> RoundType : use
+ActiveInterviewItem .right.> ApplicationDetailStatus : use
+RecentTransactionItem .right.> PaymentStatus : use
+
+@enduml

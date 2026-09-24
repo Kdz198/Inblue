@@ -1,0 +1,116 @@
+@startuml EvaluateCompetencyLevelViaLevelScaleMapping
+skinparam monochrome true
+skinparam shadowing false
+
+' Do not repeat participant boxes at the bottom of the diagram
+hide footbox
+
+<style>
+sequenceDiagram {
+  groupHeader {
+    FontStyle plain
+  }
+}
+</style>
+
+actor "Candidate" as Candidate
+participant ":UserCompetencyController" as Ctrl
+participant ":EntryTestServiceImpl" as EntryTestSvc
+participant ":UserCompetencyServiceImpl" as Svc
+participant ":UserCareerPreferenceRepository" as PrefRepo
+participant ":LevelScaleRepository" as ScaleRepo
+participant ":UserCompetencyRepository" as CompRepo
+
+note over EntryTestSvc, Svc
+  resolveLevelName and updateAfterEntryTest are both called from
+  EntryTestServiceImpl.submitEntryTest right after grading finishes
+  (see sequence-3.10.2.2); this diagram picks up from there
+end note
+
+' ===================== Resolve the result level name (used for EntryTestAttempt.resultLevel) =====================
+
+EntryTestSvc -> Svc ++ : resolveLevelName(attempt)
+Svc -> PrefRepo ++ : findById(attempt.careerPreferenceId)
+PrefRepo --> Svc -- : Optional<UserCareerPreference>
+
+break Career preference is not found
+    Svc --> EntryTestSvc : throws CustomException(404 NOT_FOUND, "Career preference not found")
+end
+
+Svc -> Svc : call resolveLevel(preference.targetRole,\nattempt.finalScore, attempt.specificCodingScore)
+
+Svc -> ScaleRepo ++ : findAllByIsActiveTrue()
+ScaleRepo --> Svc -- : List<LevelScale>
+
+Svc -> Svc : keep scales that are role-agnostic (targetRole\nis null) or match the candidate's targetRole
+Svc -> Svc : keep scales whose [minScore, maxScore] range\ncontains the candidate's finalScore
+Svc -> Svc : keep scales with no minCodingScore, or whose\nminCodingScore the candidate's coding score clears
+Svc -> Svc : pick the remaining scale with the\nhighest minScore
+
+alt A matching scale is found
+    Svc -> Svc : level = the matching scale's level
+else No scale matches this score
+    Svc --> EntryTestSvc : throws CustomException(400 BAD_REQUEST,\n"Level scale is not configured for this score")
+end
+
+Svc --> EntryTestSvc -- : resultLevel (level.name())
+
+note right of Svc
+  A role-specific scale is preferred over a role-agnostic one only as
+  a side effect of ranking by minScore - both kinds are filtered in
+  together first, then the highest-minScore match wins
+end note
+
+' ===================== Persist the candidate's UserCompetency (after the attempt is saved) =====================
+
+EntryTestSvc -> Svc ++ : updateAfterEntryTest(attempt)
+Svc -> PrefRepo ++ : findById(attempt.careerPreferenceId)
+PrefRepo --> Svc -- : Optional<UserCareerPreference>
+
+break Career preference is not found
+    Svc --> EntryTestSvc : throws CustomException(404 NOT_FOUND, "Career preference not found")
+end
+
+ref over Svc, ScaleRepo : Level-scale matching\n(see the fragment above)
+
+Svc -> CompRepo ++ : findByUser_IdAndCareerPreferenceId(user.id, preference.userId)
+CompRepo --> Svc -- : Optional<UserCompetency>
+
+alt No UserCompetency exists yet for this user and preference
+    Svc -> Svc : build a new UserCompetency (user, careerPreferenceId)
+else UserCompetency already exists
+    Svc -> Svc : reuse the existing UserCompetency
+end
+
+Svc -> Svc : set targetRole, languagesJson, currentLevel, currentScore,\ncommonQuizScore, specificQuizScore, specificCodingScore,\nlastEntryTestAttemptId, lastEvaluatedAt = now,\nand a competencySnapshotJson (level plus the four scores)
+
+Svc -> PrefRepo ++ : save(preference with needRetest = false)
+PrefRepo --> Svc -- : UserCareerPreference
+
+Svc -> CompRepo ++ : save(competency)
+CompRepo --> Svc -- : UserCompetency
+
+Svc --> EntryTestSvc -- : UserCompetency
+
+note right of Svc
+  updateAfterEntryTest also clears the career preference's
+  needRetest flag - a freshly graded entry test always answers it
+end note
+
+' ===================== Candidate views their current competency =====================
+
+Candidate -> Ctrl ++ : GET /api/me/competency
+Ctrl -> Svc ++ : getCurrentCompetency(userId)
+Svc -> CompRepo ++ : findFirstByUser_IdOrderByUpdatedAtDesc(userId)
+CompRepo --> Svc -- : Optional<UserCompetency>
+
+alt A UserCompetency record exists for this user
+    Svc --> Ctrl -- : UserCompetency
+    Ctrl -> Ctrl : map to UserCompetencyResponse
+    Ctrl --> Candidate -- : 200 OK (current level, scores,\ncompetency snapshot)
+else No UserCompetency has been recorded yet
+    Svc --> Ctrl : throws CustomException(404 NOT_FOUND, "User competency not found")
+    Ctrl --> Candidate : error response (404)
+end
+
+@enduml

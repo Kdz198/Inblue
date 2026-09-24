@@ -1,0 +1,612 @@
+@startuml EntryTestCareerCompetencyModule
+skinparam classAttributeIconSize 0
+skinparam monochrome true
+skinparam shadowing false
+hide circle
+skinparam linetype ortho
+skinparam nodesep 45
+skinparam ranksep 55
+
+' ================= CAREER PREFERENCE =================
+
+class CareerPreferenceController {
+  - careerPreferenceService : CareerPreferenceService
+  - securityUtils : SecurityUtils
+  --
+  + getCurrentPreference() : UserCareerPreference
+  + hasCurrentPreference() : boolean
+  + upsertPreference(request : UpsertCareerPreferenceRequest) : UserCareerPreference
+  + skipPreference() : UserCareerPreference
+}
+
+interface CareerPreferenceService {
+  + getCurrentPreference(userId : Integer) : UserCareerPreference
+  + hasCurrentPreference(userId : Integer) : boolean
+  + upsertPreference(userId : Integer, request : UpsertCareerPreferenceRequest) : UserCareerPreference
+  + skipPreference(userId : Integer) : UserCareerPreference
+}
+
+class CareerPreferenceServiceImpl {
+  - preferenceRepository : UserCareerPreferenceRepository
+  - embeddingService : EmbeddingService
+  --
+  + getCurrentPreference(userId : Integer) : UserCareerPreference
+  + hasCurrentPreference(userId : Integer) : boolean
+  + upsertPreference(userId : Integer, request : UpsertCareerPreferenceRequest) : UserCareerPreference
+  + skipPreference(userId : Integer) : UserCareerPreference
+}
+
+class UpsertCareerPreferenceRequest {
+  - targetRole : TargetRole
+  - languagesJson : List<String>
+  - careerGoal : String
+  - targetLevel : TargetLevel
+}
+
+class UserCareerPreference {
+  - userId : Integer
+  - targetRole : TargetRole
+  - skills : List<String>
+  - skillEmbedding : float[]
+  - careerGoal : String
+  - targetLevel : TargetLevel
+  - needRetest : Boolean
+  - isActive : Boolean
+  - createdAt : LocalDateTime
+  - updatedAt : LocalDateTime
+}
+
+note right of UserCareerPreference
+  userId is both the primary key and the FK to User.id (1:1 by
+  shared key) - the entity holds no direct object reference to User
+end note
+
+interface UserCareerPreferenceRepository {
+  + findByUserIdAndIsActiveTrue(userId : Integer) : Optional<UserCareerPreference>
+  + existsByUserIdAndIsActiveTrue(userId : Integer) : boolean
+  + findById(userId : Integer) : Optional<UserCareerPreference>
+}
+
+' ================= ENTRY TEST CONFIGURATION (ADMIN) =================
+
+class AdminEntryTestController {
+  - adminEntryTestService : AdminEntryTestService
+  --
+  + getAllEntryTests() : List<EntryTest>
+  + getActiveEntryTest() : EntryTest
+  + getEntryTest(id : Long) : EntryTest
+  + createEntryTest(request : UpsertEntryTestRequest) : EntryTest
+  + updateEntryTest(id : Long, request : UpsertEntryTestRequest) : EntryTest
+  + deactivateEntryTest(id : Long) : EntryTest
+}
+
+interface AdminEntryTestService {
+  + getAllEntryTests() : List<EntryTest>
+  + getEntryTest(id : Long) : EntryTest
+  + getActiveEntryTest() : EntryTest
+  + createEntryTest(request : UpsertEntryTestRequest) : EntryTest
+  + updateEntryTest(id : Long, request : UpsertEntryTestRequest) : EntryTest
+  + deactivateEntryTest(id : Long) : EntryTest
+}
+
+class AdminEntryTestServiceImpl {
+  - entryTestRepository : EntryTestRepository
+  - entryTestMapper : EntryTestMapper
+  --
+  + getAllEntryTests() : List<EntryTest>
+  + getEntryTest(id : Long) : EntryTest
+  + getActiveEntryTest() : EntryTest
+  + createEntryTest(request : UpsertEntryTestRequest) : EntryTest
+  + updateEntryTest(id : Long, request : UpsertEntryTestRequest) : EntryTest
+  + deactivateEntryTest(id : Long) : EntryTest
+}
+
+interface EntryTestMapper {
+  + toEntity(request : UpsertEntryTestRequest) : EntryTest
+  + updateFromRequest(request : UpsertEntryTestRequest, entryTest : EntryTest) : void
+}
+
+class UpsertEntryTestRequest {
+  - name : String
+  - totalScore : Double
+  - timeLimitMinutes : Integer
+  - sectionConfigs : List<EntryTest.EntryTestSectionConfig>
+  - isActive : Boolean
+}
+
+class EntryTest {
+  - id : Long
+  - name : String
+  - totalScore : Double
+  - timeLimitMinutes : Integer
+  - sectionConfigs : List<EntryTestSectionConfig>
+  - isActive : Boolean
+  - createdAt : LocalDateTime
+  - updatedAt : LocalDateTime
+}
+
+note right of EntryTest
+  If no active EntryTest exists yet, EntryTestServiceImpl lazily
+  creates a default "Software Engineer Entry Test" the first time
+  a candidate starts a test (getOrCreateActiveEntryTest)
+end note
+
+class "EntryTest.EntryTestSectionConfig" as EntryTestSectionConfig {
+  - sectionType : EntryTest.SectionType
+  - itemType : EntryTest.ItemType
+  - itemCount : Integer
+  - totalScore : Double
+  - scorePerItem : Double
+  - displayOrder : Integer
+}
+
+note bottom of EntryTestSectionConfig
+  SectionType: COMMON_QUIZ, SPECIFIC_QUIZ, SPECIFIC_CODING
+  ItemType: QUESTION_BANK, CODING_PROBLEM
+end note
+
+interface EntryTestRepository {
+  + findFirstByIsActiveTrueOrderByUpdatedAtDesc() : Optional<EntryTest>
+}
+
+' ================= TAKING THE ENTRY TEST =================
+
+class EntryTestController {
+  - entryTestService : EntryTestService
+  - securityUtils : SecurityUtils
+  - responseMapper : EntryTestResponseMapper
+  --
+  + startEntryTest() : EntryTestStartResponse
+  + runCode(attemptId : Long, request : EntryTestRunCodeRequest) : CompilerResponseDto
+  + submitEntryTest(attemptId : Long, request : EntryTestSubmitRequest) : EntryTestAttemptResponse
+  + getAttemptResult(attemptId : Long) : EntryTestAttemptResponse
+}
+
+interface EntryTestService {
+  + startEntryTest(userId : Integer) : EntryTestStartResponse
+  + runCode(userId : Integer, attemptId : Long, request : EntryTestRunCodeRequest) : CompilerResponseDto
+  + submitEntryTest(userId : Integer, attemptId : Long, request : EntryTestSubmitRequest) : EntryTestAttempt
+  + getAttempt(userId : Integer, attemptId : Long) : EntryTestAttempt
+}
+
+class EntryTestServiceImpl {
+  - entryTestRepository : EntryTestRepository
+  - attemptRepository : EntryTestAttemptRepository
+  - preferenceRepository : UserCareerPreferenceRepository
+  - questionBankRepository : QuestionBankRepository
+  - codingProblemsRepository : CodingProblemsRepository
+  - apiClient : ApiClient
+  - userCompetencyService : UserCompetencyService
+  - userRepository : UserRepository
+  - responseMapper : EntryTestResponseMapper
+  --
+  + startEntryTest(userId : Integer) : EntryTestStartResponse
+  + runCode(userId : Integer, attemptId : Long, request : EntryTestRunCodeRequest) : CompilerResponseDto
+  + submitEntryTest(userId : Integer, attemptId : Long, request : EntryTestSubmitRequest) : EntryTestAttempt
+  + getAttempt(userId : Integer, attemptId : Long) : EntryTestAttempt
+  - getOrCreateActiveEntryTest() : EntryTest
+  - pickCommonQuestions(config : EntryTest.EntryTestSectionConfig) : List<QuestionItemSnapshot>
+  - pickSpecificQuestions(config, targetRole, languages) : List<QuestionItemSnapshot>
+  - pickSpecificCodingProblems(config, targetRole, languages) : List<CodingProblemItemSnapshot>
+  .. (gradeQuestionAnswer, gradeCodingAnswer, validateSubmittedAnswers,
+      buildResultSnapshot - grading/validation helpers, omitted) ..
+}
+
+note right of EntryTestServiceImpl
+  startEntryTest snapshots the picked questions/coding problems into
+  the attempt itself (commonQuizItemsJson, specificQuizItemsJson,
+  specificCodingItemsJson) so later grading never re-queries the
+  question bank - it grades against the frozen snapshot instead
+end note
+
+class EntryTestRunCodeRequest {
+  - itemId : String
+  - language : String
+  - sourceCode : List<String>
+}
+
+class EntryTestSubmitRequest {
+  - answers : List<EntryTestSubmitRequest.Answer>
+}
+
+class "EntryTestSubmitRequest.Answer" as EntryTestSubmitAnswer {
+  - itemId : String
+  - answerJson : Map<String, Object>
+}
+
+class EntryTestStartResponse {
+  - attemptId : Long
+  - entryTestId : Long
+  - timeLimitMinutes : Integer
+  - selectedLanguagesJson : List<String>
+  - sectionConfigs : List<EntryTest.EntryTestSectionConfig>
+  - commonQuizItemsJson : List<EntryTestQuestionResponse>
+  - specificQuizItemsJson : List<EntryTestQuestionResponse>
+  - specificCodingItemsJson : List<CodingProblemItemSnapshot>
+}
+
+class EntryTestAttemptResponse {
+  - id : Long
+  - userId : Integer
+  - careerPreferenceId : Integer
+  - entryTestId : Long
+  - selectedLanguagesJson : List<String>
+  - commonQuizItemsJson : List<EntryTestQuestionResponse>
+  - specificQuizItemsJson : List<EntryTestQuestionResponse>
+  - specificCodingItemsJson : List<CodingProblemItemSnapshot>
+  - answersJson : List<EntryTestAnswerSnapshot>
+  - status : EntryTestAttempt.AttemptStatus
+  - startedAt : LocalDateTime
+  - submittedAt : LocalDateTime
+  - commonQuizScore : Double
+  - specificQuizScore : Double
+  - specificCodingScore : Double
+  - finalScore : Double
+  - resultLevel : String
+  - resultSnapshotJson : Map<String, Object>
+  - createdAt : LocalDateTime
+  - updatedAt : LocalDateTime
+}
+
+class EntryTestQuestionResponse {
+  - itemId : String
+  - questionBankId : Integer
+  - questionText : String
+  - options : List<String>
+  - categoryName : String
+  - difficulty : String
+  - maxScore : Double
+  - displayOrder : Integer
+}
+
+interface EntryTestResponseMapper {
+  + toQuestionResponse(question : QuestionItemSnapshot) : EntryTestQuestionResponse
+  + toQuestionResponses(questions : List<QuestionItemSnapshot>) : List<EntryTestQuestionResponse>
+  + toAttemptResponse(attempt : EntryTestAttempt) : EntryTestAttemptResponse
+}
+
+class EntryTestAttempt {
+  - id : Long
+  - user : User
+  - careerPreferenceId : Integer
+  - entryTestId : Long
+  - selectedLanguagesJson : List<String>
+  - commonQuizItemsJson : List<QuestionItemSnapshot>
+  - specificQuizItemsJson : List<QuestionItemSnapshot>
+  - specificCodingItemsJson : List<CodingProblemItemSnapshot>
+  - answersJson : List<EntryTestAnswerSnapshot>
+  - status : AttemptStatus
+  - startedAt : LocalDateTime
+  - submittedAt : LocalDateTime
+  - commonQuizScore : Double
+  - specificQuizScore : Double
+  - specificCodingScore : Double
+  - finalScore : Double
+  - resultLevel : String
+  - resultSnapshotJson : Map<String, Object>
+  - createdAt : LocalDateTime
+  - updatedAt : LocalDateTime
+}
+
+note bottom of EntryTestAttempt
+  AttemptStatus: IN_PROGRESS, SUBMITTED, GRADED, EXPIRED
+end note
+
+class "EntryTestAttempt.QuestionItemSnapshot" as QuestionItemSnapshot {
+  - itemId : String
+  - questionBankId : Integer
+  - questionText : String
+  - options : List<String>
+  - correctAnswer : String
+  - categoryName : String
+  - difficulty : String
+  - maxScore : Double
+  - displayOrder : Integer
+}
+
+class "EntryTestAttempt.CodingProblemItemSnapshot" as CodingProblemItemSnapshot {
+  - itemId : String
+  - codingProblemId : Long
+  - title : String
+  - difficulty : String
+  - problemStatement : String
+  - rulesAndConstraints : List<String>
+  - visibleExamples : List<CodingProblem.Example>
+  - codeStubs : Map<String, String>
+  - paramTypes : List<String>
+  - returnType : String
+  - executionTimeLimitMs : Integer
+  - memoryLimitMb : Integer
+  - maxScore : Double
+  - displayOrder : Integer
+}
+
+class "EntryTestAttempt.EntryTestAnswerSnapshot" as EntryTestAnswerSnapshot {
+  - itemId : String
+  - sectionType : EntryTest.SectionType
+  - answerType : EntryTest.ItemType
+  - answerJson : Map<String, Object>
+  - score : Double
+  - isCorrect : Boolean
+  - gradedAt : LocalDateTime
+}
+
+interface EntryTestAttemptRepository {
+  + findAllByUser_IdOrderByCreatedAtDesc(userId : Integer) : List<EntryTestAttempt>
+  + findByIdAndUser_Id(attemptId : Long, userId : Integer) : Optional<EntryTestAttempt>
+}
+
+' ================= COMPETENCY EVALUATION & LEVEL SCALE =================
+
+class UserCompetencyController {
+  - userCompetencyService : UserCompetencyService
+  - securityUtils : SecurityUtils
+  - competencyMapper : UserCompetencyMapper
+  --
+  + getCurrentCompetency() : UserCompetencyResponse
+}
+
+interface UserCompetencyService {
+  + updateAfterEntryTest(attempt : EntryTestAttempt) : UserCompetency
+  + getCurrentCompetency(userId : Integer) : UserCompetency
+  + updateAfterJd(userId : Integer, jdScore : Double) : UserCompetency
+  + resolveLevelName(attempt : EntryTestAttempt) : String
+}
+
+class UserCompetencyServiceImpl {
+  - competencyRepository : UserCompetencyRepository
+  - preferenceRepository : UserCareerPreferenceRepository
+  - levelScaleRepository : LevelScaleRepository
+  --
+  + updateAfterEntryTest(attempt : EntryTestAttempt) : UserCompetency
+  + resolveLevelName(attempt : EntryTestAttempt) : String
+  + getCurrentCompetency(userId : Integer) : UserCompetency
+  + updateAfterJd(userId : Integer, jdScore : Double) : UserCompetency
+  - resolveLevel(role : TargetRole, finalScore : double, codingScore : double) : TargetLevel
+  - buildSnapshot(attempt : EntryTestAttempt, level : TargetLevel) : Map<String, Object>
+}
+
+note right of UserCompetencyServiceImpl
+  resolveLevel picks the highest-minScore LevelScale whose range
+  contains finalScore (role-specific scale takes precedence over a
+  role-agnostic one, since both are filtered in first) and whose
+  minCodingScore, if set, the candidate's coding score also clears
+end note
+
+note bottom of UserCompetencyServiceImpl
+  updateAfterJd is defined for re-evaluating competency from a later
+  JD-round score (70% previous score + 30% JD score) but is not yet
+  called from anywhere else in the codebase
+end note
+
+class UserCompetencyResponse {
+  - id : Long
+  - userId : Integer
+  - careerPreferenceId : Integer
+  - targetRole : TargetRole
+  - languagesJson : List<String>
+  - currentLevel : TargetLevel
+  - currentScore : Double
+  - commonQuizScore : Double
+  - specificQuizScore : Double
+  - specificCodingScore : Double
+  - competencySnapshotJson : Map<String, Object>
+  - lastEntryTestAttemptId : Long
+  - lastEvaluatedAt : LocalDateTime
+  - createdAt : LocalDateTime
+  - updatedAt : LocalDateTime
+}
+
+interface UserCompetencyMapper {
+  + toResponse(competency : UserCompetency) : UserCompetencyResponse
+}
+
+class UserCompetency {
+  - id : Long
+  - user : User
+  - careerPreferenceId : Integer
+  - targetRole : TargetRole
+  - languagesJson : List<String>
+  - currentLevel : TargetLevel
+  - currentScore : Double
+  - commonQuizScore : Double
+  - specificQuizScore : Double
+  - specificCodingScore : Double
+  - competencySnapshotJson : Map<String, Object>
+  - lastEntryTestAttemptId : Long
+  - lastEvaluatedAt : LocalDateTime
+  - createdAt : LocalDateTime
+  - updatedAt : LocalDateTime
+}
+
+interface UserCompetencyRepository {
+  + findByUser_IdAndCareerPreferenceId(userId : Integer, careerPreferenceId : Integer) : Optional<UserCompetency>
+  + findFirstByUser_IdOrderByUpdatedAtDesc(userId : Integer) : Optional<UserCompetency>
+}
+
+class AdminLevelScaleController {
+  - adminLevelScaleService : AdminLevelScaleService
+  --
+  + getAllLevelScales() : List<LevelScale>
+  + getLevelScale(id : Long) : LevelScale
+  + createLevelScale(request : UpsertLevelScaleRequest) : LevelScale
+  + upsertLevelScaleSet(request : UpsertLevelScaleSetRequest) : List<LevelScale>
+  + updateLevelScale(id : Long, request : UpsertLevelScaleRequest) : LevelScale
+  + deactivateLevelScale(id : Long) : LevelScale
+}
+
+interface AdminLevelScaleService {
+  + getAllLevelScales() : List<LevelScale>
+  + getLevelScale(id : Long) : LevelScale
+  + createLevelScale(request : UpsertLevelScaleRequest) : LevelScale
+  + updateLevelScale(id : Long, request : UpsertLevelScaleRequest) : LevelScale
+  + deactivateLevelScale(id : Long) : LevelScale
+  + upsertLevelScaleSet(request : UpsertLevelScaleSetRequest) : List<LevelScale>
+}
+
+class AdminLevelScaleServiceImpl {
+  - levelScaleRepository : LevelScaleRepository
+  - levelScaleMapper : LevelScaleMapper
+  --
+  + getAllLevelScales() : List<LevelScale>
+  + getLevelScale(id : Long) : LevelScale
+  + createLevelScale(request : UpsertLevelScaleRequest) : LevelScale
+  + updateLevelScale(id : Long, request : UpsertLevelScaleRequest) : LevelScale
+  + deactivateLevelScale(id : Long) : LevelScale
+  + upsertLevelScaleSet(request : UpsertLevelScaleSetRequest) : List<LevelScale>
+  - validate(request : UpsertLevelScaleRequest) : void
+}
+
+interface LevelScaleMapper {
+  + toEntity(request : UpsertLevelScaleRequest) : LevelScale
+  + updateFromRequest(request : UpsertLevelScaleRequest, levelScale : LevelScale) : void
+  + toEntityForSet(request : UpsertLevelScaleRequest, targetRole : TargetRole) : LevelScale
+  + updateFromSetRequest(request : UpsertLevelScaleRequest, targetRole : TargetRole, levelScale : LevelScale) : void
+}
+
+class UpsertLevelScaleRequest {
+  - targetRole : TargetRole
+  - level : TargetLevel
+  - minScore : Double
+  - maxScore : Double
+  - minCodingScore : Double
+  - isActive : Boolean
+}
+
+class UpsertLevelScaleSetRequest {
+  - targetRole : TargetRole
+  - scales : List<UpsertLevelScaleRequest>
+}
+
+class LevelScale {
+  - id : Long
+  - targetRole : TargetRole
+  - level : TargetLevel
+  - minScore : Double
+  - maxScore : Double
+  - minCodingScore : Double
+  - isActive : Boolean
+  - createdAt : LocalDateTime
+  - updatedAt : LocalDateTime
+}
+
+note right of LevelScale
+  targetRole = null means the scale applies to every role (a
+  role-agnostic fallback); upsertLevelScaleSet replaces a whole
+  role's (or the role-agnostic) set of levels in one call
+end note
+
+interface LevelScaleRepository {
+  + findAllByIsActiveTrue() : List<LevelScale>
+  + findAllByTargetRole(targetRole : TargetRole) : List<LevelScale>
+  + findAllByTargetRoleIsNull() : List<LevelScale>
+}
+
+' ================= SHARED / EXTERNAL =================
+
+enum TargetRole {
+  BE
+  FE
+  QA_QC
+  BA
+  DEVOPS
+  DATA
+}
+
+enum TargetLevel {
+  INTERN
+  FRESHER
+  JUNIOR
+  MIDDLE
+}
+
+interface JpaRepository <<external library>> {
+}
+
+class User <<full detail in class-3.1.1>> {
+}
+
+interface UserRepository <<full detail in class-3.1.1>> {
+}
+
+class QuestionBank <<external module>> {
+}
+
+interface QuestionBankRepository <<external module>> {
+  + findRandomByCategoryName(categoryName : String, pageable : Pageable) : List<QuestionBank>
+}
+
+class CodingProblem <<full detail in class-3.4.1>> {
+}
+
+interface CodingProblemsRepository <<full detail in class-3.4.1>> {
+}
+
+interface ApiClient <<full detail in class-3.2.1>> {
+  + executeCode(request : CompilerRequestDto) : CompilerResponseDto
+}
+
+class CompilerRequestDto <<full detail in class-3.4.1>> {
+}
+
+class CompilerResponseDto <<full detail in class-3.4.1>> {
+}
+
+interface EmbeddingService <<external module>> {
+}
+
+' ================= RELATIONSHIPS =================
+
+' --- Career Preference ---
+CareerPreferenceController .down.> CareerPreferenceService : use
+CareerPreferenceServiceImpl .up.|> CareerPreferenceService : implement
+CareerPreferenceServiceImpl .down.> UserCareerPreferenceRepository : use
+CareerPreferenceServiceImpl .down.> EmbeddingService : use
+UserCareerPreferenceRepository -up-|> JpaRepository : extend
+
+' --- Entry Test Configuration ---
+AdminEntryTestController .down.> AdminEntryTestService : use
+AdminEntryTestServiceImpl .up.|> AdminEntryTestService : implement
+AdminEntryTestServiceImpl .down.> EntryTestRepository : use
+AdminEntryTestServiceImpl .down.> EntryTestMapper : use
+EntryTestRepository -up-|> JpaRepository : extend
+EntryTest "1" *-down- "0..*" EntryTestSectionConfig : owns
+
+' --- Taking the Entry Test ---
+EntryTestController .down.> EntryTestService : use
+EntryTestServiceImpl .up.|> EntryTestService : implement
+EntryTestServiceImpl .down.> EntryTestRepository : use
+EntryTestServiceImpl .down.> EntryTestAttemptRepository : use
+EntryTestServiceImpl .down.> UserCareerPreferenceRepository : use
+EntryTestServiceImpl .down.> QuestionBankRepository : use
+EntryTestServiceImpl .down.> CodingProblemsRepository : use
+EntryTestServiceImpl .down.> ApiClient : use
+EntryTestServiceImpl .down.> UserCompetencyService : use
+EntryTestServiceImpl .down.> UserRepository : use
+EntryTestServiceImpl .down.> EntryTestResponseMapper : use
+EntryTestAttemptRepository -up-|> JpaRepository : extend
+EntryTestAttempt "0..*" -right-> "1" User : belongs to
+EntryTestAttempt "1" *-down- "0..*" QuestionItemSnapshot : owns
+EntryTestAttempt "1" *-down- "0..*" CodingProblemItemSnapshot : owns
+EntryTestAttempt "1" *-down- "0..*" EntryTestAnswerSnapshot : owns
+EntryTestStartResponse "1" *-down- "0..*" EntryTestQuestionResponse : owns
+EntryTestAttemptResponse "1" *-down- "0..*" EntryTestQuestionResponse : owns
+
+' --- Competency Evaluation & Level Scale ---
+UserCompetencyController .down.> UserCompetencyService : use
+UserCompetencyController .down.> UserCompetencyMapper : use
+UserCompetencyServiceImpl .up.|> UserCompetencyService : implement
+UserCompetencyServiceImpl .down.> UserCompetencyRepository : use
+UserCompetencyServiceImpl .down.> UserCareerPreferenceRepository : use
+UserCompetencyServiceImpl .down.> LevelScaleRepository : use
+UserCompetencyRepository -up-|> JpaRepository : extend
+UserCompetency "0..*" -right-> "1" User : belongs to
+
+AdminLevelScaleController .down.> AdminLevelScaleService : use
+AdminLevelScaleServiceImpl .up.|> AdminLevelScaleService : implement
+AdminLevelScaleServiceImpl .down.> LevelScaleRepository : use
+AdminLevelScaleServiceImpl .down.> LevelScaleMapper : use
+LevelScaleRepository -up-|> JpaRepository : extend
+UpsertLevelScaleSetRequest "1" *-down- "1..*" UpsertLevelScaleRequest : owns
+
+@enduml

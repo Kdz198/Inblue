@@ -1,0 +1,90 @@
+@startuml DirectMessengerChat
+skinparam monochrome true
+skinparam shadowing false
+
+' Do not repeat participant boxes at the bottom of the diagram
+hide footbox
+
+<style>
+sequenceDiagram {
+  groupHeader {
+    FontStyle plain
+  }
+}
+</style>
+
+actor "Candidate" as Candidate
+actor "Mentor" as Mentor
+participant "STOMP Broker (/ws-chat)" as Broker
+participant ":ChatMessageController" as MsgCtrl
+participant ":ChatController" as ChatCtrl
+participant ":ChatServiceImpl" as Svc
+participant ":ChatMessageRepository" as Repo
+
+note right of Broker
+  Spring's built-in STOMP broker, reached over a SockJS-upgraded
+  WebSocket at /ws-chat (see WebSocketConfig). /topic is used for
+  group broadcasts, /user for private, per-recipient delivery
+end note
+
+' ===================== Open the messenger: connect & subscribe =====================
+
+opt Candidate/Mentor opens the messenger page
+    Candidate -> Broker ++ : connect via SockJS to /ws-chat,\nSTOMP SUBSCRIBE /user/queue/messages
+    Broker --> Candidate -- : CONNECTED
+    Mentor -> Broker ++ : connect via SockJS to /ws-chat,\nSTOMP SUBSCRIBE /user/queue/messages
+    Broker --> Mentor -- : CONNECTED
+end
+
+' ===================== Load the contact list & conversation history =====================
+
+Candidate -> MsgCtrl ++ : GET /api/messages/contacts?myId={myId}&role={role}
+MsgCtrl -> Svc ++ : findAllContact(myId, role)
+Svc -> Repo ++ : findPartnerIds(myId, role.toString())
+Repo --> Svc -- : List<Integer>
+Svc --> MsgCtrl -- : List<Integer>
+MsgCtrl --> Candidate -- : 200 OK (partner ids the candidate\nhas exchanged messages with)
+
+Candidate -> MsgCtrl ++ : GET /api/messages/{currentFullId}/{recipientFullId}
+MsgCtrl -> Svc ++ : getChatHistory(currentFullId, recipientFullId)
+Svc -> Svc : parseId / getType on both ids\n(e.g. "USER_12" -> id 12, type USER)
+Svc -> Repo ++ : getHistory(id1, type1, id2, type2)
+Repo --> Svc -- : List<ChatMessage>\n(ordered by timestamp ascending)
+Svc --> MsgCtrl -- : List<ChatMessage>
+MsgCtrl --> Candidate -- : 200 OK (full conversation with the mentor)
+
+note right of MsgCtrl
+  Mentor loads its own contacts and history the same way,
+  calling the same two endpoints with its own id and role
+end note
+
+' ===================== Send a real-time message (Candidate to Mentor) =====================
+
+Candidate -> Broker ++ : STOMP SEND /app/chat\n(ChatDto: senderId "USER_12", recipientId "MENTOR_5", content)
+Broker -> ChatCtrl ++ : processMessage(message)
+ChatCtrl -> Svc ++ : processMessage(message)
+
+Svc -> Svc : parseId / getType on senderId and recipientId
+Svc -> Svc : build a ChatMessage\n(senderId, senderType, recipientId,\nrecipientType, content)
+
+Svc -> Repo ++ : save(chatMessage)
+Repo --> Svc -- : ChatMessage
+
+Svc -> Broker ++ : convertAndSendToUser(recipientId,\n"queue/messages", chatMessage)
+Broker --> Mentor -- : push chatMessage to\n/user/queue/messages
+
+Svc --> ChatCtrl -- : void
+ChatCtrl --> Broker -- : void
+
+note right of Svc
+  processMessage has no return value: the sender gets no explicit
+  acknowledgement frame. Delivery is confirmed only by the message
+  arriving on the recipient's private queue in real time
+end note
+
+note over Candidate, Mentor
+  A mentor replying to the candidate follows the same STOMP SEND
+  flow in the opposite direction, with sender/recipient swapped
+end note
+
+@enduml

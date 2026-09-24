@@ -1,0 +1,95 @@
+@startuml CommunityPostLifecycleThreadedCommentModeration
+skinparam monochrome true
+skinparam shadowing false
+
+' Do not repeat participant boxes at the bottom of the diagram
+hide footbox
+
+<style>
+sequenceDiagram {
+  groupHeader {
+    FontStyle plain
+  }
+}
+</style>
+
+actor "Candidate / Mentor" as Actor
+actor "Admin" as Admin
+participant ":PostController" as Ctrl
+participant ":PostServiceImpl" as Svc
+participant ":PostRepository" as Repo
+
+' ===================== Update a comment =====================
+
+Actor -> Ctrl ++ : PUT /api/posts/comments/{commentId}\n(content)
+Ctrl -> Svc ++ : updateComment(commentId, content)
+Svc -> Repo ++ : findAll()
+Repo --> Svc -- : List<Post>
+
+Svc -> Svc : scan every post's comments for\none whose id matches commentId
+
+alt A comment with this id is found
+    Svc -> Svc : set the new content on the comment
+    Svc -> Repo ++ : save(the post that owns it)
+    Repo --> Svc -- : Post
+    Svc --> Ctrl -- : PostComment
+    Ctrl --> Actor -- : 200 OK (comment updated)
+else No comment with this id exists in any post
+    Svc --> Ctrl : throws RuntimeException("Comment khong ton tai")
+    Ctrl --> Actor : error response (500)
+end
+
+note right of Svc
+  updateComment and deleteComment both linearly scan every post's
+  comment list (no direct commentId lookup exists yet); a TODO in
+  the source flags this n+1-style scan as a known optimization gap
+end note
+
+' ===================== Delete a comment (and its direct replies) =====================
+
+Actor -> Ctrl ++ : DELETE /api/posts/comments/{commentId}
+Ctrl -> Svc ++ : deleteComment(commentId)
+Svc -> Repo ++ : findAll()
+Repo --> Svc -- : List<Post>
+
+Svc -> Svc : scan every post's comments for the target id,\nand for any comment whose parentCommentId\nequals it (its direct replies)
+
+alt Target comment is found in some post
+    Svc -> Svc : remove the target comment together\nwith its direct replies from that post
+    Svc -> Repo ++ : save(post)
+    Repo --> Svc -- : Post
+    Svc --> Ctrl -- : void
+    Ctrl --> Actor -- : 200 OK (comment deleted)
+else No comment with this id exists in any post
+    Svc --> Ctrl : throws RuntimeException("Comment khong ton tai")
+    Ctrl --> Actor : error response (500)
+end
+
+note right of Svc
+  Only the target comment and its immediate replies (parentCommentId
+  == commentId) are removed in this pass. A reply-to-a-reply is not
+  cascaded further, since its own parentCommentId still points to the
+  now-deleted reply rather than to the original target comment
+end note
+
+' ===================== Admin moderates a post's status =====================
+
+Admin -> Ctrl ++ : GET /api/posts/change-status/{postId}?status={status}
+Ctrl -> Svc ++ : changeStatus(postId, status)
+Svc -> Repo ++ : existsById(postId)
+Repo --> Svc -- : boolean
+
+alt Post exists
+    Svc -> Repo ++ : findById(postId)
+    Repo --> Svc -- : Optional<Post>
+    Svc -> Svc : set the new status\n(PUBLISHED or ARCHIVED)
+    Svc -> Repo ++ : save(post)
+    Repo --> Svc -- : Post
+    Svc --> Ctrl -- : void
+    Ctrl --> Admin -- : 200 OK ("Thay doi trang thai thanh cong")
+else Post does not exist
+    Svc --> Ctrl : throws RuntimeException("Post not found")
+    Ctrl --> Admin : error response (500)
+end
+
+@enduml
