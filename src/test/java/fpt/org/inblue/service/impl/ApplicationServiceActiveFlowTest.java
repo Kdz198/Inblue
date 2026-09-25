@@ -23,9 +23,11 @@ import fpt.org.inblue.repository.JdPurchaseRepository;
 import fpt.org.inblue.repository.JobDescriptionRepository;
 import fpt.org.inblue.repository.UserRepository;
 import fpt.org.inblue.service.JourneySummaryService;
+import fpt.org.inblue.service.ApplicationDetailService;
 import fpt.org.inblue.utils.SecurityUtils;
 import java.util.List;
 import java.util.Optional;
+import org.springframework.beans.factory.ObjectProvider;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -63,6 +65,9 @@ class ApplicationServiceActiveFlowTest {
     @Mock
     JourneySummaryServiceImpl journeySummaryServiceImpl;
 
+    @Mock
+    ObjectProvider<ApplicationDetailService> applicationDetailServiceProvider;
+
     private ApplicationServiceImpl service;
 
     @BeforeEach
@@ -76,7 +81,8 @@ class ApplicationServiceActiveFlowTest {
                 userRepository,
                 eventPublisher,
                 journeySummaryService,
-                journeySummaryServiceImpl);
+                journeySummaryServiceImpl,
+                applicationDetailServiceProvider);
         lenient().when(securityUtils.getCurrentUserId()).thenReturn(7);
         lenient().when(applicationRepository.save(any(Application.class))).thenAnswer(i -> {
             Application app = i.getArgument(0);

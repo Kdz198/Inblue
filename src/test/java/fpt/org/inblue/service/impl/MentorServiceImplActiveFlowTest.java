@@ -11,6 +11,8 @@ import fpt.org.inblue.mapper.MentorMapper;
 import fpt.org.inblue.model.Mentor;
 import fpt.org.inblue.repository.MentorFeedbackRepository;
 import fpt.org.inblue.repository.MentorRepository;
+import fpt.org.inblue.repository.JobDescriptionRepository;
+import fpt.org.inblue.service.EmbeddingService;
 import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -29,6 +31,9 @@ class MentorServiceImplActiveFlowTest {
     MentorFeedbackRepository feedbackRepository;
 
     @Mock
+    JobDescriptionRepository jobDescriptionRepository;
+
+    @Mock
     ApplicationEventPublisher publisher;
 
     @Mock
@@ -40,11 +45,22 @@ class MentorServiceImplActiveFlowTest {
     @Mock
     PasswordEncoder encoder;
 
+    @Mock
+    EmbeddingService embeddingService;
+
     private MentorServiceImpl service;
 
     @BeforeEach
     void setUp() {
-        service = new MentorServiceImpl(repository, feedbackRepository, publisher, cloudinary, mapper, encoder);
+        service = new MentorServiceImpl(
+                repository,
+                feedbackRepository,
+                jobDescriptionRepository,
+                publisher,
+                cloudinary,
+                mapper,
+                encoder,
+                embeddingService);
     }
 
     @Test

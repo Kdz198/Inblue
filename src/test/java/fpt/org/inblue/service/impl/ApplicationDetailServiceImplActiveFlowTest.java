@@ -13,6 +13,7 @@ import fpt.org.inblue.model.ApplicationDetail;
 import fpt.org.inblue.model.Round;
 import fpt.org.inblue.model.dto.response.MentorResponse;
 import fpt.org.inblue.repository.ApplicationDetailRepository;
+import fpt.org.inblue.repository.ApplicationRepository;
 import fpt.org.inblue.repository.CandidateProfileRepository;
 import fpt.org.inblue.repository.InterviewSessionRepository;
 import fpt.org.inblue.repository.JobDescriptionRepository;
@@ -39,6 +40,9 @@ class ApplicationDetailServiceImplActiveFlowTest {
     ApplicationService applicationService;
 
     @Mock
+    ApplicationRepository applicationRepository;
+
+    @Mock
     RoundRepository roundRepository;
 
     @Mock
@@ -60,6 +64,12 @@ class ApplicationDetailServiceImplActiveFlowTest {
     MentorService mentorService;
 
     @Mock
+    fpt.org.inblue.service.SessionService sessionService;
+
+    @Mock
+    fpt.org.inblue.repository.MentorRepository mentorRepository;
+
+    @Mock
     JwtUtils jwtUtils;
 
     private ApplicationDetailServiceImpl service;
@@ -68,6 +78,7 @@ class ApplicationDetailServiceImplActiveFlowTest {
     void setUp() {
         service = new ApplicationDetailServiceImpl(
                 detailRepository,
+                applicationRepository,
                 applicationService,
                 roundRepository,
                 jobRepository,
@@ -76,6 +87,8 @@ class ApplicationDetailServiceImplActiveFlowTest {
                 interviewSessionService,
                 interviewSessionRepository,
                 mentorService,
+                mentorRepository,
+                sessionService,
                 jwtUtils);
     }
 
