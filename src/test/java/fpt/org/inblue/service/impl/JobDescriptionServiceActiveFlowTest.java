@@ -102,7 +102,7 @@ class JobDescriptionServiceActiveFlowTest {
                 .id(4L)
                 .rounds(new ArrayList<>(List.of(round)))
                 .build();
-        when(repository.findById(4L)).thenReturn(Optional.of(jd));
+        when(repository.findByIdWithRounds(4L)).thenReturn(Optional.of(jd));
         assertEquals(round, service.getRoundByOrder(4L, 2));
     }
 
@@ -110,7 +110,7 @@ class JobDescriptionServiceActiveFlowTest {
     void getRoundByOrderReportsMissingRound() {
         JobDescription jd =
                 JobDescription.builder().id(4L).rounds(new ArrayList<>()).build();
-        when(repository.findById(4L)).thenReturn(Optional.of(jd));
+        when(repository.findByIdWithRounds(4L)).thenReturn(Optional.of(jd));
         CustomException e = assertThrows(CustomException.class, () -> service.getRoundByOrder(4L, 3));
         assertEquals(HttpStatus.NOT_FOUND, e.getStatus());
     }

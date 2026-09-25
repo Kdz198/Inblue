@@ -85,4 +85,26 @@ class RoundServiceImplActiveFlowTest {
         when(jobService.getRoundByOrder(2L, 3)).thenReturn(round);
         assertEquals(round, service.getRoundByOrder(1L));
     }
+
+    @Test
+    void setupRoundsRejectsMissingJobDescription() {
+        when(jobRepository.findById(99L)).thenReturn(Optional.empty());
+        assertEquals(
+                404,
+                assertThrows(
+                                CustomException.class,
+                                () -> service.setUpRoundForJd(99L, new fpt.org.inblue.model.dto.request.SetupJdRoundsRequest()))
+                        .getStatus()
+                        .value());
+    }
+
+    @Test
+    void generateRoundPlanRejectsMissingJobDescription() {
+        when(jobRepository.findById(99L)).thenReturn(Optional.empty());
+        assertEquals(
+                404,
+                assertThrows(CustomException.class, () -> service.generateRoundPlan(99L))
+                        .getStatus()
+                        .value());
+    }
 }

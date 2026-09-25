@@ -3,6 +3,7 @@ package fpt.org.inblue.service.impl;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import fpt.org.inblue.exception.CustomException;
@@ -13,6 +14,7 @@ import java.time.DayOfWeek;
 import java.time.LocalDate;
 import java.time.LocalTime;
 import java.util.List;
+import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -107,6 +109,72 @@ class KioskServiceImplActiveFlowTest {
         when(scheduleRepository.findAllByKioskIdAndDayOfWeekAndIsActiveTrue(1L, DayOfWeek.MONDAY))
                 .thenReturn(List.of());
         assertEquals(List.of(), service.getAvailableSlots(1L, LocalDate.of(2026, 9, 14)));
+    }
+
+    @Test
+    void getSchedulesByKioskDelegatesToActiveSchedules() {
+        KioskSchedule schedule = schedule();
+        when(scheduleRepository.findAllByKioskIdAndIsActiveTrue(1L)).thenReturn(List.of(schedule));
+        assertEquals(List.of(schedule), service.getSchedulesByKiosk(1L));
+    }
+
+    @Test
+    void getAvailableSlotsRejectsUnknownKiosk() {
+        when(kioskRepository.existsById(1L)).thenReturn(false);
+        assertEquals(
+                404,
+                assertThrows(CustomException.class, () -> service.getAvailableSlots(1L, LocalDate.now()))
+                        .getStatus()
+                        .value());
+    }
+
+    @Test
+    void updateKioskCopiesEditableFieldsAndSaves() {
+        Kiosk existing = Kiosk.builder().id(1L).name("Old").build();
+        Kiosk update = Kiosk.builder().name("New").location("Floor 2").isActive(true).build();
+        when(kioskRepository.findById(1L)).thenReturn(Optional.of(existing));
+        when(kioskRepository.save(existing)).thenReturn(existing);
+        assertEquals(existing, service.updateKiosk(1L, update));
+        assertEquals("New", existing.getName());
+        assertEquals("Floor 2", existing.getLocation());
+        verify(kioskRepository).save(existing);
+    }
+
+    @Test
+    void updateScheduleRejectsReversedOpeningHours() {
+        KioskSchedule update = schedule();
+        update.setOpenTime(LocalTime.of(18, 0));
+        update.setCloseTime(LocalTime.of(17, 0));
+        when(scheduleRepository.findById(2L)).thenReturn(Optional.of(schedule()));
+        when(kioskRepository.existsById(1L)).thenReturn(true);
+        assertEquals(
+                400,
+                assertThrows(CustomException.class, () -> service.updateSchedule(2L, update))
+                        .getStatus()
+                        .value());
+    }
+
+    @Test
+    void updateScheduleRejectsClosingAfterUpdateBoundary() {
+        KioskSchedule update = schedule();
+        update.setCloseTime(LocalTime.of(22, 1));
+        when(scheduleRepository.findById(2L)).thenReturn(Optional.of(schedule()));
+        when(kioskRepository.existsById(1L)).thenReturn(true);
+        assertEquals(
+                400,
+                assertThrows(CustomException.class, () -> service.updateSchedule(2L, update))
+                        .getStatus()
+                        .value());
+    }
+
+    @Test
+    void historyRejectsUnknownKiosk() {
+        when(kioskRepository.existsById(8L)).thenReturn(false);
+        assertEquals(
+                404,
+                assertThrows(CustomException.class, () -> service.getKioskHistory(8L))
+                        .getStatus()
+                        .value());
     }
 
     private KioskSchedule schedule() {

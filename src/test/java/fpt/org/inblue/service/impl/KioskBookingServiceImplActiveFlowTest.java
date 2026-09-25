@@ -10,10 +10,13 @@ import fpt.org.inblue.enums.BookingStatus;
 import fpt.org.inblue.exception.CustomException;
 import fpt.org.inblue.model.ApplicationDetail;
 import fpt.org.inblue.model.KioskBooking;
+import fpt.org.inblue.model.Round;
+import fpt.org.inblue.model.dto.request.PickSlotDtoRequest;
 import fpt.org.inblue.repository.*;
 import fpt.org.inblue.service.ApplicationDetailService;
 import fpt.org.inblue.service.NotificationService;
 import java.util.Optional;
+import java.time.LocalDateTime;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -103,5 +106,64 @@ class KioskBookingServiceImplActiveFlowTest {
         service.cancelBooking(1L, 7);
         assertEquals(BookingStatus.CANCELLED, booking.getStatus());
         verify(detailRepository).save(detail);
+    }
+
+    @Test
+    void pickSlotRejectsOverlappingBooking() {
+        PickSlotDtoRequest request = pickSlotRequest();
+        when(detailRepository.findById(2L)).thenReturn(Optional.of(ApplicationDetail.builder().id(2L).build()));
+        when(kioskRepository.existsById(1L)).thenReturn(true);
+        when(repository.countOverlappingBookingsForKiosk(
+                        1L, request.getScheduledStart(), request.getScheduledEnd(), BookingStatus.CANCELLED))
+                .thenReturn(1L);
+        assertEquals(
+                409,
+                assertThrows(CustomException.class, () -> service.pickSlot(request, 7))
+                        .getStatus()
+                        .value());
+    }
+
+    @Test
+    void pickSlotRejectsNonAiRound() {
+        PickSlotDtoRequest request = pickSlotRequest();
+        ApplicationDetail detail = ApplicationDetail.builder().id(2L).roundId(3L).build();
+        when(detailRepository.findById(2L)).thenReturn(Optional.of(detail));
+        when(kioskRepository.existsById(1L)).thenReturn(true);
+        when(repository.countOverlappingBookingsForKiosk(
+                        1L, request.getScheduledStart(), request.getScheduledEnd(), BookingStatus.CANCELLED))
+                .thenReturn(0L);
+        when(roundRepository.findById(3L)).thenReturn(Optional.of(Round.builder()
+                .id(3L)
+                .roundType(fpt.org.inblue.enums.RoundType.QUIZ)
+                .build()));
+        assertEquals(
+                400,
+                assertThrows(CustomException.class, () -> service.pickSlot(request, 7))
+                        .getStatus()
+                        .value());
+    }
+
+    @Test
+    void enterKioskRejectsCancelledBooking() {
+        KioskBooking booking = KioskBooking.builder()
+                .sessionKey("pin")
+                .kioskId(1L)
+                .status(BookingStatus.CANCELLED)
+                .build();
+        when(repository.findBySessionKey("pin")).thenReturn(Optional.of(booking));
+        assertEquals(
+                400,
+                assertThrows(CustomException.class, () -> service.enterKiosk("pin", 1L))
+                        .getStatus()
+                        .value());
+    }
+
+    private PickSlotDtoRequest pickSlotRequest() {
+        PickSlotDtoRequest request = new PickSlotDtoRequest();
+        request.setApplicationDetailId(2L);
+        request.setKioskId(1L);
+        request.setScheduledStart(LocalDateTime.of(2026, 9, 25, 10, 0));
+        request.setScheduledEnd(LocalDateTime.of(2026, 9, 25, 11, 0));
+        return request;
     }
 }
