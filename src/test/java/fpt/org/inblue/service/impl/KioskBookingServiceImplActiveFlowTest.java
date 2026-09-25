@@ -15,8 +15,8 @@ import fpt.org.inblue.model.dto.request.PickSlotDtoRequest;
 import fpt.org.inblue.repository.*;
 import fpt.org.inblue.service.ApplicationDetailService;
 import fpt.org.inblue.service.NotificationService;
-import java.util.Optional;
 import java.time.LocalDateTime;
+import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -111,7 +111,8 @@ class KioskBookingServiceImplActiveFlowTest {
     @Test
     void pickSlotRejectsOverlappingBooking() {
         PickSlotDtoRequest request = pickSlotRequest();
-        when(detailRepository.findById(2L)).thenReturn(Optional.of(ApplicationDetail.builder().id(2L).build()));
+        when(detailRepository.findById(2L))
+                .thenReturn(Optional.of(ApplicationDetail.builder().id(2L).build()));
         when(kioskRepository.existsById(1L)).thenReturn(true);
         when(repository.countOverlappingBookingsForKiosk(
                         1L, request.getScheduledStart(), request.getScheduledEnd(), BookingStatus.CANCELLED))
@@ -126,16 +127,18 @@ class KioskBookingServiceImplActiveFlowTest {
     @Test
     void pickSlotRejectsNonAiRound() {
         PickSlotDtoRequest request = pickSlotRequest();
-        ApplicationDetail detail = ApplicationDetail.builder().id(2L).roundId(3L).build();
+        ApplicationDetail detail =
+                ApplicationDetail.builder().id(2L).roundId(3L).build();
         when(detailRepository.findById(2L)).thenReturn(Optional.of(detail));
         when(kioskRepository.existsById(1L)).thenReturn(true);
         when(repository.countOverlappingBookingsForKiosk(
                         1L, request.getScheduledStart(), request.getScheduledEnd(), BookingStatus.CANCELLED))
                 .thenReturn(0L);
-        when(roundRepository.findById(3L)).thenReturn(Optional.of(Round.builder()
-                .id(3L)
-                .roundType(fpt.org.inblue.enums.RoundType.QUIZ)
-                .build()));
+        when(roundRepository.findById(3L))
+                .thenReturn(Optional.of(Round.builder()
+                        .id(3L)
+                        .roundType(fpt.org.inblue.enums.RoundType.QUIZ)
+                        .build()));
         assertEquals(
                 400,
                 assertThrows(CustomException.class, () -> service.pickSlot(request, 7))

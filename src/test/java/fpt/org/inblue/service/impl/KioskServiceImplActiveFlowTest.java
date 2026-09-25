@@ -131,7 +131,8 @@ class KioskServiceImplActiveFlowTest {
     @Test
     void updateKioskCopiesEditableFieldsAndSaves() {
         Kiosk existing = Kiosk.builder().id(1L).name("Old").build();
-        Kiosk update = Kiosk.builder().name("New").location("Floor 2").isActive(true).build();
+        Kiosk update =
+                Kiosk.builder().name("New").location("Floor 2").isActive(true).build();
         when(kioskRepository.findById(1L)).thenReturn(Optional.of(existing));
         when(kioskRepository.save(existing)).thenReturn(existing);
         assertEquals(existing, service.updateKiosk(1L, update));

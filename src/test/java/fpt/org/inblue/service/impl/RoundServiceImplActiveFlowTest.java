@@ -93,7 +93,8 @@ class RoundServiceImplActiveFlowTest {
                 404,
                 assertThrows(
                                 CustomException.class,
-                                () -> service.setUpRoundForJd(99L, new fpt.org.inblue.model.dto.request.SetupJdRoundsRequest()))
+                                () -> service.setUpRoundForJd(
+                                        99L, new fpt.org.inblue.model.dto.request.SetupJdRoundsRequest()))
                         .getStatus()
                         .value());
     }

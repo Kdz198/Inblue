@@ -4,11 +4,11 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import fpt.org.inblue.entrytest.model.UserCareerPreference;
 import fpt.org.inblue.entrytest.repository.UserCareerPreferenceRepository;
 import fpt.org.inblue.entrytest.repository.UserCompetencyRepository;
 import fpt.org.inblue.mapper.JobRecommendationMapper;
 import fpt.org.inblue.model.JobRecommendationConfig;
-import fpt.org.inblue.entrytest.model.UserCareerPreference;
 import fpt.org.inblue.repository.JobDescriptionRepository;
 import fpt.org.inblue.repository.JobRecommendationConfigRepository;
 import java.math.BigDecimal;
@@ -80,7 +80,8 @@ class JobRecommendationServiceActiveFlowTest {
 
     @Test
     void recommendationsReturnEmptyWhenPreferenceHasNoEmbedding() {
-        UserCareerPreference preference = UserCareerPreference.builder().userId(7).build();
+        UserCareerPreference preference =
+                UserCareerPreference.builder().userId(7).build();
         when(preferenceRepository.findByUserIdAndIsActiveTrue(7)).thenReturn(Optional.of(preference));
         when(configRepository.findById(JobRecommendationConfig.SINGLETON_ID))
                 .thenReturn(Optional.of(JobRecommendationConfig.builder()
