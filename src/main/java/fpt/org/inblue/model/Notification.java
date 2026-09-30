@@ -1,5 +1,6 @@
 package fpt.org.inblue.model;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import java.time.LocalDateTime;
 import lombok.AllArgsConstructor;
@@ -18,6 +19,7 @@ public class Notification {
 
     @JoinColumn(name = "user_id")
     @ManyToOne
+    @JsonIgnore
     private User user;
 
     private String title;
