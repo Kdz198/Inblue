@@ -2,10 +2,9 @@ package fpt.org.inblue.model.dto.response;
 
 import fpt.org.inblue.enums.JobDescriptionStatus;
 import fpt.org.inblue.enums.TargetLevel;
+import fpt.org.inblue.model.Round;
 import java.time.LocalDateTime;
 import java.util.List;
-
-import fpt.org.inblue.model.Round;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
