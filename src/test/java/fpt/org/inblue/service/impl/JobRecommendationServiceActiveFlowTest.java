@@ -4,6 +4,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import fpt.org.inblue.entrytest.model.UserCareerPreference;
 import fpt.org.inblue.entrytest.repository.UserCareerPreferenceRepository;
 import fpt.org.inblue.entrytest.repository.UserCompetencyRepository;
 import fpt.org.inblue.mapper.JobRecommendationMapper;
@@ -64,5 +65,29 @@ class JobRecommendationServiceActiveFlowTest {
 
         assertEquals(new BigDecimal("72.5"), response.getThresholdPercent());
         verify(configRepository).save(org.mockito.ArgumentMatchers.any(JobRecommendationConfig.class));
+    }
+
+    @Test
+    void recommendationsReturnEmptyWhenThresholdConfigIsMissing() {
+        UserCareerPreference preference = UserCareerPreference.builder()
+                .userId(7)
+                .skillEmbedding(new float[] {1.0f, 0.0f})
+                .build();
+        when(preferenceRepository.findByUserIdAndIsActiveTrue(7)).thenReturn(Optional.of(preference));
+        when(configRepository.findById(JobRecommendationConfig.SINGLETON_ID)).thenReturn(Optional.empty());
+        assertEquals(0, service.getRecommendations(7).size());
+    }
+
+    @Test
+    void recommendationsReturnEmptyWhenPreferenceHasNoEmbedding() {
+        UserCareerPreference preference =
+                UserCareerPreference.builder().userId(7).build();
+        when(preferenceRepository.findByUserIdAndIsActiveTrue(7)).thenReturn(Optional.of(preference));
+        when(configRepository.findById(JobRecommendationConfig.SINGLETON_ID))
+                .thenReturn(Optional.of(JobRecommendationConfig.builder()
+                        .id(JobRecommendationConfig.SINGLETON_ID)
+                        .matchThresholdPercent(BigDecimal.ZERO)
+                        .build()));
+        assertEquals(0, service.getRecommendations(7).size());
     }
 }

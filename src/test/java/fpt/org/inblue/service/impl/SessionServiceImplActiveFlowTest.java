@@ -106,4 +106,32 @@ class SessionServiceImplActiveFlowTest {
 
         assertEquals(HttpStatus.CONFLICT, error.getStatus());
     }
+
+    @Test
+    void updateSessionRejectsMissingSession() {
+        Session session = new Session();
+        session.setId(77);
+        when(sessionRepository.existsById(77)).thenReturn(false);
+        CustomException error = assertThrows(CustomException.class, () -> service.updateSession(session));
+        assertEquals(HttpStatus.NOT_FOUND, error.getStatus());
+    }
+
+    @Test
+    void updateSessionPersistsExistingSession() {
+        Session session = new Session();
+        session.setId(77);
+        when(sessionRepository.existsById(77)).thenReturn(true);
+        when(sessionRepository.save(session)).thenReturn(session);
+        assertEquals(session, service.updateSession(session));
+        verify(sessionRepository).save(session);
+    }
+
+    @Test
+    void missingRoomRejectsJoinRecord() {
+        when(sessionRepository.findByRoomName("missing")).thenReturn(null);
+        CustomException error = assertThrows(
+                CustomException.class,
+                () -> service.saveJoinRecord(new JoinSessionDtoRequest("missing", 1, "p", false)));
+        assertEquals(HttpStatus.NOT_FOUND, error.getStatus());
+    }
 }
