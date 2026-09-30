@@ -4,6 +4,8 @@ import fpt.org.inblue.enums.JobDescriptionStatus;
 import fpt.org.inblue.enums.TargetLevel;
 import java.time.LocalDateTime;
 import java.util.List;
+
+import fpt.org.inblue.model.Round;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -31,4 +33,5 @@ public class JobRecommendationResponse {
     private LocalDateTime deadlineAt;
     private Integer appliedCount;
     private Double matchPercent;
+    private List<Round> rounds;
 }
