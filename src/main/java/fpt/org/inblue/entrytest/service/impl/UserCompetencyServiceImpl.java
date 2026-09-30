@@ -17,12 +17,14 @@ import java.util.Comparator;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class UserCompetencyServiceImpl implements UserCompetencyService {
     private final UserCompetencyRepository competencyRepository;
     private final UserCareerPreferenceRepository preferenceRepository;
@@ -97,6 +99,8 @@ public class UserCompetencyServiceImpl implements UserCompetencyService {
     }
 
     private TargetLevel resolveLevel(TargetRole role, double finalScore, double codingScore) {
+        log.info("Resolve level: role={}, finalScore={}, codingScore={}", role, finalScore, codingScore);
+
         return levelScaleRepository.findAllByIsActiveTrue().stream()
                 .filter(scale -> scale.getTargetRole() == null || scale.getTargetRole() == role)
                 .filter(scale -> finalScore >= value(scale.getMinScore()) && finalScore <= value(scale.getMaxScore()))
