@@ -73,6 +73,10 @@ public class JobDescriptionServiceImpl implements JobDescriptionService {
         if (jobDescription.getAppliedCount() == null) {
             jobDescription.setAppliedCount(0);
         }
+        if (!jobDescription.getSkillTags().isEmpty()) {
+            jobDescription.setSkillEmbedding(
+                    embeddingService.generateEmbedding(String.join(", ", jobDescription.getSkillTags())));
+        }
         jobDescription.setIsDeleted(false);
         jobDescription.setCompanyLogo(company.getLogoUrl());
         jobDescription.setCompanyName(company.getName());
