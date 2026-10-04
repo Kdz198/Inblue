@@ -129,6 +129,11 @@ public class JobRecommendationServiceImpl implements JobRecommendationService {
                 .build();
     }
 
+    @Override
+    public Optional<JobRecommendationConfig> getThreshold() {
+        return configRepository.findById(JobRecommendationConfig.SINGLETON_ID);
+    }
+
     private boolean isEligible(JobDescription job, LocalDateTime now) {
         return job.getStatus() == JobDescriptionStatus.OPEN
                 && Boolean.FALSE.equals(job.getIsDeleted())

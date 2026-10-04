@@ -3,6 +3,7 @@ package fpt.org.inblue.controller;
 import fpt.org.inblue.enums.JobDescriptionStatus;
 import fpt.org.inblue.enums.TargetLevel;
 import fpt.org.inblue.model.JobDescription;
+import fpt.org.inblue.model.JobRecommendationConfig;
 import fpt.org.inblue.model.dto.request.CreateJobDescriptionRequest;
 import fpt.org.inblue.model.dto.request.UpdateJobDescriptionRequest;
 import fpt.org.inblue.model.dto.response.JobRecommendationResponse;
@@ -14,6 +15,8 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import java.io.IOException;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
+
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -107,5 +110,11 @@ public class JobDescriptionController {
     public ResponseEntity<Void> toggleActiveGet(@PathVariable Long id) {
         jobDescriptionService.toggleActive(id);
         return ResponseEntity.noContent().build();
+    }
+
+    @GetMapping("config")
+    public ResponseEntity<JobRecommendationConfig> getJobRecommendationConfig() {
+        Optional<JobRecommendationConfig> config = jobRecommendationService.getThreshold();
+        return ResponseEntity.ok(config.get());
     }
 }
