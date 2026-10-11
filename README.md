@@ -31,6 +31,22 @@ FPT University capstone project — group GSU26SE27, project code SU26SE018.
 
 ## Candidate flow
 
+```mermaid
+flowchart LR
+    A[Entry test and<br/>career preference] --> B[Recommended JDs]
+    B --> C[Purchase JD<br/>PayOS VietQR]
+    C --> D[Apply]
+    D --> P
+    subgraph P[Pipeline configured per JD]
+        direction LR
+        R1[CV Screening] --> R2[Email Simulator] --> R3[Quiz] --> R4[Coding]
+        R4 --> R5[Code Review] --> R6[Mentor Interview] --> R7[AI Interview]
+    end
+    P --> E[Competency report and<br/>journey summary]
+```
+
+The order and number of rounds shown are an example; each JD defines its own.
+
 1. **Entry test and career preference.** The result sets the candidate's level and skill profile.
 2. **Job recommendation.** JDs are ranked by cosine similarity between the candidate's skill vector and each JD's skill vector, filtered by level.
 3. **Purchase and apply.** JD access is paid for with PayOS (VietQR).
@@ -76,26 +92,169 @@ FPT University capstone project — group GSU26SE27, project code SU26SE018.
 
 ## Architecture
 
-```
-Web / Mobile / Kiosk
-        │  REST + WebSocket
-        ▼
-Core Backend (this repo, Spring Boot)
-        ├── PostgreSQL + pgvector   system data, skill embeddings
-        ├── Redis                   cache, interview session state, proctoring records
-        ├── Python AI service       interview analysis, grading, overview feedback
-        ├── Python vision service   proctoring snapshots
-        ├── AnythingLLM workspaces  CV parsing, email / code review grading, quiz and
-        │                           pipeline generation, skill tags, summaries
-        ├── Compiler service        sandboxed code execution for coding rounds
-        └── Third parties           Pinecone (embedding API), PayOS, Daily.co,
-                                    ElevenLabs, Cloudinary, Google OAuth2, SMTP
+```mermaid
+flowchart TB
+    subgraph Clients
+        WEB[Web app]
+        MOB[Mobile app]
+        KIOSK[Kiosk]
+    end
+
+    BE[Core Backend<br/>Spring Boot - this repo]
+
+    subgraph Data
+        PG[(PostgreSQL<br/>+ pgvector)]
+        RD[(Redis)]
+    end
+
+    subgraph AI[AI services]
+        PY[Python AI service<br/>interview analysis, grading]
+        VIS[Python vision service<br/>proctoring]
+        ALLM[AnythingLLM workspaces<br/>CV, email, code review,<br/>quiz and pipeline generation]
+        COMP[Compiler service<br/>sandboxed code execution]
+    end
+
+    subgraph EXT[Third parties]
+        PINE[Pinecone<br/>embedding API]
+        PAY[PayOS]
+        DAILY[Daily.co]
+        TTS[ElevenLabs]
+        CLD[Cloudinary]
+        GOOG[Google OAuth2]
+        MAIL[SMTP]
+    end
+
+    Clients -- REST + WebSocket --> BE
+    BE --> PG
+    BE --> RD
+    BE --> PY
+    BE --> VIS
+    BE --> ALLM
+    BE --> COMP
+    BE --> EXT
 ```
 
 Notes:
 - Pinecone is used only to **generate** embeddings (`llama-text-embed-v2`, 384 dimensions). Vectors are stored and queried in PostgreSQL with pgvector.
 - Calls made through AnythingLLM are recorded in `LlmChatLog` with trace ID, prompt, response, token counts and response time.
 - Every request carries a `traceId` (Micrometer Tracing) that appears in the JSON logs.
+
+## Design and patterns
+
+### Layered architecture
+
+The code follows the usual Spring layering: `controller` → `service` (interface + `impl`) → `repository`. Entities never leave the service layer directly; requests and responses are DTOs, mapped with MapStruct. The `entrytest` module is packaged by feature and has its own controller, service, repository and model layers.
+
+### Strategy + Factory for rounds
+
+Each round type behaves differently, so round-specific logic sits behind a common interface and is selected by `RoundType` instead of `if/else` chains in the services.
+
+```mermaid
+classDiagram
+    class SubmissionService
+    class RoundProcessorFactory {
+        +getProcessor(RoundType) RoundSubmissionProcessor
+    }
+    class RoundSubmissionProcessor {
+        <<interface>>
+        +getSupportedType() RoundType
+        +process(ProcessDto) SubmissionResult
+    }
+    class RoundSummaryFactory {
+        +getBuilder(RoundType) RoundSummaryBuilder
+    }
+    class RoundSummaryBuilder {
+        <<interface>>
+        +buildSummary(ApplicationDetail, Round) RoundSummaryInfo
+    }
+
+    SubmissionService --> RoundProcessorFactory
+    RoundProcessorFactory ..> RoundSubmissionProcessor : selects
+    RoundSubmissionProcessor <|.. CVRoundProcessor
+    RoundSubmissionProcessor <|.. EmailRoundProcessor
+    RoundSubmissionProcessor <|.. QuizRoundProcessor
+    RoundSubmissionProcessor <|.. CodeRoundProcessor
+
+    RoundSummaryFactory ..> RoundSummaryBuilder : selects
+    RoundSummaryBuilder <|.. CvSummaryBuilder
+    RoundSummaryBuilder <|.. EmailSummaryBuilder
+    RoundSummaryBuilder <|.. QuizSummaryBuilder
+    RoundSummaryBuilder <|.. CodingSummaryBuilder
+    RoundSummaryBuilder <|.. CodeReviewSummaryBuilder
+    RoundSummaryBuilder <|.. MentorReviewSummaryBuilder
+    RoundSummaryBuilder <|.. AiInterviewSummaryBuilder
+```
+
+| Concern | Interface (strategy) | Selector (factory) | Implementations |
+| --- | --- | --- | --- |
+| Handling a submission | `RoundSubmissionProcessor` | `RoundProcessorFactory` | `CVRoundProcessor`, `EmailRoundProcessor`, `QuizRoundProcessor`, `CodeRoundProcessor` |
+| Building the round summary for the journey report | `RoundSummaryBuilder` | `RoundSummaryFactory` | One builder for each of the seven round types |
+
+`SubmissionService` resolves the candidate's current round, asks the factory for the matching processor and stores the returned `SubmissionResult`. Code review, mentor interview and AI interview have their own flows (`SubmissionService.evaluateCodeReview`, the mentor module, `InterviewProcessService`) because they are multi-step or real-time rather than a single submission.
+
+Adding a round type means adding a `RoundType` value, a processor and a summary builder, and registering them in the two factories.
+
+### Event-driven, asynchronous work
+
+Slow work is taken off the request thread with Spring application events and `@Async` listeners.
+
+- `SubmissionEventHandle` — grading of CV, email and coding submissions after they are accepted.
+- `AllRoundsCompletedEvent` → `JourneySummaryEventListener` — generates the journey summary once the last round is done.
+- `EventListenerHandle` — avatar and CV uploads to Cloudinary.
+- `LlmChatLogService` — LLM call logs are written asynchronously.
+
+```mermaid
+sequenceDiagram
+    participant C as Candidate
+    participant S as Service
+    participant E as Event publisher
+    participant L as Async listener
+    participant AI as AI / compiler service
+
+    C->>S: Submit round
+    S->>E: publish event
+    S-->>C: Accepted
+    E-)L: deliver on another thread
+    L->>AI: grade (LLM or compiler sandbox)
+    AI-->>L: score and feedback
+    L->>L: save score and feedback
+    Note over L: After the last round, AllRoundsCompletedEvent<br/>triggers journey summary generation
+```
+
+Scheduled jobs in `schedule/` cover work that must not depend on a request, such as fetching and grading emailed submissions, checking payment status, sending meeting reminders, closing expired job descriptions and generating missing summary scripts and audio.
+
+### State machine for the AI interview
+
+`InterviewProcessServiceImpl` drives the interview. The state (current phase, current question, question type, chat history) lives in a Redis document, `InterviewSessionRedis`. Each answer triggers one transition, chosen from the AI's decision: stay on the same anchor with a follow-up, or advance to the next anchor in the blueprint. The LLM never owns the flow.
+
+```mermaid
+stateDiagram-v2
+    [*] --> Anchor: start, first blueprint question
+    Anchor --> FollowUp: DRILL_DOWN / CLARIFY_AND_SUPPORT
+    FollowUp --> FollowUp: DRILL_DOWN / CLARIFY_AND_SUPPORT
+    Anchor --> Anchor: MOVE_NEXT, next blueprint question
+    FollowUp --> Anchor: MOVE_NEXT, next blueprint question
+    Anchor --> Grading: no anchor left
+    FollowUp --> Grading: no anchor left
+    Anchor --> Grading: time limit reached
+    FollowUp --> Grading: time limit reached
+    Grading --> [*]: result saved, Redis state removed
+```
+
+### Configuration snapshot per round
+
+A round stores its configuration as a JSON document (`Round.RoundConfig`): instructions, time limit, evaluation plan and the content of the round. Quiz questions, coding problems and code review problems are **copied** into the round as snapshots when it is configured, so later edits to the question repository do not change a pipeline that candidates are already taking.
+
+### Gateway to external AI services
+
+All outbound AI calls go through one interface, `ApiClient`: the Python LLM and vision services, AnythingLLM workspaces and the compiler service. It handles serialisation, cleaning of the model's JSON output, mapping to typed responses and call logging, so services never deal with HTTP details.
+
+### Cross-cutting concerns
+
+- **AOP** — `LoggingAspect` wraps controller and service methods and logs their duration and failures.
+- **Servlet filters** — `RequestLoggingFilter` logs every request with its trace ID; `JwtAuthenticationFilter` authenticates it.
+- **Retry** — Spring Retry (`@Retryable` / `@Recover`) around session creation and other calls to unreliable services.
+- **Central error handling** — business errors are raised as `CustomException` with an HTTP status and translated by `GlobalExceptionHandler`.
 
 ## Tech stack
 
